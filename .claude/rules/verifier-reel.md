@@ -13,8 +13,7 @@ Mesuré le 16.10 : une session **atteint kd-mc.com** (curl 200). L'ancienne phra
 - **Automatique dans chaque session depuis le 17.10** : le hook de démarrage lance `reel.mjs --confiance` → rien à faire, Playwright sur kd-mc.com marche tout de suite.
 - Le seul obstacle était le navigateur (`ERR_CERT_AUTHORITY_INVALID`) : le script inscrit l'autorité du proxy de la session dans le
   magasin du navigateur (`certutil`, une fois). **Jamais** `ignoreHTTPSErrors` ni couper TLS (garde `npm run test:reel-outil`).
-- Un appel d'API réel : `curl -X POST https://kd-mc.com/__sso/issue -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}'` → `Authorization: Bearer <token>`.
-  Jamais une nouvelle uid (elle exige un code et créerait une fiche).
+- Un appel d'API réel connecté : le pass du robot `ci_smoke` exige depuis le 17.10 une preuve signée avec le secret du domaine (en-tête `x-kdmc-robot`, voir `tools/smoke/reel.mjs`) — sans ce secret (cas d'une session), on ne voit que l'ANONYME : c'est voulu (avant, n'importe qui obtenait ce pass et lisait le planning). Jamais une nouvelle uid.
 - Ce que le robot NE voit PAS : l'admin prouvé (code / Face ID de Kevin), l'arbre (code famille), CMCteams connecté (scope cmc).
   Pour ça : workflow `voir-comme-kevin.yml` / `verif-reelle.yml` au dépôt PUBLIC (secret CI, ration), sinon « Non vérifié » + ce qui a été vu.
 - Après chaque mise en ligne : `npm run reel <les pages touchées>` et la version servie doit être celle du commit.

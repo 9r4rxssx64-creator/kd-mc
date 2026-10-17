@@ -3594,6 +3594,17 @@ async function handleSso(request, url, env) {
     let telephoneNouveau = '';   // numéro saisi à l'inscription d'un NOUVEAU compte, rangé sur la fiche du domaine une fois créée
     let attenduOuvert = false; // nom inscrit d'avance par l'admin : pas d'attente
     let attenteAdmin = false; // nouveau compte : fermé jusqu'au clic sur le mail de confirmation (ou l'ouverture par Kevin, en secours)
+    /* ROBOT DE CONTRÔLE = PREUVE SIGNÉE (audit 17.10.2026, CRITIQUE mesuré) : l'uid `ci_smoke` est écrit dans le dépôt public,
+       et ce compte saute code, mail, téléphone et périmètre → n'importe qui recevait une session qui ouvrait CMCteams, la light
+       et les fichiers de planning nominatifs. Désormais la porte n'émet un pass robot que contre `x-kdmc-robot` =
+       HMAC(secret du domaine, "robot-issue|<uid>") : seuls les robots qui détiennent le secret (déploiements publics) l'ont. */
+    if (UID_ROBOTS_SANS_FICHE.has(uid)) {
+      const preuve = String(request.headers.get('x-kdmc-robot') || '');
+      const attendu = await ssoHmac(secret, 'robot-issue|' + uid);
+      let diff = preuve.length === attendu.length ? 0 : 1;
+      for (let i = 0; i < Math.min(preuve.length, attendu.length); i++) diff |= preuve.charCodeAt(i) ^ attendu.charCodeAt(i);
+      if (diff !== 0) return J({ ok: false, reason: 'robot_preuve', message: 'Compte de contrôle réservé aux robots du domaine.' }, undefined, 403);
+    }
     {
       const app = appDe(request.headers.get('host'));
       /* `sansCreer` : on CHERCHE le dossier sans réserver le nom — une demande

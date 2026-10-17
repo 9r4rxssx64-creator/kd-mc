@@ -44,7 +44,12 @@ function confianceNavigateur() {
 
 /* 2. un vrai pass, pour le robot de contrôle */
 async function pass() {
-  const r = await fetch('https://kd-mc.com/__sso/issue', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' }, body: JSON.stringify({ uid: 'ci_smoke', name: 'CI Smoke', cgu: true }) });
+  /* 17.10.2026 (audit, CRITIQUE) : le pass du robot exige une preuve signée avec le secret du domaine (ROBOT_SSO, présent
+     dans les robots du dépôt public). Sans ce secret, la session voit les pages ANONYMES — c'est voulu : plus de porte ouverte. */
+  const sec = process.env.ROBOT_SSO || process.env.KDMC_SSO_SECRET || '';
+  const h = { 'content-type': 'application/json', origin: 'https://kd-mc.com' };
+  if (sec) { const { createHmac } = await import('node:crypto'); h['x-kdmc-robot'] = createHmac('sha256', sec).update('robot-issue|ci_smoke').digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  const r = await fetch('https://kd-mc.com/__sso/issue', { method: 'POST', headers: h, body: JSON.stringify({ uid: 'ci_smoke', name: 'CI Smoke', cgu: true }) });
   const j = await r.json().catch(() => ({}));
   return { http: r.status, token: j.token || '', erreur: j.error || j.erreur || '' };
 }
@@ -68,7 +73,7 @@ const confiance = confianceNavigateur();
 if (process.argv.includes('--confiance')) { console.log('[reel] navigateur ↔ proxy : ' + confiance); process.exit(0); }
 console.log('Navigateur ↔ proxy de la session : ' + confiance);
 const p = await pass();
-console.log('Pass ci_smoke : ' + (p.token ? 'obtenu' : 'REFUSÉ (' + p.http + ' ' + p.erreur + ') — les pages seront vues anonymes'));
+console.log('Pass ci_smoke : ' + (p.token ? 'obtenu' : 'REFUSÉ (' + p.http + ' ' + p.erreur + ') — les pages seront vues ANONYMES (sans le secret ROBOT_SSO, c\'est normal depuis le 17.10 ; vue connectée = robots publics voir-comme-kevin / verif-reelle)'));
 
 const { chromium } = await import('playwright');
 const exe = fs.existsSync('/opt/pw-browsers/chromium') ? '/opt/pw-browsers/chromium' : undefined;

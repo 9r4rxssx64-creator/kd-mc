@@ -64,7 +64,11 @@ jobs:
           if [ -n "$CT" ]; then printf '%s' "$CT" | wrangler secret put CLONE_TOKEN; echo "CLONE_TOKEN posé"; else echo "Pas de CLONE_TOKEN → mode navigateur uniquement (OK)"; fi
 
       - name: Smoke test réel (leçon 95 — un deploy vert sans test live ne prouve rien)
+        env:
+          ROBOT_SSO: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
         run: |
+          PREUVE=$(python3 -c "import hmac,hashlib,base64,os;print(base64.urlsafe_b64encode(hmac.new(os.environ['ROBOT_SSO'].encode(),b'robot-issue|ci_smoke',hashlib.sha256).digest()).decode().rstrip('='))" 2>/dev/null)
+          [ -n "$PREUVE" ] && echo "::add-mask::$PREUVE"
           URL=$(cat /tmp/url.txt); [ -z "$URL" ] && URL="https://kdmc-clone.9r4rxssx64.workers.dev"
           sleep 8
           echo "--- /health ---"
@@ -76,7 +80,7 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' -H "Origin: https://kd-mc.com" "$URL/meta?url=https://example.com")
           [ "$code" = "401" ] || { echo "::error::Attendu 401 avec une Origin seule, reçu $code (proxy ouvert ?)"; exit 1; }
           echo "--- avec le laissez-passer du domaine (robot ci_smoke) ---"
-          PASS=$(curl -s -X POST https://kd-mc.com/__sso/issue -H 'content-type: application/json' -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}' | python3 -c 'import sys,json;print(json.load(sys.stdin).get("token",""))' || true)
+          PASS=$(curl -s -X POST https://kd-mc.com/__sso/issue -H 'content-type: application/json' -H "x-kdmc-robot: $PREUVE" -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}' | python3 -c 'import sys,json;print(json.load(sys.stdin).get("token",""))' || true)
           if [ -n "$PASS" ]; then
             echo "::add-mask::$PASS"
             curl -sS -H "Authorization: Bearer $PASS" "$URL/meta?url=https://example.com" | tee /tmp/m.json; echo

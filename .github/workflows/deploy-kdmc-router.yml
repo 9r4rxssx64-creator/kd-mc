@@ -560,14 +560,19 @@ jobs:
         # peut dépasser 1 min). La preuve du CODE = tests unitaires (sso/admin) + harnais
         # Chromium. On ne rougit donc PAS un déploiement réussi pour un délai de propagation.
         continue-on-error: true
+        env:
+          ROBOT_SSO: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
         run: |
           set +e
           BASE=https://kd-mc.com
           APP=https://apex-chat.kd-mc.com
+          # 17.10 (audit, CRITIQUE) : le pass du robot exige une preuve signée avec le secret du domaine.
+          PREUVE=$(python3 -c "import hmac,hashlib,base64,os;print(base64.urlsafe_b64encode(hmac.new(os.environ['ROBOT_SSO'].encode(),b'robot-issue|ci_smoke',hashlib.sha256).digest()).decode().rstrip('='))" 2>/dev/null)
+          [ -n "$PREUVE" ] && echo "::add-mask::$PREUVE"
           echo "1) issue (uid de test) — retry jusqu'à ~3 min (propagation bord Cloudflare)"
           TOKEN=""; RESP=""
           for i in $(seq 1 36); do
-            RESP=$(curl -fsS -X POST "$BASE/__sso/issue" -H 'content-type: application/json' \
+            RESP=$(curl -fsS -X POST "$BASE/__sso/issue" -H 'content-type: application/json' -H "x-kdmc-robot: $PREUVE" \
                    -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}' || true)
             TOKEN=$(printf '%s' "$RESP" | grep -oE '"token":"[^"]+"' | sed 's/.*:"//;s/"//')
             if [ -n "$TOKEN" ]; then echo "   ✅ token reçu (tentative $i)"; break; fi

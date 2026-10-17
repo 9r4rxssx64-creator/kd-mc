@@ -23,7 +23,9 @@ dit(/if \(!appliquer\)[^\n]*process\.exit\(0\)/.test(src), 'essai à blanc par d
 let puts = []; const kv = new Map();
 const env = { KDMC_SSO_SECRET: 's', ACCOUNTS: { get: async (k) => kv.get(k) ?? null, put: async (k, v) => { puts.push(k); kv.set(k, v); }, delete: async () => {} } };
 const ctx = { waitUntil() {} };
-const r = await mod.fetch(new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ uid: 'ci_smoke', name: 'CI Smoke', cgu: true }) }), env, ctx);
+const { createHmac } = await import('node:crypto');
+const preuve = createHmac('sha256', 's').update('robot-issue|ci_smoke').digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const r = await mod.fetch(new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-robot': preuve }, body: JSON.stringify({ uid: 'ci_smoke', name: 'CI Smoke', cgu: true }) }), env, ctx);
 const j = await r.json();
 dit(j.ok && typeof j.token === 'string', 'la sonde reçoit toujours sa session (la chaîne SSO reste testée)');
 dit(!puts.some((k) => k === 'acc:ci_smoke' || k === 'idx:uids'), `aucune fiche « CI Smoke » écrite (${puts.filter((k) => /acc:|idx:/.test(k)).join(', ') || 'rien'})`);

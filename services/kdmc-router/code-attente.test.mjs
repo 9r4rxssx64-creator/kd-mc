@@ -148,7 +148,11 @@ ok(wj.ok === true && wj.uid === 'marc-ancien' && wj.code_pose === true, '7.7 who
   w = await mod.fetch(reqHost('lingua.kd-mc.com', '/__sso/whoami', old.j.token), env, { waitUntil() {} }); wj = await w.json();
   ok(old.j.ok === true && cr.j.ok === true && kv.has('cred:nina-avant') && wj.ok === true && JSON.parse(kv.get('acc:nina-avant')).code_at > 0, '7.8 un code posé avant le 8.10 (fiche sans code_at) : reconnu, et la fiche retient code_at (une seule lecture KV, une fois)', wj); }
 /* exemptions : la sonde sans fiche, le coupe-circuit */
-{ const ci = await appel('/__sso/issue', { method: 'POST', body: { uid: 'ci_smoke', name: 'CI Smoke', cgu: true }, ua: UA.iphone });
+{ const { createHmac } = await import('node:crypto');
+  const preuve = createHmac('sha256', 'sec').update('robot-issue|ci_smoke').digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const sans = await appel('/__sso/issue', { method: 'POST', body: { uid: 'ci_smoke', name: 'CI Smoke', cgu: true }, ua: UA.iphone });
+  ok(sans.st === 403 && sans.j.reason === 'robot_preuve', `7.8 un inconnu qui tape l'uid du robot n'obtient RIEN sans la preuve signée (${sans.st} ${sans.j.reason})`);
+  const ci = await appel('/__sso/issue', { method: 'POST', body: { uid: 'ci_smoke', name: 'CI Smoke', cgu: true }, ua: UA.iphone, headers: { 'x-kdmc-robot': preuve } });
   w = await mod.fetch(reqHost('lingua.kd-mc.com', '/__sso/whoami', ci.j.token), env, { waitUntil() {} }); wj = await w.json();
   ok(ci.j.ok === true && wj.ok === true, '7.9 la sonde de déploiement (ci_smoke, sans fiche) n\'est pas bloquée'); }
 { const m0 = await appel('/__sso/issue', { method: 'POST', body: { uid: 'paul-sans', name: 'Paul Sans', cgu: true }, ua: UA.iphone }, ENV0);

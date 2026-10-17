@@ -19,7 +19,9 @@ import mod from '../services/kdmc-router/worker.js';
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d !== undefined ? '  → ' + String(d).slice(0, 260) : ''}`); };
 const kv = new Map(); const appelsIA = [];
 const bilansIA = [];
-const AI = { run(model, input) { const sys = (input.messages || [])[0]?.content || '';
+let retenue = null;   /* 5d : l'IA ne répond pas tant que le test ne la libère pas (Bee « réfléchit… ») */
+const liberes = []; const AI = { run(model, input) { if (retenue) return new Promise((r) => liberes.push(() => r(AI._run(model, input)))); return AI._run(model, input); },
+  _run(model, input) { const sys = (input.messages || [])[0]?.content || '';
   if (/UNIQUEMENT par un objet JSON/.test(sys)) { bilansIA.push((input.messages || []).map((m) => m.content).join('\n'));
     return { response: '{"bravo":"Super, « I cook every day » !","corrections":[{"dit":"I eat pasta","mieux":"I am eating pasta","pourquoi":"Action en cours : présent continu."},{"dit":"phrase jamais dite","mieux":"x y","pourquoi":"z"}],"a_cote":[{"dit":"My favourite is pizza","question":"quel sport aimes-tu ?","idee":"I like football"}]}' }; }
   const ph = (sys.match(/PHASE ([A-ZÀ-Ü-]+)/) || [])[1] || 'COACH';
@@ -169,11 +171,26 @@ try {
   const finD = await D.p.evaluate(() => (document.querySelector('.ap-fin') || {}).innerText || '');
   ok(/1 réplique/.test(finD) && /au moins 2 fois/.test(finD) && !/XP/.test(finD.replace('XP 🙂', '')), '5c. raccrocher tôt : pas de récompense (au moins 2 répliques), et c\'est dit', finD.slice(0, 160));
 
+  /* 5d. (v2.142.2, vu en réel 17.10) : pendant « réfléchit… », ➤ ne doit plus avaler la réponse sans rien dire */
+  const H = await appareil(nav, { sansMicro: true });
+  await H.p.goto('https://lingua.kd-mc.com/'); await H.p.waitForTimeout(2200);
+  await H.p.evaluate(() => [...document.querySelectorAll('button')].find((b) => /Appeler Bee/.test(b.innerText))?.click()); await H.p.waitForTimeout(500);
+  await H.p.evaluate(() => [...document.querySelectorAll('.modal button')].find((b) => /maintenant/.test(b.innerText))?.click()); await H.p.waitForTimeout(1500);
+  await H.p.waitForFunction(() => !/réfléchit/.test((document.querySelector('.ap-etat') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {});   /* le bonjour de Bee est arrivé */
+  retenue = true;
+  await H.p.fill('.ap-input', 'Hello Bee'); await H.p.click('.ap-envoi'); await H.p.waitForTimeout(400);
+  await H.p.fill('.ap-input', 'I like pasta');
+  await H.p.click('.ap-envoi'); await H.p.waitForTimeout(300);
+  const pend = await H.p.evaluate(() => ({ etat: (document.querySelector('.ap-etat') || {}).textContent || '', gris: document.querySelector('.ap-envoi').classList.contains('attend'), garde: document.querySelector('.ap-input').value, dit: document.body.innerText }));
+  ok(/réfléchit/.test(pend.etat) && pend.gris && pend.garde === 'I like pasta' && /réfléchit — renvoie ta réponse/.test(pend.dit), '5d. Bee réfléchit : ➤ grisé, et si on touche quand même c\'est DIT (« renvoie dans un instant »), la réponse reste prête', JSON.stringify({ etat: pend.etat, gris: pend.gris, garde: pend.garde }));
+  retenue = null; liberes.splice(0).forEach((f) => f()); await H.p.waitForTimeout(3500);
+  ok(await H.p.evaluate(() => !document.querySelector('.ap-envoi').classList.contains('attend')), '5e. Bee a répondu : ➤ redevient actif');
+
   /* 7. mode enfant */
   const E = await appareil(nav, { enfant: true });
   await E.p.goto('https://lingua.kd-mc.com/#appel'); await E.p.waitForTimeout(3500);
   ok(!/Appeler Bee/.test(await texte(E.p)) && !(await E.p.$('.appel-ov')), '7. mode enfant : ni carte, ni appel (rien ne part vers une IA)');
-  for (const [n, P] of [['A', A.p], ['B', B.p], ['C', C.p], ['D', D.p], ['E', E.p], ['F', F.p], ['G', G.p]]) ok(P._err.length === 0, `7b. aucune erreur JavaScript (${n})`, P._err.join(' | '));
+  for (const [n, P] of [['A', A.p], ['B', B.p], ['C', C.p], ['D', D.p], ['E', E.p], ['F', F.p], ['G', G.p], ['H', H.p]]) ok(P._err.length === 0, `7b. aucune erreur JavaScript (${n})`, P._err.join(' | '));
 } finally { await nav.close(); }
 /* ⏱ (v2.142.1, vu en réel run 39032054956) : le bilan ne reste jamais « prépare ton bilan… » sans fin — contrôle du code de l'écran */
 { const src = readFileSync('lingua/app.js', 'utf8'); const f = src.slice(src.indexOf('function appelBilanBloc('), src.indexOf('function appelTranscription('));

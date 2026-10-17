@@ -87,5 +87,25 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "mcp__Gmail",
+      "mcp__Cloudflare_Developer_Platform",
+      "mcp__Firecrawl",
+      "mcp__Exa",
+      "mcp__GitHub",
+      "mcp__Claude_Code_Remote",
+      "mcp__Google_Drive",
+      "mcp__Google_Calendar"
+    ]
   }
 }

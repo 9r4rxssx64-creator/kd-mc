@@ -7,38 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ Deploy KDMC Clone Worker — 17/10/2026 13:48 UTC
-
-- **Branche** : `main` · **Commit** : `70b6f1c3` · **Run** : `39038005614`
-- **Ce qui a lâché** : deploy › Smoke test réel (leçon 95 — un deploy vert sans test live ne prouve rien)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/39038005614
-- **Ce que la machine a dit** :
-
-```
-^[[36;1mgrep -q '"ok":true' /tmp/h.json || { echo "::error::/health invalide : $(cat /tmp/h.json)"; exit 1; }^[[0m
-^[[36;1mgrep -q '"title"' /tmp/m.json || { echo "::error::/meta invalide : $(cat /tmp/m.json)"; exit 1; }^[[0m
-^[[36;1m[ "$code" = "403" ] || { echo "::error::Attendu 403 sans Origin, reçu $code"; exit 1; }^[[0m
-{"error":"unauthorized","detail":"Connecte-toi au domaine kd-mc.com (laissez-passer manquant ou refusé)."}
-##[error]/meta invalide : {"error":"unauthorized","detail":"Connecte-toi au domaine kd-mc.com (laissez-passer manquant ou refusé)."}
-##[error]Process completed with exit code 1.
-```
-
-## ❌ Deploy KDMC Clone Worker — 17/10/2026 13:47 UTC
-
-- **Branche** : `main` · **Commit** : `70b6f1c3` · **Run** : `39037971627`
-- **Ce qui a lâché** : deploy › Smoke test réel (leçon 95 — un deploy vert sans test live ne prouve rien)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/39037971627
-- **Ce que la machine a dit** :
-
-```
-^[[36;1mgrep -q '"ok":true' /tmp/h.json || { echo "::error::/health invalide : $(cat /tmp/h.json)"; exit 1; }^[[0m
-^[[36;1mgrep -q '"title"' /tmp/m.json || { echo "::error::/meta invalide : $(cat /tmp/m.json)"; exit 1; }^[[0m
-^[[36;1m[ "$code" = "403" ] || { echo "::error::Attendu 403 sans Origin, reçu $code"; exit 1; }^[[0m
-{"error":"unauthorized","detail":"Connecte-toi au domaine kd-mc.com (laissez-passer manquant ou refusé)."}
-##[error]/meta invalide : {"error":"unauthorized","detail":"Connecte-toi au domaine kd-mc.com (laissez-passer manquant ou refusé)."}
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -546,5 +514,31 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cuisine.kd-mc.com            200   310280 car.
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
+##[error]Process completed with exit code 1.
+```
+
+## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
+- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
 ##[error]Process completed with exit code 1.
 ```

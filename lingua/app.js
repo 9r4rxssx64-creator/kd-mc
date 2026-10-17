@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.1";
+var APP_VER="v2.142.2";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -3077,7 +3077,11 @@ function appelDemarrer(){ if(APPEL||DISC.open||!appelPossible())return; var c=CO
   ov.querySelector(".ap-fr").onclick=function(){ APPEL.enFr=!APPEL.enFr; this.setAttribute("aria-pressed",String(APPEL.enFr)); this.classList.toggle("on",APPEL.enFr); toast(APPEL.enFr?"🇫🇷 Tu peux répondre en français":"🎯 Tu réponds en "+c.nom.toLowerCase()); };
   ov.querySelector(".ap-aide").onclick=function(){ if(APPEL&&!APPEL.pense) appelRepondre("Je n'ai pas compris, tu peux répéter plus simplement et plus lentement ?", true); };
   ov.querySelector(".ap-kb").onclick=function(){ appelClavier(); };
-  var envoi=function(){ var i=ov.querySelector(".ap-input"); var t=(i.value||"").trim(); if(!t||APPEL.pense)return; i.value=""; appelRepondre(t); };
+  /* 17.10 (réel, robot « Lingua comme Kevin ») : pendant « réfléchit… », ➤ ignorait la réponse SANS RIEN DIRE (le texte restait,
+     rien ne partait). Maintenant : bouton grisé (appelEtat) et, si on touche quand même, on le DIT ; le texte reste prêt. */
+  var envoi=function(){ var i=ov.querySelector(".ap-input"); var t=(i.value||"").trim(); if(!t)return;
+    if(APPEL.pense){ toast("💭 "+MNAME()+" réfléchit — renvoie ta réponse dans un instant"); return; }
+    i.value=""; appelRepondre(t); };
   ov.querySelector(".ap-envoi").onclick=envoi; ov.querySelector(".ap-input").onkeydown=function(e){ if(e.key==="Enter")envoi(); };
   if(!(window.SpeechRecognition||window.webkitSpeechRecognition)) appelClavier(true);
   appelDemander(); }
@@ -3085,7 +3089,7 @@ function appelClavier(ouvrir){ if(!APPEL)return; var k=APPEL.ov.querySelector(".
   if(!k.hidden){ var i=k.querySelector("input"); setTimeout(function(){ try{i.focus();}catch(_){} },50); } }
 function appelEtat(e){ if(!APPEL)return; var s=APPEL.ov.querySelector(".ap-etat"), m=APPEL.ov.querySelector(".ap-micro");
   var t={pense:"💭 "+MNAME()+" réfléchit…", parle:"🔊 "+MNAME()+" parle — touche 🎤 pour l'interrompre", ecoute:"🎤 Je t'écoute… parle maintenant", attente:"Touche 🎤 pour répondre"}[e]||"";
-  if(s)s.textContent=t; if(m){ m.classList.toggle("rec",e==="ecoute"); m.disabled=(e==="pense"); } APPEL.pense=(e==="pense"); }
+  if(s)s.textContent=t; if(m){ m.classList.toggle("rec",e==="ecoute"); m.disabled=(e==="pense"); } var ev=APPEL.ov.querySelector(".ap-envoi"); if(ev)ev.classList.toggle("attend",e==="pense"); APPEL.pense=(e==="pense"); }
 function appelDemander(){ if(!APPEL||APPEL.fini)return; var c=COURSES[S.course], me=accMeta(ACC)||{};
   var phase=appelPhase(APPEL.tours); appelEtat("pense"); var img=APPEL.ov.querySelector(".disc-bee"); if(img)img.classList.add("think");
   var corps={mode:"appel", phase:phase, theme:appelTheme(), prenom:String(me.name||"").split(" ")[0], mascotte:mascotCfg().id,

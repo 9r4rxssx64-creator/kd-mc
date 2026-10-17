@@ -1,5 +1,12 @@
 # MEMO_RESUME — état de session
 
+
+## 2026-10-17 — Lingua v2.142.2 : pendant « Bee réfléchit… », ta réponse n'est plus avalée sans rien dire
+- **Vu** sur le run réel 39025704627 : robot « 3 répliques écrites », écran « 2 répliques ». Cause : `➤` ignorait en silence une réponse envoyée pendant la réflexion.
+- **Correctif** : `➤` grisé pendant « réfléchit », message clair si on le touche, texte gardé ; le robot attend comme une personne et ne compte que les répliques acceptées.
+- **Gardes** : `verify-lingua-appel` 40/0 (5d/5e, sabotage prouvé), `lingua-comme-kevin` 9/0, `lingua-appel-routeur` 30/0. Leçons 633 et 634 (la garde masquée par `| tail`).
+- **Réel** : passage du robot programmé le 18.10 à 00h05 UTC (bilan « à côté », bilan borné, répliques).
+
 ## 2026-10-17 (soir) — Audit Cloudflare, lot 3 : kdmc-clone fermé + vrais freins (limiteur intégré)
 - Mesuré en ligne après le lot 2 : `/__notify-kevin` sans pass → **401** ✅ ; mais `/__dep/membre` → 44 essais d'affilée en 200 : le compteur KV ne voit pas ses propres écritures en rafale. Remplacé par le binding `LIMITE_MEMBRE` (10/min/IP, 0 écriture KV) ; copie égarée retirée du guichet admin « membres ajoutés ». Créa Famille : + binding `LIMITE_ADMIN` (5/min/IP). Ventes : + binding `LIMITE_DEBIT` (10/min/IP) AVANT l'écriture KV (une rafale sur `/recu` aurait mangé le plafond d'écritures KV de tout le compte).
 - kdmc-clone : laissez-passer du domaine exigé (l'Origin se falsifie), redirections revérifiées une à une, IPv6 littéral refusé ; page Cloneur v1.2 et Apex 13.4.380 envoient le pass. Boutiques (ld-printify-order) : vrai frein par IP (`LIMITE_LD`, le compteur du code ne vivait que dans un isolat), lien des alertes push limité au domaine (un inconnu pouvait faire ouvrir n'importe quelle adresse à Kevin), quantité plafonnée à 20. Monaco : `MONACO_ENC_KEY` ABSENTE (mesuré : avertissement du déploiement public run 38958462319) → le mot de passe mail était en clair dans KV ; le déploiement tire désormais la clé chez Cloudflare si elle manque (jamais remplacée), et le mot de passe se rechiffre à sa lecture. Garde `test:cf-portes` 26/0 (sabotage « l'Origin suffit » → rouge). LESSONS 632.

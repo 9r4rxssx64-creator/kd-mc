@@ -243,7 +243,10 @@ try {
         await page.waitForFunction(() => { const k = document.querySelector('.ap-clavier'); const e = document.querySelector('.ap-etat'); return (k && !k.hidden) || /attente|À toi|Réponds/i.test((e || {}).textContent || ''); }, null, { timeout: 30000 }).catch(() => {});
         await clic('.ap-kb'); await attends(300);
         const msgs = ['Hello Bee, I am fine thank you', 'I like to cook pasta', 'I eat with my family'];
-        await page.fill('.ap-input', msgs[i]).catch(() => {}); await clic('.ap-envoi'); repliques++;
+        /* comme une personne : on attend que Bee ait fini de réfléchir, et on ne compte que les répliques ACCEPTÉES (champ vidé) */
+        await page.waitForFunction(() => !/réfléchit/.test((document.querySelector('.ap-etat') || {}).textContent || ''), null, { timeout: 30000 }).catch(() => {});
+        await page.fill('.ap-input', msgs[i]).catch(() => {}); await clic('.ap-envoi'); await attends(200);
+        if (await page.evaluate(() => ((document.querySelector('.ap-input') || {}).value || '') === '').catch(() => false)) repliques++;
         await attends(6000);
       }
       await capture(page, 'appel-en-cours');

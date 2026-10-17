@@ -1074,14 +1074,14 @@
     },
     "lingua-cercle": {
       "titre": "Lingua : cercle d'amis, Face ID, session permanente, voix gratuites",
-      "branche": "claude/lingua-bilan-delai-5f84",
+      "branche": "claude/lingua-repliques-5f84",
       "sujet": "Lingua v2.131.0 : cercle (D1 kdmc-cercle), Face ID + /__sso/prolonger, accents SSO, MeloTTS dans la vraie langue",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "17.10 : Lingua v2.142.1 bilan borné (2ᵉ run réel : bilan > 30 s) ; 17.10 : Lingua v2.142.0 bilan « à côté de la question » ; robot « Lingua comme Kevin » vérifié réel 17/0 ; 16.10 nuit : robot « Lingua comme Kevin » (son compte, iPhone, tout essayé, lecture seule ; garde locale vrai routeur) ; 16.10 : docs temps réel — toute version d'app notée (R4 étendue + R7) + bloc versions auto ; 8.10 soir : Lingua v2.138.0 « La vraie vie » (60 phrases × 14 langues) ; 8.10 : sondes réparées après la porte générale (audit « page blanche » = sondes aveugles, leçon #450) ; 7.10 : Lingua v2.137.0 — bilan de fin d'appel (corrections redites au prochain appel) ; 4.10 : audit Lingua 77/0 sur v2.135.0 ; sonde appareils sans traces (leçon #401)"
+      "note": "17.10 : Lingua v2.142.2 ➤ plus jamais muet ; 17.10 : Lingua v2.142.1 bilan borné (2ᵉ run réel : bilan > 30 s) ; 17.10 : Lingua v2.142.0 bilan « à côté de la question » ; robot « Lingua comme Kevin » vérifié réel 17/0 ; 16.10 nuit : robot « Lingua comme Kevin » (son compte, iPhone, tout essayé, lecture seule ; garde locale vrai routeur) ; 16.10 : docs temps réel — toute version d'app notée (R4 étendue + R7) + bloc versions auto ; 8.10 soir : Lingua v2.138.0 « La vraie vie » (60 phrases × 14 langues) ; 8.10 : sondes réparées après la porte générale (audit « page blanche » = sondes aveugles, leçon #450) ; 7.10 : Lingua v2.137.0 — bilan de fin d'appel (corrections redites au prochain appel) ; 4.10 : audit Lingua 77/0 sur v2.135.0 ; sonde appareils sans traces (leçon #401)"
     },
     "kv-qui-ecrit": {
       "titre": "KV — qui écrit ? (1 406 écritures le 2.10)",
@@ -6080,6 +6080,15 @@
       "sujet": "AVANT EXPIRATION DE TA CLÉ (ancien compte ffaca6f3…) : supprimer 12 workers orphelins",
       "corps": "Kevin veut tout sur le compte principal 425377ca…. Mesuré sans clé : 12 workers vivent encore sur l'ancien (*.desarzens-kevin.workers.dev) : apex-push-worker, apex-secrets-proxy (copie des clés !), coffre-r2 (OUVERT : effacer sans rien), kdmc-apis, kdmc-balances, kdmc-crea-ai, kdmc-crea-famille, kdmc-live, kdmc-mail, kdmc-monaco, kdmc-outlook, kdmc-proxy. Aucun appelant, aucune donnée à rapatrier, les copies principales répondent. Depuis main : CLOUDFLARE_API_TOKEN=<ta clé> node tools/cloudflare/orphelins-supprimer.mjs (essai à blanc) puis --confirmer=oui. Lis la ligne « Données restantes » (KV/D1/R2) et dis-la moi / mets-la au MEMO. Puis inventaire-compte.mjs sur ffaca6f3 pour vérifier qu'il ne reste rien.",
       "ts": "2026-10-17 13:06",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m233-lingua-cercle",
+      "de": "lingua-cercle",
+      "a": "toutes",
+      "sujet": "test:pipeline-sessions rouge sur main : 3 branches hors registre",
+      "corps": "claude/cf-portes-moyennes, claude/cf-portes-test-alerte, claude/apex-clone-laissez-passer sont dans SESSIONS-ET-BRANCHES.md mais pas dans pipeline/sessions.json. Leurs sessions : node tools/pipeline/pipeline.mjs enregistrer (ou maj --id <vous>) avec ces branches.",
+      "ts": "2026-10-17 13:50",
       "etat": "ouvert"
     }
   ]

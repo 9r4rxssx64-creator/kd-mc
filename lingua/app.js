@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.4";
+var APP_VER="v2.142.5";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -1055,7 +1055,15 @@ function _renderEcran(){
   if(VIEW==="blitz"){ app.appendChild(vBlitz()); return; }   // ⚡ plein écran (concentration)
   if(VIEW==="pairs"){ app.appendChild(vPairs()); return; }   // 🃏 plein écran
   if(VIEW==="pron"){ app.appendChild(vPron()); return; }     // 🎤 atelier prononciation plein écran
-  if(!S.course){ app.appendChild(vTopbar()); app.appendChild(vCoursePick()); app.appendChild(vTabbar()); return; }
+  /* 17.10 (Kevin, iPhone : « toutes les commandes du bas ne fonctionnent plus ») : sans langue choisie, l'écran « Choisis une langue »
+     revenait QUOI qu'on touche — les onglets et 👥 ne faisaient rien, sans un mot. Ce qui n'a pas besoin d'une langue s'ouvre ;
+     le reste le DIT et ramène à la liste. */
+  if(!S.course){ app.appendChild(vTopbar());
+    var libres={translate:vTranslate, profile:vProfile, league:vLeague, cercle:vCercle}, vue=null;
+    if(libres[VIEW]){ try{ vue=libres[VIEW](); }catch(e){ vue=null; } }
+    if(vue) app.appendChild(vue);
+    else { if(VIEW!=="home"){ VIEW="home"; toast("👆 Choisis d'abord une langue — ensuite tout s'ouvre"); } app.appendChild(vCoursePick()); }
+    app.appendChild(vTabbar()); return; }
   app.appendChild(vTopbar());
   if(VIEW==="home"){ app.appendChild(vHome()); maybeOfferPlacement(); }
   else if(VIEW==="review") app.appendChild(vReview());

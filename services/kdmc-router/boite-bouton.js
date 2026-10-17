@@ -67,6 +67,9 @@ export function bouton() {
        collée en bas, large, peu haute → le bouton se pose au-dessus ; revu toutes les 1,5 s (une app monopage change d'écran). */
     var barreBas = function () {
       try {
+        /* l'app peut NOMMER sa barre du bas : <meta name="kdmc-barre-bas" content=".tabbar"> — mesure directe, sûre sur Safari */
+        var mb = document.querySelector('meta[name="kdmc-barre-bas"]'), qb = mb && mb.getAttribute('content');
+        if (qb) { var bn = document.querySelector(qb); if (bn) { var rb = bn.getBoundingClientRect(); if (rb.width > 0 && rb.height > 0) return Math.max(0, window.innerHeight - rb.top); } }
         var el = document.elementFromPoint(Math.round(window.innerWidth / 2), window.innerHeight - 2);
         while (el && el !== document.body && el !== document.documentElement) {
           if (el === btn || el === panneau) return 0;

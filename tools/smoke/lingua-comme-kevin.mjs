@@ -108,7 +108,11 @@ page.on('response', (r) => { try { if (r.status() >= 500 && notreDomaine(new URL
 const attends = (ms) => page.waitForTimeout(ms);
 const texte = () => page.evaluate(() => (document.body.innerText || '').trim()).catch(() => '');
 const clic = (sel) => page.evaluate((s) => { const e = document.querySelector(s); if (!e) return false; e.click(); return true; }, sel).catch(() => false);
-const onglet = (nom) => page.evaluate((n) => { const t = [...document.querySelectorAll('.tabbar .tab')].find((x) => (x.textContent || '').includes(n)); if (!t) return false; t.click(); return true; }, nom).catch(() => false);
+/* 17.10 (Kevin : « toutes les commandes du bas ne fonctionnent plus ») : un VRAI appui au doigt (page.tap), pas un clic programmé —
+   un élément posé par-dessus ou un écran qui ignore l'appui se voient enfin. */
+const onglet = async (nom) => { const i = await page.evaluate((n) => [...document.querySelectorAll('.tabbar .tab')].findIndex((x) => (x.textContent || '').includes(n)), nom).catch(() => -1);
+  if (i < 0) return false; try { await page.tap('.tabbar .tab:nth-child(' + (i + 1) + ')', { timeout: 4000 }); return true; } catch { return false; } };
+const actif = () => page.evaluate(() => ((document.querySelector('.tabbar .tab.active') || {}).textContent || '').trim()).catch(() => '');
 const fermerModales = async () => { for (let i = 0; i < 4; i++) { const f = await page.evaluate(() => { const m = document.querySelector('.overlay.show'); if (!m) return false; const b = [...m.querySelectorAll('button')].find((x) => /Fermer|Continuer|Plus tard|Pas maintenant|OK/i.test(x.textContent || '')); if (b) b.click(); else m.remove(); return true; }).catch(() => false); if (!f) return; await attends(400); } };
 
 try {
@@ -127,6 +131,12 @@ try {
   /* pas encore de langue sur ce compte → l'écran « Choisis une langue » : on prend l'anglais, dans CE navigateur seulement */
   const choix = await page.evaluate(() => /Choisis une langue/.test(document.body.innerText || '') && document.querySelectorAll('.course-card').length).catch(() => 0);
   if (choix) {
+    /* l'écran « Choisis une langue » : ses onglets doivent RÉAGIR (avant le 17.10 : rien, sans un mot) */
+    await onglet('Traduire'); await attends(700); const tr0 = (await actif()).includes('Traduire') && !/Choisis une langue/.test(await texte());
+    await onglet('Profil'); await attends(700); const pr0 = (await actif()).includes('Profil');
+    await onglet('Réviser'); await attends(500); const rv0 = await page.evaluate(() => /Choisis d'abord une langue/.test(document.body.innerText)).catch(() => false);
+    chk(tr0 && pr0 && rv0, `sans langue choisie, les onglets du bas réagissent (Traduire ${tr0 ? 'ouvert' : 'MUET'}, Profil ${pr0 ? 'ouvert' : 'MUET'}, Réviser ${rv0 ? 'dit « choisis d’abord une langue »' : 'MUET'})`);
+    await onglet('Accueil'); await attends(700);
     const n = await page.evaluate(() => { const c = [...document.querySelectorAll('.course-card')].find((x) => /Anglais/.test(x.textContent || '')); if (!c) return 0; c.click(); return 1; }).catch(() => 0);
     gris(`ton compte n'avait aucune langue en cours : la sonde a choisi l'anglais (${choix} langues proposées) — dans ce navigateur seulement, rien d'écrit`);
     await attends(1500); await fermerModales();

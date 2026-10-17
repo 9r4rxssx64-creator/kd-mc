@@ -28,3 +28,10 @@ id = "059260f5ec0d4f70958f3172fd8e0c7f"   # créé le 16.09.2026 — un id KV n'
 binding = "CONTENU"
 database_name = "kdmc-contenu"
 database_id = "d28c6ec0-21e4-46b8-a3dc-49f282e3a036"
+
+# Reçus / réclamations (audit Cloudflare 17.10) : coupe les rafales AVANT d'écrire dans KV (plafond partagé du compte).
+[[unsafe.bindings]]
+name = "LIMITE_DEBIT"
+type = "ratelimit"
+namespace_id = "2708"
+simple = { limit = 10, period = 60 }

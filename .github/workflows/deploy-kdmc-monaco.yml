@@ -78,7 +78,20 @@ jobs:
             printf '%s' "$ENC_KEY" | wrangler secret put MONACO_ENC_KEY 2>&1 | tail -2 || echo "::warning::secret put MONACO_ENC_KEY a échoué"
             echo "🔐 Chiffrement au repos activé."
           else
-            echo "::warning::MONACO_ENC_KEY absent → le mot de passe mail est stocké en clair dans le KV (admin-gated, KV non exposé). Pour chiffrer : ajoute un secret GitHub MONACO_ENC_KEY = 32 octets aléatoires en base64 (openssl rand -base64 32) puis relance ce workflow."
+            # 17.10.2026 (audit Cloudflare) : pas de secret GitHub → la clé est TIRÉE ICI et posée directement chez
+            # Cloudflare (elle ne passe jamais par GitHub ni par un journal). JAMAIS retirée si le worker en a déjà une :
+            # une nouvelle clé rendrait illisible le mot de passe déjà chiffré. Liste illisible → on ne touche à rien.
+            if wrangler secret list >/tmp/sec.json 2>/tmp/sec.err; then
+              if grep -q '"MONACO_ENC_KEY"' /tmp/sec.json; then
+                echo "🔐 Clé de chiffrement déjà posée chez Cloudflare (gardée telle quelle)."
+              elif openssl rand -base64 32 | tr -d '\n' | wrangler secret put MONACO_ENC_KEY >/tmp/encput.log 2>&1; then
+                echo "🔐 Clé de chiffrement tirée et posée chez Cloudflare (le mot de passe se rechiffre à sa prochaine lecture)."
+              else
+                tail -3 /tmp/encput.log; echo "::warning::pose de MONACO_ENC_KEY échouée — le mot de passe reste en clair (admin-gated)."
+              fi
+            else
+              tail -3 /tmp/sec.err; echo "::warning::liste des secrets illisible — clé de chiffrement non touchée."
+            fi
           fi
 
       - name: Déploiement du worker Monaco

@@ -622,8 +622,17 @@ export async function cloneSite(
   if (!/^https?:\/\//i.test(target)) target = 'https://' + target;
   const m = ['read', 'meta', 'html', 'clone'].includes(mode ?? '') ? (mode as string) : 'read';
   const WORKER = 'https://kdmc-clone.9r4rxssx64.workers.dev';
+  /* v13.4.380 : le worker exige le laissez-passer du domaine (en-tête Authorization), plus l'Origin seule (falsifiable).
+     Même idiome que kdmc-gateway.ts : lecture protégée ; pas de jeton → pas d'en-tête (le worker répond son message). */
+  let jeton = '';
+  try {
+    jeton = localStorage.getItem('kdmc_sso_token') || '';
+  } catch {
+    jeton = '';
+  }
   const res = await fetch(`${WORKER}/${m}?url=${encodeURIComponent(target)}`, {
     signal: AbortSignal.timeout(20000),
+    ...(jeton ? { headers: { Authorization: `Bearer ${jeton}` } } : {}),
   });
   const ct = res.headers.get('content-type') ?? '';
   if (ct.includes('application/json')) {

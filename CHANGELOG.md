@@ -11,7 +11,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - **Inscription** : un champ « E-mail (il confirme ton compte) » après le téléphone. Le domaine envoie UN mail (EmailJS, gratuit) avec un lien signé 48 h ; le lien `GET /__sso/mail/confirmer?t=…` ouvre le compte tout seul (fiche validée, file de Kevin vidée, journal `compte_ouvert_mail`, push à Kevin). L'écran « ton compte attend l'administrateur » dit à quelle adresse masquée le mail est parti et s'ouvre seul après le clic.
 - **Sécurité** : jeton HMAC (clé des sessions), expiré/forgé/tronqué/autre adresse → refus sans rien changer ; compte refusé ou banni jamais rouvert par un mail ; ni code ni session dans le mail. Sans clé EmailJS ou `KDMC_MAIL_CONFIRME=0` : comportement d'avant (Kevin valide). Garde `test:mail-confirme` (34 ✅).
 
-## Apex AI v13.4.372 → v13.4.379 (2026-10-16 — « Vérifie tout en détail », puis « Continu », puis les captures de Kevin)
+## Apex AI v13.4.372 → v13.4.380 (2026-10-16 — « Vérifie tout en détail », puis « Continu », puis les captures de Kevin)
 
 - **v13.4.372** : une seule bulle d'information par ouverture (« Proxy activé », « clés restaurées » ne s'empilent plus) ; le bouton « ← Chat » pose son style par `styleInjector` (CSP nonce) au lieu d'un `<style>` nu refusé par la page.
 - **v13.4.373** : `sw.js` servi recopié proprement (un marqueur de conflit et deux `CACHE_VERSION` avaient été publiés — leçon #560) ; garde `test:sw-identite` compile chaque `sw.js`.
@@ -21,6 +21,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - **v13.4.377** (capture de Kevin 22h56) : le diagnostic Cloudflare lancé tout seul au démarrage ne montre plus de bulle orange « Cloudflare ralenti · pas ta clé » (seul celui lancé dans Réglages la garde) ; le badge de version vit dans la barre du haut, à gauche de « ← KDMC », et ne recouvre plus le premier message.
 - **v13.4.378** (2e capture 23h32) : la version est écrite dans la rangée de saisie du chat, juste après le trombone (le badge recouvrait les boutons mode / mémoire / effacer / menu ; dans l'en-tête elle poussait « ← KDMC » sous le menu) ; quand la clé Anthropic du Coffre est refusée ET que les IA gratuites du domaine ne répondent pas, Apex le dit tel quel et réessaie tout seul, au lieu d'annoncer « clé invalide ».
 - **v13.4.379** (17.10, vu par le robot « Apex comme Kevin ») : plus de bulle « Proxy Cloudflare activé : tes clés API restent server-side » à la première ouverture — elle recouvrait la réponse et n'aidait à rien (règle « pas d'infos inutiles »). L'activation reste dans le journal.
+- **v13.4.380** (17.10, audit Cloudflare : le worker de clonage va exiger le laissez-passer) : l'outil `clone_site` d'Apex envoie maintenant `Authorization: Bearer <laissez-passer du domaine>` au worker `kdmc-clone` (lu dans `kdmc_sso_token`, comme la passerelle ; pas de jeton = pas d'en-tête, le worker répond son message). Avant, l'en-tête Origin seule suffisait et elle se falsifie (proxy ouvert). Garde `v13_4_380-clone-laissez-passer` (sabotage prouvé). À faire AVANT que le worker change.
 
 ## CMCteams v9.977 (2026-10-15 — les deux rouges de `main` corrigés : les cadres gardent leur groupe d'octobre, la ligne « TOTAL équipe » n'est plus prise pour une personne)
 

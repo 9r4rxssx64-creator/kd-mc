@@ -33,6 +33,20 @@ function rl(key, max, windowMs) {
    que le worker ne met QUE dans la notification chiffrée envoyée au téléphone admin.
    /cost (crée puis supprime un produit dans la boutique) et /push-test : Origin + tag +
    plafonds globaux par heure. */
+/* Audit Cloudflare 17.10 : le compteur ci-dessus vit dans UN isolat (un autre isolat repart de zéro).
+   Le limiteur intégré (binding LIMITE_LD, en mémoire chez Cloudflare, gratuit) tient pour tout le monde ;
+   absent ou en panne → le compteur d'isolat reste seul. */
+async function frein(env, cle) {
+  try {
+    const lim = env && env.LIMITE_LD;
+    if (lim && typeof lim.limit === 'function') { const r = await lim.limit({ key: cle }); return !!(r && r.success === false); }
+  } catch (_) { /* limiteur en panne */ }
+  return false;
+}
+/* Une alerte push ne peut ouvrir qu'une page de la boutique (un inconnu ne fait pas cliquer Kevin ailleurs). */
+function lienAlerteSur(u) {
+  try { const x = new URL(String(u || '')); return x.protocol === 'https:' && (/(^|\.)kd-mc\.com$/.test(x.hostname) || x.hostname === '9r4rxssx64-creator.github.io') ? x.toString().slice(0, 300) : undefined; } catch (_) { return undefined; }
+}
 function garde(request, origin) {
   if (!ALLOW.includes(origin)) return 'origin refusée';
   if (request.headers.get('x-ld-app') !== APP_TAG) return 'app tag invalide';
@@ -77,6 +91,7 @@ export default {
     // COÛT RÉEL : crée un produit-sonde, lit le cost réel, le supprime (appel Printify coûteux)
     if (request.method === 'GET' && url.pathname === '/cost') {
       const g = garde(request, origin); if (g) return J({ ok: false, detail: g }, 403, origin);
+      if (await frein(env, 'cost:' + ip)) return J({ ok: false, detail: 'Trop de requêtes, patiente une minute', retryAfter: 60 }, 429, origin);
       if (rl('cost:' + ip, 10, 60000) || rl('cost:global', 20, 3600000)) return J({ ok: false, detail: 'Trop de requêtes, patiente une minute', retryAfter: 60 }, 429, origin);
       const KEY = env.PRINTIFY_API_KEY;
       if (!KEY) return J({ ok: false, detail: 'clé serveur absente' }, 500, origin);
@@ -116,6 +131,7 @@ export default {
     }
     // PORT RÉEL : tarif de livraison Printify pour un produit + pays
     if (request.method === 'GET' && url.pathname === '/shipping') {
+      if (await frein(env, 'ship:' + ip)) return J({ ok: false, detail: 'Trop de requêtes, patiente une minute', retryAfter: 60 }, 429, origin);
       const KEY = env.PRINTIFY_API_KEY;
       if (!KEY) return J({ ok: false, detail: 'clé serveur absente' }, 500, origin);
       const bp = parseInt(url.searchParams.get('bp') || '0', 10);
@@ -143,6 +159,7 @@ export default {
     // TEST ALERTE : envoie une notif push de test à l'admin abonné
     if (request.method === 'GET' && url.pathname === '/push-test') {
       const g = garde(request, origin); if (g) return J({ ok: false, detail: g }, 403, origin);
+      if (await frein(env, 'push:' + ip)) return J({ ok: false, detail: 'trop de tests, patiente', retryAfter: 600 }, 429, origin);
       if (rl('push:' + ip, 3, 600000) || rl('push:global', 10, 3600000)) return J({ ok: false, detail: 'trop de tests, patiente', retryAfter: 600 }, 429, origin);
       try {
         const n = await sendOrderPush(env, '🔔 Test alerte La Détente', 'Si tu vois cette notification, les alertes commande fonctionnent ✅');
@@ -154,11 +171,12 @@ export default {
     if (request.method === 'POST' && url.pathname === '/alert') {
       if (!ALLOW.includes(origin)) return J({ ok: false, detail: 'origin refusée' }, 403, origin);
       if (request.headers.get('x-ld-app') !== APP_TAG) return J({ ok: false, detail: 'app tag invalide' }, 403, origin);
+      if (await frein(env, 'alert:' + ip)) return J({ ok: false, detail: 'trop d\'alertes, throttle', retryAfter: 300 }, 429, origin);
       if (rl('alert:' + ip, 6, 300000) || rl('alert:global', 12, 3600000)) return J({ ok: false, detail: 'trop d\'alertes, throttle', retryAfter: 300 }, 429, origin);
       let ab; try { ab = await request.json(); } catch (_) { return J({ ok: false, detail: 'json invalide' }, 400, origin); }
       const title = String(ab.title || '⚠️ Alerte La Détente').slice(0, 80);
       const bodyTxt = String(ab.body || 'Erreur signalée sur la boutique').slice(0, 300);
-      const aurl = /^https?:\/\//.test(ab.url || '') ? String(ab.url).slice(0, 300) : undefined;
+      const aurl = lienAlerteSur(ab.url);
       try {
         const n = await sendOrderPush(env, title, bodyTxt, aurl, { tag: 'ld-alert' });
         return J({ ok: n > 0, sent: n, detail: n > 0 ? 'alerte push envoyée' : 'aucun abonnement push (active les alertes) ou clés VAPID manquantes' }, 200, origin);
@@ -169,6 +187,7 @@ export default {
     if (request.method === 'POST' && url.pathname === '/validate') {
       if (!ALLOW.includes(origin)) return J({ ok: false, detail: 'origin refusée' }, 403, origin);
       if (request.headers.get('x-ld-app') !== APP_TAG) return J({ ok: false, detail: 'app tag invalide' }, 403, origin);
+      if (await frein(env, 'validate:' + ip)) return J({ ok: false, detail: 'trop de validations, patiente quelques minutes', retryAfter: 300 }, 429, origin);
       if (rl('validate:' + ip, 10, 300000)) return J({ ok: false, detail: 'trop de validations, patiente quelques minutes', retryAfter: 300 }, 429, origin);
       const KEY = env.PRINTIFY_API_KEY;
       if (!KEY) return J({ ok: false, detail: 'clé serveur absente' }, 500, origin);
@@ -188,6 +207,7 @@ export default {
     if (!ALLOW.includes(origin)) return J({ ok: false, detail: 'origin refusée' }, 403, origin);
     if (request.headers.get('x-ld-app') !== APP_TAG) return J({ ok: false, detail: 'app tag invalide' }, 403, origin);
     // Anti-spam commandes : 5 par 5 min et par IP + plafond global 30/5 min.
+    if (await frein(env, 'order:' + ip)) return J({ ok: false, detail: 'Trop de commandes en peu de temps, patiente quelques minutes', retryAfter: 300 }, 429, origin);
     if (rl('order:' + ip, 5, 300000)) return J({ ok: false, detail: 'Trop de commandes en peu de temps, patiente quelques minutes', retryAfter: 300 }, 429, origin);
     if (rl('order:global', 30, 300000)) return J({ ok: false, detail: 'Service occupé, réessaie dans quelques minutes', retryAfter: 300 }, 429, origin);
     // Content-Type strict (rejette les POST hors application/json)
@@ -261,7 +281,7 @@ export default {
         lineItems.push({
           print_provider_id: pp, blueprint_id: bp, variant_id: v.id,
           print_areas: { front: src },
-          quantity: Math.max(1, it.quantity || 1)
+          quantity: Math.min(20, Math.max(1, parseInt(it.quantity, 10) || 1))
         });
       } catch (e) { warnings.push(e.message); }
     }

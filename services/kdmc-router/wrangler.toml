@@ -140,6 +140,13 @@ type = "ratelimit"
 namespace_id = "2705"
 simple = { limit = 8, period = 60 }
 
+# /__dep/membre (audit Cloudflare 17.10) : 10 essais nom + matricule par minute et par IP, sans KV.
+[[unsafe.bindings]]
+name = "LIMITE_MEMBRE"
+type = "ratelimit"
+namespace_id = "2706"
+simple = { limit = 10, period = 60 }
+
 [vars]
 KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
 # 15.10 (Kevin : « En attendant WhatsApp je valide manuellement ») : toute NOUVELLE inscription attend ton accord dans « Mes messages ».

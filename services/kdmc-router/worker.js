@@ -4292,16 +4292,16 @@ async function handleMembre(request, env) {
   if (request.method !== 'POST') return JM({ ok: false, reason: 'methode' }, 405);
   if (!ssoOriginOk(request.headers.get('origin'), new URL(request.url).host)) return JM({ ok: false, reason: 'origine refusée' }, 403);
   /* 17.10.2026 (audit sécurité Cloudflare) : ce guichet confirme un couple nom + matricule — sans frein, on pouvait balayer le
-     planning. 20 essais par heure et par adresse IP (KV), largement assez pour une vraie inscription avec fautes de frappe. */
-  if (env && env.ACCOUNTS) {
-    try {
-      const ip = request.headers.get('CF-Connecting-IP') || 'inconnue';
-      const cle = 'rl:membre:' + ip + ':' + Math.floor(Date.now() / 36e5);
-      const n = Number((await env.ACCOUNTS.get(cle)) || 0);
-      if (n >= 20) return JM({ ok: false, reason: 'trop_d_essais', detail: 'trop d\'essais dans l\'heure, réessaie plus tard' }, 429);
-      await env.ACCOUNTS.put(cle, String(n + 1), { expirationTtl: 7200 });
-    } catch { /* KV indisponible : on laisse passer (le planning reste la vraie garde) */ }
-  }
+     planning. 10 essais par minute et par adresse IP, par le limiteur intégré (binding LIMITE_MEMBRE, en mémoire, ZÉRO
+     écriture KV : un compteur KV ne voit pas ses propres écritures en rafale — mesuré en ligne, 44 essais passés).
+     Limiteur absent ou en panne → on laisse passer (le planning reste la vraie garde). */
+  try {
+    const lim = env && env.LIMITE_MEMBRE;
+    if (lim && typeof lim.limit === 'function') {
+      const r = await lim.limit({ key: 'membre:' + (request.headers.get('CF-Connecting-IP') || 'inconnue') });
+      if (r && r.success === false) return JM({ ok: false, reason: 'trop_d_essais', detail: 'trop d\'essais, réessaie dans une minute' }, 429);
+    }
+  } catch { /* limiteur en panne : on laisse passer */ }
   let b = {}; try { b = await request.json(); } catch { /* corps vide : refus ci-dessous */ }
   /* COMPTE INVITÉ (Kevin 13.10 : « un compte pour une personne qui ne fait peut-être pas partie du casino ») : créé par Kevin seul
      (/__admin/compte-invite), il n'a ni matricule SBM ni nom dans le planning. Le DOMAINE le reconnaît à sa session (jamais la page) :
@@ -4352,17 +4352,6 @@ async function handleMatricules(request, env) {
   }
   if (request.method !== 'POST') return JM({ ok: false, reason: 'methode' }, 405);
   if (!ssoOriginOk(request.headers.get('origin'), new URL(request.url).host)) return JM({ ok: false, reason: 'origine refusée' }, 403);
-  /* 17.10.2026 (audit sécurité Cloudflare) : ce guichet confirme un couple nom + matricule — sans frein, on pouvait balayer le
-     planning. 20 essais par heure et par adresse IP (KV), largement assez pour une vraie inscription avec fautes de frappe. */
-  if (env && env.ACCOUNTS) {
-    try {
-      const ip = request.headers.get('CF-Connecting-IP') || 'inconnue';
-      const cle = 'rl:membre:' + ip + ':' + Math.floor(Date.now() / 36e5);
-      const n = Number((await env.ACCOUNTS.get(cle)) || 0);
-      if (n >= 20) return JM({ ok: false, reason: 'trop_d_essais', detail: 'trop d\'essais dans l\'heure, réessaie plus tard' }, 429);
-      await env.ACCOUNTS.put(cle, String(n + 1), { expirationTtl: 7200 });
-    } catch { /* KV indisponible : on laisse passer (le planning reste la vraie garde) */ }
-  }
   let b = {}; try { b = await request.json(); } catch { /* corps vide : refus ci-dessous */ }
   const r = await corrigerMatricule(env, b.id, b.m);
   if (r.ok) await audLog(env, { ev: 'matricule_corrige', detail: String(b.id || '').slice(0, 8) + ' → ' + (String(b.m || '').slice(0, 8).toUpperCase() || '(effacé)') });

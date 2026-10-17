@@ -2370,8 +2370,8 @@
     },
     "cf-portes-moyennes": {
       "titre": "cf-portes-moyennes",
-      "branche": "claude/cf-portes-moyennes",
-      "sujet": "Sécurité Cloudflare lot 2",
+      "branche": "claude/clone-laissez-passer",
+      "sujet": "Audit Cloudflare lot 3 : kdmc-clone + limiteurs intégrés",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",
@@ -2399,6 +2399,16 @@
       "attend_kevin": null,
       "attend_session": null,
       "note": "fusionnée #4752"
+    },
+    "javis-bee-partout": {
+      "titre": "Javis / Bee — présence partout + tâches (robot réel)",
+      "branche": "claude/bee-partout-reel",
+      "sujet": "verif-live-bee-partout : widget dans toutes les apps + batterie de tâches",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

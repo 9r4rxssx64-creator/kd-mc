@@ -9,10 +9,11 @@
  *   /meta?url=   → titre, description, og:image, favicon, liens internes, technos détectées
  *
  * SÉCURITÉ (règles CLAUDE.md — cet endpoint fetch des URLs arbitraires) :
- * - Anti open-proxy : navigateur autorisé UNIQUEMENT depuis une Origin de la whitelist
- *   (kd-mc.com, *.kd-mc.com, github.io, localhost). Usage serveur (sans Origin) refusé
- *   sauf en-tête X-Clone-Token == secret CLONE_TOKEN (opt-in, non requis pour le navigateur).
- * - Anti-SSRF : http/https uniquement ; hôtes privés/loopback/metadata bloqués.
+ * - Anti open-proxy (17.10.2026, audit Cloudflare) : une Origin se falsifie en une ligne de curl,
+ *   elle ne suffit plus. Il faut le laissez-passer du domaine (Authorization: Bearer, vérifié par
+ *   kd-mc.com/__sso/whoami) ou, pour un serveur, X-Clone-Token == secret CLONE_TOKEN.
+ * - Anti-SSRF : http/https uniquement ; hôtes privés/loopback/metadata bloqués, y compris
+ *   après chaque redirection (suivies à la main, 5 au plus) et en IPv6 littéral.
  * - Taille de réponse plafonnée (4 Mo) ; timeout 15 s.
  * - Lecture seule, aucune donnée stockée.
  *
@@ -54,7 +55,8 @@ export default {
 
 // Bloque loopback / réseaux privés / metadata (anti-SSRF, défense en profondeur).
 function hostBlocked(host) {
-  const h = host.toLowerCase();
+  const h = host.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h.indexOf(":") >= 0) return true; // IPv6 littéral : jamais une page publique utile ici
   if (h === "localhost" || h.endsWith(".localhost")) return true;
   if (h === "::1" || h === "0.0.0.0") return true;
   if (/^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h) || /^169\.254\./.test(h)) return true;
@@ -63,11 +65,18 @@ function hostBlocked(host) {
   return false;
 }
 
-function authorize(req, env, origin) {
-  if (origin) return ORIGIN_OK.some((re) => re.test(origin)); // navigateur : whitelist Origin
-  // Pas d'Origin (usage serveur) : autorisé seulement si un token est configuré ET fourni.
+async function authorize(req, env) {
   const tok = env.CLONE_TOKEN;
-  return !!tok && req.headers.get("X-Clone-Token") === tok;
+  if (tok && req.headers.get("X-Clone-Token") === tok) return true; // usage serveur
+  const auth = req.headers.get("Authorization") || "";
+  if (!/^Bearer\s+\S{16,}/.test(auth)) return false;
+  try {
+    const h = { Authorization: auth }; const ua = req.headers.get("user-agent"); if (ua) h["user-agent"] = ua;
+    const r = await fetch("https://kd-mc.com/__sso/whoami", { headers: h, cache: "no-store" });
+    if (!r.ok) return false;
+    const j = await r.json();
+    return !!(j && j.ok);
+  } catch (e) { return false; }
 }
 
 async function handle(req, env, origin) {
@@ -78,8 +87,8 @@ async function handle(req, env, origin) {
   if (mode === "health") return json({ ok: true, service: "kdmc-clone", hasToken: !!env.CLONE_TOKEN }, origin);
   if (["read", "html", "clone", "meta"].indexOf(mode) < 0) return json({ error: "not_found", detail: "modes: read|html|clone|meta|health" }, origin, 404);
 
-  if (!authorize(req, env, origin)) {
-    return json({ error: "forbidden", detail: "Origin non autorisée (navigateur : kd-mc.com/github.io/localhost) ou token serveur manquant." }, origin, 403);
+  if (!(await authorize(req, env))) {
+    return json({ error: "unauthorized", detail: "Connecte-toi au domaine kd-mc.com (laissez-passer manquant ou refusé)." }, origin, 401);
   }
 
   const target = url.searchParams.get("url");
@@ -94,10 +103,20 @@ async function handle(req, env, origin) {
   const to = setTimeout(() => ctrl.abort(), 15000);
   let r, buf;
   try {
-    r = await fetch(t.toString(), {
-      signal: ctrl.signal, redirect: "follow",
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; KDMC-Clone/1.0; +https://kd-mc.com)", "Accept": "text/html,*/*" },
-    });
+    for (let saut = 0; ; saut++) {
+      r = await fetch(t.toString(), {
+        signal: ctrl.signal, redirect: "manual",
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; KDMC-Clone/1.0; +https://kd-mc.com)", "Accept": "text/html,*/*" },
+      });
+      const loc = r.status >= 300 && r.status < 400 ? r.headers.get("location") : null;
+      if (!loc) break;
+      if (saut >= 5) { clearTimeout(to); return json({ error: "too_many_redirects", detail: "Plus de 5 redirections" }, origin, 502); }
+      const suivant = new URL(loc, t);
+      if ((suivant.protocol !== "http:" && suivant.protocol !== "https:") || hostBlocked(suivant.hostname)) {
+        clearTimeout(to); return json({ error: "blocked_host", detail: "Redirection vers un hôte interdit : " + suivant.hostname }, origin, 400);
+      }
+      t = suivant;
+    }
     const reader = r.body.getReader(); const chunks = []; let n = 0;
     while (true) {
       const { done, value } = await reader.read();

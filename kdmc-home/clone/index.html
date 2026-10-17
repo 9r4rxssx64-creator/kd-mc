@@ -50,7 +50,7 @@ a{color:var(--blue);word-break:break-all}
     <div class="out" id="out"></div>
   </div>
 </div>
-<span class="ver" id="ver" title="Forcer la mise à jour">Cloneur v1.1</span>
+<span class="ver" id="ver" title="Forcer la mise à jour">Cloneur v1.2</span>
 <script>
 var WORKER="https://kdmc-clone.9r4rxssx64.workers.dev";
 function $(id){return document.getElementById(id);}
@@ -64,7 +64,8 @@ async function run(mode){
   if(!/^https?:\/\//i.test(u)){ if(u && !/^\w+:\/\//.test(u)){u="https://"+u;$("url").value=u;} else {setErr("Entre une URL http(s) valide.");return;} }
   setErr("");$("out").innerHTML="";$("state").textContent="⏳ Récupération de "+host(u)+"…";
   try{
-    var r=await fetch(WORKER+"/"+mode+"?url="+encodeURIComponent(u),{cache:"no-store"});
+    var hd={};try{var tk=localStorage.getItem("kdmc_sso_token");if(tk)hd.Authorization="Bearer "+tk;}catch(e){}
+    var r=await fetch(WORKER+"/"+mode+"?url="+encodeURIComponent(u),{cache:"no-store",headers:hd});
     var ct=r.headers.get("content-type")||"";
     if(ct.indexOf("application/json")>=0){
       var d=await r.json();

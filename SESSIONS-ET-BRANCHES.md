@@ -45,6 +45,7 @@ oubliée du registre ou que deux sessions partagent une branche.
 
 | Session | Branche | État au 2.09 |
 | Fiche par personne : une carte par compte, fil d'activité, historique complet | `claude/fiche-activite` | 🟢 4.10 : D1, 90 jours ; empilée sur alertes-utiles ; PR en cours |
+| Bee partout + tâches : robot réel (widget dans toutes les apps, sujets variés) | `claude/bee-partout-reel` | 🟢 17.10 : en cours |
 | Preuve réelle : Bee ouvre l'arbre de Yann et les apps (run 39036149454 ✅) | `claude/bee-preuve-reelle` | 🟢 17.10 : PR en cours |
 | Routeur : repères de notification uniques (déploiement rouge = vrai défaut) | `claude/repere-notif` | 🟢 17.10 : PR en cours |
 | Bee ouvre en vrai : voie directe sans IA (mesuré par le robot réel) | `claude/bee-ouvre-direct` | 🟢 17.10 : PR en cours |
@@ -245,6 +246,8 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/access-ux` | 16.10 | admin.kd-mc.com « Qui se connecte » v1.2.0 : en-tête compact (la page défile), filtres, En ligne maintenant, liste par fraîcheur ; test UA remis au vert | `access-ux` |
 | `claude/cf-portes-moyennes` | 17.10 | Routeur notify-kevin (session) + dep/membre (frein) + crea-famille (frein code admin) | `cf-portes-moyennes` |
 | `claude/cf-portes-test-alerte` | 17.10 | Test `alerte-nouveau` du routeur avec pass signé (débloque le déploiement du lot 2) | `cf-portes-moyennes` |
+| `claude/clone-laissez-passer` | 17.10 | Lot 3 : kdmc-clone sous laissez-passer + limiteurs intégrés (routeur dep/membre, crea-famille) | `cf-portes-moyennes` |
+| `claude/apex-clone-laissez-passer` | 17.10 | Apex 13.4.380 : l'outil clone_site envoie le laissez-passer (aide) | `cf-portes-moyennes` |
 | `claude/cf-rapatrier` | 17.10 | 12 workers orphelins sur l'ancien compte Cloudflare : outil de suppression sûr + garde ; rien à déplacer | `cf-rapatrier` |
 | `claude/cf-preuves` | 17.10 | Docs : les 4 portes Cloudflare vérifiées fermées en ligne | `cf-preuves` |
 | `claude/deploy-coffre-r2-public` | 17.10 | Robot public de déploiement de coffre-r2 (+ preuve 401 anonyme) | `deploy-coffre-r2-public` |
@@ -266,6 +269,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/apex-robot-comme-kevin` | 17.10 | Robot « Apex comme Kevin » (connecté en admin par le domaine, iPhone, « Test ») + sabotages prouvés | `apex-robot-comme-kevin` |
 | `claude/apex-379-sans-bulle` | 17.10 | Apex 379 : plus de bulle « Proxy Cloudflare activé » (vue par le robot) | `apex-379-sans-bulle` |
 | `claude/apex-379-preuve` | 17.10 | Apex 379 : preuve réelle écrite (docs seulement) — fusionnée | `apex-379-preuve` |
+| `claude/apex-clone-laissez-passer` | 17.10 | Apex 380 : `clone_site` envoie le laissez-passer du domaine au worker kdmc-clone (avant qu'il l'exige) | `apex-clone-laissez-passer` |
 | `claude/compte-ouvrir-robot` | 17.10 | Robot « ouvrir un compte en attente » à la place de Kevin (Yann) | `compte-ouvrir-robot` |
 | `claude/publication-auto-cron` | 17.10 | Publication automatique vers le dépôt public (cron outlook → robot public), relanceur de déploiements | `publication-auto-cron` |
 | `claude/pages-nettoyage-compte` | 17.10 | Fuite Pages : le robot public `pages-nettoyage.yml` reçoit une entrée `compte` + diagnostic de la clé (le secret voyait 0 projet) | `pages-nettoyage-compte` |

@@ -15,3 +15,11 @@ workers_dev = true
 [[kv_namespaces]]
 binding = "FAMILLE"
 id = "REMPLACE_PAR_LE_WORKFLOW"
+
+# Code admin de /rejoindre (audit Cloudflare 17.10) : 5 essais par minute et par IP, compteur en mémoire
+# (le compteur KV de l'heure ne voit pas ses propres écritures en rafale). Gratuit, zéro écriture KV.
+[[unsafe.bindings]]
+name = "LIMITE_ADMIN"
+type = "ratelimit"
+namespace_id = "2707"
+simple = { limit = 5, period = 60 }

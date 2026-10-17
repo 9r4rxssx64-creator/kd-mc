@@ -70,7 +70,13 @@ async function encSecret(env, plain) {
 async function decSecret(env, stored) {
   if (stored == null) return null;
   const s = String(stored);
-  if (s.startsWith('raw:')) return s.slice(4);
+  if (s.startsWith('raw:')) {
+    /* 17.10.2026 (audit Cloudflare) : la clé n'était pas posée → mot de passe resté en clair. Dès qu'elle l'est,
+       le mot de passe en clair est rechiffré à sa première lecture (une seule écriture KV). */
+    const plain = s.slice(4);
+    try { if (env && env.ACCOUNTS && (await encKey(env)) && (await env.ACCOUNTS.get('mon:pass')) === s) await env.ACCOUNTS.put('mon:pass', await encSecret(env, plain)); } catch { /* reste en clair, réessai à la prochaine lecture */ }
+    return plain;
+  }
   if (!s.startsWith('enc:')) return s;
   const k = await encKey(env);
   if (!k) throw new Error('enc_key_absente');

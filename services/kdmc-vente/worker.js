@@ -636,6 +636,13 @@ async function noteAbonne(env, { code, email, produitId, source, fiche, email_en
 
 /* ── Garde-fou de débit (anti-balayage d'e-mails sur /reclamer) ───────────── */
 async function tropDeTentatives(env, ip) {
+  /* 17.10.2026 (audit Cloudflare lot 3) : le compteur KV ne voit pas ses propres écritures en rafale, et chaque
+     essai écrivait sur le plafond d'écritures KV partagé par TOUT le compte (1 000/jour gratuit). Le limiteur
+     intégré (binding LIMITE_DEBIT, en mémoire, 0 écriture) coupe la rafale AVANT toute écriture KV. */
+  try {
+    const lim = env.LIMITE_DEBIT;
+    if (lim && typeof lim.limit === 'function') { const r = await lim.limit({ key: 'debit:' + ip }); if (r && r.success === false) return true; }
+  } catch (_) { /* limiteur en panne : le compteur de l'heure reste */ }
   const cle = 'debit:' + ip + ':' + Math.floor(Date.now() / 36e5);
   const n = Number((await env.VENTES.get(cle)) || 0);
   if (n >= MAX_RECLAM_PAR_HEURE) return true;

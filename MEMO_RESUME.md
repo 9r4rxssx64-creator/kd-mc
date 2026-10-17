@@ -1,6 +1,7 @@
 # MEMO_RESUME — état de session
 
 ## 2026-10-17 (soir) — Audit Cloudflare, lot 2 : 3 portes moyennes fermées (routeur + Créa Famille)
+- ⚠️ 1er déploiement du routeur ROUGE (run 39036753773) : `alerte-nouveau.test.mjs` envoyait la notification sans pass → test mis à jour (pass signé), tous les tests du routeur verts en local ; Créa Famille déployé (run 39036753880). LESSONS 628.
 - Routeur `/__notify-kevin` : n'importe qui pouvait t'envoyer une notification push au texte libre → laissez-passer du domaine obligatoire (les pages CMCteams / light / heures l'envoient déjà : cookie). 3 tests adaptés (heures, chefs-equipe, inscription-unique : ils présentent maintenant un pass de test signé).
 - Routeur `/__dep/membre` (oracle nom + matricule) → 20 essais / heure / IP (KV).
 - kdmc-crea-famille `/rejoindre` : le code admin s'essayait sans limite (→ admin de toutes les familles) → 5 mauvais essais / heure / IP.
@@ -26,7 +27,7 @@
 ## 2026-10-17 — Apex Chat v1.1.318 : un appareil neuf n'est plus rechargé 7 s après sa 1re ouverture
 - Vu par le robot e2e (run 39035781683, 27 ✅ / 6 sautés / 1 ❌ « photo de Bob non reçue » + « [MAJ] application [admin-force] ») : la mise à jour forcée de l'admin rechargeait tout navigateur neuf.
 - `index.html` : `_pageDuReseau` noté à l'ouverture ; vue = 0 et page du réseau → date notée, pas de rechargement. Test `client-premier-chargement.test.js` (5), sabotage prouvé ; suite complète 2139 verts. Leçon 627.
-- **À vérifier** : e2e vert après mise en ligne. ⚠️ Le déploiement du SERVEUR est bloqué par Cloudflare (file d'attente, code 10013) depuis 12:57 UTC : la page 1.1.318 part par le routeur, le serveur reste 1.1.317 tant que ce n'est pas réglé.
+- **Vérifié réel (17.10 ~13:40 UTC)** : serveur `/api/health` 1.1.318 (d1/do/backup ok) ; page servie v1.1.318 ; e2e prod run 39036714641 **28 ✅ / 6 sautés / 0 ❌**, plus de « [MAJ] application [admin-force] » au journal. Le refus Cloudflare (file d'attente, code 10013, 12:57→13:10 UTC) était passager : relance 39036346217 et déploiement 39036453488 verts.
 
 ## 2026-10-17 13:05 UTC — Audit Cloudflare : les 4 portes VÉRIFIÉES FERMÉES EN LIGNE
 - Déploiements publics verts : coffre-r2 (nouveau robot public), kdmc-vente, apex-auth-worker, cmc-parser-proxy, routeur (coffre-fort v1.0.3).

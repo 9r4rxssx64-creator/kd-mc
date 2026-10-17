@@ -6,6 +6,11 @@
      · une autre personne → sa propre alerte, même juste après (pas avalée par le frein des messages) ;
      · les messages ordinaires gardent leur comportement (titre 💬, frein de 12 s). */
 import mod from './worker.js';
+import { createHmac } from 'node:crypto';
+/* 17.10 (audit Cloudflare, lot 2) : /__notify-kevin exige une session du domaine — les pages l'envoient (cookie). */
+const b64 = (x) => Buffer.from(x).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const _pl = b64(JSON.stringify({ u: 'u-test', n: 'Test', c: 1, v: 0, iat: Date.now(), exp: Date.now() + 1e9 }));
+const PASS = _pl + '.' + b64(createHmac('sha256', 'sec').update(_pl).digest());
 
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ✅ ' + m)) : (fail++, console.log('  ❌ ' + m)); };
@@ -18,12 +23,12 @@ globalThis.fetch = async (req, init) => {
 };
 const kv = new Map();
 const env = {
-  KDMC_PUSH_URL: 'https://push.test', KDMC_PUSH_TOKEN: 'jeton-push',
+  KDMC_SSO_SECRET: 'sec', KDMC_PUSH_URL: 'https://push.test', KDMC_PUSH_TOKEN: 'jeton-push',
   ACCOUNTS: { get: async (k) => kv.get(k) ?? null, put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } },
 };
 const ctx = { waitUntil() {} };
 const alerte = async (host, corps) => {
-  const r = await mod.fetch(new Request('https://' + host + '/__notify-kevin', { method: 'POST', headers: { 'content-type': 'application/json', host }, body: JSON.stringify(corps) }), env, ctx);
+  const r = await mod.fetch(new Request('https://' + host + '/__notify-kevin', { method: 'POST', headers: { 'content-type': 'application/json', host, authorization: 'Bearer ' + PASS }, body: JSON.stringify(corps) }), env, ctx);
   return r.json();
 };
 

@@ -1,0 +1,69 @@
+name: Vérif RÉELLE — Messages comme Kevin (iPhone, connecté en admin, boîte + tableau de bord)
+
+# Kevin 17.10.2026 : « Connecte-toi réel comme moi… » puis « Utilise le gratuit toujours ». Le code admin vient du SECRET (empreinte, jamais écrite ni journalisée) et part
+# au DOMAINE (/__admin/login), comme quand Kevin le tape. Vrai Chromium au format iPhone 13. Le robot ouvre le portail, touche le bandeau 📬 (atterrissage direct sur la
+# conversation), contrôle la liste « Tous » (que de vrais messages, classés) et l'aperçu du tableau de bord. LECTURE seule : toute écriture dans la boîte de Kevin
+# (« lu », répondre, valider…) est absorbée — ouvrir sa boîte ne change rien à ce qu'il voit en rouge.
+# AU DÉPÔT PUBLIC (minutes gratuites et illimitées, 0 minute du coffre) : un journal public se lit par tout le monde et la boîte contient les noms de ses collègues →
+# SANS_NOMS=1 : ni nom, ni clé de conversation, ni capture, ni dépôt de branche ; seulement des nombres et des verdicts (en annotations). À la main seulement, jamais de cron.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verif-live-messages
+  cancel-in-progress: false
+
+jobs:
+  verif:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Messages, connecté en admin, sur le vrai domaine (iPhone) — nombres seulement
+        id: robot
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          SANS_NOMS: "1"
+          CAPTURES: /tmp/captures
+        # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee` (toujours 0) et un robot qui dit « ÉCHEC » ressortirait vert.
+        shell: bash -euo pipefail {0}
+        run: |
+          set +e
+          stdbuf -oL -eL node tests/verif-live-messages.mjs 2>&1 | tee /tmp/verif-messages.log
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Rapport lisible depuis l'agent (annotations, nombres seulement)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/verif-messages.log ] || { echo "::notice title=Vérif Messages::(pas de journal : rien n'a tourné)"; exit 0; }
+          grep -aE '✅|❌|⚠|ℹ️|=== VÉRIF|^   ↳' /tmp/verif-messages.log \
+            | grep -avE 'code admin|pinhash|PIN_HASH' | sed -E 's/[0-9a-f]{16,}/…/g' \
+            | head -48 > /tmp/rap.txt || tail -40 /tmp/verif-messages.log > /tmp/rap.txt
+          split -l 12 -d /tmp/rap.txt /tmp/bl_
+          n=0
+          for f in /tmp/bl_*; do
+            n=$((n+1))
+            msg=$(sed -e 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::notice title=Vérif Messages ${n}::${msg}"
+          done
+          echo "::notice title=Vérif Messages bilan::${n} bloc(s) publiés en annotations"
+
+      - name: Verdict
+        if: always()
+        run: test "${{ steps.robot.outputs.rc }}" = "0"

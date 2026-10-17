@@ -59,6 +59,9 @@ fichiers touchés) avant de proposer.
   un secret au client.
 - **Boutiques** : jamais valider un paiement sans preuve ; allowlist CORS du worker de
   commande doit inclure les origins `*.kd-mc.com` ; pas d'avis clients fabriqués sur une vraie boutique.
+- **Comptes du domaine** : la création passe par le portail (`/__sso/issue`) et la validation se fait **par mail** (lien signé,
+  `/__sso/mail/confirmer`) depuis le 17.10.2026 — jamais WhatsApp, jamais « l'admin valide à la main » comme chemin normal
+  (c'est le secours). Une app n'invente pas sa propre inscription.
 - **Runtime > lecture** : un bug se prouve en CHARGEANT la vraie page (voir les workflows
   `audit-live.yml`, `pages-smoke.yml`, `*-e2e.yml`), pas en lisant le code.
 

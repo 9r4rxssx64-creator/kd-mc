@@ -2377,6 +2377,27 @@
       "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "validation-par-mail-partout": {
+      "titre": "Validation par mail : règle écrite partout",
+      "branche": "claude/validation-par-mail-partout",
+      "sujet": "règle + écrans/alertes + garde docs ; portail v1.0.70, admin v2.7.3",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "mail-en-ligne": {
+      "titre": "Docs : mail en ligne (fusionnée #4752)",
+      "branche": "claude/mail-en-ligne",
+      "sujet": "documents seulement",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "fusionnée #4752"
     }
   },
   "messages": [

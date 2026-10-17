@@ -82,7 +82,7 @@
     { t: 'Lire et répondre aux messages', k: 'message boite repondre lire mail whatsapp', go: 'boite' },
     { t: 'Valider une inscription', k: 'inscription valider accepter nouveau compte cmcteams', go: '#tb-attente' },
     { t: 'Accepter ou refuser un code', k: 'code valider accepter refuser connexion inconnue', go: '#tb-attente' },
-    { t: 'Comptes du domaine à valider', k: 'whatsapp telephone inscription accepter refuser', go: '#tb-attente' },
+    { t: 'Comptes en attente de leur mail de confirmation', k: 'mail inscription accepter refuser attente', go: '#tb-attente' },
     { t: 'Voir qui est connecté', k: 'connecte en ligne presence qui', go: '#presence' },
     { t: 'Fiche d\'une personne', k: 'fiche client compte personne appareil lieu', go: '#list' },
     { t: 'Où une personne peut aller (périmètre)', k: 'perimetre acces app bloquer fermer autoriser', go: '#list' },
@@ -158,7 +158,7 @@
       { id: 'messages', l: 'Messages non lus', n: b ? (b.nonLus || 0) : null, s: b && b.nonLusAlertes ? '+ ' + b.nonLusAlertes + ' alerte(s)' : 'toutes les apps' },
       { id: 'inscriptions', l: 'Inscriptions en attente', n: b ? (b.inscriptions || []).length : null, s: 'CMCteams' },
       { id: 'codes', l: 'Codes à valider', n: b ? (b.codes || []).length : null, s: 'appareil inconnu' },
-      { id: 'sansWhatsapp', l: 'Comptes du domaine à valider', n: lAdmin, s: 'à accepter ou refuser', cache: !b || lAdmin === null },
+      { id: 'sansWhatsapp', l: 'Comptes en attente de leur mail', n: lAdmin, s: 's\'ouvrent seuls au clic · ou ouvre/refuse ici', cache: !b || lAdmin === null },
       { id: 'livrer', l: 'Ventes à livrer', n: live && live.file ? (live.file.n || 0) : (!liveLu && inst && inst.livrer != null ? inst.livrer : null),
         s: live ? (live.intentions && live.intentions.n ? live.intentions.n + ' panier(s) ouvert(s)' : 'file à valider') : (liveLu ? 'caisse injoignable' : 'lecture de la caisse…') }
     ];

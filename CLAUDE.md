@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 223 règles — le texte de Kevin, une par une
+## 📜 Les 224 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -952,6 +952,10 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ### 🎚 RÈGLE ABSOLUE — LE BON MODÈLE POUR CHAQUE TRAVAIL, TOUJOURS, PARTOUT (Kevin 2026-10-15, ABSOLUE)
 **« Utilise auto le model adapté au travail demandé toujours partout »** — Kevin 2026-10-15 (après « quand le travail est compliqué, tu changes de modèle automatiquement ? »).
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-le-bon-modèle-pour-chaque-travail-toujours-partout-kevin-2026-10-15-absolue)
+
+### ✉️ RÈGLE ABSOLUE — LA VALIDATION DES INSCRIPTIONS SE FAIT PAR MAIL, PARTOUT : PLUS DE WHATSAPP, ET LA MAIN DE KEVIN N'EST QUE LE SECOURS (Kevin 2026-10-17, ABSOLUE)
+**« B »** (confirmation par mail, après « Non pas d'autre num ») puis **« Mets au courant tes autres branches, toutes les branches, marque-le dans tous les dossiers pour que tout le monde soit […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-la-validation-des-inscriptions-se-fait-par-mail-partout-plus-de-whatsapp-et-la-main-de-kevin-nest-que-le-secours-kevin-2026-10-17-absolue)
 
 ### 🧪 RÈGLE ABSOLUE — JE TESTE TOUT MOI-MÊME, EN RÉEL, À LA PLACE DE KEVIN : JAMAIS « TOUCHE ICI ET ENVOIE-MOI LA CAPTURE » (Kevin 2026-10-17, ABSOLUE)
 **« Test tout toi réel toujours à la place »** — Kevin 2026-10-17 (après que je lui ai donné, comme « action 3 », les étapes pour tester Bee sur son iPhone : « touche 🐝 → 🩺 Tester Bee → […]

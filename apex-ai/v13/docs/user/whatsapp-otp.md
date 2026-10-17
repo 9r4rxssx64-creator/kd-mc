@@ -1,5 +1,7 @@
 # Validation WhatsApp OTP
 
+> ⚠️ **Dépassé depuis le 17.10.2026** : les comptes du domaine (Apex compris) se créent sur le portail kd-mc.com et se confirment **par mail** (lien « Confirme ton compte », 48 h). WhatsApp n'est plus le chemin ; la validation par l'admin n'est que le secours. Voir `CLAUDE-HISTOIRE.md` § « LA VALIDATION DES INSCRIPTIONS SE FAIT PAR MAIL ».
+
 Apex utilise WhatsApp pour la validation client (alternative au SMS, gratuit et international).
 
 ## Principe

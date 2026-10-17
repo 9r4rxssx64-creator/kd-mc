@@ -260,6 +260,8 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/admin-ouverture-rapide` | 16.10 | Audit Apex 16.10 : bulles, bouton CSP, règles Firebase ax_pin fermées (autre session) | `audit-apex-1610` |
 | `claude/apex-public-1610` | 16.10 | Apex 372→373 publiés par le dépôt public (0 minute du coffre) ; règles Firebase `ax_pin_` fermées ; guichet `/pin/init` — fusionnée | `audit-apex-1610` |
 | `claude/apex-suite-1610` | 16.10 | Apex 374 : 46 tests figés remis à la règle « gratuit d'abord » ; garde apex-passerelle 5b (copie servie = source) — fusionnée | `audit-apex-1610` |
+| `claude/validation-par-mail-partout` | 17.10 | « La validation se fait par mail » écrit dans tous les dossiers + écrans/alertes admin (portail v1.0.70, admin v2.7.3), garde `test:validation-par-mail-docs`, message m233 à toutes | `validation-par-mail-partout` |
+| `claude/mail-en-ligne` | 17.10 | Documents : mail en ligne, vérifié réel — fusionnée (#4752) | `mail-en-ligne` |
 | `claude/apex-378-capture-kevin` | 16.10 | Apex 378 : étiquette de version dans la rangée de saisie du chat, erreur récupérable quand la clé est refusée et la passerelle gratuite muette (PR #4693) — fusionnée | `pages-nettoyage-compte` |
 | `claude/apex-robot-comme-kevin` | 17.10 | Robot « Apex comme Kevin » (connecté en admin par le domaine, iPhone, « Test ») + sabotages prouvés | `apex-robot-comme-kevin` |
 | `claude/apex-379-sans-bulle` | 17.10 | Apex 379 : plus de bulle « Proxy Cloudflare activé » (vue par le robot) | `apex-379-sans-bulle` |

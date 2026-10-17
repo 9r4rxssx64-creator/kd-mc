@@ -305,7 +305,7 @@
     z.id = 'bf-inscriptions-admin';
     if (!Array.isArray(L) || !L.length) { z.hidden = true; return z; }
     z.appendChild(el('h3', 'bf-ins-t', '🪪 Comptes du domaine à valider (' + L.length + ')'));
-    z.appendChild(aide('Ces personnes attendent ton accord pour ouvrir leur compte. Si tu reconnais la personne (son appareil, sa ville, son opérateur), accepte : son compte s\'ouvre. Sinon refuse.'));
+    z.appendChild(aide('Ces personnes ont reçu un mail de confirmation : dès qu\'elles le touchent, leur compte s\'ouvre tout seul et elles disparaissent d\'ici. Tu n\'as rien à faire. Si tu reconnais quelqu\'un (appareil, ville, opérateur), tu peux l\'ouvrir tout de suite ; si c\'est louche, refuse.'));
     L.forEach(function (c) {
       var k = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
       h.appendChild(el('div', 'bf-de', (c.nom || '?') + ' (' + (c.uid || '?') + ')'));

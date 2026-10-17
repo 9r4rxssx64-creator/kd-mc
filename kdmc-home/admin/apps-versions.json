@@ -1,14 +1,14 @@
 {
  "_doc": "Généré par tools/admin/apps-versions.mjs — relevé dans le dépôt, pas en direct.",
- "genere": "2026-10-16",
+ "genere": "2026-10-17",
  "apps": {
   "kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.67"
+   "version": "v1.0.70"
   },
   "www.kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.67"
+   "version": "v1.0.70"
   },
   "cmcteams.kd-mc.com": {
    "page": "index.html",
@@ -16,11 +16,11 @@
   },
   "apex-ai.kd-mc.com": {
    "page": "apex-ai-v13/index.html",
-   "version": "v13.4.371"
+   "version": "v13.4.379"
   },
   "apex-chat.kd-mc.com": {
    "page": "messaging-app/index.html",
-   "version": "v1.1.307"
+   "version": "v1.1.318"
   },
   "la-detente.kd-mc.com": {
    "page": "la-detente/index.html",
@@ -28,7 +28,7 @@
   },
   "chez-lolo.kd-mc.com": {
    "page": "shops/chez-lolo/index.html",
-   "version": "v2.0.18"
+   "version": "v2.0.19"
   },
   "dashboard.kd-mc.com": {
    "page": "shops/dashboard/index.html",
@@ -40,7 +40,7 @@
   },
   "coffre.kd-mc.com": {
    "page": "coffre-fort/index.html",
-   "version": "v1.0.2"
+   "version": "v1.0.3"
   },
   "departs.kd-mc.com": {
    "page": "tools/departs/index.html",
@@ -60,7 +60,7 @@
   },
   "autorisations.kd-mc.com": {
    "page": "tools/approvals/index.html",
-   "version": "v1.3.1"
+   "version": "v1.3.2"
   },
   "arbre.kd-mc.com": {
    "page": "arbre/index.html",
@@ -68,7 +68,7 @@
   },
   "lingua.kd-mc.com": {
    "page": "lingua/index.html",
-   "version": "v2.141.0"
+   "version": "v2.142.1"
   },
   "studio.kd-mc.com": {
    "page": "tools/crea-studio/index.html",

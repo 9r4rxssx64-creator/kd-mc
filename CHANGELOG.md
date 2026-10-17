@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Portail v1.0.70 · Admin v2.7.3 · routeur (2026-10-17 — « la validation se fait par mail maintenant », marqué partout)
+- Alerte push et journal du routeur parlent du mail de confirmation (plus de « sans WhatsApp ») ; boîte admin : « dès qu'elles touchent le mail, leur compte s'ouvre tout seul, rien à faire » ; tableau admin : « Comptes en attente de leur mail ». Règle écrite dans tous les dossiers (CLAUDE-HISTOIRE, règle de session, AGENTS.md, NOTES_USER, ETAT-DU-MOMENT, mémoire, Apex). Garde `test:validation-par-mail-docs`.
+
 ## Portail v1.0.69 · routeur (2026-10-17 — « B » : confirmation de l'inscription par MAIL, plus de WhatsApp ni d'attente de Kevin)
 - **Inscription** : un champ « E-mail (il confirme ton compte) » après le téléphone. Le domaine envoie UN mail (EmailJS, gratuit) avec un lien signé 48 h ; le lien `GET /__sso/mail/confirmer?t=…` ouvre le compte tout seul (fiche validée, file de Kevin vidée, journal `compte_ouvert_mail`, push à Kevin). L'écran « ton compte attend l'administrateur » dit à quelle adresse masquée le mail est parti et s'ouvre seul après le clic.
 - **Sécurité** : jeton HMAC (clé des sessions), expiré/forgé/tronqué/autre adresse → refus sans rien changer ; compte refusé ou banni jamais rouvert par un mail ; ni code ni session dans le mail. Sans clé EmailJS ou `KDMC_MAIL_CONFIRME=0` : comportement d'avant (Kevin valide). Garde `test:mail-confirme` (34 ✅).

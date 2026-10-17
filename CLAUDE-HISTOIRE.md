@@ -12224,6 +12224,16 @@ Honnêtement : une session ne peut pas changer son propre modèle. Ce qui peut �
 - **Où c'est écrit** : `.claude/rules/modeles.md` (chargé par toute session du dépôt).
 - **Garde** : `npm run test:modele-adapte` (dans `test:ci`, prouvé discriminant : `SABOTAGE=1`).
 
+## ✉️ RÈGLE ABSOLUE — LA VALIDATION DES INSCRIPTIONS SE FAIT PAR MAIL, PARTOUT : PLUS DE WHATSAPP, ET LA MAIN DE KEVIN N'EST QUE LE SECOURS (Kevin 2026-10-17, ABSOLUE)
+
+**« B »** (confirmation par mail, après « Non pas d'autre num ») puis **« Mets au courant tes autres branches, toutes les branches, marque-le dans tous les dossiers pour que tout le monde soit au courant que la validation se fait par mail maintenant. Et mets tout en place. »** — Kevin 2026-10-17
+
+- **La règle** : toute app du domaine crée ses comptes par la porte unique `/__sso/issue` (portail kd-mc.com). À l'inscription, l'e-mail est **obligatoire** ; le domaine envoie UN mail « Confirme ton compte kd-mc.com » (lien signé HMAC, 48 h) ; `GET /__sso/mail/confirmer?t=…` ouvre le compte tout seul (fiche validée `valide_mail_at`, file de Kevin vidée, journal `compte_ouvert_mail`, push « compte ouvert par mail »). **Kevin n'a rien à toucher.** Sa validation à la main (Mes messages) reste le SECOURS : mail non reçu, personne sans e-mail.
+- **WhatsApp / Meta : abandonné** (exige un deuxième numéro que Kevin n'a pas). Le code reste (interrupteurs `WA_*`), mais aucun document, aucun écran, aucune réponse ne présente WhatsApp ni « Kevin valide à la main » comme le chemin normal.
+- **Pour une session** : rien à coder côté app (le portail porte le champ et le domaine fait le reste) ; un écran d'attente lit `whoami.mail_attente` (adresse masquée) ; interrupteur `KDMC_MAIL_CONFIRME=0` coupe l'envoi ; clé `EMAILJS_PRIVATE_KEY` posée au routeur par son déploiement (fail-open : sans clé, comportement d'avant). Gratuit (EmailJS, 200 mails/mois, même service que les boutiques).
+- **Où c'est écrit** : `.claude/rules/inscription-mail.md` (chargé par toute session), `AGENTS.md` (agents extérieurs), `NOTES_USER.md` (modèle d'identité), `ETAT-DU-MOMENT.md`, mémoire compacte, pipeline (message m233 à toutes), Apex (`apex-ai/v13/docs/user/whatsapp-otp.md` : note en tête).
+- **Garde** : `test:mail-confirme` (34 ✅) + `test:validation-par-mail-docs` (les dossiers vivants ne présentent plus WhatsApp ni la main de Kevin comme chemin normal).
+
 ## 🧪 RÈGLE ABSOLUE — JE TESTE TOUT MOI-MÊME, EN RÉEL, À LA PLACE DE KEVIN : JAMAIS « TOUCHE ICI ET ENVOIE-MOI LA CAPTURE » (Kevin 2026-10-17, ABSOLUE)
 
 **« Test tout toi réel toujours à la place »** — Kevin 2026-10-17 (après que je lui ai donné, comme « action 3 », les étapes pour tester Bee sur son iPhone : « touche 🐝 → 🩺 Tester Bee → envoie-moi la capture »).

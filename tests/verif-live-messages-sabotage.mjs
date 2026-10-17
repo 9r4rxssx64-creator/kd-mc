@@ -5,6 +5,7 @@
  *   SABOTAGE=alertes      → le code servi mélange les alertes dans « Tous » : « la liste Tous montre … vrais messages » rougit
  *   SABOTAGE=tri          → le classement est neutralisé : « l'ordre affiché suit le classement » rougit
  *   SABOTAGE=atterrissage → l'ouverture ne saute plus sur la conversation : « ATTERRIT sur la conversation » rougit
+ *   SABOTAGE=sansdonnee   → la boîte ne répond pas (401) : « la boîte de Kevin répond » ET « le portail a LU la boîte » rougissent (jamais de vert à vide)
  * npm run test:verif-live-messages-robot-sabotage */
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, existsSync } from 'node:fs';
@@ -28,5 +29,7 @@ const b = robot({ SABOTAGE: 'tri' });
 dis(b.code === 1 && /❌ l'ordre affiché suit le classement/.test(b.out), 'SABOTAGE=tri → « l\'ordre affiché suit le classement » rougit');
 const c = robot({ SABOTAGE: 'atterrissage' });
 dis(c.code === 1 && /❌ un toucher sur le bandeau ATTERRIT/.test(c.out), 'SABOTAGE=atterrissage → « ATTERRIT sur la conversation » rougit');
+const d = robot({ SABOTAGE: 'sansdonnee' });
+dis(d.code === 1 && /❌ la boîte de Kevin répond/.test(d.out) && /❌ le portail a LU la boîte/.test(d.out), 'SABOTAGE=sansdonnee → la boîte muette fait rougir « répond » ET « a LU la boîte » (pas de vert à vide)');
 console.log(`\n${ok} ✅ / ${ko} ❌\n`);
 process.exit(ko ? 1 : 0);

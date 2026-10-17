@@ -382,7 +382,8 @@
   }
 
   function dessinerMessages(D) {
-    var e = JSON.stringify([D.nonLus, (D.messages || []).slice(0, 4).map(function (m) { return [m.cle, m.ts, m.nonLus]; }), (D.sources || []).map(function (s) { return [s.id, s.nonLus, s.etat]; })]);
+    var vrais = (D.messages || []).filter(function (m) { return m.source !== 'alertes'; });   /* 17.10 (Kevin : « il ne doit y avoir que des messages ici ») : les connexions et alertes ne sont pas des messages — elles restent dans la pastille 🔔 et dans la boîte */
+    var e = JSON.stringify([D.nonLus, vrais.slice(0, 4).map(function (m) { return [m.cle, m.ts, m.nonLus]; }), (D.sources || []).map(function (s) { return [s.id, s.nonLus, s.etat]; })]);
     if (e === empMess) return; empMess = e;
     var z = document.getElementById('tb-messages'); if (!z) return;
     z.textContent = '';
@@ -403,7 +404,7 @@
     });
     if (srcs.childNodes.length) z.appendChild(srcs);
     var liste = document.createElement('div'); liste.className = 'mess';
-    (D.messages || []).slice(0, 4).forEach(function (m) {
+    vrais.slice(0, 4).forEach(function (m) {
       var b = document.createElement('button'); b.type = 'button'; b.className = m.nonLus ? 'nv' : '';
       var q = document.createElement('div'); q.className = 'qui'; q.textContent = (m.nonLus ? '● ' : '') + (m.de || '?') + ' · ' + String(m.app || '').replace('.kd-mc.com', '');
       var t = document.createElement('div'); t.className = 'quoi'; t.textContent = m.texte || '';

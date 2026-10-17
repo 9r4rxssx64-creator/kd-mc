@@ -1884,8 +1884,8 @@
       "branche": "claude/docs-complets",
       "sujet": "Arbre v3.108→v3.116, admin comptes bloqués/Personnes attendues, recherches Le Dren + famille de Yann",
       "surfaces": [],
-      "etat": "actif",
-      "maj": "2026-10-16",
+      "etat": "textes de l'arbre réécrits + faits remis ; contrôle --avant",
+      "maj": "2026-10-17",
       "attend_kevin": "Yann : Ouvrir dans l'admin ; actes Le Dren/Monaco/Beausoleil (KEVIN_ACTIONS_TODO 16.10)",
       "attend_session": null,
       "note": "Arbre en ligne v3.116 ; routeur avec correctifs Yann déployé par le dépôt public (vérifié 19h UTC)"
@@ -2211,7 +2211,7 @@
       "etat": "actif",
       "maj": "2026-10-17",
       "attend_kevin": null,
-      "attend_session": null,
+      "attend_session": "cloudflare-inventaire : URGENT avant expiration de ta clé Cloudflare (compte ffaca6f3…) : inventaire complet + tri",
       "note": "17.10 12:18 UTC : fuite Pages FERMÉE (kdmc-site 103 déploiements + kdmc0 supprimés sur ffaca6f3…, adresses → 000). Outil tools/cloudflare/pages-supprimer.mjs, branche claude/pages-supprimer-outil"
     },
     "pages-supprimer-outil": {
@@ -2238,6 +2238,16 @@
       "titre": "Robot tester Bee comme Kevin",
       "branche": "claude/bee-tester-robot-v2",
       "sujet": "Règle « je teste tout moi-même à la place » + robot coffre-bee-tester (lecture seule)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "cloudflare-inventaire": {
+      "titre": "Inventaire sécurité Cloudflare (2 comptes)",
+      "branche": "claude/cloudflare-inventaire",
+      "sujet": "outil lecture seule, robot public, rapport",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",
@@ -5887,6 +5897,15 @@
       "sujet": "RÈGLE ABSOLUE : se connecter réellement partout (Kevin, 3e fois)",
       "corps": "Kevin 17.10 : « Se connecter réellement partout, note-le pour toutes tes branches, doc.md etc. ». C'est maintenant une règle absolue dans CLAUDE.md (règle d'or 4 + entrée 🔌) et dans AGENTS.md. Pour toi : ta session atteint kd-mc.com (le navigateur est préparé au démarrage). Après chaque mise en ligne → npm run reel <pages touchées>, lire la version servie, finir par « Vérifié réel / Non vérifié ». Devant une capture de Kevin : lire la version de la pastille d'abord. Zones réservées (admin prouvé, arbre, CMCteams connecté) → voir-comme-kevin.yml au dépôt public. Si une de tes fiches/docs dit « domaine injoignable », corrige-la (garde test:reel-outil 7b).",
       "ts": "2026-10-17 11:15",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m230-cloudflare-inventair",
+      "de": "cloudflare-inventaire",
+      "a": "pages-nettoyage-compte",
+      "sujet": "URGENT avant expiration de ta clé Cloudflare (compte ffaca6f3…) : inventaire complet + tri",
+      "corps": "Kevin 17.10 : vérifier/sécuriser/trier les 2 comptes Cloudflare ; ta clé du compte ffaca6f3… périme demain et toi seule l'as. Depuis main : CLOUDFLARE_API_TOKEN=<ta clé> node tools/cloudflare/inventaire-compte.mjs --compte ffaca6f306a953f82834db0970f300f0 --json audit/prive/cf-ffaca6f3.json (lecture seule). Puis tri : app privée encore publique → supprimer (liste blanche) ; DNS orphelins → supprimer ; workers/KV/D1/R2 morts → lister pour Kevin (sauvegarde avant tout effacement) ; jetons sans expiration → révoquer sauf celui des robots ; rapport dans audit/prive/ + MEMO + KEVIN_ACTIONS_TODO. Le compte principal 425377ca… est fait de mon côté.",
+      "ts": "2026-10-17 12:35",
       "etat": "ouvert"
     }
   ]

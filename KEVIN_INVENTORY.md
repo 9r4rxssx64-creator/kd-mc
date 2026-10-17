@@ -1,5 +1,11 @@
 # 📁 KEVIN_INVENTORY.md — Tous tes codes, fichiers, liens (auto-mis à jour)
 
+### ☁️ Cloudflare, tes 2 comptes : inventaire sécurité (17.10.2026)
+
+- **Ce que ça fait** : liste tout ce qui est sur un compte Cloudflare (sites, robots, bases, stockages, adresses, clés) sans jamais rien modifier, et signale ce qui fuit.
+- **Fichiers créés** : [`tools/cloudflare/inventaire-compte.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/cloudflare/inventaire-compte.mjs) · [`.github/workflows/cloudflare-inventaire.yml`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.github/workflows/cloudflare-inventaire.yml) · [`tests/verify-cf-inventaire.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/verify-cf-inventaire.mjs)
+- **Test** : `npm run test:cf-inventaire`
+
 ### 📂 Fiches repliées partout + réel automatique (17.10.2026)
 
 - **Arbre v3.117** (https://arbre.kd-mc.com) : listes d'actes et de sources repliées · **admin v2.7.1** et **portail v1.0.68** plus lisibles.
@@ -37,7 +43,7 @@
 
 - Chaque fiche est relue et réécrite à partir de ses documents : un fait prouvé s'écrit sans réserve, ce qui manque tient en une ligne « 🔎 À retrouver », les décès restent sobres.
 - **Fichiers créés** : [`tools/arbre/session/textes-controle.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tools/arbre/session/textes-controle.mjs) · [`tests/arbre-textes.test.mjs`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/tests/arbre-textes.test.mjs) · [`.claude/rules/textes-fiches.md`](https://github.com/9r4rxssx64-creator/CMCteams/blob/main/.claude/rules/textes-fiches.md)
-- **Tests** : `npm run test:arbre-textes`
+- **Tests** : `npm run test:arbre-textes` (11 contrôles, dont `--avant` : aucune date ni numéro d'acte ne disparaît à une réécriture)
 - **Tes apps** : https://arbre.kd-mc.com
 
 ### 🌳 Arbre v3.110 → v3.116 + admin + « Qui se connecte » (16.10.2026)

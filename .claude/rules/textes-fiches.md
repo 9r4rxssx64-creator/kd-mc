@@ -5,3 +5,4 @@
 - Décès : une phrase sobre, une fois ; jamais de recherche négative sur un décès, jamais d'insistance.
 - Style petite histoire (tools/arbre/consignes/HISTOIRES.md), neutre, sans répétition, sans bruit de travail.
 - Contrôle : `node tools/arbre/session/textes-controle.mjs <export.json>` doit ne rien signaler.
+- Avant d'écrire une réécriture : `node tools/arbre/session/textes-controle.mjs <export-avec-nouvelles-notes.json> --avant <export-base.json>` — aucune date / aucun numéro d'acte de l'ancienne note ne doit disparaître (17.10 : des faits de 84 fiches avaient sauté à la réécriture, remis le jour même).

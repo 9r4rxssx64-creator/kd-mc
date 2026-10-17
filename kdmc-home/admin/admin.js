@@ -542,7 +542,7 @@
     var x = document.createElement('button'); x.type = 'button'; x.textContent = '✕ Tout voir'; x.onclick = function () { filtrerJournal(''); };
     b.appendChild(t); b.appendChild(x);
   }
-  window.kdmcFiltreJournal = filtrerJournal;
+  if (typeof window !== "undefined") window.kdmcFiltreJournal = filtrerJournal;
   function audRow(e) {
     return '<div class="tlrow"' + (e.uid ? ' data-uid="' + esc(e.uid) + '" data-va="fiche:' + esc(e.uid) + '"' : '') + '>' + esc(dt(e.ts)) + ' · <b>' + esc(AUD_EV[e.ev] || e.ev) + '</b>'
       + (e.uid ? ' · ' + esc(e.uid) : '') + (e.detail ? ' · ' + esc(e.detail) : '') + (e.text ? ' · ' + esc(e.text) : '')

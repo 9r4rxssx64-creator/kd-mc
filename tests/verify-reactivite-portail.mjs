@@ -273,9 +273,9 @@ try {
   await page.waitForSelector('#a-traiter', { timeout: 20000 });
   const tCoq = Date.now() - t0;
   const tCoqP = await page.evaluate(() => performance.now());
-  await page.waitForSelector('#commerce-app .kpis', { timeout: 20000 }).catch(() => {});
+  await page.waitForSelector('#commerce-app .kpis', { state: 'attached', timeout: 20000 }).catch(() => {});
   const tCom = Date.now() - t0; const tComP = await page.evaluate(() => performance.now());
-  await page.waitForSelector('#presence', { timeout: 20000 }).catch(() => {});
+  await page.waitForSelector('#presence', { state: 'attached', timeout: 20000 }).catch(() => {});
   const tPres = Date.now() - t0; const tPresP = await page.evaluate(() => performance.now());
   await dodo(RETARD + 500);
   const apA = await page.evaluate(() => window.__appels);

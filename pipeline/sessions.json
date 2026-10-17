@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-16",
+  "maj": "2026-10-17",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -2132,6 +2132,16 @@
       "attend_session": null,
       "note": "PR #4711"
     },
+    "compte-ouvrir-robot": {
+      "titre": "Robot ouvrir un compte (Yann)",
+      "branche": "claude/compte-ouvrir-robot",
+      "sujet": "Kevin 17.10 « fais toutes les actions auto » : coffre-compte-ouvrir.yml + compte-ouvrir.mjs",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
     "fiches-fermees": {
       "titre": "Fiches repliées + vérification réelle depuis la session",
       "branche": "claude/fiches-fermees",
@@ -2139,6 +2149,27 @@
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-16",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "publication-auto-cron": {
+      "titre": "Publication automatique vers le dépôt public (décision b, cron outlook)",
+      "branche": "claude/publication-auto-cron",
+      "sujet": "cron kdmc-outlook → publier-depuis-coffre.yml au public + robots-a-relancer ; 0 minute du coffre",
+      "surfaces": [],
+      "etat": "termine",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null,
+      "note": "prouvé réel : tick 00h00 UTC → run public 38984287765 (déjà à jour)"
+    },
+    "tests-admin-rouges": {
+      "titre": "Répare 3 tests rouges de l'admin",
+      "branche": "claude/tests-admin-rouges",
+      "sujet": "invite, réactivité, tuiles",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
       "attend_kevin": null,
       "attend_session": null
     }

@@ -25,7 +25,7 @@ const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async 
 const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', /* ce test prouve AUTRE chose que la porte totale (voir compte-obligatoire.test.mjs) */ KDMC_CODE_OBLIGATOIRE: '0', /* …ni que le code obligatoire (8.10 : porte-enveloppe.test § 5c) */ ACCOUNTS };
 const ctx = { waitUntil() {} };
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-const jeton = (uid, opts = {}) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: opts.verified ? 1 : 0, iat: opts.iat || Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
+const jeton = (uid, opts = {}) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: opts.verified ? 1 : 0, iat: opts.iat || Date.now() - 600000, exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
 
 /* L'hébergeur simulé : il sert tout (comme Cloudflare Pages aujourd'hui) et on compte ses appels. */
 let amont = 0;

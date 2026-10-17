@@ -56,7 +56,7 @@ ok(kvEcrit === 0, '11. zéro écriture KV (le plafond gratuit de 1 000/jour est 
 /* le routeur envoie le battement dans whoami, sans jamais casser la connexion */
 const w = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/import \{[^}]*presenceBattre[^}]*\} from '\.\/boite\.js'/.test(w), '12. le routeur importe la présence');
-ok(/await enrich\(env, request, s\.uid, s\.name, s\.cgu, acc\);\s*\n\s*try \{ await presenceBattre\(env\.CERCLE_DB, s\.uid, s\.name, app, Date\.now\(\)\); \} catch/.test(w), '13. /__sso/whoami (le battement de chaque app ouverte) range la présence, en « try » : une panne de D1 ne casse jamais une connexion');
+ok(/await enrich\(env, request, s\.uid, s\.name, s\.cgu, acc(, \{ sansCreation: ficheEnCreation\(acc, s\) \})?\);\s*\n\s*try \{ await presenceBattre\(env\.CERCLE_DB, s\.uid, s\.name, app, Date\.now\(\)\); \} catch/.test(w), '13. /__sso/whoami (le battement de chaque app ouverte) range la présence, en « try » : une panne de D1 ne casse jamais une connexion');
 const portail = readFileSync(new URL('../../kdmc-home/kdmc-boite.js', import.meta.url), 'utf8');
 ok(/D\.enLigne/.test(portail) && /en ligne maintenant/.test(portail) && /data-enligne/.test(portail), '14. la fenêtre « Mes messages » du portail affiche la liste');
 console.log(`\n${pass} OK / ${fail} échec(s)`);

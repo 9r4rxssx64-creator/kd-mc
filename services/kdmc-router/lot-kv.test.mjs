@@ -7,6 +7,7 @@
      2. après vider : une écriture en fond attend la fin de la seconde (jamais de 429) ;
      3. VRAI routeur, inscription complète (e-mail + téléphone, validation par mail) : aucun 429, chaque clé écrite une fois,
         et la fiche contient TOUT (nom, cgu, téléphone, attente, mail_confirmation, e-mail) ;
+     5. fiche pas encore lisible juste après la création (KV en retard) : pass tout neuf FERMÉ dans les apps (avant : « sans fiche » = ouvert) ;
      4. sabotage : sans le lot, le même parcours prend des 429 et la fiche perd des champs → la garde est discriminante. */
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
@@ -15,6 +16,7 @@ import { schema as schemaCercle } from './cercle.js';
 import mod from './worker.js';
 
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d !== undefined ? '  → ' + JSON.stringify(d).slice(0, 300) : ''}`); };
+const UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1';
 function kvFidele() {
   const m = new Map(), derniere = new Map(), ecritures = [], refus = [];
   const kv = {
@@ -52,7 +54,7 @@ const inscrire = async (sansLot) => {
     KDMC_VALIDATION_MANUELLE: '1', EMAILJS_PRIVATE_KEY: 'cle' };
   if (sansLot) env.__lotKV = true;   // sabotage : le routeur croit déjà être dans un lot → pas de lot
   globalThis.fetch = async () => new Response('OK', { status: 200 });
-  const r = new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: { host: 'kd-mc.com', 'content-type': 'application/json', origin: 'https://kd-mc.com', 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Safari/604.1', 'cf-connecting-ip': '203.0.113.9' },
+  const r = new Request('https://kd-mc.com/__sso/issue', { method: 'POST', headers: { host: 'kd-mc.com', 'content-type': 'application/json', origin: 'https://kd-mc.com', 'user-agent': UA, 'cf-connecting-ip': '203.0.113.9' },
     body: JSON.stringify({ uid: 'lou-test', name: 'Lou Test', cgu: true, cgu_clic: true, code: '24681357', telephone: '+377 06 12 34 56', email: 'lou@example.com' }) });
   Object.defineProperty(r, 'cf', { value: { asn: 6758, city: 'Monaco', country: 'MC' } });
   const fond = []; const res = await mod.fetch(r, env, { waitUntil(p) { fond.push(p); } }); const j = await res.json(); await Promise.all(fond);
@@ -74,6 +76,30 @@ console.log('\n== 4. Sabotage : sans le lot, le même parcours perd des données
   const { F, fiche } = await inscrire(true);
   const complet = fiche && fiche.mail_confirmation && fiche.fiche && fiche.fiche.telephone && fiche.attente_admin === true; console.log('     (fiche sans lot : attente_admin=' + (fiche && fiche.attente_admin) + ', mail_confirmation=' + !!(fiche && fiche.mail_confirmation) + ', téléphone=' + !!(fiche && fiche.fiche && fiche.fiche.telephone) + ')');
   ok(F.refus.length > 0 && !complet, '4. sans lot : ' + F.refus.length + ' écriture(s) refusée(s) (429) et fiche incomplète → la garde 3 est discriminante', { refus: F.refus, complet: !!complet });
+}
+console.log('\n== 5. Fiche pas encore lisible (KV en retard) juste après la création : FERMÉ dans les apps ==');
+{
+  const { F, j } = await inscrire(false);
+  const db = d1(); await schemaCercle(db);
+  const sansFiche = new Map([...F.m].filter(([k]) => !k.startsWith('acc:')));   // le lieu voit encore « introuvable »
+  const kvRetard = { get: async (k) => (sansFiche.has(k) ? sansFiche.get(k) : null), put: async () => {}, delete: async () => {}, list: async () => ({ keys: [], list_complete: true }) };
+  const envR = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: 'x', ACCOUNTS: kvRetard, CERCLE_DB: db };
+  const who = async (host, tok) => { const r = new Request('https://' + host + '/__sso/whoami', { headers: { host, authorization: 'Bearer ' + tok, origin: 'https://' + host, 'user-agent': UA } }); return (await mod.fetch(r, envR, { waitUntil() {} })).json(); };
+  const w = await who('cmcteams.kd-mc.com', j.token);
+  ok(w.ok === false && w.reason === 'en_creation', '5. pass tout neuf, fiche introuvable : CMCteams fermé (en_creation)', w);
+  const wp = await who('kd-mc.com', j.token);
+  ok(wp.reason !== 'en_creation', '5b. le portail (réception) ne parle pas de création', wp);
+  const page = await mod.fetch(new Request('https://cmcteams.kd-mc.com/', { headers: { host: 'cmcteams.kd-mc.com', authorization: 'Bearer ' + j.token, 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': UA } }), envR, { waitUntil() {} });
+  const html = await page.text();
+  ok(/se crée/.test(html), '5c. la page de l\'app ne s\'ouvre pas (porte « se crée »)', { st: page.status, porte: page.headers.get('x-kdmc-porte'), debut: html.slice(0, 200) });
+  const { ficheEnCreation } = await import('./worker.js');
+  const payload = JSON.parse(Buffer.from(j.token.split('.')[0], 'base64url').toString());
+  ok(ficheEnCreation(null, { uid: payload.u, iat: payload.iat }) === true && ficheEnCreation(null, { uid: payload.u, iat: payload.iat }, payload.iat + 3 * 60e3) === false, '5d. une session de plus de 2 min sans fiche garde le comportement d\'avant');
+  const ecritsRetard = []; kvRetard.put = async (k) => { ecritsRetard.push(k); };
+  await who('kd-mc.com', j.token);
+  await mod.fetch(new Request('https://kd-mc.com/', { headers: { host: 'kd-mc.com', authorization: 'Bearer ' + j.token, 'sec-fetch-dest': 'document', accept: 'text/html', 'user-agent': UA } }), envR, { waitUntil() {} });
+  ok(!ecritsRetard.some((k) => k.startsWith('acc:')), '5f. portail pendant le retard : AUCUNE fiche neuve écrite par-dessus la vraie (avant : fiche recréée sans attente → compte ouvert)', ecritsRetard);
+  ok(ficheEnCreation(null, { uid: 'ci_smoke', iat: Date.now() }) === false && ficheEnCreation({ uid: 'x' }, { uid: 'x', iat: Date.now() }) === false, '5e. robot de contrôle et fiche lisible : non concernés');
 }
 console.log(`\n${pass} ✅ / ${fail} ❌\n`);
 process.exit(fail ? 1 : 0);

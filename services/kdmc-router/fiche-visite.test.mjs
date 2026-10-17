@@ -31,8 +31,9 @@ import mod from './worker.js';
 const SECRET = 'secret-de-test';
 const b64url = (s) => Buffer.from(s, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
+/* 17.10.2026 : pass de plus de 2 min par défaut — un pass tout neuf SANS fiche = « en création » (ficheEnCreation : rien n'est créé ni ouvert). */
 async function jeton(uid, nom, iat) {
-  const p = b64url(JSON.stringify({ u: uid, n: nom, c: 1, v: 0, iat: iat || Date.now(), exp: Date.now() + 3600000 }));
+  const p = b64url(JSON.stringify({ u: uid, n: nom, c: 1, v: 0, iat: iat || Date.now() - 600000, exp: Date.now() + 3600000 }));
   const k = await crypto.subtle.importKey('raw', new TextEncoder().encode(SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', k, new TextEncoder().encode(p));
   return p + '.' + Buffer.from(sig).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

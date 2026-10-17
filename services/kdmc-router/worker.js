@@ -264,6 +264,19 @@ async function chargerFermees(env, force) {
   FERMEES = { liste, t: Date.now(), kv };
   return liste;
 }
+/* 17.10.2026 (mesuré en réel) : juste après une création de compte, une lecture KV peut encore rendre « introuvable » (cache du lieu, < 60 s).
+   Or `perimetre(null)` = « sans fiche » = OUVERT (héritage) : un compte tout juste créé, encore fermé (attente du mail), serait passé.
+   Une session RÉCENTE (< 2 min), ni robot ni admin, sans fiche lisible = « en création » → fermée partout sauf le portail. Les sessions
+   plus anciennes gardent le comportement d'avant. */
+const FICHE_EN_CREATION_MS = 120000;
+export function ficheEnCreation(acc, s, now) {
+  return !acc && !!(s && s.uid) && !UID_ROBOTS_SANS_FICHE.has(s.uid) && ADMIN_UIDS.indexOf(s.uid) < 0 && ((now || Date.now()) - (Number(s.iat) || 0)) < FICHE_EN_CREATION_MS;
+}
+function perimetreS(acc, app, s) {
+  if (app && app !== 'portail' && ficheEnCreation(acc, s)) return { ok: false, raison: 'en_creation' };
+  return perimetre(acc, app);
+}
+const MSG_EN_CREATION = 'Ton compte se crée : réessaie dans quelques secondes.';
 function perimetre(acc, app, fermees) {
   if (!app) return { ok: true, raison: 'adresse_hors_domaine' };
   /* LE PORTAIL EST LA RÉCEPTION : toujours ouvert, à tout le monde. C'est par lui
@@ -1853,7 +1866,7 @@ async function porteGenerale(request, url, env, cheminCMC) {
     const acc = await accGet(env, s.uid);
     if (!revoked(acc, s)) {
       const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
-      const per = perimetre(acc, appDe(host));
+      const per = perimetreS(acc, appDe(host), s);
       const nom = host.replace(/\.kd-mc\.com$/, '').replace(/-/g, ' ');
       if (!estAdmin && (await codeManquant(env, s, acc))) {
         if (!demandeDePage(request, cheminCMC)) return new Response('Crée ton code sur kd-mc.com pour continuer.', { status: 401,
@@ -1889,7 +1902,7 @@ async function porteFermee(request, url, env, cheminCMC) {
     const acc = await accGet(env, s.uid);
     if (!revoked(acc, s)) {
       const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
-      const per = perimetre(acc, appDe(g.app));
+      const per = perimetreS(acc, appDe(g.app), s);
       if (per.ok || estAdmin) return null;                    /* connu et ouvert ici : entre */
       return ficheRefusee(g, per.raison);                     /* connu mais pas ouvert ici : pas de boucle */
     }
@@ -1927,7 +1940,7 @@ async function donneesRhFermees(request, env, cheminCMC) {
      que pour sa page — avant, 'cmcteams' en dur : une personne bloquée sur la light recevait quand même le planning, et l'inverse ouvrait
      une page sans données. Et un compte SANS code ne reçoit pas les données RH, porte totale ou pas (même règle que la page). */
   let appDemande = 'cmcteams'; try { appDemande = appDe(new URL(request.url).hostname) || 'cmcteams'; } catch { /* */ }
-  if (!estAdmin && !perimetre(acc, appDemande).ok) return refus();  /* bloqué sur cette app par l'admin : pas de planning */
+  if (!estAdmin && !perimetreS(acc, appDemande, s).ok) return refus();  /* bloqué sur cette app par l'admin : pas de planning */
   if (!estAdmin && (await codeManquant(env, s, acc))) return refus();
   if (env.ACCOUNTS && typeof env.ACCOUNTS.get === 'function') {
     let corps = null;
@@ -2045,6 +2058,7 @@ essaiPass().then(function(j){
 function ficheRefusee(g, raison) {
   const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const msg = raison === 'ferme_general' ? MSG_FERME_GENERAL : raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.'
+    : raison === 'en_creation' ? MSG_EN_CREATION
     : 'Ton compte n\'est pas encore ouvert sur cette application. Demande à l\'administrateur de l\'ouvrir.';
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>' + esc(g.nom) + ' — accès</title>'
     + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
@@ -2143,7 +2157,7 @@ async function ficheLaVisite(request, url, env, host) {
     if (s && s.uid) {
       const acc = await accGet(env, s.uid);
       if (revoked(acc, s)) return;                 // session révoquée : on ne fiche rien
-      await enrich(env, request, s.uid, s.name, s.cgu, acc, { hote: host, page: true });
+      await enrich(env, request, s.uid, s.name, s.cgu, acc, { hote: host, page: true, sansCreation: ficheEnCreation(acc, s) });
       return;
     }
     /* Porte totale (3.10) : un anonyme ne consulte plus rien (il voit la porte) → on ne le compte plus du tout. */
@@ -3117,6 +3131,9 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
      → évite une 2e lecture KV sur le chemin chaud. undefined = on lit nous-même. */
   const prev = pre !== undefined ? pre : await accGet(env, uid);
   const isNew = !prev;
+  /* 17.10.2026 : fiche « introuvable » pour un pass tout neuf = lecture KV en retard juste après la création. Créer ici une fiche NEUVE
+     écraserait la vraie (sans attente_admin → compte ouvert sans mail, téléphone perdu). L'appelant le signale : on n'écrit rien. */
+  if (isNew && opts && opts.sansCreation) return;
   /* FIL D'ACTIVITÉ (Kevin 4.10) : une page consultée par cette personne s'ajoute dans SA fiche (chemin seul, jamais les paramètres) ; les pings de présence n'en font pas. */
   if (opts && opts.page) { let chemin = ''; try { chemin = new URL(request.url).pathname; } catch { chemin = ''; } await activite.noter(env, { uid, nom: name, type: 'visite', app: host, detail: chemin || '/', appareil: appareilLabel(request.headers && request.headers.get ? request.headers.get('user-agent') : '') }); }
   /* PÉRIMÈTRE — une NOUVELLE fiche naît fermée : elle n'existe que dans l'app où la
@@ -3409,7 +3426,7 @@ async function handleSso(request, url, env, ctx) {
     if (revoked(acc, s)) return J({ ok: false, reason: 'session_revoquee' }, undefined, 401);
     const estAdmin = ADMIN_UIDS.indexOf(s.uid) >= 0 && !!s.verified;
     const app = appDe(url.host); /* l'adresse appelée (pas l'en-tête Host, absent hors navigateur) */
-    const per = perimetre(acc, app);
+    const per = perimetreS(acc, app, s);
     if (!per.ok && !estAdmin) {
       return J({ ok: false, reason: per.raison, hors_perimetre: true, app,
         message: per.raison === 'ferme_general' ? MSG_FERME_GENERAL : per.raison === 'bloque_ici' ? 'Ton accès à cette application a été fermé par l\'administrateur.' : 'Ton compte n\'est pas ouvert sur cette application.' });
@@ -3465,7 +3482,7 @@ async function handleSso(request, url, env, ctx) {
         return J({ ok: false, reason: 'tel_a_confirmer', tel_a_confirmer: true, uid: s.uid, name: s.name, app,
           message: 'Pour ouvrir ton compte, confirme ton numéro de téléphone par WhatsApp (gratuit).' });
       }
-      const per = perimetre(acc, app);
+      const per = perimetreS(acc, app, s);
       if (!per.ok && !estAdmin) {
         if (per.raison === 'attente_admin') await redeposerAttente(env, request, acc, app);
         return J({
@@ -3474,10 +3491,11 @@ async function handleSso(request, url, env, ctx) {
             ? 'Ton accès à cette application a été fermé par l\'administrateur.'
             : per.raison === 'attente_admin' ? 'Ton compte n\'est pas encore ouvert : touche le lien du mail « Confirme ton compte kd-mc.com » (regarde aussi dans les indésirables). Il s\'ouvre tout seul.'
             : per.raison === 'refuse_admin' ? 'L\'administrateur n\'a pas validé ce compte.'
+            : per.raison === 'en_creation' ? MSG_EN_CREATION
             : 'Ton compte n\'est pas ouvert sur cette application.',
         });
       }
-      await enrich(env, request, s.uid, s.name, s.cgu, acc);
+      await enrich(env, request, s.uid, s.name, s.cgu, acc, { sansCreation: ficheEnCreation(acc, s) });
       try { await presenceBattre(env.CERCLE_DB, s.uid, s.name, app, Date.now()); } catch { /* fail-open : la présence n'a jamais cassé une connexion */ }   /* 14.10 : qui est en ligne, dans toutes les apps (boîte admin) */
       /* CONNECTÉ EN PERMANENCE, DANS CHAQUE APP (Kevin 2.10 : « comme tout mon domaine, chaque application, je
          reste connecté en permanence »). Toutes les apps demandent whoami : quand il reste moins de 15 jours, la
@@ -3539,6 +3557,7 @@ async function handleSso(request, url, env, ctx) {
     catch (e) { return J({ ok: false, reason: String((e && e.message) || e).slice(0, 120) }); }
     if (!RP_ORIGINS.includes(reg.origin)) return J({ ok: false, reason: 'origin non autorisée' });
     if ((await challengeConsume(env, b.clientDataJSON)) === 'replay') return J({ ok: false, reason: 'challenge déjà utilisé (rejeu)' });
+    let enrolFicheRetard = false;
     if (env && env.ACCOUNTS) {
       const list = JSON.parse((await env.ACCOUNTS.get(pkKey(s.uid))) || '[]');
       const already = list.some((k) => k.credId === reg.credId);
@@ -3563,9 +3582,10 @@ async function handleSso(request, url, env, ctx) {
       await env.ACCOUNTS.put(pkKey(s.uid), JSON.stringify(list.slice(-10)));
       const acc = await accGet(env, s.uid);
       if (acc) { acc.passkey = true; acc.passkey_at = acc.passkey_at || Date.now(); await accPut(env, acc); }
+      if (ficheEnCreation(acc, s)) enrolFicheRetard = true;
     }
     /* Émet immédiatement une session FORTE (verified) — l'enrôlement prouve Face ID. */
-    await enrich(env, request, s.uid, s.name, s.cgu);
+    await enrich(env, request, s.uid, s.name, s.cgu, undefined, { sansCreation: enrolFicheRetard });
     const token = await ssoSign(secret, s.uid, s.name, s.cgu, true, false, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
     return J({ ok: true, verified: true, token }, cookie);
@@ -4037,7 +4057,7 @@ async function handleSso(request, url, env, ctx) {
     let corpsFb = {}; try { corpsFb = await request.clone().json(); } catch { corpsFb = {}; }
     if (corpsFb && corpsFb.scope === 'cmc' && !estAdmin) {
       let appDemande = 'cmcteams'; try { appDemande = appDe(new URL(request.url).hostname) || 'cmcteams'; } catch { /* */ }
-      if (!perimetre(acc, appDemande).ok) return J({ ok: false, reason: 'hors_perimetre' }, undefined, 403);
+      if (!perimetreS(acc, appDemande, s).ok) return J({ ok: false, reason: 'hors_perimetre' }, undefined, 403);
       if (await codeManquant(env, s, acc)) return J({ ok: false, reason: 'code_requis' }, undefined, 403);
       const maintenant = Date.now();
       if (cptD1.dispo(env)) {

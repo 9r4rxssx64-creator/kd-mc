@@ -255,6 +255,7 @@ qui puisse se perdre. Réponse mesurée : **4** (hors branches de robot).
 | `claude/crea-famille-sans-code` | 17.10 | Créa Famille : plus de code admin dans la requête (session du domaine seule) + leçon 632 corrigée | `cf-portes-moyennes` |
 | `claude/clone-smoke` | 17.10 | Contrôle d'après-déploiement de kdmc-clone : prouve le laissez-passer | `cf-portes-moyennes` |
 | `claude/robot-preuve` | 17.10 | CRITIQUE : pass du robot ci_smoke sous preuve signée | `cf-portes-moyennes` |
+| `claude/robot-anciens-pass` | 17.10 | Pass robot émis avant la fermeture = refusés | `cf-portes-moyennes` |
 | `claude/cf-rapatrier` | 17.10 | 12 workers orphelins sur l'ancien compte Cloudflare : outil de suppression sûr + garde ; rien à déplacer | `cf-rapatrier` |
 | `claude/cf-preuves` | 17.10 | Docs : les 4 portes Cloudflare vérifiées fermées en ligne | `cf-preuves` |
 | `claude/deploy-coffre-r2-public` | 17.10 | Robot public de déploiement de coffre-r2 (+ preuve 401 anonyme) | `deploy-coffre-r2-public` |

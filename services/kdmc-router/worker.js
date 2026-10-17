@@ -1254,6 +1254,9 @@ async function ssoVerify(secret, token, request) {
      → « Zoé Lefèvre » revenait « ZoÃ© LefÃ¨vre » dans TOUTES les apps. On relit en UTF-8 (tous les passes émis le sont). */
   let d; try { const bin = b64urlToStr(p); d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))); } catch { return null; }
   if (!d || !d.u || !d.exp || d.exp < Date.now()) return null;
+  /* 17.10.2026 (audit, CRITIQUE) : avant ce jour, n'importe qui obtenait un pass du robot de contrôle (uid public). Tout pass
+     robot émis AVANT la fermeture de la porte (preuve signée exigée) ne vaut plus rien, même s'il n'a pas expiré. */
+  if (d.u === 'ci_smoke' && (d.iat || 0) < ROBOT_PREUVE_DEPUIS) return null;
   /* Pass lié à sa famille d'appareil (8.10) : présenté depuis une autre famille → il ne vaut rien (un lien volé, un pass copié).
      Un pass sans `d` (émis avant le 8.10) reste accepté jusqu'à son renouvellement, qui le lie. */
   if (request && d.d && d.d !== appareilDe(request)) return null;
@@ -3054,6 +3057,7 @@ async function personneDe(env, request) {
    mais un robot n'est pas une personne. Kevin 2.10 : « Chacun 1 seul compte » — et aucun compte
    pour ce qui n'est pas quelqu'un. Mesuré le 2.10 : « CI Smoke » réécrit à chaque déploiement. */
 const UID_ROBOTS_SANS_FICHE = new Set(['ci_smoke']);
+const ROBOT_PREUVE_DEPUIS = Date.UTC(2026, 9, 17, 14, 52);   /* pass robot émis avant = refusés (porte ouverte à tous jusque-là) */
 async function enrich(env, request, uid, name, cgu, pre, opts) {
   if (!env || !env.ACCOUNTS) return;
   if (UID_ROBOTS_SANS_FICHE.has(uid)) return;

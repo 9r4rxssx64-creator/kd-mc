@@ -1,6 +1,7 @@
 # MEMO_RESUME — état de session
 
 ## 2026-10-17 (soir) — 🚨 CRITIQUE fermé : le robot de contrôle ouvrait le domaine à n'importe qui
+- ✅ VÉRIFIÉ RÉEL (run 39042290533, fini 14:50 UTC) : `POST /__sso/issue {uid:ci_smoke}` sans preuve → 403 `robot_preuve`. Suite : tout pass robot émis avant 14:52 UTC (période où la porte était ouverte) est refusé par `ssoVerify` (`ROBOT_PREUVE_DEPUIS`).
 - Audit (aide) : `POST /__sso/issue {uid:"ci_smoke"}` donnait à TOUT LE MONDE une session sans code ni mail → CMCteams, light, `boards-gen.js` / `planning-seed.js` (noms) servis. Correctif : preuve `x-kdmc-robot` = HMAC(secret du domaine, "robot-issue|ci_smoke") exigée ; les 3 robots publics (routeur, access, clone) la calculent ; `npm run reel` passe en ANONYME sans le secret. Tests : code-attente 7.8 (sans preuve → 403) / 7.9, comptes-nettoyer, reel-outil. LESSONS 637.
 - Autres défauts des 2 audits (en cours) : code admin essayable en boucle (rag, outlook, monaco, proxy), `/__dep/membre` anonyme, noms + matricules dans des documents du dépôt public, conditions redemandées (Apex Chat, 4 boutiques), questions reposées (CMCteams, Lingua), `cmc-parser /test/*` sans garde, Firebase `/ld_detente` ouvert.
 ## 2026-10-17 (soir) — CAUSE RÉELLE DE « BEE NE FAIT RIEN » TROUVÉE : LA CONSIGNE ÉTAIT TROP LOURDE POUR LES IA GRATUITES

@@ -25,6 +25,7 @@ import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
 import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // Bee voit le domaine : pages, liens, documentation, ses pouvoirs (lecture, Kevin seul)
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';
+import { outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR } from './bee-ouvrir.js';   // Bee OUVRE n'importe quelle app du domaine sur l'écran de Kevin (Kevin 17.10)
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
 import { REGLES_TACHES } from './bee-taches.js';   // Bee dépose les tâches de code pour Claude Code (derrière ✅)
 import { avecJournal, bilanDiag } from './bee-diag.js';   // le journal des demandes à Bee + son test de bout en bout (Kevin 16.10 : « je ne peux rien lui faire faire »)
@@ -4163,7 +4164,11 @@ async function handleBeeIa(request, env, ctx) {
   let repliOutils = null, faitsOutils = '';
   const sortie = {};   /* ce que les mains de Bee préparent (cartes de confirmation) */
   const mains = String(env && env.BEE_AGIR) !== '0' ? outilsAdmin(env, { now: () => Date.now(), arbre: () => outilsBee(env, ctx).arbre(), doublon: (p, n) => outilsBee(env, ctx).doublon(p, n), appeler: (chemin, init) => outilsBee(env, ctx).appeler(request, chemin, init), apps: async () => listeApps(await chargerFermees(env, true).catch(() => [])) }, sortie) : null;
-  const avec = (o) => (sortie.propositions && sortie.propositions.length ? Object.assign(o, { propositions: sortie.propositions }) : o);
+  const avec = (o) => {
+    if (sortie.propositions && sortie.propositions.length) o.propositions = sortie.propositions;
+    if (sortie.ouvrir && sortie.ouvrir.length) o.ouvrir = sortie.ouvrir;   /* les boutons « Ouvrir » (bee-ouvrir.js) */
+    return o;
+  };
   /* L'ARBRE (Kevin 13.10 : « fais en sorte de voir les fiches dans l'arbre ») : l'outil `arbre` lit la graine de l'arbre côté domaine. Interrupteur BEE_ARBRE = '0'. */
   const arbreOutil = String(env && env.BEE_ARBRE) !== '0' && env && env.ACCOUNTS ? outilsArbre(async () => { try { return (await arbreSeedOut(env)).seed; } catch (_) { return null; } }) : null;
   const bilanOutil = arbreOutil && mains && String(env && env.BEE_ARBRE_ECRIRE) !== '0' ? outilsBilan(async () => { try { return (await arbreSeedOut(env)).seed; } catch (_) { return null; } }) : null;
@@ -4177,16 +4182,18 @@ async function handleBeeIa(request, env, ctx) {
     return v;
   })() : null;
   const extraTout = { defs: [] };
-  const extra = mains || arbreOutil || voirOutil ? { defs: ((mains && mains.defs) || []).concat((arbreOutil && arbreOutil.defs) || [], (bilanOutil && bilanOutil.defs) || [], (voirOutil && voirOutil.defs) || []), exe: Object.assign({}, (mains && mains.exe) || {}, (arbreOutil && arbreOutil.exe) || {}, (bilanOutil && bilanOutil.exe) || {}, (voirOutil && voirOutil.exe) || {}) } : null;
+  /* OUVRIR (Kevin 17.10 : « il doit pouvoir m'ouvrir les applications, peu importe laquelle ») : le bouton « Ouvrir » + l'ouverture. Domaine seulement. BEE_OUVRIR = '0' coupe. */
+  const ouvrirOutil = String(env && env.BEE_OUVRIR) !== '0' ? outilsOuvrir({ hotes: () => new Set(Object.keys(ROUTES)), noms: () => APPS }, sortie) : null;
+  const extra = mains || arbreOutil || voirOutil || ouvrirOutil ? { defs: ((mains && mains.defs) || []).concat((arbreOutil && arbreOutil.defs) || [], (bilanOutil && bilanOutil.defs) || [], (voirOutil && voirOutil.defs) || [], (ouvrirOutil && ouvrirOutil.defs) || []), exe: Object.assign({}, (mains && mains.exe) || {}, (arbreOutil && arbreOutil.exe) || {}, (bilanOutil && bilanOutil.exe) || {}, (voirOutil && voirOutil.exe) || {}, (ouvrirOutil && ouvrirOutil.exe) || {}) } : null;
   if (extra) extraTout.defs = extra.defs;
   const dansArbre = !!(ou && String(ou.app) === 'arbre');
-  if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)) || (arbreOutil && (RE_ARBRE.test(messages[messages.length - 1].content) || dansArbre)) || (voirOutil && RE_VOIR.test(messages[messages.length - 1].content)))) {
+  if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)) || (arbreOutil && (RE_ARBRE.test(messages[messages.length - 1].content) || dansArbre)) || (voirOutil && RE_VOIR.test(messages[messages.length - 1].content)) || (ouvrirOutil && RE_OUVRIR.test(messages[messages.length - 1].content)))) {
     /* question difficile (longue, « explique / compare / rédige… ») : les outils ramènent les FAITS en 8 s, puis la CONFÉRENCE des IA
        gratuites (règle Kevin 2.10 : toutes réfléchissent, un juge compare, la meilleure travaille) formule la réponse sur ces faits.
        Question simple (« quel temps demain ? ») : l'IA à outils répond seule, vite. */
     const complexe = questionComplexe(messages[messages.length - 1].content);
     const rt = await repondreAvecOutils(env, {
-      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR + REGLES_TACHES : '') + (arbreOutil ? REGLES_ARBRE : '') + (bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (voirOutil ? REGLES_VOIR : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
+      messages, system: caractere + REGLES_OUTILS + (mains ? REGLES_AGIR + REGLES_TACHES : '') + (arbreOutil ? REGLES_ARBRE : '') + (bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (voirOutil ? REGLES_VOIR : '') + (ouvrirOutil ? REGLES_OUVRIR : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
       ctx: { planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)) },
     });
     if (rt && rt.text) {

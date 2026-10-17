@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.19';
+  var JAVIS_VER = 'v1.20';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -401,6 +401,7 @@
       '.javis-carte.eleve{border-color:#dc2626;background:#2a0f0f}.javis-carte.fait{border-color:#4ade80}.javis-carte.clos{opacity:.85}' +
       '.javis-carte-t{font-weight:700;margin-bottom:4px}.javis-carte-r{margin-bottom:8px;word-break:break-word}' +
       '.javis-carte-b{display:flex;gap:8px}.javis-carte-b button{flex:1;min-height:44px;border-radius:12px;border:0;font:inherit;font-weight:700;cursor:pointer}' +
+      '.javis-ouvrir-go{background:#f6b73c;color:#1a1204}.javis-ouvrir-rester{background:#3a2c14;color:#f3f0e6}' +
       '.javis-carte-ok{background:#f6b73c;color:#1a1204}.javis-carte-non{background:#3a2c14;color:#f3f0e6}.javis-carte-b button:disabled{opacity:.6;cursor:default}.javis-carte-f{font-size:13px}' +
       /* DANS LE CADRE d'une autre app (Bee partout) : le parent règle la taille du cadre ; la pastille est dans son coin, le chat remplit le cadre ouvert */
       'html.javis-cadre #javis-launcher{right:12px;bottom:12px}' +
@@ -1686,6 +1687,39 @@
     });
   }
 
+  /* 🧭 OUVRIR (Kevin 17.10 : « il doit pouvoir m'ouvrir les applications, peu importe laquelle, même si je suis dans le domaine ») : Bee a préparé une ouverture (outil `ouvrir`,
+     domaine seulement). Un gros bouton « Ouvrir » (44 px) et, s'il n'y en a qu'une, l'ouverture se fait toute seule après 2 secondes ; « Rester ici » l'arrête. Le widget
+     REVÉRIFIE l'adresse (https, kd-mc.com) : même si la réponse était trafiquée, il n'ouvre jamais un site extérieur. Depuis un cadre (iframe), c'est la fenêtre entière qui change. */
+  function adresseDomaine(url) {
+    try { var u = new URL(String(url || ''), location.href); return (u.protocol === 'https:' && !u.username && !u.password && /(^|\.)kd-mc\.com$/i.test(u.hostname)) ? u : null; } catch (e) { return null; }
+  }
+  function allerA(url) {
+    var u = adresseDomaine(url); if (!u) return false;
+    var cible = window; try { if (window.top && window.top !== window) { void window.top.location.href; cible = window.top; } } catch (e) { cible = window; }
+    try { if (cible.location.href === u.href) return 'deja'; cible.location.assign(u.href); return true; } catch (e) { try { window.location.assign(u.href); return true; } catch (e2) { return false; } }
+  }
+  function carteOuvrir(root, o, auto) {
+    var list = root.querySelector('#javis-msgs'); if (!list || !o || !adresseDomaine(o.url)) return;
+    var c = document.createElement('div'); c.className = 'javis-carte';
+    var t = document.createElement('div'); t.className = 'javis-carte-t'; t.textContent = '\uD83E\uDDED ' + String(o.libelle || 'Ouvrir').slice(0, 70);
+    var bs = document.createElement('div'); bs.className = 'javis-carte-b';
+    var go = document.createElement('button'); go.type = 'button'; go.className = 'javis-ouvrir-go'; go.textContent = '\u2197\uFE0F Ouvrir';
+    var non = document.createElement('button'); non.type = 'button'; non.className = 'javis-ouvrir-rester'; non.textContent = 'Rester ici';
+    var fin = document.createElement('div'); fin.className = 'javis-carte-f';
+    bs.appendChild(go); bs.appendChild(non); c.appendChild(t); c.appendChild(bs); c.appendChild(fin);
+    list.appendChild(c); list.scrollTop = list.scrollHeight;
+    var minuteur = null, fait = false;
+    var ouvre = function () {
+      if (fait) return; fait = true; clearTimeout(minuteur); go.disabled = true; non.disabled = true;
+      var r = allerA(o.url);
+      fin.textContent = r === 'deja' ? 'Tu y es d\u00E9j\u00E0.' : r ? '\u2705 Ouverture\u2026' : 'Je n\'ai pas pu ouvrir \u00E7a : touche le lien depuis le domaine.';
+      if (r === true) { try { var h = loadHistory(); h.push({ role: 'assistant', content: '[Ouvert] ' + String(o.libelle || '').slice(0, 100) }); saveHistory(h); } catch (e) {} }
+    };
+    go.addEventListener('click', ouvre);
+    non.addEventListener('click', function () { if (fait) return; fait = true; clearTimeout(minuteur); go.disabled = true; non.disabled = true; fin.textContent = 'Ok, je reste ici.'; });
+    if (auto) { fin.textContent = '\u23F3 Ouverture dans 2 secondes\u2026'; minuteur = setTimeout(ouvre, 2000); }
+  }
+
   /* 🩺 TESTER BEE (Kevin 16.10 : « je ne peux rien lui faire faire ») : un test de bout en bout, dit en mots simples — ce que ce téléphone envoie, ce que le domaine
      répond (reconnu ? IA gratuite ? arbre ?). Rien n'est gardé dans la conversation. Sans accès au domaine, il dit LA cause, pas un message vague. */
   var RE_DIAG = /^\s*(?:@diagnostic|diagnostic|teste[- ]?toi|test(?:er)? bee|tester bee)\s*[.!?]*\s*$/i;
@@ -1778,6 +1812,7 @@
         var bulle = addBubble(root, 'javis', out);
         if (statut === 403) boutonFaceId(root, bulle);
         if (ok && j.propositions && j.propositions.length) j.propositions.slice(0, 3).forEach(function (p) { carteAction(root, p); });
+        if (ok && j.ouvrir && j.ouvrir.length) j.ouvrir.slice(0, 3).forEach(function (o) { carteOuvrir(root, o, j.ouvrir.length === 1); });
         allRigs(root).forEach(function (r) { react(r, ok ? 'joie' : 'triste', ok ? 1200 : 1600); });
         if (ok) { tone([660, 880], .2); vibrate(8); }
         /* seule une VRAIE réponse entre dans la mémoire : un message d'erreur de Bee repartait à l'IA
@@ -2071,7 +2106,7 @@
         'Ton planning : ton domaine lit le PDF importé dans CMCteams, et c\'est lui qui me donne tes horaires ; « avec qui » est calculé chez toi, sans IA, et aucun nom de collègue n\'est jamais envoyé à une IA. ' +
         'La météo envoie ta position arrondie à 1 km à open-meteo (le bonjour du matin, lui, utilise Monaco). ' +
         'Quand je cherche pour toi : le nom d\'une ville part à open-meteo, tes mots de recherche partent à Wikipédia ou à Google Actualités, et l\'adresse d\'un lien que tu me donnes part à r.jina.ai (un lecteur de pages gratuit) — je ne fais que LIRE, je n\'écris nulle part. La dictée passe par le service vocal de ton téléphone. ' +
-        'Ta famille : quand tu me parles d\'une personne de ton arbre, je lis ses fiches sur ton domaine (4 au plus, du texte, jamais les photos) et celles qui répondent à ta question partent à l\'IA gratuite qui formule la réponse ; je ne modifie une fiche que si tu touches mon bouton ✅ : j\'ajoute et je complète, je ne supprime jamais rien, et une copie de sauvegarde est faite avant. Une conversion de devises envoie seulement les deux devises à frankfurter.dev (Banque centrale européenne). Quand tu me demandes de regarder un site ou une app, j\'ouvre les pages de tes apps avec ta session (seulement celles du domaine), je retrouve tes liens et je lis la documentation publique du domaine : ce que je lis là part à l\'IA gratuite qui rédige la réponse. ' +
+        'Ta famille : quand tu me parles d\'une personne de ton arbre, je lis ses fiches sur ton domaine (4 au plus, du texte, jamais les photos) et celles qui répondent à ta question partent à l\'IA gratuite qui formule la réponse ; je ne modifie une fiche que si tu touches mon bouton ✅ : j\'ajoute et je complète, je ne supprime jamais rien, et une copie de sauvegarde est faite avant. Une conversion de devises envoie seulement les deux devises à frankfurter.dev (Banque centrale européenne). Quand tu me demandes de regarder un site ou une app, j\'ouvre les pages de tes apps avec ta session (seulement celles du domaine), je retrouve tes liens et je lis la documentation publique du domaine : ce que je lis là part à l\'IA gratuite qui rédige la réponse. Quand tu me dis « ouvre » ou « montre-moi », j\'ouvre l\'app sur ton écran (seulement une app du domaine, avec un bouton « Rester ici » pour m\'arrêter) : ouvrir ne modifie jamais rien. ' +
         'Pour AGIR (programmer un rappel, répondre à un message, retenir un fait, arrêter ou redémarrer le robot, fermer ou rouvrir des apps, régler ce qu\'une personne peut ouvrir, effacer un code oublié, déconnecter quelqu\'un), je prépare une carte : rien ne part tant que tu n\'as pas touché ✅ Confirmer, et seul toi peux le faire. Je ne touche jamais au coffre, au code admin, à l\'argent réel du robot ni à l\'arbre. Ce que tu me demandes de retenir est gardé sur ton domaine ; tu peux me demander de l\'oublier. ' +
         'Pour que je te suive d\'une app à l\'autre, ta conversation (les 40 derniers messages) est gardée sur ton domaine, visible par toi seul, et sur ce téléphone : Effacer la supprime PARTOUT, dans toutes les apps.');
     });

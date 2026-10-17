@@ -13,6 +13,7 @@
 
 ## 👆 (16.10 soir) CE QUI T'ATTEND — à jour
 
+0. **Essayer « Bee ouvre » (iPhone, 1 minute)** : dans n'importe quelle app, touche 🐝 et écris « montre-moi l'arbre de Yann Lorenzi » → un bouton **↗ Ouvrir** apparaît et l'arbre s'ouvre sur Yann (2 s, ou « Rester ici »). Essaie aussi « ouvre la light » et « va sur apex chat ». Si ça ne s'ouvre pas, touche **🩺 Tester Bee** et envoie-moi la capture.
 0f'. **Lingua v2.142.0 (1 appel, 2 minutes)** : ouvre https://lingua.kd-mc.com → « Appeler Bee » → réponds exprès à côté d'une question (ex. elle demande ton sport, tu dis ce que tu manges). À la fin, « Ton bilan » doit montrer **« 🎯 À côté de la question »** avec une réponse proposée (🔊), et ne plus dire « impeccable ».
 00. ✅ **FAIT le 17.10 à 12:18 UTC — les 2 anciens sites ne montrent plus rien** : `kdmc-site.pages.dev` et `kdmc0.pages.dev` répondent **000 / 0 octet** (projets supprimés sur ton compte `ffaca6f3…`, 103 déploiements effacés avant). Il te reste **une touche facultative** : supprimer la clé `pages-nettoyage` (https://dash.cloudflare.com/profile/api-tokens → ⋯ → Supprimer) — sinon elle meurt toute seule le 18.10.
 0e'. **Admin v2.7.2 (1 fois, 10 secondes)** : ton iPhone était resté sur une ancienne copie (v2.5.0). Ferme l'app admin et rouvre https://kd-mc.com/admin/ — la pastille en bas doit dire **v2.7.2**. Si elle dit encore v2.5.0, touche-la une fois (elle force la mise à jour). Ensuite chaque personne tient sur une ligne, et une fiche ouverte montre 5 sites, le reste dans « + N autres sites ».
@@ -535,7 +536,7 @@ Seules les **automatisations** sont bloquées.
 - 👤 **test iPhone 3 gestes + décision annuaire + relais Webhook (voir KEVIN_ACTIONS_TODO)**  `apex-chat`
 - 👤 **combien de gilets, et broderie logo seul ou logo + prénoms ?**  `la-detente`
 - 👤 **compte développeur Apple (99 $/an) : OK ou pas ?**  `meta`
-- 👤 **Tester Bee dans l'arbre sur iPhone (🩺 Tester Bee) et envoyer la capture**  `javis-bee`
+- 👤 **Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone**  `javis-bee`
 - 👤 **remettre les 2 budgets Actions à 0 $ ; ignorer/supprimer la commande test-verrou-1790449723**  `coffre-etat`
 - 👤 **5 questions famille (Honora père/mère, mère de Laure, Judith/Marie-Judith, doublons Jean et Alexandre, Eleonore fille ou sœur) + un choix d'affichage sur le couple Guy/Yvette**  `arbre-visuel`
 - 👤 **Yann : Ouvrir dans l'admin ; actes Le Dren/Monaco/Beausoleil (KEVIN_ACTIONS_TODO 16.10)**  `arbre-session-1610`

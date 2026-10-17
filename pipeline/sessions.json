@@ -462,10 +462,10 @@
       "sujet": "Bee (mascotte Lingua) comme assistant de Kevin : widget, app installable javis.kd-mc.com, voix + lip-sync",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-10-16",
-      "attend_kevin": "Tester Bee dans l'arbre sur iPhone (🩺 Tester Bee) et envoyer la capture",
+      "maj": "2026-10-17",
+      "attend_kevin": "Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",
-      "note": "16.10 : Bee v1.19 (arbre modifiable, 29 portes, tâches de code → bee_taches, journal bee_journal + 🩺 Tester Bee), fusionné et déployé, PAS vu chez Kevin. Docs rattrapés + garde R7."
+      "note": "17.10 : Bee v1.20 ouvre n'importe quelle app du domaine (outil ouvrir + bouton) ; arbre v3.118 lien profond #personne/#famille/#fiche. PR en cours, PAS vu chez Kevin."
     },
     "ld-config-printify": {
       "titre": "La Détente — config worker Printify (branche écrite par un workflow)",
@@ -2218,6 +2218,16 @@
       "titre": "Outil pages-supprimer : fuite Pages fermée",
       "branche": "claude/pages-supprimer-outil",
       "sujet": "kdmc-site et kdmc0 supprimés sur le compte de Kevin ; outil + garde + leçon #611",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-17",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "javis-bee-ouvre": {
+      "titre": "Javis / Bee — ouvre les apps (v1.20)",
+      "branche": "claude/bee-ouvre-les-apps",
+      "sujet": "Outil ouvrir + bouton, arbre v3.118 lien profond",
       "surfaces": [],
       "etat": "actif",
       "maj": "2026-10-17",

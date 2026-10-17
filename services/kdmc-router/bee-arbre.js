@@ -88,7 +88,7 @@ export function chercherDansArbre(seed, requete) {
   if (!persons) throw new Error('l\'arbre n\'est pas disponible pour le moment');
   const total = Object.keys(persons).length;
   const r = trouver(seed, requete);
-  if (!r.length) return 'Aucune personne de l\'arbre ne correspond à « ' + propre(requete, 60) + ' » (l\'arbre compte ' + total + ' personnes). Ne l\'invente pas : dis que tu ne la trouves pas.';
+  if (!r.length) return 'Aucune personne de l\'arbre ne correspond à « ' + propre(requete, 60) + ' » (l\'arbre compte ' + total + ' personnes). Ne l\'invente pas : dis que tu ne la trouves pas dans la copie du domaine — et si Kevin veut la VOIR, appelle quand même l\'outil ouvrir avec personne = ce nom : l\'app de l\'arbre cherche dans SA copie complète (une fiche ajoutée hier au nuage y est déjà).';
   return 'Arbre de famille de Kevin (' + total + ' personnes) — ' + r.length + ' fiche(s) trouvée(s) :\n' + r.map((x) => fiche(seed, x.id)).join('\n');
 }
 

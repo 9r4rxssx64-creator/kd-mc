@@ -242,6 +242,8 @@ const COMPORTEMENTAL = [
   /PARLE FRANÇAIS À KEVIN/i,
   /* « VA AU BOUT DE TOUT LE TRAVAIL, EN AUTO, SANS JAMAIS T'ARRÊTER » (Kevin 16.10.2026, #4670) : enchaîner sans demander « continu ? » = conduite de travail. */
   /VA AU BOUT DE TOUT LE TRAVAIL/i,
+  /* « SE CONNECTER RÉELLEMENT PARTOUT : CHAQUE SESSION OUVRE LE VRAI DOMAINE ET VÉRIFIE » (Kevin 17.10.2026, ajoutée sans entrée → ratchet 19 → 20 vu à la fusion) : conduite de travail de la session ; ses outils (robots « comme Kevin ») ont déjà leurs gardes. */
+  /SE CONNECTER RÉELLEMENT PARTOUT/i,
   /* « ARBRE : AUCUNE QUESTION QU'UN DOCUMENT EN MAIN TRANCHE » (Kevin 9.10.2026, #4439, ajoutée sans entrée → ratchet 19 → 20 vu à la
      fusion) : relire ce qu'on a et aller chercher le document AVANT d'écrire une question = conduite de recherche, pas un état
      du code. Sa part mécanisable (« donnée sans source = probable/piste ») mérite un garde sur les fiches : à faire par la branche arbre. */

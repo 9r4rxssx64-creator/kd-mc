@@ -7,80 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 17/10/2026 13:59 UTC
-
-- **Branche** : `main` · **Commit** : `79d956e1` · **Run** : `39038753029`
-- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/39038753029
-- **Ce que la machine a dit** :
-
-```
-# fail 0
-  ✅ 3. signature altérée → refus, compte toujours fermé
-  ✅ 3b. jeton forgé (charge vraie, signature inventée) → refus
-  ✅ 3c. jeton tronqué → refus
-  ✅ 3d. sans jeton → refus
-  ✅ 3e. jeton expiré → refus
-  ✅ 3f. bon compte, autre adresse → refus
-== 4. Refusé par l'admin : un mail ne rouvre pas ; sans clé : rien ne part ==
-  ✅ 4b. compte refusé par l'admin → le mail n'ouvre pas
-  ✅ 4c. sans clé EmailJS : fermé, pas de mail, message d'avant (fail-open vers Kevin)
-# Subtest: par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la correction sont à Kevin seul
-ok 3 - par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la correction sont à Kevin seul
-# fail 0
-13 OK · 0 échec(s)
-  ✅ 2c. KV en panne → le plafond REFUSE (fermé), il ne s'ouvre plus en grand (SABOTAGE : catch → true rougit)
-24 OK / 0 échec(s)
-15 OK / 0 échec(s)
-Portes par dossier : 75 passed, 0 failed
-17 OK / 0 échec(s)
-10 OK / 0 échec(s)
-# fail 0
-  ✅ domaine étranger refusé (anti redirection ouverte) → https://kit.kd-mc.com/
-✅ redirection-amont : 5 OK / 0 FAIL
-Self-service test: 25 passed, 0 failed
-30 OK · 0 échec(s)
-  ✅ 4. page absente → 404 + page « introuvable » en français avec un lien vers l'espace
-sso-accents : 6 passed, 0 failed
-=== Laissez-passer admin 24 h : 5 contrôles OK, 0 échec(s) ===
-sso-permanent : 8 passed, 1 failed
-##[error]Process completed with exit code 1.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 17/10/2026 13:58 UTC
-
-- **Branche** : `main` · **Commit** : `48222f1b` · **Run** : `39038696342`
-- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/39038696342
-- **Ce que la machine a dit** :
-
-```
-20 OK / 0 échec(s)
-35 OK · 0 échec(s)
-  ✅ 4. registre des essais illisible → on REFUSE même le bon code (fermé, plus ouvert)
-  ✅ 8. une session NON vérifiée qui se dit admin → refus (le nom seul ne donne rien)
-  ✅ 9. une session vérifiée d'un NON-admin → refus
-10 OK / 1 échec(s)
-##[error]Process completed with exit code 1.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 17/10/2026 13:58 UTC
-
-- **Branche** : `main` · **Commit** : `48222f1b` · **Run** : `39038695306`
-- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/39038695306
-- **Ce que la machine a dit** :
-
-```
-20 OK / 0 échec(s)
-35 OK · 0 échec(s)
-  ✅ 4. registre des essais illisible → on REFUSE même le bon code (fermé, plus ouvert)
-  ✅ 8. une session NON vérifiée qui se dit admin → refus (le nom seul ne donne rien)
-  ✅ 9. une session vérifiée d'un NON-admin → refus
-10 OK / 1 échec(s)
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -548,5 +474,71 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 
 ```
 === 32 servies / 0 en échec ===
+##[error]Process completed with exit code 1.
+```
+
+## ❌ KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ) — 19/09/2026 14:24 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `f0a8d662` · **Run** : `35448582768`
+- **Ce qui a lâché** : publier › Vérifier l'adresse STABLE (celle qu'attend le routeur)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35448582768
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::l'adresse STABLE $STABLE ne répond pas (HTTP $code) — NE PAS basculer le routeur dessus"^[[0m
+^[[36;1m  echo "::error::l'adresse stable $STABLE ne sert pas toutes les adresses — bascule interdite"^[[0m
+^[[36;1m  head -25 sonde-stable.log | while IFS= read -r l; do echo "::error::$l"; done^[[0m
+=== 32 servies / 0 en échec ===
+##[error]l'adresse stable https://kdmc-site-bj5.pages.dev ne sert pas toutes les adresses — bascule interdite
+##[error]Sonde de 32 adresses sur https://kdmc-site-bj5.pages.dev (servi à la racine)
+##[error]adresse                        HTTP   contenu
+##[error]────────────────────────────────────────────────
+##[error]✅ kd-mc.com                    200    23432 car.
+##[error]✅ www.kd-mc.com                200    23432 car.
+##[error]✅ cmcteams.kd-mc.com           200  3382632 car.
+##[error]✅ apex-ai.kd-mc.com            200    23571 car.
+##[error]✅ apex-chat.kd-mc.com          200   855110 car.
+##[error]✅ la-detente.kd-mc.com         200     5786 car.
+##[error]✅ chez-lolo.kd-mc.com          200   109823 car.
+##[error]✅ dashboard.kd-mc.com          200    41865 car.
+##[error]✅ sourcing.kd-mc.com           200    12559 car.
+##[error]✅ coffre.kd-mc.com             200    53666 car.
+##[error]✅ departs.kd-mc.com            200   174389 car.
+##[error]✅ cmcteams-light.kd-mc.com     200   174389 car.
+##[error]✅ bot.kd-mc.com                200    32155 car.
+##[error]✅ beatbot.kd-mc.com            200   156883 car.
+##[error]✅ autorisations.kd-mc.com      200    40283 car.
+##[error]✅ arbre.kd-mc.com              200   315106 car.
+##[error]✅ lingua.kd-mc.com             200    70275 car.
+##[error]✅ studio.kd-mc.com             200   419944 car.
+##[error]✅ cuisine.kd-mc.com            200   310280 car.
+##[error]✅ cocina.kd-mc.com             200   310280 car.
+##[error]✅ cujina.kd-mc.com             200   310280 car.
+##[error]Process completed with exit code 1.
+```
+
+## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
+- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
 ##[error]Process completed with exit code 1.
 ```

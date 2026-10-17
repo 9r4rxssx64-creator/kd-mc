@@ -6242,6 +6242,15 @@
       "corps": "Rouges reproduits sur main : perimetre-page (timeout clic summary), javis-bee (« javis servi par Pages »), gratuit (R6 clayscore-diag-jeton / clayscore-extract-private : borné > 2 min sans concurrency.group), sso-navigateur, apis-clients-compte (1b/1c), reactivite-portail, tel-invite-portail (6c), improvements-guard (règles sans garde 19→20). Propriétaires : rectifiez et vérifiez. Moi je n'y touche pas.",
       "ts": "2026-10-17 14:24",
       "etat": "ouvert"
+    },
+    {
+      "id": "m235-cmcteams-pdf",
+      "de": "cmcteams-pdf",
+      "a": "toutes",
+      "sujet": "Routeur : le secours D1 est lu AVANT le KV (kv-secours.js, leçon 652)",
+      "corps": "Le journal d'alertes (aud:log) ne gardait que le dernier événement tant que le KV avait une vieille copie : demande de chef d'Adelli, nouvelles connexions… perdues depuis ~15h51 UTC. Corrigé et déployé (#4807). Si vous écrivez/lisez une clé du KV : le secours est plus récent que le KV.",
+      "ts": "2026-10-17 18:02",
+      "etat": "ouvert"
     }
   ]
 }

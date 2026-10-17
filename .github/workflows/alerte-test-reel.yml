@@ -1,0 +1,37 @@
+name: Alerte de test RÉELLE (le journal d'alertes de Kevin reçoit-il bien ?)
+
+# Kevin 17.10.2026 : « Simule réel toujours pour vérifier » (après « Adelli m'a envoyé un message, je ne reçois rien nulle part »).
+# Une seule demande de changement de chef, signée du nom « 🧪 TEST automatique », envoyée au VRAI routeur avec le pass du robot ci_smoke :
+# elle doit apparaître en tête de « Mes messages » (et partir en notification). Manuel seulement, une alerte par lancement (anti-doublon 5 min).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alerte-test-reel
+  cancel-in-progress: false
+
+jobs:
+  alerte:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h
+    steps:
+      - name: Pass du robot puis une demande de chef de test
+        env:
+          ROBOT_SSO: ${{ secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET }}
+        run: |
+          set +e
+          PREUVE=$(python3 -c "import hmac,hashlib,base64,os;print(base64.urlsafe_b64encode(hmac.new(os.environ['ROBOT_SSO'].encode(),b'robot-issue|ci_smoke',hashlib.sha256).digest()).decode().rstrip('='))" 2>/dev/null)
+          [ -n "$PREUVE" ] && echo "::add-mask::$PREUVE"
+          RESP=$(curl -sS -m 20 -X POST https://kd-mc.com/__sso/issue -H 'content-type: application/json' -H 'origin: https://kd-mc.com' -H "x-kdmc-robot: $PREUVE" -d '{"uid":"ci_smoke","name":"CI Smoke","cgu":true}')
+          TOKEN=$(printf '%s' "$RESP" | grep -oE '"token":"[^"]+"' | sed 's/.*:"//;s/"//')
+          [ -n "$TOKEN" ] && echo "::add-mask::$TOKEN"
+          if [ -z "$TOKEN" ]; then echo "::error::pas de pass robot : $RESP"; exit 1; fi
+          echo "pass reçu"
+          CODE=$(curl -sS -m 20 -o /tmp/r.json -w '%{http_code}' -X POST https://cmcteams-light.kd-mc.com/__notify-kevin \
+            -H 'content-type: application/json' -H "authorization: Bearer $TOKEN" \
+            -d '{"kind":"demande_chef","name":"🧪 TEST automatique","text":"Vérification du journal d alertes : ignore ce message"}')
+          echo "notify-kevin : HTTP $CODE $(cat /tmp/r.json)"
+          [ "$CODE" = "200" ] || exit 1

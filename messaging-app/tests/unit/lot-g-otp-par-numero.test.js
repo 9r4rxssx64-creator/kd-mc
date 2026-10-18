@@ -57,7 +57,7 @@ describe('SSO Apex : le numéro vient du jeton signé', () => {
   it('un numéro glissé dans le corps de la requête est ignoré', async () => {
     const { r, DB } = await sso({ phone: '+33611112222' }, {});
     expect(r.status).toBe(200);
-    expect(DB.raw.prepare("SELECT phone FROM users WHERE apex_uid='apex_1'").get().phone).toBe('PENDING_SSO');
+    expect(DB.raw.prepare("SELECT phone FROM users WHERE apex_uid='apex_1'").get().phone).toBe('PENDING_SSO_' + DB.raw.prepare("SELECT id FROM users WHERE apex_uid='apex_1'").get().id);
   });
   it('un numéro présent dans le jeton signé est gardé', async () => {
     const { DB } = await sso({}, { phone: '+33611112222' });

@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.320';
+export const API_VERSION = '1.1.321';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1489,8 +1489,8 @@ export async function handleSsoFromApex(request, env) {
          identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING_PQXDH', 'PENDING_PQXDH', 'PENDING_PQXDH', ?, 'apex-sso', ?, 'active')
          ON CONFLICT(id) DO UPDATE SET apex_uid=excluded.apex_uid WHERE users.status != 'deleted'`
-      ).bind(id, pseudo, name || pseudo, phone || 'PENDING_SSO',
-        phone ? await sha256(phone) : 'PENDING_SSO',
+      ).bind(id, pseudo, name || pseudo, phone || ('PENDING_SSO_' + id),
+        phone ? await sha256(phone) : ('PENDING_SSO_' + id),
         isKevin ? 1 : 0, isKevin ? 1 : 0, apex_uid, Date.now()).run();
       user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(id).first();
     } catch (e) {
@@ -1592,10 +1592,13 @@ export async function handleSsoFromKdmc(request, env) {
       || ('user' + Date.now().toString(36).slice(-6));
     // Lot 2 (X) : pseudo UNIQUE — un homonyme déjà inscrit faisait échouer
     // l'INSERT À CHAQUE connexion (500 permanent). On ajoute un suffixe et on retente.
+    /* 18.10.2026 (robot « parcours d'une personne invitée », mesuré : POST /api/auth/sso-from-kdmc → 500 kdmc_create_failed dès la 2e personne du domaine) : la colonne
+       `phone` est UNIQUE et chaque compte créé par le domaine recevait le MÊME texte « PENDING_SSO » → un seul compte pouvait exister ; les suivants échouaient
+       (contrainte d'unicité) et Apex Chat retombait sur un SMS qui n'existe pas. Chaque compte reçoit maintenant son propre repère « PENDING_SSO_<id> ». */
     const insertWith = (pseudo) => env.APEX_CHAT_DB.prepare(
       `INSERT INTO users (id, pseudo, real_name, phone, phone_hash, is_admin, is_kevin_alias,
        identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status, kdmc_uid)
-       VALUES (?, ?, ?, 'PENDING_SSO', 'PENDING_SSO', ?, ?, 'PENDING_PQXDH', 'PENDING_PQXDH', 'PENDING_PQXDH', ?, 'kdmc-sso', ?, 'active', ?)
+       VALUES (?, ?, ?, 'PENDING_SSO_' || ?1, 'PENDING_SSO_' || ?1, ?, ?, 'PENDING_PQXDH', 'PENDING_PQXDH', 'PENDING_PQXDH', ?, 'kdmc-sso', ?, 'active', ?)
        ON CONFLICT(id) DO UPDATE SET kdmc_uid=excluded.kdmc_uid WHERE users.status != 'deleted'`
     ).bind(id, pseudo, name, isAdmin ? 1 : 0, isAdmin ? 1 : 0, id, Date.now(), uid).run();
     let lastErr = null;

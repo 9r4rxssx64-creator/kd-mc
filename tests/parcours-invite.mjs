@@ -94,8 +94,21 @@ async function parcours(variante, H) {
       }
       await p.fill('#l-nom', nomComplet);
       await p.fill('#l-code', code);
+      const t0 = Date.now();
       await p.click('#l-go');
-      await p.waitForTimeout(3500);
+      /* la personne attend que le bouton « … » finisse : on note COMBIEN de temps (une connexion qui traîne 10 s fait croire à une panne) */
+      let raison = 'rien après 30 s';
+      for (let i = 0; i < 60; i++) {
+        if (await p.locator('#pk-skip').isVisible().catch(() => false)) { raison = 'offre « Active Face ID »'; break; }
+        if (!/kd-mc\.com\/?$/.test(url().replace(/\/$/, '')) || /apex-chat/.test(url())) { raison = 'page changée'; break; }
+        const err = (await p.locator('#l-err').innerText().catch(() => '')).trim();
+        if (err) { raison = 'message : « ' + resume(err) + ' »'; break; }
+        if (await p.locator('#hub').isVisible().catch(() => false)) { raison = 'accueil du portail'; break; }
+        await p.waitForTimeout(500);
+      }
+      noter(`   temps de connexion (clic → ${raison}) : ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+      out.tempsConnexion = (Date.now() - t0) / 1000;
+      await p.waitForTimeout(800);
       noter(`4. après « Me connecter » → ${url()} · « ${await texte()} »`);
       /* Après « Me connecter » la personne peut traverser : les conditions du domaine (1 clic), l'offre « Active Face ID » (« Plus tard »), puis le retour à l'app.
          On fait ce que ferait quelqu'un de pressé : on accepte / on passe, jusqu'à 5 écrans, et on note chacun. */

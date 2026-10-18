@@ -107,6 +107,8 @@ const e5 = ctx.etatCompte({ uid: 'a', cgu_at: 1, portee: 'domaine', tel_requis: 
 ok(e5.probleme === true && /confirmer/.test(e5.lignes.join(' ')) && /code/.test(e5.lignes.join(' ')), '4f. code manquant et téléphone à confirmer sont dits', e5);
 const e6 = ctx.etatCompte({ uid: 'a', portee: 'app', acces: [] });
 ok(/aucune app/.test(e6.verdict), '4g. portée « une app » vide : dit qu\'elle n\'a accès à rien', e6);
+ok(/_comptes = \(_comptes \|\| \[\]\)\.filter\(function \(x\) \{ return x\.uid !== su; \}\)/.test(src) && /removeChild\(g\)/.test(src) && /loadAccounts\(0, true\)/.test(src.slice(src.indexOf("fetch('/__admin/compte-supprimer'"), src.indexOf("fetch('/__admin/compte-supprimer'") + 1500)), '4h. après « Compte supprimé » la fiche quitte la liste et la liste est relue (Kevin 18.10 : « ça ne s\'actualise pas »)');
+ok(/else \{ try \{ loadAccounts\(0, true\); \}/.test(src.slice(src.indexOf('/__admin/compte-ouvrir'), src.indexOf('/__admin/compte-supprimer'))), '4i. après « Ouvrir ce compte » la liste est relue');
 
 console.log('\n== 5. Le portail : l\'écran d\'attente ne reste plus figé ==');
 const portail = readFileSync(new URL('../../kdmc-home/kdmc-portal.js', import.meta.url), 'utf8');

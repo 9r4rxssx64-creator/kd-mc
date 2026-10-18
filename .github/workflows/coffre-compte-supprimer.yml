@@ -1,0 +1,36 @@
+name: Coffre — supprimer un compte en doublon (décision de Kevin)
+
+# 18.10.2026 (Kevin : « Efface son autre compte, sp… »). Se connecte comme Kevin et appelle POST /__admin/compte-supprimer pour UN doublon exact :
+# il doit exister une autre fiche du même nom qui a servi au moins autant. Jamais le compte de Kevin. Copie de la fiche 30 jours dans le domaine.
+# Sans confirmer=oui : essai à blanc. À la main / API — jamais de cron.
+
+on:
+  workflow_dispatch:
+    inputs:
+      uid:
+        description: "uid exact du compte en doublon à supprimer (ex. laurence_sp)"
+        required: true
+      confirmer:
+        description: "oui = supprimer pour de vrai (sinon essai à blanc)"
+        default: "non"
+
+permissions:
+  contents: read
+
+jobs:
+  supprimer:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Supprimer le doublon (porte admin, session de Kevin)
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          # les entrées passent par env:, jamais dans le shell (garde test:workflows-shell)
+          COMPTE_UID: ${{ inputs.uid }}
+          CONFIRMER: ${{ inputs.confirmer }}
+        shell: bash -eo pipefail {0}
+        run: node tools/smoke/compte-supprimer.mjs "$COMPTE_UID" "--confirmer=$CONFIRMER"

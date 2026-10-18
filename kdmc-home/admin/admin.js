@@ -710,7 +710,7 @@
         var u = ouvrir.getAttribute('data-uid') || ''; ouvrir.disabled = true; ouvrir.textContent = '…';
         fetch('/__admin/compte-ouvrir', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: u }) })
           .then(function (r) { return r.json(); })
-          .then(function (j) { ouvrir.textContent = j && j.ok ? '✅ Compte ouvert — demande-lui de rouvrir la page' : '⚠️ Échec — réessaie'; if (!(j && j.ok)) ouvrir.disabled = false; })
+          .then(function (j) { ouvrir.textContent = j && j.ok ? '✅ Compte ouvert — demande-lui de rouvrir la page' : '⚠️ Échec — réessaie'; if (!(j && j.ok)) ouvrir.disabled = false; else { try { loadAccounts(0, true); } catch (e) { /* le sondage de 25 s relira la liste */ } } })
           .catch(function () { ouvrir.disabled = false; ouvrir.textContent = '⚠️ Échec — réessaie'; });
         return;
       }
@@ -724,7 +724,7 @@
         fetch('/__admin/compte-supprimer', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: su, confirmer: true, bannir: bannir }) })
           .then(function (r) { return r.json(); })
           .then(function (j) {
-            if (j && j.ok) { suppr.textContent = j.banni ? '✅ Supprimé et banni' : '✅ Compte supprimé'; var f = document.getElementById('fiche-' + su); if (f) f.style.opacity = '.45'; }
+            if (j && j.ok) { suppr.textContent = j.banni ? '✅ Supprimé et banni' : '✅ Compte supprimé'; var f = document.getElementById('fiche-' + su); if (f) f.style.opacity = '.45'; _comptes = (_comptes || []).filter(function (x) { return x.uid !== su; }); setTimeout(function () { var g = document.getElementById('fiche-' + su); if (g && g.parentNode) g.parentNode.removeChild(g); try { loadAccounts(0, true); } catch (e) { /* le sondage de 25 s relira la liste */ } }, 1200); }
             else { suppr.disabled = false; suppr.textContent = j && j.reason === 'admin_protege' ? '🔒 Compte admin : jamais supprimé' : '⚠️ Échec — réessaie'; }
           })
           .catch(function () { suppr.disabled = false; suppr.textContent = '⚠️ Échec — réessaie'; });

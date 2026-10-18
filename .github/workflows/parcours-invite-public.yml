@@ -1,0 +1,46 @@
+name: Parcours d'une personne invitée — vrai navigateur, vrai domaine (dépôt PUBLIC, compte de test)
+
+# 18.10.2026 (Kevin : « Yann et Ludo ont déjà un compte au domaine, pourquoi n'arrivent-ils pas à se connecter aux autres apps ? Vérifie, teste, simule, tout en réel »).
+# Le robot crée un compte de TEST (« Parcours Robot… ») comme le fait « Compte invité » du tableau admin (code admin = empreinte en secret CI), ouvre un téléphone NEUF
+# (iPhone 13 simulé, aucun cookie) sur Apex Chat, fait ce que fait la personne (porte → portail → nom + code → conditions → retour), puis visite toutes les autres apps du
+# domaine dans la même session et dit lesquelles s'ouvrent. Variante B : même chose avec le code effacé (compte d'avant le 8.10). Le compte de test est SUPPRIMÉ à la fin.
+# AU DÉPÔT PUBLIC (minutes gratuites, illimitées) : le journal se lit par tous → ni nom réel, ni code, ni jeton ; des verdicts et des textes d'écran seulement.
+# À la main / API uniquement — jamais de cron.
+
+on:
+  workflow_dispatch:
+    inputs:
+      variantes:
+        description: "A = compte avec code · B = compte sans code (d'avant le 8.10) · AB = les deux"
+        default: "AB"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parcours-invite
+  cancel-in-progress: false
+
+jobs:
+  parcours:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Parcours d'une personne invitée (iPhone neuf) — verdicts seulement
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          VARIANTES: ${{ inputs.variantes }}
+        shell: bash -eo pipefail {0}
+        run: node tests/parcours-invite.mjs "${VARIANTES:-AB}"

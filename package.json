@@ -262,6 +262,7 @@
     "test:apis-worker": "node --test services/kdmc-apis/worker.test.mjs",
     "test:apis-compte": "node services/kdmc-apis/compte-obligatoire.test.mjs",
     "test:comptes-etat-sans-noms": "node tests/verify-comptes-etat-sans-noms.mjs --sabotage",
+    "test:parcours-invite": "node tests/verify-parcours-invite.mjs --sabotage",
     "test:kv-inventaire": "node tests/verify-kv-inventaire.mjs",
     "test:publication-rh-plafond": "node tests/verify-publication-rh-plafond.mjs",
     "test:comptes-nettoyer": "node tests/verify-comptes-nettoyer.mjs",

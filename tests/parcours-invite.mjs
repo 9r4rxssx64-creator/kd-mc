@@ -55,6 +55,17 @@ async function parcours(variante, H) {
     const b = await chromium.launch({ executablePath: process.env.PW_EXE || undefined, proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined });
     const ctx = await b.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', extraHTTPHeaders: {} });
     const p = await ctx.newPage();
+    const reseau = [];
+    p.on('response', async (r) => {
+      try {
+        const u = new URL(r.url());
+        if (/sso-from-kdmc|sso-from-apex|\/api\/auth\/(send-otp|verify-otp)/.test(u.pathname) || (u.host === 'kd-mc.com' || u.host === 'apex-chat.kd-mc.com') && /^\/__sso\/(whoami|pass|cookie|login|issue)$/.test(u.pathname)) {
+          const j = await r.json().catch(() => null);
+          reseau.push(`${u.pathname} → HTTP ${r.status()}${j && (j.reason || j.code || j.error) ? ' (' + String(j.reason || j.code || j.error).slice(0, 40) + ')' : ''}${j && j.ok === true ? ' ok' : ''}${j && typeof j.code === 'boolean' ? ' code:' + j.code : ''}${j && typeof j.verified === 'boolean' ? ' verified:' + j.verified : ''}`);
+        }
+      } catch { /* jamais bloquant */ }
+    });
+    p.on('console', (m) => { if (m.type() === 'error') reseau.push('console.error : ' + m.text().slice(0, 120)); });
     const url = () => { try { const u = new URL(p.url()); return u.host + u.pathname; } catch { return p.url(); } };
     const texte = async () => resume(await p.innerText('body').catch(() => ''));
     try {
@@ -92,7 +103,7 @@ async function parcours(variante, H) {
         const cgu = p.locator('#cgu-ok');
         const skip = p.locator('#pk-skip');
         const retour = p.locator('#ob-retour');
-        if (await cgu.isVisible().catch(() => false)) {
+        if (tour > 1 && (await cgu.isVisible().catch(() => false)) && !(await p.locator('#f-create').isVisible().catch(() => false))) {
           await cgu.check().catch(() => {});
           const bouton = p.locator('button:visible', { hasText: /accepte|continuer|valider|entrer/i }).first();
           if (await bouton.count()) await bouton.click().catch(() => {});
@@ -110,14 +121,27 @@ async function parcours(variante, H) {
         noter(`   puis rouvre le lien d'Apex Chat → ${url()}`);
       }
       await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
-      await p.waitForTimeout(3500);
+      /* Apex Chat doit reconnaître la personne SEUL (compte du domaine, code prouvé) : on lui laisse jusqu'à 25 s pour passer de l'écran de connexion à l'appli. */
+      let entree = false;
+      for (let i = 0; i < 25 && !entree; i++) { entree = !(await p.locator('#auth-step').isVisible().catch(() => false)) && (await p.locator('.bnav-btn:visible').count().catch(() => 0)) > 0; if (!entree) await p.waitForTimeout(1000); }
+      noter(`   entrée automatique dans Apex Chat (sans SMS) : ${entree ? 'OUI' : 'NON après 25 s'}`);
+      out.entreeAuto = entree;
+      noter(`   échanges réseau : ${reseau.slice(0, 14).join(' ; ') || 'aucun'}`);
       const t = await texte();
       const surChat = /apex-chat\./.test(url());
       const demandeNumero = /num[ée]ro de t[ée]l[ée]phone|re[cç]ois un code|code (par )?sms|envoyer le code|\+33|\+377/i.test(await p.innerText('body').catch(() => ''));
       const porte = MOTS_PORTE.test(t);
       noter(`5. Apex Chat après connexion → ${url()} · « ${t} »`);
       noter(`   sur Apex Chat : ${surChat ? 'oui' : 'NON'} · porte encore là : ${porte ? 'OUI' : 'non'} · demande un numéro/SMS : ${demandeNumero ? 'OUI' : 'non'}`);
-      out.apexChatOk = surChat && !porte && !demandeNumero;
+      out.apexChatOk = surChat && !porte && !demandeNumero && out.entreeAuto === true;
+      if (surChat) {
+        /* ce que la personne VOIT sur Apex Chat : le texte entier (≤ 1 400 car.), les champs et les boutons — pour savoir exactement ce qui la demande un numéro */
+        const plein = (await p.innerText('body').catch(() => '')).replace(/\s+/g, ' ').trim();
+        const champs = await p.locator('input:visible, textarea:visible').evaluateAll((l) => l.map((e) => (e.type || 'text') + ':' + (e.placeholder || e.name || e.id || '').slice(0, 40))).catch(() => []);
+        const bts = (await p.locator('button:visible').allInnerTexts().catch(() => [])).map(resume).filter(Boolean).slice(0, 12);
+        noter(`   Apex Chat, texte entier : « ${plein.slice(0, 1400)} »`);
+        noter(`   champs visibles : ${champs.join(' | ') || 'aucun'} · boutons : ${bts.join(' | ') || 'aucun'}`);
+      }
       /* 5. toutes les autres apps, même session */
       const verdicts = { ouvre: [], porte: [], autre: [] };
       for (const h of apps) {

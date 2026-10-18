@@ -2,7 +2,7 @@
 // node --test services/kdmc-outlook/worker.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchesInvoice, keepAttachment, buildAuthorizeUrl, pkceChallenge, b64url, REDIRECT_URI, declencherPublication, PUBLICATION_CLE_KV, basculerSecoursDepot, githubHorsService } from './worker.js';
+import { matchesInvoice, keepAttachment, buildAuthorizeUrl, pkceChallenge, b64url, REDIRECT_URI, declencherPublication, PUBLICATION_CLE_KV, basculerSecoursDepot, githubHorsService, SECOURS_DEPOTS } from './worker.js';
 
 test('matchesInvoice : reconnaît factures/devis, ignore le reste', () => {
   assert.equal(matchesInvoice('Votre facture Orange', '', 'no-reply@orange.fr'), true);
@@ -165,4 +165,7 @@ test('secours : githubHorsService = au moins 2 startup_failure parmi les robots 
   assert.equal(githubHorsService(runsKO, NOW), true); assert.equal(githubHorsService(runsOK, NOW), false);
   assert.equal(githubHorsService([{ conclusion: 'startup_failure', created_at: il(30) }, { conclusion: 'startup_failure', created_at: il(31) }], NOW), false);
   assert.equal(githubHorsService(null, NOW), false);
+});
+test('secours : jamais le dépôt PUBLIC (un runner y exécuterait le code de n\'importe quelle pull request sur le PC de Kevin)', () => {
+  assert.deepEqual(SECOURS_DEPOTS, ['9r4rxssx64-creator/CMCteams']);
 });

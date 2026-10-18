@@ -439,10 +439,12 @@ export async function declencherPublication(env, fetchFn = fetch) {
      ET un runner « kdmc-lenovo » est EN LIGNE sur ce dépôt → KDMC_RUNNER=kdmc-lenovo (les robots partent chez Kevin, gratuit, illimité) ;
    - le Lenovo s'éteint (hors ligne) → la variable est retirée AU TICK SUIVANT (jamais de robot en file vers une machine éteinte) ;
    - le Lenovo reste en ligne → on retente GitHub après SECOURS_ESSAI_APRES_H heures (variable retirée ; si GitHub échoue encore,
-     le tick d'après la repose). Dépôts surveillés : le public d'abord (c'est lui qui déploie), puis le coffre.
+     le tick d'après la repose). Dépôt surveillé : le coffre PRIVÉ seulement (jamais le public : voir SECOURS_DEPOTS).
    Garde-fous : jeton absent ou refusé (portée « Variables » du dépôt) → rien et la raison est rendue ; jamais d'exception ;
    Lenovo jamais allumé / jamais enrôlé → rien ne change (comportement d'avant). Marque : KV `secours:lenovo:<dépôt>` = heure de pose. */
-export const SECOURS_DEPOTS = ['9r4rxssx64-creator/kd-mc', '9r4rxssx64-creator/CMCteams'];
+/* DÉPÔT PRIVÉ SEULEMENT (décision de Kevin 18.10, relevée par la session du PC) : un runner auto-hébergé exécute le code des pull requests ;
+   sur le dépôt PUBLIC, n'importe qui pourrait donc lancer du code sur le PC de Kevin. Jamais de runner ni de variable sur `kd-mc`. */
+export const SECOURS_DEPOTS = ['9r4rxssx64-creator/CMCteams'];
 export const SECOURS_ETIQUETTE = 'kdmc-lenovo';
 export const SECOURS_VARIABLE = 'KDMC_RUNNER';
 export const SECOURS_ESSAI_APRES_H = 6;

@@ -126,6 +126,7 @@ export function _resetCompetence() { competence.clear(); }
 export const MODELES_SECOURS = {   // MESURÉ le 2.10.2026 (sonde 37061173309, GET /models) — rien d'inventé
   groq: ['openai/gpt-oss-20b', 'qwen/qwen3.8-27b'],
   cerebras: ['qwen-3.8-27b'],
+  gemini: ['gemini-2.5-flash', 'gemini-2.5-flash-lite'],   // 2.0-flash est retiré par Google : le suivant prend dans le même appel (modeleInexistant)
 };
 const modelesRetires = new Map();   // provider → Set(modèles qui ont répondu « n'existe pas »)
 const CACHE_RETIRES = CACHE_PAUSE + 'modeles-retires/';
@@ -276,6 +277,8 @@ const OPENAI_COMPAT = {
   glm: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
   cohere: 'https://api.cohere.ai/compatibility/v1/chat/completions',
 };
+/* Gemini parle aussi OpenAI (appels de fonctions compris) : utilisé SEULEMENT par chatAvecOutils (les autres chemins gardent callGemini). Palier gratuit de Google AI Studio, clé GEMINI_API_KEY. */
+const COMPAT_OUTILS_SEULEMENT = { gemini: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions' };
 
 /* Une DEMANDE D'ACTION exige des outils → seul Anthropic les porte (domaine admin). */
 const ACTION_RE = /\b(lance|exécute|execute|déploie|deploie|corrige|répare|repare|modifie|configure|installe|active|désactive|desactive|supprime|envoie|sauvegarde|synchronise|publie|merge|pousse|audit(e|er)?|teste|vérifie|verifie|diagnosti(c|que))\b/;
@@ -469,19 +472,29 @@ async function callAnthropic(key, messages, o) {
  *  opts : { messages, tools (liste de { name, description, parameters }) — absent = réponse finale —, maxTokens, temperature, timeoutMs } */
 export async function chatAvecOutils(env, provider, opts) {
   const o = Object.assign({ maxTokens: 700, temperature: 0.4, timeoutMs: 9000 }, opts || {});
-  const url = OPENAI_COMPAT[provider], key = env && env[SECRET_NAMES[provider]];
+  const url = OPENAI_COMPAT[provider] || COMPAT_OUTILS_SEULEMENT[provider], key = env && env[SECRET_NAMES[provider]];
   if (!url || !key) throw new Error('fournisseur sans outils : ' + provider);
-  const body = { model: modelesCandidats(provider, o.model)[0], messages: o.messages, max_tokens: o.maxTokens, temperature: o.temperature };
-  if (Array.isArray(o.tools) && o.tools.length) { body.tools = o.tools.map((f) => ({ type: 'function', function: f })); body.tool_choice = 'auto'; }
-  const t = withTimeout(o.timeoutMs);
-  try {
-    const r = await fetch(url, { method: 'POST', signal: t.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key }, body: JSON.stringify(body) });
-    const txt = await r.text();
-    if (!r.ok) { const e = new Error('HTTP ' + r.status + ' ' + txt.slice(0, 120)); e.status = r.status; e.retryAfter = r.headers && r.headers.get ? r.headers.get('retry-after') : null; throw e; }
-    await anticiperDepuisEntetes(provider, r.headers);
-    const m = JSON.parse(txt).choices[0].message;
-    return { content: m && m.content ? m.content : '', tool_calls: m && Array.isArray(m.tool_calls) ? m.tool_calls : [], model: body.model };
-  } finally { t.done(); }
+  const candidats = modelesCandidats(provider, o.model);
+  const depart = Date.now();
+  for (let i = 0; i < candidats.length; i++) {
+    const model = candidats[i];
+    const body = { model, messages: o.messages, max_tokens: o.maxTokens, temperature: o.temperature };
+    if (Array.isArray(o.tools) && o.tools.length) { body.tools = o.tools.map((f) => ({ type: 'function', function: f })); body.tool_choice = 'auto'; }
+    const t = withTimeout(Math.max(1500, o.timeoutMs - (Date.now() - depart)));
+    try {
+      const r = await fetch(url, { method: 'POST', signal: t.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key }, body: JSON.stringify(body) });
+      const txt = await r.text();
+      if (!r.ok) {
+        /* « ce modèle n'existe plus » = changer de MODÈLE (le suivant de la liste, dans le même appel), pas de fournisseur */
+        if (modeleInexistant(r.status, txt) && i < candidats.length - 1) { await retirerModele(provider, model); continue; }
+        const e = new Error('HTTP ' + r.status + ' ' + txt.slice(0, 120)); e.status = r.status; e.retryAfter = r.headers && r.headers.get ? r.headers.get('retry-after') : null; throw e;
+      }
+      await anticiperDepuisEntetes(provider, r.headers);
+      const m = JSON.parse(txt).choices[0].message;
+      return { content: m && m.content ? m.content : '', tool_calls: m && Array.isArray(m.tool_calls) ? m.tool_calls : [], model };
+    } finally { t.done(); }
+  }
+  throw new Error('aucun modèle disponible : ' + provider);
 }
 
 export async function routeText(env, opts) {

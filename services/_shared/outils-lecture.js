@@ -26,7 +26,7 @@ import { SECRET_NAMES, chatAvecOutils, enPause, pauser, chargerPauses, chargerMo
 /* Cerebras puis Groq : gratuits, rapides, et tous deux savent appeler des outils (gpt-oss-120b) */
 /* gpt-oss-120b (Cerebras, Groq) d'abord ; puis, en RELAIS GRATUIT de même niveau (règle Kevin 2.10), les Llama 70B qui savent
    appeler des fonctions (SambaNova, NVIDIA) ; Mistral small (niveau B) en dernier. Seuls ceux dont la clé existe servent. */
-export const FOURNISSEURS_OUTILS = ['cerebras', 'groq', 'sambanova', 'nvidia', 'mistral'];
+export const FOURNISSEURS_OUTILS = ['cerebras', 'groq', 'gemini', 'sambanova', 'nvidia', 'mistral'];
 export const MONACO = { nom: 'Monaco', lat: 43.7384, lon: 7.4246 };
 export const MAX_TOURS = 4;
 const DELAI_OUTIL_MS = 6000;

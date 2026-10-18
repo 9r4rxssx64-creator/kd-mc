@@ -2582,6 +2582,16 @@
       "maj": "2026-10-18",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-gemini": {
+      "titre": "Bee : Gemini gratuit aux IA à outils",
+      "branche": "claude/bee-gemini",
+      "sujet": "ia-route chatAvecOutils candidats ; FOURNISSEURS_OUTILS gemini",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-18",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

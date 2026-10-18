@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   detectDomain, planChain, routeText, stripThink, availableProviders, routingStatus,
   QWEN_MODELS, FREE_PROVIDERS, DOMAIN_PREFERENCES, SECRET_NAMES,
-  _resetPauses, enPause, pauser, dureePause, anticiperDepuisEntetes, NIVEAU,
+  _resetPauses, enPause, pauser, dureePause, anticiperDepuisEntetes, NIVEAU, chatAvecOutils,
 } from './ia-route.js';
 
 /* les pauses d'épuisement vivent en mémoire : chaque test repart à zéro */
@@ -589,4 +589,29 @@ test('PAYANTS EN DERNIER : dans CHAQUE domaine, aucun payant avant un gratuit (s
     assert.ok(premierPayant === -1 || premierPayant > dernierGratuit, d + ' : ' + c.join(' > '));
   }
   assert.equal(planChain('code', prod, { premium: true })[0], 'anthropic', 'premium explicite : Anthropic reste en tête');
+});
+
+test('outils : Gemini (gratuit) parle OpenAI avec appels de fonctions ; si son modèle est retiré, le SUIVANT prend dans le même appel (2.0-flash retiré par Google)', async () => {
+  const vus = [];
+  const m = mockFetch((url, init) => {
+    const corps = JSON.parse(init.body); vus.push({ url: String(url), model: corps.model, tools: !!corps.tools });
+    if (corps.model === 'gemini-2.0-flash') return new Response('{"error":{"message":"models/gemini-2.0-flash is not found for API version v1beta"}}', { status: 404 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: '', tool_calls: [{ id: 'a', type: 'function', function: { name: 'calcul', arguments: '{"expression":"2+2"}' } }] } }] }), { status: 200 });
+  });
+  try {
+    const r = await chatAvecOutils({ GEMINI_API_KEY: 'g' }, 'gemini', { messages: [{ role: 'user', content: 'combien font 2+2 ?' }], tools: [{ name: 'calcul', description: 'x', parameters: { type: 'object', properties: {} } }] });
+    assert.equal(vus.length, 2, 'deux essais : le modèle retiré puis le suivant');
+    assert.match(vus[0].url, /generativelanguage\.googleapis\.com\/v1beta\/openai\/chat\/completions/);
+    assert.equal(vus[0].model, 'gemini-2.0-flash'); assert.equal(vus[1].model, 'gemini-2.5-flash');
+    assert.equal(r.tool_calls.length, 1); assert.equal(r.tool_calls[0].function.name, 'calcul'); assert.equal(r.model, 'gemini-2.5-flash');
+    const r2 = await chatAvecOutils({ GEMINI_API_KEY: 'g' }, 'gemini', { messages: [{ role: 'user', content: 'encore' }], tools: [{ name: 'calcul', description: 'x', parameters: { type: 'object', properties: {} } }] });
+    assert.equal(vus[2].model, 'gemini-2.5-flash', 'le modèle retiré est RETENU : plus d\'essai inutile'); assert.equal(r2.model, 'gemini-2.5-flash');
+  } finally { m.restore(); }
+});
+test('outils : une autre erreur (429) remonte avec son statut — la pause se règle sur sa nature', async () => {
+  const m = mockFetch(() => new Response('{"error":{"message":"Rate limit exceeded"}}', { status: 429 }));
+  try {
+    await assert.rejects(() => chatAvecOutils({ GEMINI_API_KEY: 'g' }, 'gemini', { messages: [{ role: 'user', content: 'a' }] }), (e) => e.status === 429);
+    await assert.rejects(() => chatAvecOutils({}, 'gemini', { messages: [] }), /sans outils/);
+  } finally { m.restore(); }
 });

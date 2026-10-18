@@ -209,7 +209,7 @@ ok(questionComplexe('Explique-moi pourquoi il pleut à Monaco en octobre') && qu
   IA_SCRIPT.groq = [500, 500, 500]; 
   const r = await bee('Explique-moi quel temps il fera demain et ce que ça change pour ma journée', SERV);
   ok(r.st === 200 && r.j.ok && /pluie faible/.test(r.j.text), 'la conférence tombe en panne → la réponse des outils est gardée (jamais de silence) — ' + JSON.stringify(r.j)); }
-ok(FOURNISSEURS_OUTILS[0] === 'cerebras' && FOURNISSEURS_OUTILS[1] === 'groq' && FOURNISSEURS_OUTILS.every((p) => ['cerebras', 'groq', 'sambanova', 'nvidia', 'mistral'].includes(p)), 'relais gratuits à outils : Cerebras, Groq, puis SambaNova, NVIDIA, Mistral — jamais un payant');
+ok(FOURNISSEURS_OUTILS[0] === 'cerebras' && FOURNISSEURS_OUTILS[1] === 'groq' && FOURNISSEURS_OUTILS.every((p) => ['cerebras', 'groq', 'gemini', 'sambanova', 'nvidia', 'mistral'].includes(p)) && FOURNISSEURS_OUTILS.includes('gemini'), 'relais gratuits à outils : Cerebras, Groq, puis Gemini, SambaNova, NVIDIA, Mistral — jamais un payant');
 
 /* ---------- 9. COUPLÉ À APEX : la même boucle d'outils sur l'entrée IA du domaine (kdmc-apis /ai), pour Kevin ---------- */
 async function ia(corps, entetes, env2) {

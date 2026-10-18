@@ -451,7 +451,10 @@
   function _aiRetryFree(){ _aiDown={}; _aiFellToast=false; if(VAULT){ delete VAULT.aiLastErr; try{persist();}catch(_){} } }
   /* Diagnostic Réglages : dit EXACTEMENT pourquoi un moteur est tombé + comment corriger (leçon #97). */
   function _aiWhy(err,prov){ var m=String(err||'');
-    if(/API key not valid|api_key_invalid|invalid.{0,12}key|401|403|PERMISSION_DENIED|Unauthorized/i.test(m)) return {t:'La clé de cette IA gratuite est refusée par le fournisseur — elle doit être renouvelée.', fix:true};
+    /* « Unauthorized » brut = c'est NOTRE relais qui a refusé le code admin de Kevin (PAS le fournisseur) — à distinguer
+       d'un 401/403 avec corps JSON (fournisseur), sinon on dit à Kevin de retaper un code qui n'est jamais le problème. */
+    if(/\bUnauthorized\b/.test(m)) return {t:'Ton code admin est refusé par le relais (le fournisseur n\'est même pas appelé) — revérifie-le ci-dessus.', fix:true, mine:true};
+    if(/API key not valid|api_key_invalid|invalid.{0,12}key|401|403|PERMISSION_DENIED|API_KEY_SERVICE_BLOCKED|authentication_error/i.test(m)) return {t:'La clé de cette IA gratuite est refusée par le fournisseur — elle doit être renouvelée.', fix:true};
     if(/429|quota|rate.?limit|RESOURCE_EXHAUSTED|too many/i.test(m)) return {t:'Limite gratuite du jour atteinte — ça repart tout seul plus tard.', fix:false};
     if(/not configured|503/i.test(m)) return {t:'Cette IA gratuite n\'est pas configurée sur le serveur.', fix:true};
     if(/load failed|failed to fetch|network|timeout/i.test(m)) return {t:'Réseau instable au moment de l\'appel.', fix:false};
@@ -461,7 +464,8 @@
     var isGemini=(e.prov==='gemini');
     return '<div class="tiny" style="margin-top:10px;background:#241a08;border:1px solid #5a4410;border-radius:10px;padding:10px 12px;color:#f2d98a">'+
       '🔎 <b>'+esc(who)+' indisponible.</b> '+esc(w.t)+
-      (w.fix&&e.prov!=='anthropic'?'<br>Tes imports marchent quand même (une autre IA gratuite ou Claude prend le relais).'+(isGemini?' Pour Gemini : crée une clé sur <b>aistudio.google.com</b> — je te guide.':''):'')+
+      (w.mine?'<br>Tant que ce code est faux, <b>aucune</b> IA ne répond (gratuite ou Claude) — ce n\'est pas elles qui sont en panne.'
+        :(w.fix&&e.prov!=='anthropic'?'<br>Tes imports marchent quand même (une autre IA gratuite ou Claude prend le relais).'+(isGemini?' Pour Gemini : crée une clé sur <b>aistudio.google.com</b> — je te guide.':''):''))+
       '<br><span style="opacity:.7">Détail technique : '+esc(String(e.err||'').slice(0,120))+'</span>'+
       '<br><button class="btn sm" id="ai-retry-free" style="margin-top:6px">🔄 Retenter les IA gratuites</button></div>'; }
   function _aiFellToastOnce(){ if(_aiFellToast)return; _aiFellToast=true;
@@ -1584,7 +1588,14 @@
   function _importErrMsg(e){ var m=(e&&e.message)||String(e);
     if(/volumineux|trop lourd|too large|payload|413|request entity/i.test(m)) return 'PDF trop lourd — scinde-le ou passe en Wi-Fi';
     if(_isNetErr(e)) return 'Réseau instable — réessaie (plutôt en Wi-Fi)';
-    if(/401|invalid.*key|cl[ée]\s*(api|ia)?\s*(invalide|non)/i.test(m)) return 'Clé IA invalide — revérifie le code (Réglages)';
+    /* « Unauthorized » (texte brut, sans JSON) = NOTRE relais refuse le PIN de Kevin → le conseil
+       « revérifie le code » est juste. Un 401/403 avec un corps JSON (PERMISSION_DENIED, authentication_error,
+       invalid x-api-key…) = c'est le FOURNISSEUR (Gemini/Claude/Groq…) qui refuse SA PROPRE clé sur le relais —
+       retaper son code n'y change rien (mesuré 18.10 : Gemini bloqué par Google, HTTP 403 API_KEY_SERVICE_BLOCKED,
+       pour TOUS les imports PDF — aucun rapport avec le code admin de Kevin). Les deux étaient confondues sous
+       le même message, qui envoyait Kevin corriger un code qui n'était jamais le problème. */
+    if(/\bUnauthorized\b/.test(m)) return 'Code admin refusé par le relais — revérifie le code (Réglages)';
+    if(/401|403|invalid.*key|cl[ée]\s*(api|ia)?\s*(invalide|non)|PERMISSION_DENIED|API_KEY_SERVICE_BLOCKED|authentication_error/i.test(m)) return 'Une IA (fournisseur) refuse sa clé — pas ton code, je bascule, réessaie plus tard';
     if(/429|quota|rate.?limit|too many/i.test(m)) return 'Limite IA atteinte — patiente puis réessaie';
     return m.slice(0,60); }
   /* ---- File d'attente d'import (réseau) : « toujours tout auto » (Kevin) ----

@@ -2672,6 +2672,16 @@
       "maj": "2026-10-18",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-attente-ration": {
+      "titre": "Bee : robot en attente de la ration",
+      "branche": "claude/bee-attente-ration",
+      "sujet": "ration robot minuit UTC",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-18",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

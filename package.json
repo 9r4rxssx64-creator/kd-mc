@@ -266,6 +266,7 @@
     "test:attendre-compte": "node tests/verify-attendre-compte.mjs --sabotage",
     "test:whoami-ua": "node tests/verify-whoami-ua.mjs --sabotage",
     "test:code-attendu": "node services/kdmc-router/code-attendu.test.mjs",
+    "test:fusion-rapide": "node services/kdmc-router/fusion-rapide.test.mjs",
     "test:porte-deja-compte": "node services/kdmc-router/porte-deja-compte.test.mjs",
     "test:kv-inventaire": "node tests/verify-kv-inventaire.mjs",
     "test:publication-rh-plafond": "node tests/verify-publication-rh-plafond.mjs",

@@ -3369,9 +3369,13 @@ async function mergeIntoCanon(env, acc) {
   const stamp = async () => { acc.merged_v1 = 1; acc.merged_at = Date.now(); await accPut(env, acc, true); };
   if (!admin && me.split(' ').filter(Boolean).length < 2) { await stamp(); return; }
   const others = [];
-  for (const u of idx) {
-    if (u === acc.uid) continue;
-    const o = await accGet(env, u);
+  /* 18.10.2026 (mesuré en réel : le tout premier « nom + code » d'un compte neuf prenait 10,5–12 s, dont `enrich` = 11 049 ms ; les suivants 150 ms) :
+     cette relecture des dossiers se faisait UN PAR UN (25 dossiers × ~0,4 s de lecture KV). Elle se fait maintenant par paquets de 10 en parallèle
+     (même résultat, même ordre) : ~1 s. Une seule fois par compte (marque `merged_v1`). */
+  const autres = idx.filter((u) => u !== acc.uid);
+  const lus = [];
+  for (let i = 0; i < autres.length; i += 10) lus.push(...await Promise.all(autres.slice(i, i + 10).map((u) => accGet(env, u).catch(() => null))));
+  for (const o of lus) {
     if (!o || o.merged_into) continue;
     const same = admin ? isAdminName(o.name) : (normName(o.name) === me && !isAdminName(o.name));
     if (same) others.push(o);

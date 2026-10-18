@@ -4337,6 +4337,7 @@ async function handleBeeIa(request, env, ctx) {
      Interrupteur BEE_OUTILS = '0' (règle Kevin : un bouton ON/OFF sur tout). */
   const debut = Date.now();
   let repliOutils = null, faitsOutils = '', outilsEchec = false;
+  const traceOutils = [];   /* pourquoi les IA à outils n'ont pas répondu (Kevin seul : la route est réservée à son compte) */
   const sortie = {};   /* ce que les mains de Bee préparent (cartes de confirmation) */
   const mains = String(env && env.BEE_AGIR) !== '0' ? outilsAdmin(env, { now: () => Date.now(), arbre: () => outilsBee(env, ctx).arbre(), doublon: (p, n) => outilsBee(env, ctx).doublon(p, n), appeler: (chemin, init) => outilsBee(env, ctx).appeler(request, chemin, init), apps: async () => listeApps(await chargerFermees(env, true).catch(() => [])) }, sortie) : null;
   const avec = (o) => {
@@ -4384,7 +4385,7 @@ async function handleBeeIa(request, env, ctx) {
        Question simple (« quel temps demain ? ») : l'IA à outils répond seule, vite. */
     const complexe = questionComplexe(messages[messages.length - 1].content);
     const rt = await repondreAvecOutils(env, {
-      messages, system: caractere + REGLES_OUTILS + (veutAgir ? REGLES_AGIR + REGLES_TACHES : '') + (veutArbre ? REGLES_ARBRE : '') + (veutArbre && bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (veutVoir ? REGLES_VOIR : '') + (veutOuvrir ? REGLES_OUVRIR : '') + (veutAtelier ? REGLES_ATELIER : ''), extra, finMs: debut + (complexe ? 8000 : 13000),
+      messages, system: caractere + REGLES_OUTILS + (veutAgir ? REGLES_AGIR + REGLES_TACHES : '') + (veutArbre ? REGLES_ARBRE : '') + (veutArbre && bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (veutVoir ? REGLES_VOIR : '') + (veutOuvrir ? REGLES_OUVRIR : '') + (veutAtelier ? REGLES_ATELIER : ''), extra, finMs: debut + (complexe ? 8000 : 13000), trace: traceOutils,
       ctx: { planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)) },
     });
     if (rt && rt.text) {
@@ -4432,7 +4433,7 @@ async function handleBeeIa(request, env, ctx) {
   /* la conférence n'a rien rendu mais les outils avaient une réponse : on la garde (jamais de silence) */
   if ((!r || !r.ok || !r.text) && repliOutils) return JB(avec({ ok: true, text: repliOutils.text, provider: repliOutils.provider, gratuit: true, outils: repliOutils.outils }));
   if (!r || !r.ok || !r.text) return JB({ ok: false, reason: 'ia_indisponible' }, 503);
-  return JB(avec(Object.assign({ ok: true, text: r.text, provider: r.provider, gratuit: FREE_PROVIDERS.indexOf(r.provider) >= 0 }, repliOutils ? { outils: repliOutils.outils, conference: true } : {})));
+  return JB(avec(Object.assign({ ok: true, text: r.text, provider: r.provider, gratuit: FREE_PROVIDERS.indexOf(r.provider) >= 0 }, repliOutils ? { outils: repliOutils.outils, conference: true } : {}, outilsEchec && traceOutils.length ? { outils_pourquoi: traceOutils.slice(0, 6) } : {})));
 }
 
 /* L'adresse du planning chez l'hébergeur : le filet quand le KV est plafonné (la publication l'y remet). */

@@ -108,6 +108,16 @@ const Q1 = [{ role: 'user', content: 'Quel temps demain ?' }];
   ok(/lundi 5 octobre/.test(t) && /DONNÉE D'OUTIL/.test(t), 'le résultat revient à l\'IA, encadré comme DONNÉE');
   ok(IA_VUES[0].corps.tools.length === DEFINITIONS.length && IA_VUES[0].corps.tool_choice === 'auto' && IA_VUES[0].corps.messages[0].role === 'system', 'l\'IA reçoit les 6 outils et le caractère de Bee');
   ok(IA_VUES.every((v) => v.four === 'cerebras'), 'Cerebras d\'abord, Groq non appelé quand Cerebras répond'); }
+/* LA TRACE (18.10, mesuré en réel : trois questions sans outil et aucune raison lisible) : chaque IA à outils qui n'a pas répondu dit POURQUOI */
+{ reset(); IA_SCRIPT.cerebras = [500]; IA_SCRIPT.groq = [500];
+  const trace = [];
+  const r = await repondreAvecOutils(ENV, { messages: Q1, system: 'x', trace });
+  ok(r === null && trace.length === 2 && /^cerebras : .*HTTP 500/.test(trace[0]) && /^groq : .*HTTP 500/.test(trace[1]), 'aucune IA ne répond : la trace dit laquelle a échoué et pourquoi — ' + JSON.stringify(trace));
+  reset(); IA_SCRIPT.cerebras = [500]; IA_SCRIPT.groq = [500];
+  ok((await repondreAvecOutils(ENV, { messages: Q1, system: 'x' })) === null, 'sans trace demandée : rien ne change, pas de plantage');
+  reset(); IA_SCRIPT.cerebras = [{ content: 'Bonjour.' }]; const t2 = [];
+  const bon = await repondreAvecOutils(ENV, { messages: Q1, system: 'x', trace: t2 });
+  ok(bon && bon.provider === 'cerebras' && t2.length === 0, 'quand ça marche, la trace reste vide'); }
 { reset();
   IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appelOutil('a', 'date_heure'), appelOutil('b', 'calcul', { expression: '12*(3+4)' })] }, { content: 'Il est tard, et 12 × 7 = 84.' }];
   const r = await repondreAvecOutils(ENV, { messages: [{ role: 'user', content: 'heure et 12*(3+4)' }], system: 'x' });

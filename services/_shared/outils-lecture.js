@@ -311,8 +311,9 @@ export async function repondreAvecOutils(env, opts) {
   const msgs = [{ role: 'system', content: String(o.system || '') }].concat(o.messages || []);
   const utilises = [], faits = [];
   const fin = o.finMs || (Date.now() + 18000);
+  const trace = (t) => { if (Array.isArray(o.trace)) o.trace.push(String(t).slice(0, 240)); };   /* pourquoi chaque IA n'a pas répondu : remonte à Kevin seul (diagnostic), jamais aux autres */
   for (const p of dispo) {
-    if (enPause(p)) continue;
+    if (enPause(p)) { trace(p + ' : en pause'); continue; }
     try {
       for (let tour = 0; tour <= MAX_TOURS; tour++) {
         const reste = fin - Date.now(); if (reste < 1500) throw new Error('échéance');
@@ -340,6 +341,7 @@ export async function repondreAvecOutils(env, opts) {
         for (const r of resultats) msgs.push(r);
       }
     } catch (e) {
+      trace(p + ' : ' + (e && e.message ? e.message : e));
       if (e && (e.status === 429 || e.status === 402 || e.status === 403)) { try { await pauser(p, dureePause(e.status, e.message, e.retryAfter), 'outils : ' + String(e.message).slice(0, 60)); } catch (_) { /* rien */ } }
       /* on passe au fournisseur suivant en gardant ce que les outils ont déjà rendu */
     }

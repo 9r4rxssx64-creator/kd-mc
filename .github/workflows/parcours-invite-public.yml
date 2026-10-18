@@ -11,8 +11,8 @@ on:
   workflow_dispatch:
     inputs:
       variantes:
-        description: "A = compte avec code · B = compte sans code (d'avant le 8.10) · AB = les deux"
-        default: "AB"
+        description: "A = compte avec code · B = compte sans code (d'avant le 8.10) · C = sans code mais inscrit d'avance par Kevin · ABC = les trois"
+        default: "ABC"
 
 permissions:
   contents: read
@@ -43,4 +43,4 @@ jobs:
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
           VARIANTES: ${{ inputs.variantes }}
         shell: bash -eo pipefail {0}
-        run: node tests/parcours-invite.mjs "${VARIANTES:-AB}"
+        run: node tests/parcours-invite.mjs "${VARIANTES:-ABC}"

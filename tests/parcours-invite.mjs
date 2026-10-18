@@ -10,10 +10,10 @@
  *   4. regarde si Apex Chat s'ouvre SANS demander un numéro de téléphone / un SMS ;
  *   5. visite chaque autre app du domaine dans la MÊME session et dit, app par app, si elle s'ouvre ou ce qui l'arrête ;
  *   6. variante B : le code du compte est effacé (cas d'un compte d'avant le 8.10, comme celui de Ludo) — mêmes étapes, et on note si la personne
- *      peut s'en sortir SEULE ;
+ *      peut s'en sortir SEULE ; variante C : comme B, mais Kevin a inscrit la personne d'avance (« personnes attendues ») → elle doit entrer SANS attendre ;
  *   7. supprime le compte de test (toujours, même en cas d'erreur).
  * Dépôt PUBLIC : le journal se lit par tous → aucun nom réel, aucun code, aucun jeton : seulement des verdicts et des textes d'écran sans donnée.
- * Usage : KDMC_ADMIN_PIN_SHA256=… node tests/parcours-invite.mjs [A|B|AB]   (défaut AB)  ·  PW_EXE = chemin d'un Chromium si besoin
+ * Usage : KDMC_ADMIN_PIN_SHA256=… node tests/parcours-invite.mjs [A|B|C|ABC]   (défaut ABC)  ·  PW_EXE = chemin d'un Chromium si besoin
  * Écrit des annotations GitHub (::notice / ::error). Code de sortie 1 si une étape ESSENTIELLE de A échoue. */
 import { chromium, devices } from 'playwright';
 import { readFileSync } from 'node:fs';
@@ -22,7 +22,7 @@ import { randomBytes } from 'node:crypto';
 const DOMAINE = 'https://kd-mc.com';
 const annot = (n, t, m) => console.log(`::${n} title=${t}::${String(m).replace(/\r?\n/g, ' ⏎ ').slice(0, 900)}`);
 const lettres = (n) => Array.from(randomBytes(n)).map((b) => 'abcdefghijklmnopqrstuvwxyz'[b % 26]).join('');
-const choix = String(process.argv[2] || 'AB').toUpperCase();
+const choix = String(process.argv[2] || 'ABC').toUpperCase();
 const hash = String(process.env.KDMC_ADMIN_PIN_SHA256 || '').trim().toLowerCase();
 if (!/^[0-9a-f]{64}$/.test(hash)) { annot('error', 'Parcours invité', 'code admin absent (secret CI)'); process.exit(1); }
 
@@ -50,7 +50,8 @@ async function parcours(variante, H) {
     const c = await post(H, '/__admin/compte-invite', { prenom, nom, code, telephone: '+33600000093', tel_mode: 'saisi' });
     if (!c.j.ok) { annot('error', `Parcours ${variante}`, 'création du compte de test refusée : HTTP ' + c.http + ' ' + JSON.stringify(c.j).slice(0, 160)); out.essentiel = false; return out; }
     uid = c.j.uid;
-    if (variante === 'B') { const e = await post(H, '/__admin/code', { uid }); noter('code effacé (cas « compte d\'avant le 8.10 ») : ' + (e.j.ok ? 'oui' : 'NON ' + JSON.stringify(e.j).slice(0, 80))); }
+    if (variante === 'C') { const a = await post(H, '/__admin/attendus', { nom: nomComplet }); noter('« personne attendue » inscrite par Kevin : ' + (a.j.ok ? 'oui' : 'NON ' + JSON.stringify(a.j).slice(0, 80))); }
+    if (variante === 'B' || variante === 'C') { const e = await post(H, '/__admin/code', { uid }); noter('code effacé (cas « compte d\'avant le 8.10 ») : ' + (e.j.ok ? 'oui' : 'NON ' + JSON.stringify(e.j).slice(0, 80))); }
     const b = await chromium.launch({ executablePath: process.env.PW_EXE || undefined, proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined });
     const ctx = await b.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', extraHTTPHeaders: {} });
     const p = await ctx.newPage();
@@ -61,37 +62,53 @@ async function parcours(variante, H) {
       await p.goto('https://apex-chat.kd-mc.com/', { waitUntil: 'networkidle', timeout: 45000 }).catch((e) => noter('ouverture : ' + e.message.slice(0, 80)));
       await p.waitForTimeout(2000);
       noter(`1. Apex Chat (appareil neuf) → ${url()} · « ${await texte()} »`);
+      const aDeja = await p.locator('#deja').count();
       const aFiche = await p.locator('#fiche').count();
       const aPk = await p.locator('#pk').isVisible().catch(() => false);
-      noter(`   boutons de la porte : Face ID ${aPk ? 'oui' : 'non'} · « remplir ma fiche » ${aFiche ? 'oui' : 'NON'} · connexion nom + code SUR la porte : ${(await p.locator('#l-nom, input[autocomplete=username]').count()) ? 'oui' : 'NON'}`);
-      /* 2. la personne touche « Remplir ma fiche » (seul chemin proposé quand Face ID n'est pas encore réglé sur ce téléphone) */
-      if (aFiche) await p.locator('#fiche').click({ timeout: 8000 }).catch((e) => noter('clic fiche : ' + e.message.slice(0, 60)));
+      noter(`   boutons de la porte : Face ID ${aPk ? 'oui' : 'non'} · « J'ai déjà un compte — nom + code » ${aDeja ? 'oui' : 'NON'} · lien de création ${aFiche ? 'oui' : 'NON'}`);
+      out.boutonSurLaPorte = !!aDeja;
+      /* 2. la personne touche « J'ai déjà un compte — nom + code » (ou, à défaut, le seul autre lien de la porte) */
+      const cible = aDeja ? '#deja' : '#fiche';
+      if (aDeja || aFiche) await p.locator(cible).click({ timeout: 8000 }).catch((e) => noter('clic ' + cible + ' : ' + e.message.slice(0, 60)));
       await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
       await p.waitForTimeout(1500);
       noter(`2. Portail → ${url()} · « ${await texte()} »`);
       /* 3. « J'ai déjà un compte — nom + code » */
-      const deja = p.locator('#f-deja');
-      const dejaVisible = await deja.isVisible().catch(() => false);
-      noter(`3. bouton « J'ai déjà un compte — nom + code » visible : ${dejaVisible ? 'oui' : 'NON'}`);
-      if (!dejaVisible) { out.essentiel = false; return out; }
-      await deja.click();
+      const boiteOuverte = await p.locator('#l-nom').isVisible().catch(() => false);
+      noter(`3. boîte « nom + code » déjà ouverte à l'arrivée : ${boiteOuverte ? 'oui' : 'non (la personne doit toucher « J\'ai déjà un compte — nom + code »)'}`);
+      if (!boiteOuverte) {
+        const deja = p.locator('#f-deja');
+        if (!(await deja.isVisible().catch(() => false))) { noter('   bouton « J\'ai déjà un compte — nom + code » introuvable'); out.essentiel = false; return out; }
+        await deja.click();
+      }
       await p.fill('#l-nom', nomComplet);
       await p.fill('#l-code', code);
       await p.click('#l-go');
       await p.waitForTimeout(3500);
       noter(`4. après « Me connecter » → ${url()} · « ${await texte()} »`);
-      /* conditions du domaine (une seule fois) : la case, puis le bouton qui la valide */
-      const cgu = p.locator('#cgu-ok');
-      if (await cgu.isVisible().catch(() => false)) {
-        await cgu.check().catch(() => {});
-        const bouton = p.locator('button:visible', { hasText: /accepte|continuer|valider|entrer/i }).first();
-        if (await bouton.count()) await bouton.click().catch(() => {});
-        await p.waitForTimeout(3000);
-        noter(`   conditions acceptées (1 clic) → ${url()} · « ${await texte()} »`);
+      /* Après « Me connecter » la personne peut traverser : les conditions du domaine (1 clic), l'offre « Active Face ID » (« Plus tard »), puis le retour à l'app.
+         On fait ce que ferait quelqu'un de pressé : on accepte / on passe, jusqu'à 5 écrans, et on note chacun. */
+      for (let tour = 1; tour <= 5; tour++) {
+        const cgu = p.locator('#cgu-ok');
+        const skip = p.locator('#pk-skip');
+        const retour = p.locator('#ob-retour');
+        if (await cgu.isVisible().catch(() => false)) {
+          await cgu.check().catch(() => {});
+          const bouton = p.locator('button:visible', { hasText: /accepte|continuer|valider|entrer/i }).first();
+          if (await bouton.count()) await bouton.click().catch(() => {});
+          await p.waitForTimeout(2500); noter(`   écran ${tour} : conditions acceptées (1 clic) → ${url()}`); continue;
+        }
+        if (await skip.isVisible().catch(() => false)) { await skip.click().catch(() => {}); await p.waitForTimeout(3000); noter(`   écran ${tour} : « Active Face ID » → « Plus tard » → ${url()}`); continue; }
+        if (!/apex-chat\./.test(url()) && await retour.isVisible().catch(() => false)) { await retour.click().catch(() => {}); await p.waitForTimeout(3000); noter(`   écran ${tour} : « Retour à l'app » touché → ${url()}`); continue; }
+        break;
       }
-      /* 4bis. retour automatique à l'app d'où on venait ? sinon la personne touche « Retour à l'app » */
-      const retour = p.locator('#ob-retour');
-      if (!/apex-chat/.test(url()) && await retour.isVisible().catch(() => false)) { await retour.click().catch(() => {}); await p.waitForTimeout(3500); noter(`   « Retour à l'app » touché → ${url()}`); }
+      if (!/apex-chat\./.test(url())) {
+        const boutons = await p.locator('button:visible, a:visible').allInnerTexts().catch(() => []);
+        noter(`   arrêtée sur ${url()} · boutons visibles : ${boutons.map(resume).filter(Boolean).slice(0, 8).join(' | ')}`);
+        /* la personne n'a pas été ramenée seule : elle rouvre le lien de l'invitation */
+        await p.goto('https://apex-chat.kd-mc.com/', { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {});
+        noter(`   puis rouvre le lien d'Apex Chat → ${url()}`);
+      }
       await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
       await p.waitForTimeout(3500);
       const t = await texte();
@@ -124,6 +141,7 @@ async function parcours(variante, H) {
   } catch (e) {
     noter('ERREUR du robot : ' + String(e && e.message).slice(0, 200)); out.essentiel = false;
   } finally {
+    if (variante === 'C') await post(H, '/__admin/attendus', { nom: nomComplet, retirer: true }).catch(() => {});
     if (uid) { const d = await post(H, '/__admin/compte-supprimer', { uid, confirmer: true }).catch(() => ({ http: 0, j: {} })); noter(`nettoyage : compte de test ${d.j && d.j.ok ? 'supprimé' : 'NON SUPPRIMÉ (HTTP ' + d.http + ') — à supprimer à la main : ' + uid}`); }
     const blocs = []; for (let i = 0; i < L.length; i += 6) blocs.push(L.slice(i, i + 6).join('\n'));
     blocs.forEach((bl, i) => annot('notice', `Parcours ${variante} (${i + 1}/${blocs.length})`, bl));
@@ -132,9 +150,15 @@ async function parcours(variante, H) {
 }
 
 const H = await admin();
+try {
+  const r = await fetch(DOMAINE + '/__admin/apps-fermees', { headers: H });
+  const j = await r.json().catch(() => ({}));
+  annot('notice', 'Apps fermées pour tout le monde', `HTTP ${r.status} · ${JSON.stringify(j.fermees || j.liste || j.apps || j).slice(0, 400)}`);
+} catch (e) { annot('notice', 'Apps fermées pour tout le monde', 'lecture impossible : ' + String(e.message).slice(0, 80)); }
 const res = [];
 if (choix.includes('A')) res.push(await parcours('A', H));
 if (choix.includes('B')) res.push(await parcours('B', H));
+if (choix.includes('C')) res.push(await parcours('C', H));
 const A = res.find((r) => r.variante === 'A');
 annot(A && A.essentiel && A.apexChatOk ? 'notice' : 'error', 'Parcours invité — bilan', res.map((r) => `${r.variante}: apex-chat ${r.apexChatOk ? 'OK' : 'KO'} · apps ouvertes ${r.ouvre ?? '?'} · arrêtées ${r.porte ?? '?'}`).join(' · '));
 process.exit(A && A.essentiel && A.apexChatOk ? 0 : 1);

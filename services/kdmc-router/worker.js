@@ -2018,9 +2018,12 @@ function portePage(g, url) {
     + 'button:disabled{opacity:.6}a.b.s{background:transparent;color:#f6d97a;border:1px solid rgba(232,184,48,.45);line-height:48px}</style></head>'
     + '<body data-return="' + esc(url.href) + '" data-portail="' + esc(portail) + '"><div class="c"><div style="font-size:44px">🔒</div><h1>' + esc(g.nom) + '</h1>'
     + '<p id="msg">Un instant…</p>'
+    /* 18.10.2026 (robot « parcours d'une personne invitée », mesuré) : une personne qui a DÉJÀ un compte n'avait ici que Face ID (pas encore réglé sur un téléphone
+       neuf) et « Remplir ma fiche » — qui sent la création d'un 2e compte. On lui met « nom + code » en face, qui ouvre directement la bonne boîte du portail. */
     + '<div id="acts" hidden><button id="pk" type="button">🔓 Face ID — j&#39;ai déjà un compte</button>'
-    + '<a class="b s" id="fiche" href="' + esc(portail) + '">Remplir ma fiche sur kd-mc.com</a></div>'
-    + '<noscript><a class="b" href="' + esc(portail) + '">Remplir ma fiche sur kd-mc.com</a></noscript></div>'
+    + '<a class="b" id="deja" href="' + esc(portail + '&connexion=1') + '">🔑 J&#39;ai déjà un compte — nom + code</a>'
+    + '<a class="b s" id="fiche" href="' + esc(portail) + '">Je n&#39;ai pas encore de compte : le créer</a></div>'
+    + '<noscript><a class="b" href="' + esc(portail + '&connexion=1') + '">🔑 J&#39;ai déjà un compte — nom + code</a><a class="b s" href="' + esc(portail) + '">Je n&#39;ai pas encore de compte : le créer</a></noscript></div>'
     + '<script src="/__sso/porte.js?v=2"></script></body></html>';
   return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
     'x-kdmc-porte': 'fiche', 'referrer-policy': 'strict-origin-when-cross-origin',
@@ -2075,7 +2078,7 @@ essaiPass().then(function(j){
      tout seul, c'est exactement ce que Kevin voit. Et « suis-je une app de l'écran d'accueil ? »
      n'est pas fiable (icône ouverte dans Safari, réglage « Ouvrir comme app web » coupé) : ce
      test décidait du renvoi, il ne sert plus qu'au message. Le portail reste UN BOUTON. */
-  say(standalone()?'Réservé aux personnes connues du domaine.':'Réservé aux personnes connues du domaine — touche Face ID pour entrer.');
+  say('Réservé aux personnes connues du domaine : connecte-toi avec ton nom + ton code, ou crée ton compte.');
   if(acts)acts.hidden=false;
   if(pk&&!pkOk())pk.hidden=true;
 });
@@ -2853,6 +2856,26 @@ async function estAttendu(env, name) { const n = normName(name); if (!n || n.spl
 async function attenduConsomme(env, name) {
   const n = normName(name); const l = await attendusLire(env); const reste = l.filter((x) => !(x && x.n === n));
   if (reste.length !== l.length) { try { await env.ACCOUNTS.put('cfg:attendus', JSON.stringify(reste)); } catch { /* l'entrée sera consommée à la prochaine */ } }
+}
+/* COMPTE D'AVANT LE 8.10, SANS CODE, ET KEVIN L'ATTEND (18.10.2026 — Kevin : « Yann et Ludo ont un compte, ils n'arrivent pas à se connecter ; personne ne
+   doit galérer »). Mesuré en réel (robot « parcours d'une personne invitée », variante B) : un compte sans code qui propose son code depuis un appareil neuf
+   attend la main de Kevin — c'est voulu (la faille de Laurence, 7.10 : un inconnu posait « son » code). Mais quand Kevin a LUI-MÊME inscrit cette personne
+   d'avance (liste « personnes attendues », la même qui ouvre les NOUVEAUX comptes sans attente), sa décision est déjà prise : le code proposé devient celui du
+   compte tout de suite, l'inscription d'avance est consommée, le journal le dit. Un inconnu ne passe pas : il faut le NOM de la liste, écrit par l'admin seul.
+   Rend true si le code a été posé. Jamais pour le compte de l'administrateur (traité plus haut). */
+async function codeAttenduAccepte(env, request, cle, acc, nomSaisi, code) {
+  try {
+    const nomFiche = (acc && acc.name) || nomSaisi;
+    if (!nomFiche || !(await estAttendu(env, nomFiche))) return false;
+    /* fenêtre courte : l'inscription d'avance ne vaut que 14 jours pour un compte EXISTANT (le temps que la personne se connecte) — au-delà, Kevin revalide. */
+    const n = normName(nomFiche), entree = (await attendusLire(env)).find((x) => x && x.n === n);
+    if (!entree || !(Date.now() - Number(entree.at || 0) < 14 * 86400000)) return false;
+    if (!(request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0))) await credSet(env, cle, code);
+    if (acc && !acc.code_at) { acc.code_at = Date.now(); await accPut(env, acc, true); }
+    await attenduConsomme(env, nomFiche);
+    await audLog(env, { ev: 'code_accepte_attendu', uid: cle, name: nomFiche, app: appDe(request.headers.get('host')), detail: 'compte d\'avant le 8.10 inscrit d\'avance par l\'admin : code accepté sans attente' });
+    return true;
+  } catch { return false; }
 }
 /* Quelqu'un de fermé « en attente » qui RÉESSAIE : sa demande revient dans la boîte de Kevin (elle pouvait en être sortie) et Kevin est prévenu,
    au plus une fois toutes les 6 h par personne (la file D1 sert de mémoire : aucune écriture KV de plus). */
@@ -3840,6 +3863,9 @@ async function handleSso(request, url, env, ctx) {
                Une sonde déclarée d'un centre de données n'écrit rien (pas de fiche → pas de code). */
             if (!(request.headers.get('x-kdmc-sonde') && ASN_NUAGES.has(Number(request.cf && request.cf.asn) || 0))) await credSet(env, cle, code);
             codeProuve = true; codePose = true;
+          } else if (codeObligatoire(env) && await codeAttenduAccepte(env, request, cle, accC, name, code)) {
+            /* 18.10 : Kevin a inscrit cette personne d'avance → le code proposé est posé, comme pour un nouveau compte (voir codeAttenduAccepte). */
+            codeProuve = true; codePose = true;
           } else if (codeObligatoire(env)) {
             /* COMPTE EXISTANT SANS CODE, appareil inconnu, un code proposé (8.10) : ni session, ni code posé en silence. La demande ATTEND
                KEVIN (sa boîte : « Codes à valider », avec l'appareil, le lieu, le réseau). S'il accepte, ce code devient celui du compte et la
@@ -3980,8 +4006,10 @@ async function handleSso(request, url, env, ctx) {
     if (cle === CANON_UID) return J({ ok: false, reason: 'admin_requis', message: 'Nom ou code incorrect.' }, undefined, 401);
     const attente = await credVerrou(env, cle);
     if (attente) return J({ ok: false, reason: 'trop_essais', attente, message: 'Trop d\'essais. Réessaie dans ' + Math.ceil(attente / 60) + ' min.' }, undefined, 429);
-    const rec = await credGet(env, cle);
+    let rec = await credGet(env, cle);
     const acc = await accGet(env, cle);
+    /* 18.10 : Kevin a inscrit cette personne d'avance → son code est accepté tout de suite (voir codeAttenduAccepte). */
+    if (!rec && acc && codeObligatoire(env) && CODE_VALIDE(code) && await codeAttenduAccepte(env, request, cle, acc, name, code)) rec = await credGet(env, cle);
     /* Compte existant SANS code (créé avant le 27.09, jamais rouvert) : nom + code sur un appareil inconnu → la demande attend Kevin (8.10). */
     if (!rec && acc && codeObligatoire(env)) {
       const rec2 = await credRec(code);

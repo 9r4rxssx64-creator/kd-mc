@@ -645,7 +645,7 @@
     gate.innerHTML =
       (pk ? '<button class="btn" id="f-pk" type="button">🔓 J\'ai déjà un compte — Face ID</button>'
         + '<p class="g-err" id="f-pk-err" role="alert" aria-live="polite"></p>'
-        + '<p class="g-sub" style="text-align:center;margin:10px 0 14px">— ou, première fois ici —</p>' : '')
+        + '<p class="g-sub" style="text-align:center;margin:10px 0 14px">— ou —</p>' : '')
       + '<button class="btn ghost" id="f-deja" type="button">🔑 J\'ai déjà un compte — nom + code</button>'
       + '<div id="f-deja-box" hidden>'
       +   '<input class="fld" id="l-nom" type="text" autocomplete="username" placeholder="Prénom et nom">'
@@ -679,6 +679,8 @@
       if (!box.hidden) document.getElementById('l-nom').focus();
     });
     document.getElementById('l-go').addEventListener('click', doLoginCode);
+    /* 18.10 : la porte d'une app envoie « J'ai déjà un compte » avec ?connexion=1 → la boîte nom + code est DÉJÀ ouverte (un geste de moins pour qui a un compte). */
+    try { if (/[?&]connexion=1(&|$)/.test(location.search)) { document.getElementById('f-deja-box').hidden = false; document.getElementById('l-nom').focus(); } } catch (e) { /* */ }
     wireAdmin();
     document.getElementById('l-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLoginCode(); });
     var bpk = document.getElementById('f-pk');

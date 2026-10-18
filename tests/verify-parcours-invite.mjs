@@ -8,7 +8,7 @@ let ok = 0, ko = 0;
 const t = (c, m) => { if (c) { ok++; console.log('  ✅ ' + m); } else { ko++; console.log('  ❌ ' + m); } };
 export function regles(wf, js) {
   const w = wf.replace(/^\s*#.*$/gm, '');
-  const finalement = (js.match(/finally \{\s*if \(uid\)[^\n]*compte-supprimer/) || [])[0];
+  const finalement = (js.match(/finally \{[^]{0,260}?if \(uid\) \{ const d = await post\(H, '\/__admin\/compte-supprimer'/) || [])[0];
   return {
     'workflow : à la main seulement (workflow_dispatch, jamais de cron ni de push)': /workflow_dispatch:/.test(w) && !/schedule:/.test(w) && !/^\s+(push|pull_request):/m.test(w),
     'workflow : le code admin vient du secret, par env': /KDMC_ADMIN_PIN_SHA256:\s*\$\{\{\s*secrets\.APEX_ADMIN_PIN_SHA256\s*\}\}/.test(w) && !/run:[^\n]*\$\{\{\s*secrets\./.test(w),
@@ -16,7 +16,7 @@ export function regles(wf, js) {
     'robot : le compte de test est supprimé dans un finally': !!finalement,
     'robot : le compte de test s\'appelle « Parcours Robot… »': /const prenom = 'Parcours', nom = 'Robot'/.test(js),
     'robot : le code et le jeton ne sont jamais écrits au journal': !/annot\([^)]*\$\{(code|H\[|hash|d\.token)/.test(js) && !/noter\([^)]*\$\{(code|hash)\}/.test(js),
-    'robot : aucune route admin autre que login / compte-invite / code / compte-supprimer': [...js.matchAll(/'(\/__admin\/[a-z-]+)'/g)].every((m) => ['/__admin/login', '/__admin/compte-invite', '/__admin/code', '/__admin/compte-supprimer'].includes(m[1])),
+    'robot : aucune route admin hors liste (login, compte-invite, code, compte-supprimer, apps-fermees en LECTURE, attendus)': [...js.matchAll(/'(\/__admin\/[a-z-]+)'/g)].every((m) => ['/__admin/login', '/__admin/compte-invite', '/__admin/code', '/__admin/compte-supprimer', '/__admin/apps-fermees', '/__admin/attendus'].includes(m[1])),
   };
 }
 const wf = lire('.github/workflows/parcours-invite-public.yml'), js = lire('tests/parcours-invite.mjs');
@@ -25,7 +25,7 @@ if (process.argv.includes('--sabotage')) {
   console.log('SABOTAGE');
   const rouge = (r) => Object.values(r).some((v) => !v);
   t(rouge(regles(wf + '\n  schedule:\n    - cron: "0 * * * *"\n', js)), 'S1. un cron → rouge');
-  t(rouge(regles(wf, js.replace(/finally \{\s*if \(uid\)/, 'finally { if (false)'))), 'S2. plus de suppression du compte de test → rouge');
+  t(rouge(regles(wf, js.replace("if (uid) { const d = await post(H, '/__admin/compte-supprimer'", "if (false) { const d = await post(H, '/__admin/compte-supprimer'"))), 'S2. plus de suppression du compte de test → rouge');
   t(rouge(regles(wf, js.replace("nom = 'Robot'", "nom = 'Dupont'"))), 'S3. un nom qui ressemble à une vraie personne → rouge');
   t(rouge(regles(wf, js + "\nnoter(`code ${code}`);")), 'S4. le code écrit au journal → rouge');
   t(rouge(regles(wf, js + "\nawait post(H, '/__admin/revoke', {});")), 'S5. une route admin hors liste → rouge');

@@ -1,0 +1,38 @@
+name: Personne attendue — inscrire d'avance quelqu'un que Kevin invite (dépôt PUBLIC, sans noms)
+
+# 18.10.2026 (Kevin : « J'ai envoyé une invitation à Yann et à Ludo. Ils ont déjà un compte… Personne ne doit galérer à se connecter »). Retrouve la fiche par PRÉNOM (une seule exigée),
+# l'inscrit dans « personnes attendues » (14 jours) : un compte d'avant le 8.10 sans code voit alors le code qu'il propose accepté TOUT DE SUITE au lieu d'attendre la main de
+# Kevin (services/kdmc-router/code-attendu.test.mjs). Au PUBLIC (minutes gratuites) : SANS_NOMS=1 — « compte 1 » + l'état, jamais un nom ni un identifiant. À la main / API — jamais de cron.
+
+on:
+  workflow_dispatch:
+    inputs:
+      prenom:
+        description: "Prénom de la personne (une seule fiche doit correspondre)"
+        required: true
+      retirer:
+        description: "Retirer de la liste au lieu d'ajouter"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  attendre:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Inscrire d'avance (porte admin, session de Kevin) — sans noms
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          PRENOM: ${{ inputs.prenom }}
+          RETIRER: ${{ inputs.retirer }}
+          SANS_NOMS: "1"
+        shell: bash -eo pipefail {0}
+        run: |
+          if [ "$RETIRER" = "true" ]; then node tools/smoke/attendre-compte.mjs "$PRENOM" --retirer; else node tools/smoke/attendre-compte.mjs "$PRENOM"; fi

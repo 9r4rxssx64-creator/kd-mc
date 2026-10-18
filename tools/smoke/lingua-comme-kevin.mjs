@@ -163,6 +163,9 @@ try {
   }).catch(() => ({ caches: ['(lecture impossible)'] }));
   chk(dessus.barre && dessus.caches.length === 0, `rien ne cache tes onglets ni le haut de l'écran (iPhone « installé ») ${dessus.caches.length ? '— cachent : ' + dessus.caches.join(', ') : ''}`);
   chk(dessus.portail, 'ta sortie « 🚪 Portail » est dans la barre du bas');
+  const verB = await page.evaluate(() => { const v = document.querySelector('.tabbar .tab-ver'), b = document.getElementById('kdmc-version-badge');
+    return { dans: !!v && (v.textContent || '').trim() === String(window.LINGUA_VER || ''), flotte: !!b && b.style.display !== 'none' && b.getBoundingClientRect().width > 0 }; }).catch(() => ({}));
+  chk(verB.dans && !verB.flotte, `la version est DANS la barre (plus de bulle qui flotte sur l'écran)${verB.flotte ? ' — la bulle flotte encore' : ''}`);
   const pod = await page.evaluate(() => { const p = document.querySelector('.plan-phrase'); if (!p) return null; return { t: (p.querySelector('b') || {}).textContent || '', fr: (p.querySelector('.pod-fr') || {}).textContent || '' }; }).catch(() => null);
   if (pod) chk(!!pod.t && pod.t.trim() !== pod.fr.trim(), 'phrase du jour : une vraie traduction (pas le français recopié)'); else gris('phrase du jour non affichée sur ce compte');
   await capture(page, 'accueil');

@@ -79,6 +79,7 @@ ok(/✅ [^\n]*Bee répond pour de vrai/.test(r.out) && /✅ [^\n]*bilan de fin d
 ok(/✅ leçon jouée jusqu'au bout/.test(r.out) && /La vraie vie » : 10 situations, 20 leçons/.test(r.out), '1d. la vraie vie et une leçon jouée jusqu\'au bout');
 ok(/✅ rien ne cache tes onglets ni le haut de l'écran/.test(r.out) && /✅ ta sortie « 🚪 Portail » est dans la barre du bas/.test(r.out), '1e. iPhone « installé » : rien ne cache les onglets ni le haut, la sortie Portail est dans la barre (photo du 17.10)');
 ok(/✅ sans langue choisie, les onglets du bas réagissent/.test(r.out), '1f. écran « Choisis une langue » : les onglets réagissent au VRAI appui (Kevin 17.10 « les commandes du bas ne fonctionnent plus »)', (r.out.match(/[✅❌] sans langue choisie[^\n]*/) || [''])[0]);
+ok(/✅ la version est DANS la barre/.test(r.out), '1g. la version vit dans la barre, la bulle ne flotte plus sur l\'accueil (Kevin 18.10 « mal placée »)');
 ok(ecr.length === 0, '2. SON COMPTE NE BOUGE PAS : le serveur n\'a reçu AUCUNE écriture', ecr.slice(0, 8).join(' | '));
 ok(/ton compte n'a pas bougé : [1-9]\d* écriture/.test(r.out), '2b. et la sonde dit combien d\'écritures elle a coupées (> 0 : il y avait bien de quoi couper)', (r.out.match(/ton compte n'a pas bougé[^\n]*/) || [''])[0]);
 ok(!/kdmc_sso=|U11804|KEVIN DESARZENS|Kevin DESARZENS/.test(r.out), '2c. le journal ne contient ni jeton, ni identifiant, ni nom (il peut être public)');

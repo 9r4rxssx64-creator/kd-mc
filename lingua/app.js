@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.5";
+var APP_VER="v2.142.6";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -3567,6 +3567,12 @@ function vTabbar(){ var t=el("div","tabbar"); [["home","🏠","Accueil"],["revie
   /* 17.10 (photo de Kevin) : la pastille « ← Portail » du domaine se posait SUR le 🌍 et les compteurs du haut. Lingua a donc SA sortie,
      dans la barre (règle du domaine : une sortie toujours visible ; [data-kdmc-retour] → le routeur ne pose plus la sienne). */
   var po=el("a","tab tab-portail"); po.href="https://kd-mc.com/"; po.setAttribute("data-kdmc-retour",""); po.setAttribute("aria-label","Retour au portail kd-mc.com"); po.innerHTML='<span>🚪</span><i>Portail</i>'; t.appendChild(po);
+  /* 18.10 (Kevin : « la bulle de version est mal placée » ; vu en réel, run 39081547542 : posée AU-DESSUS de la barre, elle flottait sur le
+     texte de l'accueil) : la version vit DANS la barre, en petit, coin haut gauche — toucher = forcer la mise à jour, comme la bulle.
+     La bulle flottante du domaine s'efface tant que celle-ci est visible (data-own-badge=".tab-ver"). */
+  var tv=el("button","tab-ver"); tv.type="button"; tv.textContent=APP_VER; tv.setAttribute("aria-label","Version "+APP_VER+" — toucher pour forcer la mise à jour");
+  tv.onclick=function(e){ e.stopPropagation(); if(typeof window.kdmcForceUpdate==="function"){ if(confirm("Lingua "+APP_VER+"\n\nForcer la mise à jour maintenant ?")) window.kdmcForceUpdate(); } else toast("Lingua "+APP_VER); };
+  t.appendChild(tv);
   return t; }
 
 /* ============ Traducteur multilingue (hors-ligne, basé sur le dictionnaire) ============ */

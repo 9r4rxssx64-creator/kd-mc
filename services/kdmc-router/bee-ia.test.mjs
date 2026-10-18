@@ -222,6 +222,8 @@ const kevin = signe('kdmc_admin', 1);
   try {
     const r = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-sso': kevin }, body: JSON.stringify(Q) }), envS, { waitUntil() {} });
     ok(r.status === 503 && payes === 0, 'secours payant éteint par défaut : gratuites en panne → 503, AUCUN appel payant  [' + r.status + ', ' + payes + ' payé]');
+    const jr = await r.clone().json().catch(() => null);
+    ok(jr && jr.reason === 'ia_indisponible' && Array.isArray(jr.essais) && jr.essais.some((e) => /qwen : .*Workers AI épuisé/.test(e)), '503 : Kevin lit POURQUOI chaque voix n\'a pas répondu (mesuré 18.10 : 4 questions sans réponse et aucune raison)  [' + JSON.stringify(jr && jr.essais) + ']');
   } finally { globalThis.fetch = orig; } }
 { /* b) « comment prendre une belle photo ? » est une question TEXTE : Qwen gratuit répond (avant : Qwen exclu) */
   const r = await bee({ 'x-kdmc-sso': kevin }, { messages: [{ role: 'user', content: 'Comment prendre une belle photo de mon fils ?' }] });

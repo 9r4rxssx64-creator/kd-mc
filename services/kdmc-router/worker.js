@@ -4432,7 +4432,8 @@ async function handleBeeIa(request, env, ctx) {
   }
   /* la conférence n'a rien rendu mais les outils avaient une réponse : on la garde (jamais de silence) */
   if ((!r || !r.ok || !r.text) && repliOutils) return JB(avec({ ok: true, text: repliOutils.text, provider: repliOutils.provider, gratuit: true, outils: repliOutils.outils }));
-  if (!r || !r.ok || !r.text) return JB({ ok: false, reason: 'ia_indisponible' }, 503);
+  /* Kevin seul lit ceci : pour chaque voix, POURQUOI elle n'a pas répondu (quota du jour, pause, erreur) — sans cela un 503 ne dit rien (mesuré 18.10, 4 questions sans réponse) */
+  if (!r || !r.ok || !r.text) return JB({ ok: false, reason: 'ia_indisponible', essais: ((r && r.tried) || []).slice(0, 8).map((t) => t.provider + ' : ' + String(t.error || t.skipped || '?').slice(0, 140)).concat(traceOutils.slice(0, 4)) }, 503);
   return JB(avec(Object.assign({ ok: true, text: r.text, provider: r.provider, gratuit: FREE_PROVIDERS.indexOf(r.provider) >= 0 }, repliOutils ? { outils: repliOutils.outils, conference: true } : {}, outilsEchec && traceOutils.length ? { outils_pourquoi: traceOutils.slice(0, 6) } : {})));
 }
 

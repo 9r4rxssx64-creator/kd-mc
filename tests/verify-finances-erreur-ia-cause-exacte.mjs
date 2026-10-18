@@ -54,6 +54,13 @@ rec(/fournisseur|IA/i.test(msgGemini), '2b. le message doit nommer une panne cô
 const msgClaude = _importErrMsg(new Error('Claude HTTP 401 : {"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}'));
 rec(!/revérifie le code/i.test(msgClaude), '3. clé Claude refusée par Anthropic → pas « revérifie le code » non plus');
 
+// Cas 3b : crédit épuisé (mesuré en réel le 18.10 — Gemini 402 "prepayment credits are depleted",
+// Claude 400 "credit balance is too low") — distinct d'une clé invalide : le conseil est "recharge", pas "régénère".
+const msgGeminiCredit = _importErrMsg(new Error('Gemini HTTP 402 : {"error":{"code":402,"message":"Your prepayment credits are depleted. Please go to AI Studio..."}}'));
+rec(!/revérifie le code/i.test(msgGeminiCredit) && /crédit/i.test(msgGeminiCredit), '3c. Gemini à sec de crédit (402) → message "crédit épuisé", jamais "revérifie le code"');
+const msgClaudeCredit = _importErrMsg(new Error('Claude HTTP 400 : {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."}}'));
+rec(!/revérifie le code/i.test(msgClaudeCredit) && /crédit/i.test(msgClaudeCredit), '3d. Claude à sec de crédit (400, "invalid_request_error" mais crédit) → message "crédit épuisé"');
+
 // Non-régression : réseau et quota doivent rester détectés comme avant (le correctif ne doit rien casser d'autre).
 rec(/instable/i.test(_importErrMsg(new Error('Load failed'))), '4. réseau instable toujours détecté');
 rec(/limite ia/i.test(_importErrMsg(new Error('HTTP 429 : rate limit exceeded'))), '5. quota/429 toujours détecté');
@@ -65,6 +72,8 @@ const whyPin = _aiWhy('Claude HTTP 401 : Unauthorized', 'anthropic');
 rec(/code admin/i.test(whyPin.t) && whyPin.mine === true, '6. _aiWhy : PIN de Kevin refusé → diagnostic nomme « ton code admin », marqué mine:true');
 const whyGemini = _aiWhy('Gemini HTTP 403 : API_KEY_SERVICE_BLOCKED', 'gemini');
 rec(!whyGemini.mine && /fournisseur/i.test(whyGemini.t), '7. _aiWhy : clé Gemini bloquée côté fournisseur → PAS marqué mine:true');
+const whyCredit = _aiWhy('Gemini HTTP 402 : Your prepayment credits are depleted', 'gemini');
+rec(/crédit/i.test(whyCredit.t) && /recharger/i.test(whyCredit.t), '8. _aiWhy : crédit épuisé (402) → dit "recharger", pas "renouveler la clé"');
 
 console.log(`\n${oks.length} OK / ${fails.length} échec(s)`);
 process.exit(fails.length ? 1 : 0);

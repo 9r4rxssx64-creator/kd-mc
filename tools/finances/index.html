@@ -454,6 +454,9 @@
     /* « Unauthorized » brut = c'est NOTRE relais qui a refusé le code admin de Kevin (PAS le fournisseur) — à distinguer
        d'un 401/403 avec corps JSON (fournisseur), sinon on dit à Kevin de retaper un code qui n'est jamais le problème. */
     if(/\bUnauthorized\b/.test(m)) return {t:'Ton code admin est refusé par le relais (le fournisseur n\'est même pas appelé) — revérifie-le ci-dessus.', fix:true, mine:true};
+    /* 18.10 (mesuré en réel) : « crédit épuisé » (402/400, prepayment/balance) ≠ « clé invalide » — le conseil
+       diffère (recharger, pas régénérer) et confond moins Kevin avec le diagnostic de son propre code. */
+    if(/credit|balance|prepayment|billing/i.test(m)) return {t:'Le crédit de cette IA est épuisé chez le fournisseur — il faut recharger (pas régénérer la clé).', fix:true};
     if(/API key not valid|api_key_invalid|invalid.{0,12}key|401|403|PERMISSION_DENIED|API_KEY_SERVICE_BLOCKED|authentication_error/i.test(m)) return {t:'La clé de cette IA gratuite est refusée par le fournisseur — elle doit être renouvelée.', fix:true};
     if(/429|quota|rate.?limit|RESOURCE_EXHAUSTED|too many/i.test(m)) return {t:'Limite gratuite du jour atteinte — ça repart tout seul plus tard.', fix:false};
     if(/not configured|503/i.test(m)) return {t:'Cette IA gratuite n\'est pas configurée sur le serveur.', fix:true};
@@ -1595,6 +1598,10 @@
        pour TOUS les imports PDF — aucun rapport avec le code admin de Kevin). Les deux étaient confondues sous
        le même message, qui envoyait Kevin corriger un code qui n'était jamais le problème. */
     if(/\bUnauthorized\b/.test(m)) return 'Code admin refusé par le relais — revérifie le code (Réglages)';
+    /* 18.10 (mesuré en réel, run coffre 39172252772) : Gemini et Claude refusent chacun SA clé pour
+       MANQUE DE CRÉDIT (402 "prepayment credits are depleted", 400 "credit balance is too low") —
+       pas une clé invalide. Un conseil « recharge » est plus juste et plus actionnable que « refuse sa clé ». */
+    if(/credit|balance|prepayment|billing|402/i.test(m)) return 'Crédit épuisé chez une IA (fournisseur) — pas ton code, je bascule, réessaie plus tard';
     if(/401|403|invalid.*key|cl[ée]\s*(api|ia)?\s*(invalide|non)|PERMISSION_DENIED|API_KEY_SERVICE_BLOCKED|authentication_error/i.test(m)) return 'Une IA (fournisseur) refuse sa clé — pas ton code, je bascule, réessaie plus tard';
     if(/429|quota|rate.?limit|too many/i.test(m)) return 'Limite IA atteinte — patiente puis réessaie';
     return m.slice(0,60); }

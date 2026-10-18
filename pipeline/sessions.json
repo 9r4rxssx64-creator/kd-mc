@@ -2592,6 +2592,16 @@
       "maj": "2026-10-18",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-sonde": {
+      "titre": "Bee : sonde des outils IA par IA",
+      "branche": "claude/bee-sonde",
+      "sujet": "bilanDiag sondeOutils",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-18",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

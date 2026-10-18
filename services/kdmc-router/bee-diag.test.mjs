@@ -67,7 +67,7 @@ globalThis.fetch = async (url, init) => {
 const SEED = { persons: { p1: { prenom: 'Zélie', nom: 'TESTARD' }, p2: { prenom: 'Octave', nom: 'TESTARD' } } };
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-function serveur(db, extra) { return Object.assign({ KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, CERCLE_DB: db, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien' }) } }, extra || {}); }
+function serveur(db, extra) { return Object.assign({ BEE_DIAG_SONDE: '0' /* la sonde par IA a son propre test (12e) : ici elle consommerait les réponses scriptées */, KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, CERCLE_DB: db, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien' }) } }, extra || {}); }
 function remettre() { kv.clear(); kv.set('arbre:codehash', CH); kv.set('arbre:seed', JSON.stringify(SEED)); IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; IA_VUES = []; reseau = []; }
 const textes = [];
 async function bee(env, corps, { sso = signe('kdmc_admin'), ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1', chemin = '/__javis/ai', host = 'arbre.kd-mc.com' } = {}) {
@@ -137,8 +137,19 @@ ok(!textes.join('\n').includes(CH), '10. l\'empreinte du code famille n\'appara�
 ok((await bilanDiag({}, { session: {}, fournisseurs: [], ia: async () => null, arbre: async () => null })).ok === false, '11. sans session ni IA : le bilan dit non, il ne ment pas');
 { const b = await bilanDiag({}, { session: { grant: true }, fournisseurs: [], ia: async () => null, arbre: async () => null, pauses: { groq: { secondes: 42, raison: 'quota presque à sec (tokens)' }, cerebras: { secondes: 840, raison: 'outils : 429' } } });
   ok(/en PAUSE à l'instant : groq \(quota presque à sec \(tokens\), encore 42 s\) · cerebras/.test(b.texte), '12. le bilan nomme les IA gratuites EN PAUSE, la raison et le temps restant (cause visible, plus de « Bee ne fait rien » muet)', b.texte);
+  const d = await bilanDiag({}, { session: { grant: true }, fournisseurs: [], ia: async () => null, arbre: async () => null, sondeOutils: async () => [{ nom: 'groq', ok: true, ms: 412, outil: true }, { nom: 'gemini', ok: false, erreur: 'HTTP 400 {"error":{"message":"Invalid JSON payload received. Unknown name \\"minimum\\""}}' }, { nom: 'mistral', ok: true, ms: 300, outil: false }] });
+  ok(/Test des outils, IA par IA : groq ✅ 412 ms \(appelle l'outil\) · gemini ❌ HTTP 400 .*Unknown name .* · mistral ✅ 300 ms \(répond sans appeler l'outil\)/.test(d.texte), '12c. le bilan montre, IA par IA, si elle appelle l\'outil — ou le message EXACT de son refus', d.texte);
+  const e0 = await bilanDiag({}, { session: { grant: true }, fournisseurs: [], ia: async () => null, arbre: async () => null, sondeOutils: async () => { throw new Error('x'); } });
+  ok(!/Test des outils/.test(e0.texte), '12d. la sonde en panne ne casse pas le bilan');
   const c = await bilanDiag({}, { session: { grant: true }, fournisseurs: [], ia: async () => null, arbre: async () => null, pauses: {} });
   ok(/en pause : aucune/.test(c.texte), '12b. aucune pause : il le dit'); }
+
+/* 12e. la sonde par IA, de bout en bout (vrai routeur) : une IA qui appelle l'outil, une qui répond sans l'appeler, une qui refuse avec son message exact */
+{ remettre(); const db = fauxD1(); const env = serveur(db, { BEE_DIAG_SONDE: '1', GEMINI_API_KEY: 'gem' });
+  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [{ id: 'a', type: 'function', function: { name: 'calcul', arguments: '{"expression":"2+2"}' } }] }, { content: 'pong' }];
+  IA_SCRIPT.groq = [{ content: 'quatre' }, { content: 'pong' }];
+  const r = await bee(env, { diag: true });
+  ok(r.st === 200 && /Test des outils, IA par IA :/.test(r.j.texte) && /cerebras ✅ \d+ ms \(appelle l'outil\)/.test(r.j.texte) && /groq ✅ \d+ ms \(répond sans appeler l'outil\)/.test(r.j.texte), '12e. la sonde du vrai routeur : cerebras appelle l\'outil, groq répond sans l\'appeler', JSON.stringify(r.j).slice(0, 400)); }
 
 globalThis.fetch = vraiFetch;
 console.log('\n' + pass + ' ✓ / ' + fail + ' ✗  (bee-diag)');

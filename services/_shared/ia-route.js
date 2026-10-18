@@ -175,7 +175,9 @@ export function dureePause(status, message, retryAfter) {
     if (ra > 0) return Math.min(ra, 3600) * 1000;
     /* limite PAR MINUTE (Groq « tokens per minute (TPM) », « requests per minute ») : elle se vide d'elle-même — 70 s suffisent. Mesuré en réel le 18.10 : une pause de 15 min après deux questions rapides
        laissait Bee sans aucune IA à outils (Qwen sans outils, réponses de tête) pendant un quart d'heure. */
+    if (/per day|daily|par jour|quotidien|\brpd\b|tokens per day/.test(m)) return 6 * 3600 * 1000;
     if (/per minute|par minute|\btpm\b|\brpm\b/.test(m)) return 70 * 1000;
+    if (/rate limit|too many requests|trop de requ/.test(m)) return 90 * 1000;   // un « Rate limit exceeded » sans détail (Mistral…) se vide en quelques secondes
     return 15 * 60 * 1000;
   }
   return 0;
@@ -185,9 +187,16 @@ export async function anticiperDepuisEntetes(provider, headers) {
   try {
     const g = (n) => headers && headers.get ? headers.get(n) : null;
     const req = parseFloat(g('x-ratelimit-remaining-requests')), tok = parseFloat(g('x-ratelimit-remaining-tokens'));
-    const reset = g('x-ratelimit-reset-requests') || g('x-ratelimit-reset-tokens') || '';
-    const sec = /^(\d+(\.\d+)?)s?$/.test(reset) ? parseFloat(reset) : (/(\d+)m/.test(reset) ? parseFloat(reset) * 60 : 60);
-    if ((req >= 0 && req <= 1) || (tok >= 0 && tok < 1500)) { await pauser(provider, Math.min(Math.max(sec, 10), 3600) * 1000, 'quota presque à sec (' + (req >= 0 ? req + ' req' : tok + ' jetons') + ')'); return true; }
+    /* « 2.5s », « 6m24.5s », « 1h2m3s », « 90 » : toutes les formes que servent Groq / OpenAI-compatibles → secondes */
+    const secondes = (t) => { const x = String(t || '').trim(); if (!x) return NaN; if (/^\d+(\.\d+)?$/.test(x)) return parseFloat(x); let tot = 0, vu = false; for (const [, n, u] of x.matchAll(/(\d+(?:\.\d+)?)(ms|h|m|s)/g)) { vu = true; tot += parseFloat(n) * (u === 'h' ? 3600 : u === 'm' ? 60 : u === 'ms' ? 0.001 : 1); } return vu ? tot : NaN; };
+    const faibleReq = req >= 0 && req <= 1, faibleTok = tok >= 0 && tok < 1500;
+    if (faibleReq || faibleTok) {
+      /* la remise à zéro de CE QUI MANQUE : les requêtes (souvent par jour) ou les jetons (par minute) — avant, on prenait toujours celle des requêtes : 6 min de pause pour un manque de jetons qui se remplit en 2 s */
+      const reset = faibleReq ? (g('x-ratelimit-reset-requests') || g('x-ratelimit-reset-tokens')) : (g('x-ratelimit-reset-tokens') || g('x-ratelimit-reset-requests'));
+      let sec = secondes(reset); if (!(sec >= 0)) sec = 60;
+      await pauser(provider, Math.min(Math.max(sec, 10), 3600) * 1000, 'quota presque à sec (' + (faibleReq ? req + ' requêtes' : tok + ' jetons') + ')');
+      return true;
+    }
   } catch (_) { /* pas d'en-têtes : rien à anticiper */ }
   return false;
 }

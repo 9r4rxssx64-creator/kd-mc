@@ -226,7 +226,25 @@ test('épuisement : crédits épuisés (402 / « quota ») → pause longue ; un
   assert.equal(dureePause(429, 'Rate limit reached for model on tokens per minute (TPM): Limit 8000, Used 7800', null), 70 * 1000);   // limite par minute : 70 s, pas 15 min
   assert.equal(dureePause(429, 'Requests per minute exceeded', '5'), 5 * 1000);                                                       // un Retry-After précis prime toujours
   assert.equal(dureePause(429, 'You exceeded your current quota', null), 6 * 3600 * 1000);                                           // un quota du jour reste 6 h
+  assert.equal(dureePause(429, 'Rate limit exceeded', null), 90 * 1000);                                                           // « Rate limit exceeded » sans détail (Mistral) : 90 s, pas 15 min
+  assert.equal(dureePause(429, 'Rate limit reached on requests per day (RPD): Limit 1000', null), 6 * 3600 * 1000);                 // un plafond PAR JOUR reste 6 h
   assert.equal(dureePause(500, 'internal error'), 0);
+});
+
+test('anticipation : on attend la remise à zéro de CE QUI MANQUE (jetons = secondes, requêtes = minutes/jour), jamais l\'autre (mesuré 18.10 : 384 s pour des jetons qui reviennent en 2 s)', async () => {
+  const faux = (h) => ({ get: (k) => (k in h ? h[k] : null) });
+  // il manque des JETONS (400 restants), les requêtes sont abondantes (995) : on prend reset-tokens (2.5 s → plancher 10 s), pas reset-requests (6 m 24 s)
+  _resetPauses();
+  assert.equal(await anticiperDepuisEntetes('groq', faux({ 'x-ratelimit-remaining-tokens': '400', 'x-ratelimit-remaining-requests': '995', 'x-ratelimit-reset-tokens': '2.5s', 'x-ratelimit-reset-requests': '6m24.5s' })), true);
+  const p1 = enPause('groq'); assert.ok(p1 && p1.jusqua - Date.now() <= 11000, 'pause courte (jetons)'); assert.match(p1.raison, /400 jetons/);
+  // il manque des REQUÊTES (1 restante) : reset-requests, écrit en minutes + secondes → 6 m 24,5 s = 384,5 s
+  _resetPauses();
+  assert.equal(await anticiperDepuisEntetes('groq', faux({ 'x-ratelimit-remaining-tokens': '9000', 'x-ratelimit-remaining-requests': '1', 'x-ratelimit-reset-tokens': '2.5s', 'x-ratelimit-reset-requests': '6m24.5s' })), true);
+  const p2 = enPause('groq'); const reste = p2.jusqua - Date.now(); assert.ok(reste > 380000 && reste <= 385000, 'pause de 384 s (minutes + secondes lues entièrement), obtenu ' + reste); assert.match(p2.raison, /1 requêtes/);
+  // rien ne manque : aucune pause
+  _resetPauses();
+  assert.equal(await anticiperDepuisEntetes('groq', faux({ 'x-ratelimit-remaining-tokens': '9000', 'x-ratelimit-remaining-requests': '900' })), false);
+  assert.equal(enPause('groq'), null);
 });
 
 test('anticipation : un quota presque à sec dans les en-têtes met en pause AVANT le refus, la réponse en cours est gardée', async () => {

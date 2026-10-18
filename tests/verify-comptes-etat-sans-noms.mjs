@@ -14,6 +14,7 @@ export function regles(wf, js) {
     'workflow : SANS_NOMS=1': /SANS_NOMS:\s*"1"/.test(sansComm),
     'workflow : jamais de cron': !/schedule:/.test(sansComm),
     'workflow : le code admin vient du secret': /KDMC_ADMIN_PIN_SHA256:\s*\$\{\{\s*secrets\.APEX_ADMIN_PIN_SHA256\s*\}\}/.test(sansComm),
+    'script : autonome (aucun import de session-kevin.mjs, qui reste au coffre — 18.10 : le robot public plantait sans annotation)': !/from '\.\/session-kevin\.mjs'/.test(js),
     'script : mode SANS_NOMS lu': /process\.env\.SANS_NOMS === '1'/.test(js),
     'script : en mode SANS_NOMS le gabarit écrit « compte N », jamais le nom ni l\'uid': /\$\{SANS_NOMS \? 'compte ' \+ n : `\$\{nom\} \(\$\{a\.uid\}\)`\}/.test(gabarit) && !/\$\{nom\}|\$\{a\.uid\}/.test(gabarit.replace(/\$\{SANS_NOMS \? 'compte ' \+ n : `\$\{nom\} \(\$\{a\.uid\}\)`\}/, '')),
   };
@@ -27,6 +28,7 @@ if (process.argv.includes('--sabotage')) {
   t(rouge(regles(wf + '\n  schedule:\n    - cron: "0 * * * *"\n', js)), 'S2. un cron ajouté → rouge');
   t(rouge(regles(wf, js.replace("${SANS_NOMS ? 'compte ' + n : `${nom} (${a.uid})`}", '${nom} (${a.uid})'))), 'S3. le nom écrit même en mode sans noms → rouge');
   t(rouge(regles(wf, js.replace("process.env.SANS_NOMS === '1'", 'false'))), 'S4. mode sans noms jamais lu → rouge');
+  t(rouge(regles(wf, "import { passPortail } from './session-kevin.mjs';\n" + js)), 'S5. un import du fichier privé session-kevin.mjs → rouge');
 }
 console.log(`\n${ok} OK / ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

@@ -3,7 +3,16 @@
  * Se connecte comme Kevin (même porte que compte-ouvrir.mjs), lit /__admin/accounts et dit, pour chaque compte qui a un souci côté domaine,
  * la cause en une phrase (mêmes règles que « 🔎 État du compte » de l'admin). Ne modifie RIEN. Aucun numéro ni code affiché.
  * Usage : KDMC_ADMIN_PIN_SHA256=… node tools/smoke/comptes-etat.mjs ["Prénom"] */
-import { passPortail } from './session-kevin.mjs';
+/* Autonome (18.10) : `session-kevin.mjs` reste au coffre (non exporté) — ce script doit tourner AUSSI au dépôt public. Même porte que lui :
+   le code admin (empreinte, secret CI) part à /__admin/login du domaine, qui rend la session VÉRIFIÉE de l'admin. */
+async function passPortail(base) {
+  const hash = String(process.env.KDMC_ADMIN_PIN_SHA256 || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(hash)) return { ok: false, note: 'code admin absent (secret CI) : pas de session Kevin' };
+  const r = await fetch(base + '/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: base, 'x-kdmc-sonde': 'comptes-etat' }, body: JSON.stringify({ hash }) });
+  if (!r.ok) return { ok: false, statut: r.status, note: 'le routeur a refusé /__admin/login' };
+  const d = await r.json().catch(() => ({}));
+  return d && d.token ? { ok: true, jeton: d.token } : { ok: false, note: 'réponse sans jeton' };
+}
 
 const DOMAINE = 'https://kd-mc.com';
 const filtre = String(process.argv[2] || '').trim().toLowerCase();

@@ -2,7 +2,7 @@
 // node --test services/kdmc-outlook/worker.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchesInvoice, keepAttachment, buildAuthorizeUrl, pkceChallenge, b64url, REDIRECT_URI, declencherPublication, PUBLICATION_CLE_KV } from './worker.js';
+import { matchesInvoice, keepAttachment, buildAuthorizeUrl, pkceChallenge, b64url, REDIRECT_URI, declencherPublication, PUBLICATION_CLE_KV, basculerSecoursDepot, githubHorsService } from './worker.js';
 
 test('matchesInvoice : reconnaît factures/devis, ignore le reste', () => {
   assert.equal(matchesInvoice('Votre facture Orange', '', 'no-reply@orange.fr'), true);
@@ -57,7 +57,7 @@ test('REDIRECT_URI = sous-domaine du COMPTE (lesson #85), jamais desarzens-kevin
 });
 
 /* ---- publication automatique vers le dépôt public (17.10.2026, décision (b) de Kevin) ---- */
-const kvMem = () => { const m = new Map(); return { get: async (k) => (m.has(k) ? m.get(k) : null), put: async (k, v) => { m.set(k, v); }, m }; };
+const kvMem = () => { const m = new Map(); return { get: async (k) => (m.has(k) ? m.get(k) : null), put: async (k, v) => { m.set(k, v); }, delete: async (k) => { m.delete(k); }, m }; };
 const faux = (reponses) => { const appels = []; const f = async (url, init = {}) => { appels.push({ url, method: init.method || 'GET', body: init.body }); const r = reponses(url, init); return r; }; f.appels = appels; return f; };
 const rep = (status, json) => ({ status, json: async () => json });
 
@@ -91,4 +91,78 @@ test('publication : GitHub refuse le lancement → la marque n\'est PAS posée (
   const f = faux((url, init) => (init.method === 'POST' ? rep(403, {}) : rep(200, { sha: 'abc1234def' })));
   const r = await declencherPublication({ GITHUB_SAUVEGARDE_TOKEN: 't', ACCOUNTS: kv }, f);
   assert.equal(r.fait, false); assert.equal(kv.m.has(PUBLICATION_CLE_KV), false);
+});
+
+/* ── Le Lenovo en secours automatique (Kevin 18.10) ─────────────────────────────────────────────── */
+const DEPOT = '9r4rxssx64-creator/kd-mc';
+const NOW = Date.parse('2026-10-18T12:00:00Z');
+const il = (h) => new Date(NOW - h * 3600 * 1000).toISOString();
+const runsKO = [{ conclusion: 'startup_failure', created_at: il(1) }, { conclusion: 'startup_failure', created_at: il(2) }, { conclusion: 'success', created_at: il(3) }];
+const runsOK = [{ conclusion: 'success', created_at: il(1) }, { conclusion: 'startup_failure', created_at: il(2) }];
+/* faux GitHub : lenovo = 'online' | 'offline' | null (aucun runner), variable = valeur | null, runs = liste */
+function github({ lenovo, variable = null, runs = runsOK, statutRunners = 200, statutPose = 201 }) {
+  const appels = [];
+  const f = async (url, init = {}) => {
+    const m = (init.method || 'GET'); appels.push(m + ' ' + url.replace('https://api.github.com/repos/' + DEPOT + '/actions/', ''));
+    if (/runners/.test(url)) return rep(statutRunners, { runners: lenovo ? [{ status: lenovo, labels: [{ name: 'self-hosted' }, { name: 'kdmc-lenovo' }] }] : [] });
+    if (/variables\/KDMC_RUNNER/.test(url)) {
+      if (m === 'DELETE') { variable = null; return rep(204, {}); }
+      return variable ? rep(200, { name: 'KDMC_RUNNER', value: variable }) : rep(404, {});
+    }
+    if (/variables$/.test(url) && m === 'POST') { if (statutPose === 201) variable = JSON.parse(init.body).value; return rep(statutPose, {}); }
+    if (/runs/.test(url)) return rep(200, { workflow_runs: runs });
+    return rep(500, {});
+  };
+  f.appels = appels; f.variable = () => variable;
+  return f;
+}
+const env = (kv) => ({ GITHUB_SAUVEGARDE_TOKEN: 't', ACCOUNTS: kv || kvMem() });
+
+test('secours : machines GitHub HS + Lenovo en ligne → KDMC_RUNNER=kdmc-lenovo posée, heure notée', async () => {
+  const kv = kvMem(); const f = github({ lenovo: 'online', runs: runsKO });
+  const r = await basculerSecoursDepot(DEPOT, env(kv), NOW, f);
+  assert.equal(r.action, 'pose'); assert.equal(f.variable(), 'kdmc-lenovo'); assert.equal(kv.m.get('secours:lenovo:' + DEPOT), String(NOW));
+});
+test('secours : GitHub fonctionne → rien (jamais de bascule inutile)', async () => {
+  const f = github({ lenovo: 'online', runs: runsOK });
+  const r = await basculerSecoursDepot(DEPOT, env(), NOW, f);
+  assert.equal(r.action, 'rien'); assert.equal(f.variable(), null);
+});
+test('secours : GitHub HS mais Lenovo éteint ou jamais enrôlé → rien (aucun robot envoyé à une machine éteinte)', async () => {
+  for (const l of ['offline', null]) {
+    const f = github({ lenovo: l, runs: runsKO });
+    const r = await basculerSecoursDepot(DEPOT, env(), NOW, f);
+    assert.equal(r.action, 'rien', String(l)); assert.equal(f.variable(), null);
+  }
+});
+test('secours : le Lenovo s\'éteint pendant le secours → variable retirée au tick suivant', async () => {
+  const kv = kvMem(); await kv.put('secours:lenovo:' + DEPOT, String(NOW - 3600000));
+  const f = github({ lenovo: 'offline', variable: 'kdmc-lenovo', runs: runsKO });
+  const r = await basculerSecoursDepot(DEPOT, env(kv), NOW, f);
+  assert.equal(r.action, 'retire'); assert.equal(f.variable(), null); assert.equal(kv.m.has('secours:lenovo:' + DEPOT), false);
+});
+test('secours : Lenovo en ligne depuis < 6 h → on garde ; ≥ 6 h → on retente GitHub (variable retirée)', async () => {
+  const kv1 = kvMem(); await kv1.put('secours:lenovo:' + DEPOT, String(NOW - 2 * 3600000));
+  const f1 = github({ lenovo: 'online', variable: 'kdmc-lenovo' });
+  assert.equal((await basculerSecoursDepot(DEPOT, env(kv1), NOW, f1)).action, 'rien'); assert.equal(f1.variable(), 'kdmc-lenovo');
+  const kv2 = kvMem(); await kv2.put('secours:lenovo:' + DEPOT, String(NOW - 7 * 3600000));
+  const f2 = github({ lenovo: 'online', variable: 'kdmc-lenovo' });
+  assert.equal((await basculerSecoursDepot(DEPOT, env(kv2), NOW, f2)).action, 'retire'); assert.equal(f2.variable(), null);
+});
+test('secours : une variable posée À LA MAIN par Kevin n\'est jamais touchée', async () => {
+  const f = github({ lenovo: 'online', variable: 'ubuntu-22.04', runs: runsKO });
+  const r = await basculerSecoursDepot(DEPOT, env(), NOW, f);
+  assert.equal(r.action, 'rien'); assert.equal(f.variable(), 'ubuntu-22.04'); assert.ok(!f.appels.some((a) => /^(DELETE|POST)/.test(a)));
+});
+test('secours : jeton absent / GitHub refuse (portée) → rien, raison rendue, jamais d\'exception', async () => {
+  assert.equal((await basculerSecoursDepot(DEPOT, {}, NOW, github({ lenovo: 'online' }))).raison, 'jeton absent');
+  const r = await basculerSecoursDepot(DEPOT, env(), NOW, github({ lenovo: 'online', statutRunners: 403 }));
+  assert.equal(r.action, 'rien'); assert.match(r.raison, /403/);
+  const p = await basculerSecoursDepot(DEPOT, env(), NOW, github({ lenovo: 'online', runs: runsKO, statutPose: 403 }));
+  assert.equal(p.action, 'rien'); assert.match(p.raison, /pose refusée/);
+});
+test('secours : githubHorsService = au moins 2 startup_failure parmi les robots des 12 dernières heures', () => {
+  assert.equal(githubHorsService(runsKO, NOW), true); assert.equal(githubHorsService(runsOK, NOW), false);
+  assert.equal(githubHorsService([{ conclusion: 'startup_failure', created_at: il(30) }, { conclusion: 'startup_failure', created_at: il(31) }], NOW), false);
+  assert.equal(githubHorsService(null, NOW), false);
 });

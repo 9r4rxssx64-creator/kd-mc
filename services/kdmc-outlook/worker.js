@@ -362,8 +362,11 @@ export default {
        Fail-open : ni la synchro mail ni le reste n'en dépendent. */
     const publication = declencherPublication(env).catch(() => ({ fait: false, raison: 'erreur' }));
     if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(publication);
+    /* LENOVO EN SECOURS AUTOMATIQUE (Kevin 18.10) : voir basculerSecours. Fail-open. */
+    const secours = basculerSecours(env).catch(() => []);
+    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(secours);
     try { await syncOnce(env, { backfill: false }); } catch { /* fail-safe */ }
-    if (!ctx || typeof ctx.waitUntil !== 'function') { await ping; await sauvegarde; await ia; await publication; }
+    if (!ctx || typeof ctx.waitUntil !== 'function') { await ping; await sauvegarde; await ia; await publication; await secours; }
   }
 };
 
@@ -428,6 +431,63 @@ export async function declencherPublication(env, fetchFn = fetch) {
   if (!d || d.status !== 204) return { fait: false, raison: 'public : GitHub HTTP ' + (d && d.status), sha };
   if (kv) { try { await kv.put(PUBLICATION_CLE_KV, sha); } catch { /* fail-open */ } }
   return { fait: true, sha };
+}
+
+/* ---------- LE LENOVO EN SECOURS AUTOMATIQUE DES ROBOTS (Kevin 18.10.2026 : « fais tout auto, Lenovo en secours automatique et autonome ») ----
+   Les robots lisent `runs-on: ${{ vars.KDMC_RUNNER || 'ubuntu-latest' }}`. Ce cron (2 h) pose ou retire tout seul la variable :
+   - les machines GitHub ne démarrent plus (≥ 2 des 8 derniers robots en `startup_failure` dans les 12 h : plafond de minutes, panne)
+     ET un runner « kdmc-lenovo » est EN LIGNE sur ce dépôt → KDMC_RUNNER=kdmc-lenovo (les robots partent chez Kevin, gratuit, illimité) ;
+   - le Lenovo s'éteint (hors ligne) → la variable est retirée AU TICK SUIVANT (jamais de robot en file vers une machine éteinte) ;
+   - le Lenovo reste en ligne → on retente GitHub après SECOURS_ESSAI_APRES_H heures (variable retirée ; si GitHub échoue encore,
+     le tick d'après la repose). Dépôts surveillés : le public d'abord (c'est lui qui déploie), puis le coffre.
+   Garde-fous : jeton absent ou refusé (portée « Variables » du dépôt) → rien et la raison est rendue ; jamais d'exception ;
+   Lenovo jamais allumé / jamais enrôlé → rien ne change (comportement d'avant). Marque : KV `secours:lenovo:<dépôt>` = heure de pose. */
+export const SECOURS_DEPOTS = ['9r4rxssx64-creator/kd-mc', '9r4rxssx64-creator/CMCteams'];
+export const SECOURS_ETIQUETTE = 'kdmc-lenovo';
+export const SECOURS_VARIABLE = 'KDMC_RUNNER';
+export const SECOURS_ESSAI_APRES_H = 6;
+export function githubHorsService(runs, maintenant = Date.now()) {
+  const l = (Array.isArray(runs) ? runs : []).slice(0, 8).filter((r) => r && maintenant - Date.parse(r.created_at) < 12 * 3600 * 1000);
+  return l.filter((r) => r.conclusion === 'startup_failure').length >= 2;
+}
+export async function basculerSecoursDepot(depot, env, maintenant = Date.now(), fetchFn = fetch) {
+  const jeton = env && env.GITHUB_SAUVEGARDE_TOKEN;
+  if (!jeton) return { depot, action: 'rien', raison: 'jeton absent' };
+  const H = { authorization: 'Bearer ' + jeton, accept: 'application/vnd.github+json', 'user-agent': 'kdmc-outlook cron (secours Lenovo)' };
+  const api = 'https://api.github.com/repos/' + depot + '/actions/';
+  const kv = env && env.ACCOUNTS; const cle = 'secours:lenovo:' + depot;
+  const get = async (u) => { const r = await fetchFn(api + u, { headers: H }); return { st: r && r.status, j: r && r.status === 200 ? await r.json().catch(() => null) : null }; };
+  const lenovo = await get('runners?per_page=100');
+  if (lenovo.st !== 200) return { depot, action: 'rien', raison: 'runners : GitHub HTTP ' + lenovo.st };
+  const enLigne = ((lenovo.j && lenovo.j.runners) || []).some((r) => r && r.status === 'online' && (r.labels || []).some((x) => x && x.name === SECOURS_ETIQUETTE));
+  const variable = await get('variables/' + SECOURS_VARIABLE);
+  if (variable.st !== 200 && variable.st !== 404) return { depot, action: 'rien', raison: 'variables : GitHub HTTP ' + variable.st };
+  const poseeParNous = variable.st === 200 && variable.j && variable.j.value === SECOURS_ETIQUETTE;
+  const retirer = async (raison) => {
+    const d = await fetchFn(api + 'variables/' + SECOURS_VARIABLE, { method: 'DELETE', headers: H });
+    if (!d || d.status !== 204) return { depot, action: 'rien', raison: 'retrait refusé : HTTP ' + (d && d.status) };
+    if (kv) { try { await kv.delete(cle); } catch { /* fail-open */ } }
+    return { depot, action: 'retire', raison };
+  };
+  if (poseeParNous) {
+    if (!enLigne) return retirer('Lenovo hors ligne : retour aux machines GitHub');
+    let depuis = 0; if (kv) { try { depuis = Number(await kv.get(cle)) || 0; } catch { /* */ } }
+    if (depuis && maintenant - depuis >= SECOURS_ESSAI_APRES_H * 3600 * 1000) return retirer('essai de retour aux machines GitHub');
+    return { depot, action: 'rien', raison: 'secours Lenovo en cours' };
+  }
+  if (variable.st === 200) return { depot, action: 'rien', raison: 'variable posée à la main (' + variable.j.value + ') : intacte' };
+  if (!enLigne) return { depot, action: 'rien', raison: 'Lenovo hors ligne ou jamais enrôlé' };
+  const runs = await get('runs?per_page=8');
+  if (runs.st !== 200 || !githubHorsService(runs.j && runs.j.workflow_runs, maintenant)) return { depot, action: 'rien', raison: 'machines GitHub en service' };
+  const c = await fetchFn(api + 'variables', { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: JSON.stringify({ name: SECOURS_VARIABLE, value: SECOURS_ETIQUETTE }) });
+  if (!c || (c.status !== 201 && c.status !== 204)) return { depot, action: 'rien', raison: 'pose refusée : HTTP ' + (c && c.status) };
+  if (kv) { try { await kv.put(cle, String(maintenant)); } catch { /* fail-open */ } }
+  return { depot, action: 'pose', raison: 'machines GitHub hors service, Lenovo en ligne' };
+}
+export async function basculerSecours(env, maintenant = Date.now(), fetchFn = fetch) {
+  const out = [];
+  for (const d of SECOURS_DEPOTS) { try { out.push(await basculerSecoursDepot(d, env, maintenant, fetchFn)); } catch (e) { out.push({ depot: d, action: 'rien', raison: 'erreur : ' + String((e && e.message) || e) }); } }
+  return out;
 }
 
 /* Surveillance du domaine — appelée par le cron ci-dessus (services/kdmc-uptime/wrangler.toml).

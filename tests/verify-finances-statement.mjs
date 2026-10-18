@@ -1,11 +1,13 @@
 /* PREUVE — Finances v0.13.18 : relevés bancaires enfin lus en ENTIER (salaire/revenus visibles),
- * PDF plus jamais envoyés à Mistral (fini le HTTP 422), réponse tronquée SAUVÉE, faux relevé écarté.
+ * réponse tronquée SAUVÉE, faux relevé écarté.
  * Chromium 390px, coffre + IA (proxy MOCKÉ). On importe 3 « PDF » via le VRAI /__mail/scan :
  *   A) relevé complet (salaire +2500, loyer, courses, solde) → toutes les opérations créées, Revenus>0
  *   B) réponse TRONQUÉE (coupée en plein milieu) → au moins 2 opérations sauvées (pas « illisible »)
  *   C) faux relevé (kind releve mais 0 solde + 1 op) → PAS un relevé fantôme
- * + Mistral n'est JAMAIS appelé pour un PDF (fini le 422). Réseau externe bloqué (leçon #135).
- * Lancer : node tests/verify-finances-statement.mjs
+ * Ici, les « PDF » sont des octets FACTICES (pas un vrai PDF) : pdf.js échoue à les lire → la tentative
+ * Mistral (18.10, conversion PDF→images, voir verify-finances-pdf-gratuit.mjs) échoue proprement et la
+ * chaîne retombe sur Gemini, mocké — ce test couvre CE repli, pas le succès via Mistral (son propre test).
+ * Réseau externe bloqué (leçon #135). Lancer : node tests/verify-finances-statement.mjs
  */
 import http from 'node:http';
 import fs from 'node:fs';
@@ -119,7 +121,7 @@ try {
   await page.waitForTimeout(2500);
 
   // 1) Mistral jamais appelé pour un PDF (fini le 422)
-  rec(mistralCalledForPdf === false, 'PDF jamais envoyé à Mistral (fini le HTTP 422)');
+  rec(mistralCalledForPdf === false, 'Mistral jamais atteint en réseau pour ce PDF factice (pdf.js échoue avant le fetch → repli propre)');
   rec(geminiN >= 3, 'PDF routés vers un moteur qui lit les PDF (Gemini) — ' + geminiN + ' appels');
 
   // 2) Revenus / salaire visibles + relevé complet (4 op de A)

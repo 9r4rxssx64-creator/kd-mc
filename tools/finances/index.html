@@ -423,11 +423,12 @@
        Texte seul (pas d'image, pas de PDF) : les documents vont toujours à Pixtral/Gemini/Claude. */
     { id:'qwen',     label:'Qwen (gratuit)', fmt:'openai', free:true, vision:false, pdf:false, path:'/qwen/v1/chat/completions', models:['@cf/qwen/qwen3.8-27b'] },
     /* GRATUITES d'abord (Groq/Cerebras/Mistral = vrai tier gratuit). vision = lit les IMAGES (photos/tickets) ;
-       pdf = lit un PDF directement. Mistral/Pixtral lit les images mais PAS un PDF (il renvoie HTTP 422 sur un
-       application/pdf) → pdf:false. Seuls Gemini et Claude lisent un PDF nativement. Gemini est la clé de Kevin
-       mais son compte est FACTURÉ → REPLI (après les gratuites, avant Claude), jamais en défaut. */
+       pdf = lit un PDF. Mistral/Pixtral refuse un PDF brut (HTTP 422) mais on le convertit en PAGES-IMAGES
+       avant l'appel (pdf.js déjà vendored pour les aperçus, voir _pdfPartsToImages) → pdf:true quand même,
+       GRATUIT, aucune clé facturée (Kevin 18.10 « utilise les IA gratuites que l'on possède déjà », suite
+       Gemini/Claude à sec de crédit). Seuls Gemini et Claude lisent un PDF nativement (sans conversion). */
     { id:'groq',     label:'Groq',     fmt:'openai', free:true,  vision:false, pdf:false, path:'/groq/openai/v1/chat/completions', models:['llama-3.3-70b-versatile'] },
-    { id:'mistral',  label:'Mistral',  fmt:'openai', free:true,  vision:true,  pdf:false, path:'/mistral/v1/chat/completions',     models:['pixtral-12b-2409','mistral-small-latest'] },
+    { id:'mistral',  label:'Mistral',  fmt:'openai', free:true,  vision:true,  pdf:true,  pdfViaImages:true, path:'/mistral/v1/chat/completions', models:['pixtral-12b-2409','mistral-small-latest'] },
     { id:'cerebras', label:'Cerebras', fmt:'openai', free:true,  vision:false, pdf:false, path:'/cerebras/v1/chat/completions',    models:['llama-3.3-70b','llama3.1-8b'] },
     { id:'gemini',   label:'Gemini',   fmt:'gemini', free:false, vision:true,  pdf:true },
     { id:'deepseek', label:'DeepSeek', fmt:'openai', free:false, vision:false, pdf:false, path:'/deepseek/v1/chat/completions',    models:['deepseek-chat'] }
@@ -479,8 +480,9 @@
      Les moteurs en pause sont repoussés en fin (tentés en dernier recours, jamais perdus). */
   function _aiChainFor(needsVision, needsPdf){
     var mode=(VAULT&&VAULT.aiProvider)||'gemini';
-    /* Un PDF exige un moteur pdf:true (Gemini/Claude) — sinon Mistral 422, Groq/Cerebras texte-seul.
-       Une image (photo/ticket) exige vision:true (Pixtral OK). Sinon (texte) : tous éligibles. */
+    /* Un PDF exige un moteur pdf:true (Mistral — via conversion en images, Gemini, Claude) — Groq/Cerebras
+       restent texte-seul. Une image (photo/ticket) exige vision:true (Mistral/Pixtral, Gemini, Claude).
+       Sinon (texte) : tous éligibles. */
     var free=AI_FREE_CHAIN.filter(function(p){ return needsPdf ? p.pdf : (needsVision ? p.vision : true); });
     var chain=(mode==='anthropic') ? [AI_CLAUDE].concat(free) : free.concat([AI_CLAUDE]);
     var live=chain.filter(function(p){ return !_aiIsDown(p.id); });
@@ -516,6 +518,30 @@
   async function aiCallSecond(parts, maxTokens, alsoExclude){ var ex=(_aiLastUsed?[_aiLastUsed]:[]).concat(alsoExclude||[]); return _aiTry(parts, maxTokens, false, 120, ex); }
   /* IA « la plus adéquate » : gratuite d'abord (économie) ; réponse trop courte → Claude (compétence). */
   async function aiCallSmart(parts, maxTokens, minLen){ return _aiTry(parts, maxTokens, true, minLen); }
+  /* 18.10 (Kevin « utilise les IA gratuites que l'on possède déjà », Gemini/Claude à sec de crédit) : Mistral/
+     Pixtral refuse un PDF brut (HTTP 422) mais lit des IMAGES — on rend chaque page en image (pdf.js, déjà
+     vendored pour les aperçus) pour qu'une IA GRATUITE lise un relevé/une facture sans attendre une recharge.
+     Résolution plus haute qu'une miniature (le texte doit rester lisible par l'IA) ; plafonné à 8 pages
+     (un relevé dépasse rarement, et chaque page pèse sur la requête du palier gratuit). */
+  async function _pdfPartsToImages(parts, maxPages){
+    maxPages=maxPages||8; var out=[];
+    for(var i=0;i<parts.length;i++){ var p=parts[i];
+      if(p.f && p.f.mime==='application/pdf'){
+        var lib=await _loadPdfjs(); var bytes=new Uint8Array(bufFromB64(p.f.data));
+        var pdf=await lib.getDocument({ data:bytes }).promise;
+        var n=Math.min(pdf.numPages,maxPages);
+        for(var pg=1; pg<=n; pg++){
+          var page=await pdf.getPage(pg); var v0=page.getViewport({scale:1});
+          var scale=Math.min(2, 1400/v0.width); var vp=page.getViewport({scale:scale});
+          var cv=document.createElement('canvas'); cv.width=vp.width; cv.height=vp.height;
+          await page.render({ canvasContext:cv.getContext('2d'), viewport:vp }).promise;
+          out.push({ f:{ mime:'image/jpeg', data:cv.toDataURL('image/jpeg',0.85).split(',')[1] } });
+        }
+        if(pdf.numPages>maxPages) out.push({ t:'(document tronqué à '+maxPages+' pages sur '+pdf.numPages+')' });
+      } else out.push(p);
+    }
+    return out;
+  }
   async function aiCallProvider(prov, parts, maxTokens){
     var hash=await aiPinHash(); if(!hash) throw new Error('IA non activée (code admin requis)');
     if(prov==='gemini'){
@@ -543,6 +569,9 @@
       throw new Error(lastErr+' (aucun modèle Gemini disponible)');
     }
     var sp=_aiSpec(prov);
+    if(sp && sp.pdfViaImages && parts.some(function(p){ return p.f && p.f.mime==='application/pdf'; })){
+      parts=await _pdfPartsToImages(parts);
+    }
     if(sp && sp.fmt==='openai'){
       /* Format OpenAI-compatible (Mistral/Groq/Cerebras/DeepSeek). Vision (Pixtral) = image_url data-URL. */
       var hasFile=parts.some(function(p){ return p.f; });

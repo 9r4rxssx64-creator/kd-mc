@@ -4020,14 +4020,19 @@ async function handleSso(request, url, env, ctx) {
       await notifyPush(env, '🔐 KDMC — code à valider', (acc.name || name) + ' propose un code depuis ' + appareilLabel(request.headers.get('user-agent') || '') + (cf.city ? ' · ' + cf.city : '') + ' — accepte ou refuse dans Mes messages.');
       return J({ ok: false, reason: 'code_en_attente', message: 'Ce compte n\'avait pas encore de code. Ton code est transmis à l\'administrateur : dès qu\'il l\'accepte, tu te connectes avec ton nom et ce code.' }, undefined, 202);
     }
-    if (!rec || !acc || !(await credOk(rec, code))) { if (rec) await credEchec(env, cle); return J(NON, undefined, 401); }
-    await credReussite(env, cle);
+    /* MESURE (18.10.2026) : au premier « nom + code » d'un compte neuf, le navigateur attendait ~12 s (les suivants ~1 s). Un robot qui pose `x-kdmc-mesure: 1`
+       reçoit en plus la durée de chaque étape (ms, rien d'autre) pour trouver laquelle traîne. */
+    const t0 = Date.now(); const etapes = {};
+    const ok1 = !(!rec || !acc || !(await credOk(rec, code))); etapes.code = Date.now() - t0;
+    if (!ok1) { if (rec) await credEchec(env, cle); return J(NON, undefined, 401); }
+    let t1 = Date.now(); await credReussite(env, cle); etapes.reussite = Date.now() - t1;
     const per = perimetre(acc, appDe(request.headers.get('host')));
     if (!per.ok) return J({ ok: false, reason: per.raison, hors_perimetre: true, message: 'Ton compte n\'est pas ouvert sur cette application.' });
-    await enrich(env, request, acc.uid, acc.name || name, true, undefined, {});
+    t1 = Date.now(); await enrich(env, request, acc.uid, acc.name || name, true, undefined, {}); etapes.enrich = Date.now() - t1;
     const token = await ssoSign(secret, acc.uid, acc.name || name, true, false, true, appareilDe(request));
     const cookie = `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`;
-    return J({ ok: true, uid: acc.uid, name: acc.name || name, cgu: true, token, admin: false, code: true }, cookie);
+    etapes.total = Date.now() - t0;
+    return J({ ok: true, uid: acc.uid, name: acc.name || name, cgu: true, token, admin: false, code: true, ...(request.headers.get('x-kdmc-mesure') === '1' ? { ms: etapes } : {}) }, cookie);
   }
   /* ENTRER PAR N'IMPORTE QUELLE PORTE (Kevin 2026-09-27 : « reconnu par n'importe quel chemin sur
      mes appareils : domaine, chaque app, internet, bureau »). Une app INSTALLÉE sur l'écran

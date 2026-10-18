@@ -59,6 +59,9 @@ ok(aud.some((e) => e.ev === 'code_accepte_attendu' && e.uid === 'ludo-test'), '2
 ok(!db._s.prepare('SELECT 1 FROM code_attente WHERE uid = ?').get('ludo-test'), '2e. rien ne reste dans la boîte « Codes à valider » de Kevin');
 const encore = await appel('/__sso/login', { method: 'POST', body: { name: 'Ludo Test', code: '246810' }, ua: UA.windows, cf: STOCKHOLM });
 ok(encore.j.ok === true, '2f. le code posé marche ensuite comme tout code (nom + code)');
+const mes = await appel('/__sso/login', { method: 'POST', body: { name: 'Ludo Test', code: '246810' }, ua: UA.iphone, headers: { 'x-kdmc-mesure': '1' } });
+ok(mes.j.ok === true && mes.j.ms && typeof mes.j.ms.total === 'number' && typeof mes.j.ms.enrich === 'number', '2f2. avec « x-kdmc-mesure: 1 », la durée de chaque étape est rendue (ms, rien d\'autre)', mes.j.ms);
+ok(encore.j.ms === undefined, '2f3. sans cet en-tête, aucune mesure n\'est rendue');
 const mauvais = await appel('/__sso/login', { method: 'POST', body: { name: 'Ludo Test', code: '999999' }, ua: UA.windows, cf: STOCKHOLM });
 ok(mauvais.st === 401 && !mauvais.j.token, '2g. un mauvais code reste refusé');
 

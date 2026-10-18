@@ -56,7 +56,7 @@ async function parcours(variante, H) {
        au run 39172562065 le seul appel /__sso/login a pris 10 931 ms. */
     if (variante === 'A') {
       const UA_IPHONE = devices['iPhone 13'].userAgent;
-      const mesure = async (avecSonde) => { const t0 = Date.now(); const h = { 'content-type': 'application/json', origin: DOMAINE, 'user-agent': UA_IPHONE }; if (avecSonde) h['x-kdmc-sonde'] = 'parcours-invite'; const r = await fetch(DOMAINE + '/__sso/login', { method: 'POST', headers: h, body: JSON.stringify({ name: nomComplet, code }) }); await r.text().catch(() => ''); return `${r.status} en ${Date.now() - t0} ms`; };
+      const mesure = async (avecSonde) => { const t0 = Date.now(); const h = { 'content-type': 'application/json', origin: DOMAINE, 'user-agent': UA_IPHONE, 'x-kdmc-mesure': '1' }; if (avecSonde) h['x-kdmc-sonde'] = 'parcours-invite'; const r = await fetch(DOMAINE + '/__sso/login', { method: 'POST', headers: h, body: JSON.stringify({ name: nomComplet, code }) }); const j = await r.json().catch(() => ({})); return `${r.status} en ${Date.now() - t0} ms${j && j.ms ? ' (serveur : ' + JSON.stringify(j.ms) + ')' : ''}`; };
       const a = [], b2 = [];
       for (let i = 0; i < 3; i++) a.push(await mesure(true));
       for (let i = 0; i < 3; i++) b2.push(await mesure(false));

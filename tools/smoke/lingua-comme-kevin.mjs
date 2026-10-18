@@ -278,6 +278,8 @@ try {
         if (await page.evaluate(() => ((document.querySelector('.ap-input') || {}).value || '') === '').catch(() => false)) repliques++;
         await attends(6000);
       }
+      /* 18.10 (run réel 39083168633) : Bee écrit sa réponse au fil de la voix — la capture tombait sur « … ». On attend le texte (≤ 12 s). */
+      await page.waitForFunction(() => ((document.querySelector('.disc-sub') || {}).textContent || '').replace(/[.…\s]/g, '').length > 5, null, { timeout: 12000 }).catch(() => {});
       await capture(page, 'appel-en-cours');
       const sous = await page.evaluate(() => (document.querySelector('.disc-sub') || {}).textContent || '').catch(() => '');
       chk(iaPassees.filter((x) => x === 'appel').length >= 2 && sous.trim().length > 5, `appel : Bee répond pour de vrai (${iaPassees.filter((x) => x === 'appel').length} réponses de l'IA, ${repliques} répliques écrites)`);

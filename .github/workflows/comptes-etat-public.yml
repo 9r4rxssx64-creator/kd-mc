@@ -1,0 +1,33 @@
+name: Comptes du domaine — état d'une personne (lecture seule, dépôt PUBLIC, sans noms)
+
+# 18.10.2026 (Kevin : « Yann et Ludo ont déjà un compte au domaine, pourquoi n'arrivent-ils pas à se connecter aux autres apps ? Vérifie réel »).
+# Même lecture que le robot du coffre (coffre-comptes-etat.yml) mais AU PUBLIC : minutes gratuites et illimitées (la ration du coffre était mangée), et un
+# journal public se lit par tout le monde → SANS_NOMS=1 : « compte 1, compte 2 » et les CAUSES (portée, apps fermées, attente, code, téléphone), jamais un nom ni un
+# identifiant. Le filtre (prénom) est une ENTRÉE du lancement. Ne modifie RIEN. À la main / API — jamais de cron.
+
+on:
+  workflow_dispatch:
+    inputs:
+      filtre:
+        description: "Prénom à regarder (vide = tous les comptes qui ont un souci)"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  etat:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Lire l'état des comptes (porte admin, session de Kevin) — sans noms
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          FILTRE: ${{ inputs.filtre }}
+          SANS_NOMS: "1"
+        shell: bash -eo pipefail {0}
+        run: node tools/smoke/comptes-etat.mjs "$FILTRE"

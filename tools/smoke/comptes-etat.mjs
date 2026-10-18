@@ -7,6 +7,8 @@ import { passPortail } from './session-kevin.mjs';
 
 const DOMAINE = 'https://kd-mc.com';
 const filtre = String(process.argv[2] || '').trim().toLowerCase();
+/* SANS_NOMS=1 (dépôt PUBLIC : un journal se lit par tout le monde) : ni nom, ni identifiant — « compte 1, compte 2 »… et les causes. */
+const SANS_NOMS = process.env.SANS_NOMS === '1';
 const annot = (niveau, titre, msg) => console.log(`::${niveau} title=${titre}::${msg}`);
 const session = await passPortail(DOMAINE);
 if (!session.ok) { annot('error', 'États des comptes', `pas de session Kevin : ${session.note || session.statut}`); process.exit(1); }
@@ -33,6 +35,6 @@ for (const a of comptes) {
   const nom = String(a.name || a.uid);
   if (filtre && !nom.toLowerCase().includes(filtre) && !String(a.uid).toLowerCase().includes(filtre)) continue;
   const c = cause(a);
-  if (c.length || filtre) { n++; annot('notice', 'Compte', `${nom} (${a.uid}) · ${c.length ? c.join(' ; ') : 'rien ne bloque'} · dernière connexion ${dt(a.last_seen)} · ${a.hits || 0} connexion(s) · cgu ${a.cgu_at ? 'oui' : 'non'}`); }
+  if (c.length || filtre) { n++; annot('notice', 'Compte', `${SANS_NOMS ? 'compte ' + n : `${nom} (${a.uid})`} · ${c.length ? c.join(' ; ') : 'rien ne bloque'} · dernière connexion ${dt(a.last_seen)} · ${a.hits || 0} connexion(s) · cgu ${a.cgu_at ? 'oui' : 'non'} · portée ${a.portee || 'tout le domaine'}${(a.acces || []).length ? ' [' + a.acces.join(',') + ']' : ''} · fermé : ${(a.bloque || []).join(',') || 'rien'} · attente ${a.attente_admin ? 'oui' : 'non'} · mail ${a.mail_confirmation ? (a.mail_confirmation.echec ? 'non parti' : 'parti') : 'aucun'} · code ${a.code_at ? 'posé' : 'absent'} · tel ${a.tel ? 'oui' : 'non'}`); }
 }
 annot('notice', 'États des comptes', `${comptes.length} comptes lus, ${n} ligne(s) affichée(s)${filtre ? ` pour « ${filtre} »` : ' (seulement ceux qui ont un souci)'}`);

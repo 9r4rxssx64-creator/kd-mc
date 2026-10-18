@@ -59,12 +59,15 @@ async function parcours(variante, H) {
     p.on('response', async (r) => {
       try {
         const u = new URL(r.url());
+        if (/workers\.dev$/.test(u.host) && /\/api\/auth\//.test(u.pathname)) { const j0 = await r.json().catch(() => null); reseau.push(`API ${u.pathname} → HTTP ${r.status()}${j0 && (j0.code || j0.error) ? ' (' + String(j0.code || j0.error).slice(0, 40) + ')' : ''}${j0 && j0.ok === true ? ' ok' : ''}`); return; }
         if (/sso-from-kdmc|sso-from-apex|\/api\/auth\/(send-otp|verify-otp)/.test(u.pathname) || (u.host === 'kd-mc.com' || u.host === 'apex-chat.kd-mc.com') && /^\/__sso\/(whoami|pass|cookie|login|issue)$/.test(u.pathname)) {
           const j = await r.json().catch(() => null);
-          reseau.push(`${u.pathname} → HTTP ${r.status()}${j && (j.reason || j.code || j.error) ? ' (' + String(j.reason || j.code || j.error).slice(0, 40) + ')' : ''}${j && j.ok === true ? ' ok' : ''}${j && typeof j.code === 'boolean' ? ' code:' + j.code : ''}${j && typeof j.verified === 'boolean' ? ' verified:' + j.verified : ''}`);
+          let ms = ''; try { const tm = r.request().timing(); if (tm && tm.responseEnd > 0) ms = ' [' + Math.round(tm.responseEnd) + ' ms]'; } catch { /* */ }
+          reseau.push(`${u.pathname}${ms} → HTTP ${r.status()}${j && (j.reason || j.code || j.error) ? ' (' + String(j.reason || j.code || j.error).slice(0, 40) + ')' : ''}${j && j.ok === true ? ' ok' : ''}${j && typeof j.code === 'boolean' ? ' code:' + j.code : ''}${j && typeof j.verified === 'boolean' ? ' verified:' + j.verified : ''}`);
         }
       } catch { /* jamais bloquant */ }
     });
+    p.on('requestfailed', (q) => { try { const u = new URL(q.url()); reseau.push('ÉCHEC réseau ' + u.host + u.pathname.slice(0, 40) + ' : ' + String(q.failure() && q.failure().errorText).slice(0, 50)); } catch { /* */ } });
     p.on('console', (m) => { if (m.type() === 'error') reseau.push('console.error : ' + m.text().slice(0, 120)); });
     const url = () => { try { const u = new URL(p.url()); return u.host + u.pathname; } catch { return p.url(); } };
     const texte = async () => resume(await p.innerText('body').catch(() => ''));
@@ -136,10 +139,23 @@ async function parcours(variante, H) {
       await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
       /* Apex Chat doit reconnaître la personne SEUL (compte du domaine, code prouvé) : on lui laisse jusqu'à 25 s pour passer de l'écran de connexion à l'appli. */
       let entree = false;
-      for (let i = 0; i < 25 && !entree; i++) { entree = !(await p.locator('#auth-step').isVisible().catch(() => false)) && (await p.locator('.bnav-btn:visible').count().catch(() => 0)) > 0; if (!entree) await p.waitForTimeout(1000); }
+      let accord = false;
+      for (let i = 0; i < 25 && !entree; i++) { const ac = p.locator('button:visible', { hasText: /Accepter et continuer/i }).first(); if (!accord && await ac.count().catch(() => 0)) { await ac.click().catch(() => {}); accord = true; noter(`   Apex Chat affiche « Accepter et continuer » (conditions du domaine, 1 clic) → touché à ${i} s`); await p.waitForTimeout(1500); } entree = !(await p.locator('#auth-step').isVisible().catch(() => false)) && (await p.locator('.bnav-btn:visible').count().catch(() => 0)) > 0; if (!entree) await p.waitForTimeout(1000); }
       noter(`   entrée automatique dans Apex Chat (sans SMS) : ${entree ? 'OUI' : 'NON après 25 s'}`);
       out.entreeAuto = entree;
-      noter(`   échanges réseau : ${reseau.slice(0, 14).join(' ; ') || 'aucun'}`);
+      if (!entree) {
+        const d = await p.evaluate(async () => {
+          const o = {};
+          try { o.jetonRange = !!localStorage.getItem('kdmc_sso_token'); } catch (e) { o.jetonRange = 'err'; }
+          try { o.domaineVu = !!localStorage.getItem('kdmc_domain_seen'); } catch (e) { o.domaineVu = 'err'; }
+          try { o.etape = window.K && K.authStep; o.jetonAppli = !!(window.K && K.token); o.reconnu = !!(window.K && K._domaineReconnu && K._domaineReconnu()); const d0 = window.K && K._domaine; o.domaine = d0 ? { ok: d0.ok, code: d0.code, verified: d0.verified, admin: d0.admin, cgu: d0.cgu } : null; } catch (e) { o.etapeErr = String(e).slice(0, 60); }
+          try { const tok = localStorage.getItem('kdmc_sso_token') || ''; const api = window.__APEX_CHAT_API_URL__ || (typeof API_BASE !== 'undefined' ? API_BASE : ''); o.api = /workers\.dev/.test(api) ? 'workers.dev' : String(api).slice(0, 30);
+            if (tok && api) { const r = await fetch(api + '/api/auth/sso-from-kdmc', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kdmc_token: tok }) }); const j = await r.json().catch(() => null); o.essai = 'HTTP ' + r.status + (j && (j.code || j.error) ? ' ' + String(j.code || j.error).slice(0, 50) : '') + (j && j.ok ? ' ok' : ''); } else o.essai = 'pas de jeton rangé : ' + (tok ? 'api?' : 'localStorage vide'); } catch (e) { o.essai = 'exception ' + String(e && e.message).slice(0, 80); }
+          return o;
+        }).catch((e) => ({ erreur: String(e && e.message).slice(0, 80) }));
+        noter(`   diagnostic dans la page : ${JSON.stringify(d)}`);
+      }
+      noter(`   échanges réseau : ${reseau.filter((x) => !/frame-ancestors/.test(x)).slice(0, 30).join(' ; ') || 'aucun'}`);
       const t = await texte();
       const surChat = /apex-chat\./.test(url());
       const demandeNumero = /num[ée]ro de t[ée]l[ée]phone|re[cç]ois un code|code (par )?sms|envoyer le code|\+33|\+377/i.test(await p.innerText('body').catch(() => ''));

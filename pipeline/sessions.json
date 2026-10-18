@@ -2602,6 +2602,26 @@
       "maj": "2026-10-18",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-groq400": {
+      "titre": "Bee : reprise tool_use_failed + sonde Gemini",
+      "branche": "claude/bee-groq400",
+      "sujet": "chatAvecOutils reprise ; sonde gemini",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-18",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "bee-gemini403": {
+      "titre": "Bee : Gemini 403 clé bloquée",
+      "branche": "claude/bee-gemini403",
+      "sujet": "dureePause 403 ; action Kevin clé Gemini",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-18",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

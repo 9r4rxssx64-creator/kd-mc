@@ -13,6 +13,7 @@
    s'épuisent (on les sonde mais on ne les met PAS en tête de cascade sans l'accord de Kevin). */
 export const FOURNISSEURS = [
   { id: 'groq',       cle: 'GROQ_API_KEY',       url: 'https://api.groq.com/openai/v1/chat/completions',               modele: 'openai/gpt-oss-120b',                            palier: 'gratuit', deja: true },
+  { id: 'gemini',     cle: 'GEMINI_API_KEY',     url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', modele: 'gemini-2.5-flash',                    palier: 'gratuit', deja: true },
   { id: 'mistral',    cle: 'MISTRAL_API_KEY',    url: 'https://api.mistral.ai/v1/chat/completions',                    modele: 'mistral-small-latest',                            palier: 'gratuit', deja: true },
   { id: 'openrouter', cle: 'OPENROUTER_API_KEY', url: 'https://openrouter.ai/api/v1/chat/completions',                 modele: 'meta-llama/llama-3.3-70b-instruct:free',          palier: 'gratuit', deja: true },
   { id: 'cerebras',   cle: 'CEREBRAS_API_KEY',   url: 'https://api.cerebras.ai/v1/chat/completions',                   modele: 'gpt-oss-120b',                                    palier: 'gratuit', deja: true },
@@ -38,7 +39,7 @@ export async function sonder(f, cle, fetchFn = fetch) {
     const txt = await r.text(); const ms = Date.now() - t0;
     if (!r.ok) {
       let msg = txt; try { const j = JSON.parse(txt); msg = (j.error && (j.error.message || j.error)) || j.message || txt; } catch (_) { /* brut */ }
-      return { id: f.id, ok: false, http: r.status, ms, detail: String(msg).replace(/\s+/g, ' ').slice(0, 140) };
+      return { id: f.id, ok: false, http: r.status, ms, detail: String(msg).replace(/\s+/g, ' ').slice(0, 420) };
     }
     const j = JSON.parse(txt);
     const texte = String(((j.choices || [])[0] || {}).message?.content || '').trim();

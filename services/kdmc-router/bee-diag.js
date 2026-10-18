@@ -77,7 +77,7 @@ export async function bilanDiag(env, o) {
   /* LE TEST DES OUTILS, fournisseur par fournisseur (18.10 : « gemini a une clé mais ne sert jamais » — sans le message exact on devine) : un tout petit appel avec un outil factice, la cause en clair. */
   if (typeof o.sondeOutils === 'function') {
     let sonde = []; try { sonde = await o.sondeOutils(); } catch (_) { sonde = []; }
-    if (sonde && sonde.length) L.push('• Test des outils, IA par IA : ' + sonde.map((x) => x.nom + (x.ok ? ' ✅ ' + (x.ms | 0) + ' ms' + (x.outil ? ' (appelle l\'outil)' : ' (répond sans appeler l\'outil)') : ' ❌ ' + propre(x.erreur, 150))).join(' · '));
+    if (sonde && sonde.length) L.push('• Test des outils, IA par IA : ' + sonde.map((x) => x.nom + (x.ok ? ' ✅ ' + (x.ms | 0) + ' ms' + (x.outil ? ' (appelle l\'outil)' : ' (répond sans appeler l\'outil)') : ' ❌ ' + propre(x.erreur, 330))).join(' · '));
   }
   let ia = null; try { ia = await o.ia(); } catch (_) { ia = null; }
   L.push(ia && ia.provider ? '• IA gratuite qui répond à l\'instant : ✅ ' + ia.provider + ' (' + ia.ms + ' ms)' : '• IA gratuite qui répond à l\'instant : ❌ aucune dans les 7 s — Bee ne peut pas travailler avec ses outils (limite gratuite atteinte ?)');

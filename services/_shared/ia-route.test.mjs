@@ -228,6 +228,8 @@ test('épuisement : crédits épuisés (402 / « quota ») → pause longue ; un
   assert.equal(dureePause(429, 'You exceeded your current quota', null), 6 * 3600 * 1000);                                           // un quota du jour reste 6 h
   assert.equal(dureePause(429, 'Rate limit exceeded', null), 90 * 1000);                                                           // « Rate limit exceeded » sans détail (Mistral) : 90 s, pas 15 min
   assert.equal(dureePause(429, 'Rate limit reached on requests per day (RPD): Limit 1000', null), 6 * 3600 * 1000);                 // un plafond PAR JOUR reste 6 h
+  assert.equal(dureePause(403, '[{ "error": { "code": 403, "message": "Requests to this API generativelanguage.googleapis.com method ... are blocked.", "status": "PERMISSION_DENIED", "reason": "API_KEY_SERVICE_BLOCKED" } }]', null), 6 * 3600 * 1000);   // clé Gemini restreinte : 6 h
+  assert.equal(dureePause(403, 'Forbidden', null), 0);                                                                                     // un 403 sans cause connue ne met rien en pause
   assert.equal(dureePause(500, 'internal error'), 0);
 });
 
@@ -614,4 +616,21 @@ test('outils : une autre erreur (429) remonte avec son statut — la pause se r�
     await assert.rejects(() => chatAvecOutils({ GEMINI_API_KEY: 'g' }, 'gemini', { messages: [{ role: 'user', content: 'a' }] }), (e) => e.status === 429);
     await assert.rejects(() => chatAvecOutils({}, 'gemini', { messages: [] }), /sans outils/);
   } finally { m.restore(); }
+});
+
+test('outils : Groq « Failed to parse tool call arguments as JSON » (400 tool_use_failed) = le modèle a mal écrit son appel → UNE reprise à température 0 qui réussit ; une 2ᵉ panne remonte avec le message exact', async () => {
+  const vus = [];
+  const m = mockFetch((url, init) => {
+    const c = JSON.parse(init.body); vus.push(c.temperature);
+    if (vus.length === 1) return new Response('{"error":{"message":"Failed to parse tool call arguments as JSON","type":"invalid_request_error","code":"tool_use_failed"}}', { status: 400 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: '', tool_calls: [{ id: 'a', type: 'function', function: { name: 'calcul', arguments: '{"expression":"2+2"}' } }] } }] }), { status: 200 });
+  });
+  try {
+    const r = await chatAvecOutils({ GROQ_API_KEY: 'g' }, 'groq', { messages: [{ role: 'user', content: 'x' }], tools: [{ name: 'calcul', description: 'x', parameters: { type: 'object', properties: {} } }], timeoutMs: 9000 });
+    assert.equal(vus.length, 2, 'deux essais'); assert.equal(vus[1], 0, 'la reprise est à température 0'); assert.equal(r.tool_calls.length, 1);
+  } finally { m.restore(); }
+  const m2 = mockFetch(() => new Response('{"error":{"message":"Failed to parse tool call arguments as JSON","code":"tool_use_failed"}}', { status: 400 }));
+  try {
+    await assert.rejects(() => chatAvecOutils({ GROQ_API_KEY: 'g' }, 'groq', { messages: [{ role: 'user', content: 'x' }], tools: [{ name: 'calcul', description: 'x', parameters: { type: 'object', properties: {} } }], timeoutMs: 9000 }), (e) => e.status === 400 && /tool_use_failed/.test(e.message));
+  } finally { m2.restore(); }
 });

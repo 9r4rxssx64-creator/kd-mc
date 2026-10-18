@@ -171,6 +171,7 @@ export function modelesRetiresActifs() { const out = {}; for (const [k, v] of mo
 export function dureePause(status, message, retryAfter) {
   const m = String(message || '').toLowerCase();
   if (status === 402 || /insufficient|credit|quota|exceeded your|balance|billing/.test(m)) return 6 * 3600 * 1000;
+  if (status === 403 && /permission_denied|api_key_service_blocked|are blocked|has not been used|disabled/.test(m)) return 6 * 3600 * 1000;   // clé restreinte / API non activée (Gemini 403 mesuré 18.10) : inutile de réessayer avant que Kevin ait changé la clé
   if (status === 429) {
     const ra = parseFloat(retryAfter);
     if (ra > 0) return Math.min(ra, 3600) * 1000;
@@ -487,7 +488,12 @@ export async function chatAvecOutils(env, provider, opts) {
       if (!r.ok) {
         /* « ce modèle n'existe plus » = changer de MODÈLE (le suivant de la liste, dans le même appel), pas de fournisseur */
         if (modeleInexistant(r.status, txt) && i < candidats.length - 1) { await retirerModele(provider, model); continue; }
-        const e = new Error('HTTP ' + r.status + ' ' + txt.slice(0, 120)); e.status = r.status; e.retryAfter = r.headers && r.headers.get ? r.headers.get('retry-after') : null; throw e;
+        /* « Failed to parse tool call arguments as JSON » (Groq, gpt-oss : HTTP 400 tool_use_failed) = le MODÈLE a mal écrit son appel d'outil, au hasard (mesuré en réel le 18.10) ; un 2ᵉ essai, plus sobre
+           (température 0), passe presque toujours. Une seule reprise, dans le temps qui reste. */
+        if (r.status === 400 && /tool_use_failed|Failed to parse tool call/i.test(txt) && !o._repris && Date.now() - depart < o.timeoutMs - 2500) {
+          return await chatAvecOutils(env, provider, Object.assign({}, o, { _repris: true, temperature: 0, timeoutMs: Math.max(2500, o.timeoutMs - (Date.now() - depart)) }));
+        }
+        const e = new Error('HTTP ' + r.status + ' ' + txt.slice(0, 320)); e.status = r.status; e.retryAfter = r.headers && r.headers.get ? r.headers.get('retry-after') : null; throw e;
       }
       await anticiperDepuisEntetes(provider, r.headers);
       const m = JSON.parse(txt).choices[0].message;

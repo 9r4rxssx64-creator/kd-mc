@@ -292,7 +292,7 @@ export const REGLES_OUTILS_APPS = REGLES_OUTILS.replace(/ Tes outils LISENT seul
 export const SANS_PLANNING = ['planning'];
 
 /* ───────────────────────── la boucle : l'IA choisit, on exécute, elle répond ───────────────────────── */
-function executeurs(ctx) {
+export function executeurs(ctx) {
   return {
     meteo, date_heure, calcul, rechercher, lire_page, convertir, heure_ailleurs, dates,
     planning: async () => { if (!ctx || typeof ctx.planning !== 'function') throw new Error('planning indisponible'); return String(await ctx.planning()); },

@@ -170,7 +170,14 @@ export function modelesRetiresActifs() { const out = {}; for (const [k, v] of mo
 export function dureePause(status, message, retryAfter) {
   const m = String(message || '').toLowerCase();
   if (status === 402 || /insufficient|credit|quota|exceeded your|balance|billing/.test(m)) return 6 * 3600 * 1000;
-  if (status === 429) { const ra = parseFloat(retryAfter); return (ra > 0 ? Math.min(ra, 3600) * 1000 : 15 * 60 * 1000); }
+  if (status === 429) {
+    const ra = parseFloat(retryAfter);
+    if (ra > 0) return Math.min(ra, 3600) * 1000;
+    /* limite PAR MINUTE (Groq « tokens per minute (TPM) », « requests per minute ») : elle se vide d'elle-même — 70 s suffisent. Mesuré en réel le 18.10 : une pause de 15 min après deux questions rapides
+       laissait Bee sans aucune IA à outils (Qwen sans outils, réponses de tête) pendant un quart d'heure. */
+    if (/per minute|par minute|\btpm\b|\brpm\b/.test(m)) return 70 * 1000;
+    return 15 * 60 * 1000;
+  }
   return 0;
 }
 /** En-têtes de quota (OpenAI-compatibles) : presque à sec → pause courte AVANT le refus. */

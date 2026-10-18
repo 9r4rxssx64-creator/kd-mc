@@ -223,6 +223,9 @@ test('épuisement : crédits épuisés (402 / « quota ») → pause longue ; un
   assert.equal(dureePause(400, 'You exceeded your current quota'), 6 * 3600 * 1000);
   assert.equal(dureePause(429, 'slow down', '30'), 30 * 1000);
   assert.equal(dureePause(429, 'slow down', null), 15 * 60 * 1000);
+  assert.equal(dureePause(429, 'Rate limit reached for model on tokens per minute (TPM): Limit 8000, Used 7800', null), 70 * 1000);   // limite par minute : 70 s, pas 15 min
+  assert.equal(dureePause(429, 'Requests per minute exceeded', '5'), 5 * 1000);                                                       // un Retry-After précis prime toujours
+  assert.equal(dureePause(429, 'You exceeded your current quota', null), 6 * 3600 * 1000);                                           // un quota du jour reste 6 h
   assert.equal(dureePause(500, 'internal error'), 0);
 });
 

@@ -16,6 +16,7 @@
 |---|---|---|---|
 | Météo, heure ailleurs, calcul exact, conversions, dates | ✅ outils gratuits (test) | ✅ | ✅ |
 | Chercher sur le web, lire une page publique | ✅ `rechercher`, `lire_page` | ✅ | ✅ |
+| Météo, heure ailleurs, date, calcul, conversion — demande nette | ✅ **sans IA**, exact, instantané (`bee-direct`) | ✅ | ✅ |
 | Planning (lire, qui travaille quand) | ✅ `planning` (lecture seule) | ✅ | ✅ |
 | Arbre généalogique : lire, chercher, ouvrir une personne | ✅ + modifier **après ✅**, copie avant, relecture | ✅ | ✅ |
 | Ouvrir n'importe quelle app / page du domaine | ✅ `ouvrir` (sans IA pour les demandes nettes) | ✅ | n/a |
@@ -40,7 +41,8 @@
 - **Cause trouvée (17.10)** : le paquetage de wrangler mettait des `__name(…)` dans les scripts servis, absents de la page → Bee, le bouton ✉️ et « ← Portail » ne se lançaient pas, sans message. **Corrigé et en ligne**, garde `test:js-servis`.
 - **Mesuré en local, gratuit, sur le vrai routeur empaqueté et les vraies pages (Chromium connecté)** : 22 adresses sur 28 après ce correctif ; les 6 autres refusaient Bee par leur propre sécurité (CMCteams et Bot : aucun cadre ; Rotaplan, Croupier, Apex AI : scripts interdits ; Cuisine : page sans `<body>`). **Corrigé pour toi seul** (appareil au marqueur « Kevin ») : cadre `'self'` + nonce pour le seul script de Bee ; un visiteur ordinaire reçoit la page comme avant. Résultat : **28 sur 28**. Garde `test:bee-csp`.
 - **Hors périmètre, dit tel quel** : `admin.kd-mc.com` (autre worker, sans injection volontairement) et une page dont la sécurité mêle 'unsafe-inline' sans 'self' (aucune aujourd'hui).
-- **Pas encore rejoué avec le vrai code et les vrais comptes** : le robot `verif-live-bee-partout` (8 min du coffre) a été refusé par la ration du jour (règle « gratuit par défaut », on ne force pas sans l'accord de Kevin). Relance programmée juste après minuit UTC.
+- **Mesuré avec le VRAI code sur le VRAI domaine (robot connecté, 18.10 00:14 UTC, run 39081997512)** : **28 adresses sur 29 avec Bee** ; la 29ᵉ, `admin.kd-mc.com`, est volontairement sans injection (autre worker).
+- **Outils (même run)** : météo et calcul par les outils ; le reste (heure ailleurs, conversion, fait du monde, planning, arbre, lecture de page) était tombé sur une IA sans outils après un refus de limite par minute. **Corrigé** : pause de 70 s au lieu de 15 min, et Bee répond SANS IA aux demandes nettes de météo, heure, date, calcul, conversion (`bee-direct.js`). Planning, arbre, lecture de page passent encore par l'IA à outils : à remesurer.
 
 ## Ce qui n'est PAS vérifié
 - L'usage réel des outils par l'IA gratuite sur les 11 sujets du robot depuis l'allègement de la consigne (à remesurer).

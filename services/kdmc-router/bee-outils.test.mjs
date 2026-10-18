@@ -190,7 +190,7 @@ async function bee(texte, env2, entetes) {
   const r = await bee('Quel temps demain ?', SERVEUR, { 'x-kdmc-sso': signe('bob') });
   ok(r.st === 403 && IA_VUES.length === 0 && reseau.length === 0, 'quelqu\'un d\'autre que Kevin : refusé, aucun outil, aucun appel'); }
 { reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
-  const r = await bee('combien font 2+2 ?', Object.assign({}, SERVEUR, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' }));
+  const r = await bee('combien font 2+2 et pourquoi ?', Object.assign({}, SERVEUR, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' }));
   ok(r.j.ok && IA_VUES.length === 1 && reseau.every((u) => !/anthropic|openai/.test(u)), 'jamais un moteur payant (0 appel Anthropic / OpenAI)'); }
 
 /* ---------- 8. la CONFÉRENCE des IA gratuites reprend la main pour les questions difficiles (relis la règle du 2.10) ---------- */

@@ -29,6 +29,7 @@ import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
 import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // Bee voit le domaine : pages, liens, documentation, ses pouvoirs (lecture, Kevin seul)
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';
+import { reponseDirecte } from './bee-direct.js';   // météo, heure, date, calcul, conversion SANS IA quand la demande est nette (Kevin 17.10)
 import { outilsAtelier, imageGratuite, RE_ATELIER, REGLES_ATELIER } from './bee-atelier.js';   // documents, agenda, brouillon de mail, images — gratuit, Kevin seul (Kevin 17.10)
 import { outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, intentionOuvrir, corrigerTexte } from './bee-ouvrir.js';   // Bee OUVRE n'importe quelle app du domaine sur l'écran de Kevin (Kevin 17.10)
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
@@ -4315,6 +4316,9 @@ async function handleBeeIa(request, env, ctx) {
     const io = intentionOuvrir(messages[messages.length - 1].content, new Set(Object.keys(ROUTES)), APPS);
     if (io) return JB({ ok: true, text: io.texte, provider: 'domaine', gratuit: true, outils: ['ouvrir'], ouvrir: [{ url: io.url, libelle: io.libelle }] });
   }
+  /* DEMANDE NETTE = RÉPONSE EXACTE SANS IA (météo, heure, date, calcul, conversion) : jamais limitée par un palier gratuit (mesuré 18.10 : après 2 questions, les IA à outils étaient en pause). BEE_DIRECT = '0' coupe. */
+  { const d = await reponseDirecte(messages[messages.length - 1].content, env);
+    if (d) return JB({ ok: true, text: d.texte, provider: 'domaine', gratuit: true, outils: [d.outil] }); }
   let caractere = (b && b.mascotte === 'donkey' ? BOURRICOT_CARACTERE : BEE_CARACTERE) + ' Nous sommes le ' + dateMonaco() + ' (heure de Monaco).';
   /* BEE CONNAÎT TA JOURNÉE (audit externe 02.10) : une question sur son planning reçoit les FAITS du PDF,
      lus par le serveur (jamais envoyés à la page). L'IA formule ; l'horaire vient du PDF. 1 lecture KV. */

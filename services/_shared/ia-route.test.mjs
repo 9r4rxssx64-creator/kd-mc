@@ -634,3 +634,19 @@ test('outils : Groq « Failed to parse tool call arguments as JSON » (400 tool_
     await assert.rejects(() => chatAvecOutils({ GROQ_API_KEY: 'g' }, 'groq', { messages: [{ role: 'user', content: 'x' }], tools: [{ name: 'calcul', description: 'x', parameters: { type: 'object', properties: {} } }], timeoutMs: 9000 }), (e) => e.status === 400 && /tool_use_failed/.test(e.message));
   } finally { m2.restore(); }
 });
+
+test('outils : un modèle qui écrit TOUJOURS mal son appel d\'outil (Groq gpt-oss-120b, 18.10) → après la reprise, le modèle SUIVANT du fournisseur répond', async () => {
+  const vus = [];
+  const m = mockFetch((url, init) => {
+    const c = JSON.parse(init.body); vus.push(c.model);
+    if (c.model === 'openai/gpt-oss-120b') return new Response('{"error":{"message":"Failed to parse tool call arguments as JSON","code":"tool_use_failed"}}', { status: 400 });
+    return new Response(JSON.stringify({ choices: [{ message: { content: '', tool_calls: [{ id: 'a', type: 'function', function: { name: 'calcul', arguments: '{"expression":"2+2"}' } }] } }] }), { status: 200 });
+  });
+  try {
+    const r = await chatAvecOutils({ GROQ_API_KEY: 'g' }, 'groq', { messages: [{ role: 'user', content: 'x' }], tools: [{ name: 'calcul', description: 'x', parameters: { type: 'object', properties: {} } }], timeoutMs: 12000 });
+    assert.deepEqual(vus, ['openai/gpt-oss-120b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'], 'essai, reprise, puis le modèle suivant');
+    assert.equal(r.model, 'openai/gpt-oss-20b'); assert.equal(r.tool_calls.length, 1);
+    const r2 = await chatAvecOutils({ GROQ_API_KEY: 'g' }, 'groq', { messages: [{ role: 'user', content: 'y' }], tools: [{ name: 'calcul', description: 'x', parameters: { type: 'object', properties: {} } }], timeoutMs: 12000 });
+    assert.equal(r2.model, 'openai/gpt-oss-20b');
+  } finally { m.restore(); }
+});

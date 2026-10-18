@@ -2622,6 +2622,16 @@
       "maj": "2026-10-18",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-groq-modeles": {
+      "titre": "Bee : Groq modèle suivant sur tool_use_failed",
+      "branche": "claude/bee-groq-modeles",
+      "sujet": "chatAvecOutils candidats tool_use_failed",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-18",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -490,8 +490,10 @@ export async function chatAvecOutils(env, provider, opts) {
         if (modeleInexistant(r.status, txt) && i < candidats.length - 1) { await retirerModele(provider, model); continue; }
         /* « Failed to parse tool call arguments as JSON » (Groq, gpt-oss : HTTP 400 tool_use_failed) = le MODÈLE a mal écrit son appel d'outil, au hasard (mesuré en réel le 18.10) ; un 2ᵉ essai, plus sobre
            (température 0), passe presque toujours. Une seule reprise, dans le temps qui reste. */
-        if (r.status === 400 && /tool_use_failed|Failed to parse tool call/i.test(txt) && !o._repris && Date.now() - depart < o.timeoutMs - 2500) {
-          return await chatAvecOutils(env, provider, Object.assign({}, o, { _repris: true, temperature: 0, timeoutMs: Math.max(2500, o.timeoutMs - (Date.now() - depart)) }));
+        if (r.status === 400 && /tool_use_failed|Failed to parse tool call/i.test(txt)) {
+          if (!o._repris && Date.now() - depart < o.timeoutMs - 2500) return await chatAvecOutils(env, provider, Object.assign({}, o, { _repris: true, temperature: 0, timeoutMs: Math.max(2500, o.timeoutMs - (Date.now() - depart)) }));
+          /* toujours mal formé (mesuré 18.10 : gpt-oss-120b écrit son appel d'outil en TEXTE, même à température 0) : le modèle SUIVANT de la liste du fournisseur, sans retirer celui-ci (il marche pour d'autres demandes) */
+          if (i < candidats.length - 1) continue;
         }
         const e = new Error('HTTP ' + r.status + ' ' + txt.slice(0, 320)); e.status = r.status; e.retryAfter = r.headers && r.headers.get ? r.headers.get('retry-after') : null; throw e;
       }

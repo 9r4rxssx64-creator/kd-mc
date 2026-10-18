@@ -2642,6 +2642,16 @@
       "maj": "2026-10-18",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "bee-regex-qui-a": {
+      "titre": "Bee : Qui a écrit ne charge plus 34 outils",
+      "branche": "claude/bee-regex-qui-a",
+      "sujet": "RE_DROITS qui a, maxTokens 500",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-18",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

@@ -160,8 +160,10 @@ ok(['apps_fermer', 'apps_fermer_personne', 'perimetre_personne', 'bot_demarrer']
 ok(['apps_fermer_personne', 'perimetre_personne', 'code_oublie', 'deconnecter_partout'].every((a) => typeof CATALOGUE[a].enrichir === 'function'), '6e. toute action sur une PERSONNE vérifie son nom auprès du domaine avant la carte');
 for (const q of ['ferme lingua pour tout le monde', 'bloque Zélie sur l\'arbre', 'qui a un compte ?', 'efface le code de Zélie', 'déconnecte Octave', 'redémarre le robot', 'rouvre la boutique', 'montre-moi le journal du domaine', 'quels sont ses droits ?', 'limite Zélie à lingua', 'autorise Octave sur l\'arbre'])
   ok(RE_DROITS.test(q) && RE_AGIR.test(q), '6f. prend les mains : « ' + q + ' »');
-for (const q of ['salut Bee', 'raconte-moi une blague'])
-  ok(!RE_DROITS.test(q), '6g. reste une conversation : « ' + q + ' »');
+for (const q of ['qui a accès à lingua ?', 'qui a essayé de se connecter hier ?', 'qui s\'est connecté aujourd\'hui', 'qui est connecté en ce moment', 'qui peut voir l\'arbre ?'])
+  ok(RE_DROITS.test(q), '6f2. « qui a… » de gestion prend les mains : « ' + q + ' »');
+for (const q of ['salut Bee', 'raconte-moi une blague', 'Qui a écrit « Le Petit Prince » ?', 'qui a inventé le téléphone ?', 'Qui a gagné la coupe du monde en 2018 ?'])
+  ok(!RE_DROITS.test(q), '6g. reste une conversation (mesuré en réel le 18.10 : « Qui a écrit… » chargeait 34 outils, 4 879 jetons, Groq refusait) : « ' + q + ' »');
 { reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
   const SERV = Object.assign({}, env, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' });
   await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, KEVIN), body: JSON.stringify({ messages: [{ role: 'user', content: 'ferme lingua' }] }) }), SERV, { waitUntil() {} });

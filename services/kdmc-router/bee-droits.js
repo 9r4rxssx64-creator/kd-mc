@@ -199,4 +199,4 @@ export function outilsLectureDroits(o) {
 }
 
 /** Une demande qui parle de gérer le domaine : les mains de Bee sont prises d'office. */
-export const RE_DROITS = /\blimit\w*|restrein\w*|autoris\w*|interdi\w*|\bferme\w*|rouvr\w*|\bouvre\b|bloqu\w*|d[ée]bloqu\w*|\bacc[eè]s\b|p[ée]rim[eè]tre|\bdroits?\b|\bcomptes?\b|d[ée]connect\w*|connexions?|journal|code (?:oubli|perdu|effac)|effac\w* (?:le |son |mon )?code|supprim\w* (?:le |son |mon )?code|r[ée]initialis\w*|oubli[ée] (?:son|mon|le) code|d[ée]marre|relance|red[ée]marre|qui (?:a|s'est|est connect)|qui peut/i;
+export const RE_DROITS = /\blimit\w*|restrein\w*|autoris\w*|interdi\w*|\bferme\w*|rouvr\w*|\bouvre\b|bloqu\w*|d[ée]bloqu\w*|\bacc[eè]s\b|p[ée]rim[eè]tre|\bdroits?\b|\bcomptes?\b|d[ée]connect\w*|connexions?|journal|code (?:oubli|perdu|effac)|effac\w* (?:le |son |mon )?code|supprim\w* (?:le |son |mon )?code|r[ée]initialis\w*|oubli[ée] (?:son|mon|le) code|d[ée]marre|relance|red[ée]marre|qui (?:a (?:acc[eè]s|des droits|le droit|essay\w*|tent\w*|[ée]t[ée] (?:banni|bloqu\w*)|un compte|ouvert un compte)|s'est|est connect\w*)|qui peut/i;

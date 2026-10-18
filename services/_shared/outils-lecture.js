@@ -318,7 +318,7 @@ export async function repondreAvecOutils(env, opts) {
       for (let tour = 0; tour <= MAX_TOURS; tour++) {
         const reste = fin - Date.now(); if (reste < 1500) throw new Error('échéance');
         /* au dernier tour on RETIRE les outils : l'IA doit répondre */
-        const m = await chatAvecOutils(env, p, { messages: msgs, tools: tour === MAX_TOURS ? null : defs, timeoutMs: Math.min(reste, 9000) });
+        const m = await chatAvecOutils(env, p, { messages: msgs, tools: tour === MAX_TOURS ? null : defs, timeoutMs: Math.min(reste, 9000), maxTokens: 500 });   /* Groq compte la RÉSERVATION de sortie dans son plafond de 8 000 jetons/minute : 700 → 500 */
         const appels = m.tool_calls;
         if (!appels.length) {
           const text = stripThink(m.content);

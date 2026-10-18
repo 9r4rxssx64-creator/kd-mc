@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.319';
+export const API_VERSION = '1.1.320';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1541,9 +1541,16 @@ export async function handleSsoFromKdmc(request, env) {
   // Vérification CÔTÉ SERVEUR auprès du domaine source de vérité.
   let who = null;
   try {
+    /* 18.10.2026 (robot « parcours d'une personne invitée », mesuré : POST /api/auth/sso-from-kdmc → 401 kdmc_session_invalide pour TOUTE personne du domaine) :
+       le routeur lie chaque pass à la FAMILLE D'APPAREIL de la personne (iPhone, PC…) depuis le 8.10 et refuse un pass présenté depuis une autre famille. Cet appel part
+       de CE worker (aucune famille) : sans le User-Agent de la personne, whoami répondait « inconnu » et Apex Chat retombait sur un SMS qui n'existe nulle part.
+       Les autres workers du domaine transmettaient déjà ce seul en-tête (13.10) ; celui-ci l'avait oublié. On transmet CE SEUL en-tête, rien d'autre. */
+    const entetes = { Authorization: 'Bearer ' + kdmcToken };
+    const uaPersonne = request.headers.get('User-Agent');
+    if (uaPersonne) entetes['User-Agent'] = uaPersonne;
     const fetchOpts = {
       method: 'GET',
-      headers: { Authorization: 'Bearer ' + kdmcToken },
+      headers: entetes,
       cf: { cacheTtl: 0 },
     };
     // Timeout 8s — best-effort (AbortSignal.timeout absent de certains runtimes).

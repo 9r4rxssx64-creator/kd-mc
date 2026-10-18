@@ -52,6 +52,16 @@ async function parcours(variante, H) {
     uid = c.j.uid;
     if (variante === 'C') { const a = await post(H, '/__admin/attendus', { nom: nomComplet }); noter('« personne attendue » inscrite par Kevin : ' + (a.j.ok ? 'oui' : 'NON ' + JSON.stringify(a.j).slice(0, 80))); }
     if (variante === 'B' || variante === 'C') { const e = await post(H, '/__admin/code', { uid }); noter('code effacé (cas « compte d\'avant le 8.10 ») : ' + (e.j.ok ? 'oui' : 'NON ' + JSON.stringify(e.j).slice(0, 80))); }
+    /* DURÉE de « nom + code » côté domaine, mesurée SANS navigateur (3 fois, avec puis sans l'en-tête de sonde qui évite les écritures) — Kevin : « personne ne doit galérer » ;
+       au run 39172562065 le seul appel /__sso/login a pris 10 931 ms. */
+    if (variante === 'A') {
+      const UA_IPHONE = devices['iPhone 13'].userAgent;
+      const mesure = async (avecSonde) => { const t0 = Date.now(); const h = { 'content-type': 'application/json', origin: DOMAINE, 'user-agent': UA_IPHONE }; if (avecSonde) h['x-kdmc-sonde'] = 'parcours-invite'; const r = await fetch(DOMAINE + '/__sso/login', { method: 'POST', headers: h, body: JSON.stringify({ name: nomComplet, code }) }); await r.text().catch(() => ''); return `${r.status} en ${Date.now() - t0} ms`; };
+      const a = [], b2 = [];
+      for (let i = 0; i < 3; i++) a.push(await mesure(true));
+      for (let i = 0; i < 3; i++) b2.push(await mesure(false));
+      noter(`0. durée de « nom + code » côté domaine (sans navigateur) · avec en-tête de sonde : ${a.join(' | ')} · sans : ${b2.join(' | ')}`);
+    }
     const b = await chromium.launch({ executablePath: process.env.PW_EXE || undefined, proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined });
     const ctx = await b.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', extraHTTPHeaders: {} });
     const p = await ctx.newPage();

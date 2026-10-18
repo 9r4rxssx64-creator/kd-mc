@@ -135,6 +135,10 @@ async function bee(env, corps, { sso = signe('kdmc_admin'), ua = 'Mozilla/5.0 (i
 ok(!reseau.some((u) => /anthropic|openai\.com|googleapis\.com\/v1beta|mistral|deepseek/i.test(u)), '9. 0 € : aucun moteur payant appelé');
 ok(!textes.join('\n').includes(CH), '10. l\'empreinte du code famille n\'apparaît dans AUCUNE réponse');
 ok((await bilanDiag({}, { session: {}, fournisseurs: [], ia: async () => null, arbre: async () => null })).ok === false, '11. sans session ni IA : le bilan dit non, il ne ment pas');
+{ const b = await bilanDiag({}, { session: { grant: true }, fournisseurs: [], ia: async () => null, arbre: async () => null, pauses: { groq: { secondes: 42, raison: 'quota presque à sec (tokens)' }, cerebras: { secondes: 840, raison: 'outils : 429' } } });
+  ok(/en PAUSE à l'instant : groq \(quota presque à sec \(tokens\), encore 42 s\) · cerebras/.test(b.texte), '12. le bilan nomme les IA gratuites EN PAUSE, la raison et le temps restant (cause visible, plus de « Bee ne fait rien » muet)', b.texte);
+  const c = await bilanDiag({}, { session: { grant: true }, fournisseurs: [], ia: async () => null, arbre: async () => null, pauses: {} });
+  ok(/en pause : aucune/.test(c.texte), '12b. aucune pause : il le dit'); }
 
 globalThis.fetch = vraiFetch;
 console.log('\n' + pass + ' ✓ / ' + fail + ' ✗  (bee-diag)');

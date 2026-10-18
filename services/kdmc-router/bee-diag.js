@@ -72,6 +72,8 @@ export async function bilanDiag(env, o) {
   L.push('• Session : ' + (s.faceid ? '✅ Face ID prouvé' : s.grant ? '✅ code admin prouvé' : '❌ non prouvée') + ' (' + (o.canal || '') + ')');
   const cles = (o.fournisseurs || []).filter((p) => env && env[p.secret]).map((p) => p.nom);
   L.push('• IA gratuites à outils avec clé : ' + (cles.length ? cles.join(', ') : '❌ aucune'));
+  const en = Object.keys(o.pauses || {});
+  L.push(en.length ? '• IA gratuites en PAUSE à l\'instant : ' + en.map((k) => k + ' (' + propre((o.pauses[k] || {}).raison, 60) + ', encore ' + Math.round(+((o.pauses[k] || {}).secondes) || 0) + ' s)').join(' · ') : '• IA gratuites en pause : aucune');
   let ia = null; try { ia = await o.ia(); } catch (_) { ia = null; }
   L.push(ia && ia.provider ? '• IA gratuite qui répond à l\'instant : ✅ ' + ia.provider + ' (' + ia.ms + ' ms)' : '• IA gratuite qui répond à l\'instant : ❌ aucune dans les 7 s — Bee ne peut pas travailler avec ses outils (limite gratuite atteinte ?)');
   let ar = null; try { ar = await o.arbre(); } catch (e) { ar = { erreur: String(e && e.message || e).slice(0, 80) }; }

@@ -23,7 +23,7 @@ const URL_MESSAGES = 'https://kd-mc.com/#messages';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { verrouFerme, compterEchec, magasinKV, VERROU_MESSAGE } from '../_shared/verrou-code-admin.js';   // verrou global du code admin (audit 17.10)
-import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders, SECRET_NAMES as IA_SECRETS } from '../_shared/ia-route.js';
+import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders, SECRET_NAMES as IA_SECRETS, chargerPauses, pausesActives } from '../_shared/ia-route.js';
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
@@ -4610,7 +4610,8 @@ async function diagBee(request, env, session) {
     }
     return o;
   };
-  return bilanDiag(env, { session, canal: canalDiag(request), fournisseurs: FOURNISSEURS_OUTILS.map((p) => ({ nom: p, secret: IA_SECRETS[p] })), ia: pingIA, arbre: etatArbre,
+  let pauses = {}; try { await chargerPauses(FOURNISSEURS_OUTILS); pauses = pausesActives(); } catch (_) { pauses = {}; }   /* quelles IA gratuites sont en pause à l'instant, et pourquoi */
+  return bilanDiag(env, { pauses, session, canal: canalDiag(request), fournisseurs: FOURNISSEURS_OUTILS.map((p) => ({ nom: p, secret: IA_SECRETS[p] })), ia: pingIA, arbre: etatArbre,
     interrupteurs: { BEE_OUTILS: env && env.BEE_OUTILS, BEE_AGIR: env && env.BEE_AGIR, BEE_ARBRE: env && env.BEE_ARBRE, BEE_ARBRE_ECRIRE: env && env.BEE_ARBRE_ECRIRE, BEE_VOIR: env && env.BEE_VOIR } });
 }
 function canalDiag(request) { const h = (k) => (request.headers.get(k) || '').trim(); return 'arrivée par ' + (h('x-kdmc-sso') ? 'jeton' : '') + (h('x-kdmc-sso') && /kdmc_sso=/.test(h('cookie')) ? ' + ' : '') + (/kdmc_sso=/.test(h('cookie')) ? 'cookie' : '') + (!h('x-kdmc-sso') && !/kdmc_sso=/.test(h('cookie')) ? 'code admin' : ''); }

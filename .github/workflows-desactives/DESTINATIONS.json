@@ -56,6 +56,12 @@
       "raison": "déploiement d'une app de CE dépôt"
     },
     {
+      "f": "emailjs-diag.yml",
+      "vers": "github",
+      "quoi": "diagnostic du mail de confirmation d'inscription (EmailJS)",
+      "raison": "test d'un service de CE dépôt, lancé à la main"
+    },
+    {
       "f": "apex-proxy-diag.yml",
       "vers": "github",
       "quoi": "diagnostic du worker proxy d'Apex",

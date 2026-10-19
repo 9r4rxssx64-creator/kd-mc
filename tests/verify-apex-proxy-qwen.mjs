@@ -141,7 +141,7 @@ chk(r.status === 503 && /not configured/.test(await r.text()), '8. un relais à 
 
 /* --- 9. RELAIS GRATUITS derrière Qwen : GLM puis Kimi (Kevin 20.10 « Oui ») ---------------------------------------- */
 const QWENS = ['@cf/qwen/qwen3.8-27b', '@cf/qwen/qwen3-30b-a3b-fp8', '@cf/qwen/qwen2.5-coder-32b-instruct', '@cf/qwen/qwq-32b'];
-const GLM = '@cf/zai-org/glm-4.7-flash', KIMI = '@cf/moonshotai/kimi-k2.6';
+const GLM = '@cf/zai-org/glm-4.7-flash', KIMI = '@cf/moonshotai/kimi-k2.6';   // Kimi : NON gratuit (mesuré, erreur 5035) — doit rester HORS du relais
 function aiRelais(morts) {   // modèles GLM/Kimi : réponse au format OpenAI (pas `response`)
   const calls = [];
   return { calls, run: async (model, input) => {
@@ -156,16 +156,19 @@ r = await post('/qwen/v1/chat/completions', { messages: msgs }, env(ai)); j = aw
 chk(r.status === 200 && r.headers.get('x-apex-model') === GLM && /glm-4\.7-flash/.test(j.choices[0].message.content), `9. tous les Qwen morts → GLM (Zhipu) répond, format OpenAI lu (${r.headers.get('x-apex-model')})`);
 chk(ai.calls.slice(0, 4).join() === QWENS.join() && ai.calls[4] === GLM, '9. ordre : les 4 Qwen d\'abord, GLM ensuite (aucun passe-droit)');
 ai = aiRelais(QWENS.concat([GLM]));
-r = await post('/qwen/v1/chat/completions', { messages: msgs }, env(ai));
-chk(r.status === 200 && r.headers.get('x-apex-model') === KIMI, `9. GLM mort aussi → Kimi (Moonshot) répond (${r.headers.get('x-apex-model')})`);
+r = await post('/qwen/v1/chat/completions', { messages: msgs }, env(ai)); j = await r.json();
+chk(r.status === 502 && !ai.calls.includes(KIMI), '9. GLM mort aussi → 502 clair ; Kimi n\'est JAMAIS appelé (payant sur Workers AI, mesuré : erreur 5035)');
 ai = aiRelais(QWENS);
 r = await post('/qwen/v1/chat/completions', { messages: msgs, stream: true }, env(ai)); const t2 = await r.text();
 const as2 = t2.split('\n').filter((l) => l.startsWith('data:') && !l.includes('[DONE]')).map((l) => JSON.parse(l.slice(5))).map((d) => d.choices[0].delta.content || '').join('');
 chk(r.status === 200 && as2 === 'Salut Kevin', `9. stream au format OpenAI relayé (« ${as2} »)`);
 /* modèle demandé (mesure) : liste fermée, un seul essai */
 ai = aiRelais([]);
+r = await post('/qwen/v1/chat/completions', { messages: msgs, model: GLM }, env(ai));
+chk(r.status === 200 && ai.calls.length === 1 && ai.calls[0] === GLM, `9. body.model dans la liste fermée → ce modèle seul (${ai.calls.join()})`);
+ai = aiRelais([]);
 r = await post('/qwen/v1/chat/completions', { messages: msgs, model: KIMI }, env(ai));
-chk(r.status === 200 && ai.calls.length === 1 && ai.calls[0] === KIMI, `9. body.model dans la liste fermée → ce modèle seul (${ai.calls.join()})`);
+chk(ai.calls[0] === '@cf/qwen/qwen3.8-27b', '9. Kimi demandé → ignoré (hors liste), l\'ordre normal s\'applique');
 ai = aiRelais([]);
 r = await post('/qwen/v1/chat/completions', { messages: msgs, model: '@cf/evil/modele-inconnu' }, env(ai));
 chk(ai.calls[0] === '@cf/qwen/qwen3.8-27b', '9. modèle inconnu → ignoré, l\'ordre normal s\'applique (liste blanche)');

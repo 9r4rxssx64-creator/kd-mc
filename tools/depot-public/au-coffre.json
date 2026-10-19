@@ -416,6 +416,7 @@
   "tools/arbre/verify-photo-ameliorer.mjs",
   "tools/arbre/verify-photo-fusion.mjs",
   "tools/arbre/verify-poster.mjs",
+  "tools/arbre/verify-recherche-lieu.mjs",
   "tools/arbre/verify-relier.mjs",
   "tools/arbre/verify-sync-photos.mjs",
   "tools/arbre/verify-visuel-appareils.mjs",

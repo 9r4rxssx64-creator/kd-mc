@@ -413,6 +413,7 @@
   "tools/arbre/verify-metier-notes.mjs",
   "tools/arbre/verify-nouvelle-personne.mjs",
   "tools/arbre/verify-ordinateur.mjs",
+  "tools/arbre/verify-photo-ameliorer.mjs",
   "tools/arbre/verify-photo-fusion.mjs",
   "tools/arbre/verify-poster.mjs",
   "tools/arbre/verify-relier.mjs",

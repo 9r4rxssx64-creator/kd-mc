@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       uid:
-        description: "uid exact du compte de test (testparcours-… ou parcours-robot…)"
+        description: "uid exact d'un compte de test (testparcours-, testmail-, testvitesse-, testdecoupe-, testsecours-, testrapide-, testlot-, testlecture-, testfinal-, testcache-, testpass-… ou parcours-robot…) — ou TOUS-LES-TESTS pour nettoyer tous les comptes de test d'un coup"
         required: true
       confirmer:
         description: "oui = supprimer pour de vrai (sinon essai à blanc)"

@@ -6,7 +6,9 @@
  * sans confirmer=oui : essai à blanc. Journal public : verdicts seulement (ni nom ni code). Copie de la fiche 30 jours côté domaine.
  * Usage : KDMC_ADMIN_PIN_SHA256=… node tools/smoke/supprimer-compte-test.mjs <uid> [--confirmer=oui] */
 const DOMAINE = 'https://kd-mc.com';
-const UID_DE_TEST = /^(testparcours-|parcours-robot)[a-z0-9-]*$/;
+/* Comptes que NOS robots et sessions créent pour mesurer (prénom de test + nom de mesure) — liste FERMÉE de préfixes : jamais une vraie personne. */
+const UID_DE_TEST = /^(testparcours-|testmail-|testvitesse-|testdecoupe-|testsecours-|testrapide-|testlot-|testlecture-|testfinal-|testcache-|testpass-|testsecurite-|testinscription-|parcours-robot)[a-z0-9-]*$/;
+const TOUS = 'TOUS-LES-TESTS';   // un seul appel nettoie tous les comptes de test présents (essai à blanc sans confirmer=oui)
 const ADMIN_UIDS = new Set(['kdmc_admin', 'kevin-desarzens', 'U11804']);
 const annot = (n, t, m) => console.log(`::${n} title=${t}::${m}`);
 const args = process.argv.slice(2);
@@ -14,7 +16,7 @@ const uid = String(args.find((a) => !a.startsWith('--')) || '').trim();
 const confirmer = /^--confirmer=(oui|1|true)$/i.test(args.find((a) => a.startsWith('--confirmer=')) || '');
 const hash = String(process.env.KDMC_ADMIN_PIN_SHA256 || '').trim().toLowerCase();
 
-if (!UID_DE_TEST.test(uid) || ADMIN_UIDS.has(uid)) { annot('error', 'Supprimer un compte de test', 'refus : ce n\'est pas un compte de test de nos robots'); process.exit(2); }
+if ((uid !== TOUS && !UID_DE_TEST.test(uid)) || ADMIN_UIDS.has(uid)) { annot('error', 'Supprimer un compte de test', 'refus : ce n\'est pas un compte de test de nos robots'); process.exit(2); }
 if (!/^[0-9a-f]{64}$/.test(hash)) { annot('error', 'Supprimer un compte de test', 'code admin absent (secret CI)'); process.exit(1); }
 const r0 = await fetch(DOMAINE + '/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: DOMAINE, 'x-kdmc-sonde': 'supprimer-compte-test' }, body: JSON.stringify({ hash }) });
 const d0 = await r0.json().catch(() => ({}));
@@ -22,6 +24,20 @@ if (!r0.ok || !d0.token) { annot('error', 'Supprimer un compte de test', `sessio
 const H = { 'content-type': 'application/json', origin: DOMAINE, 'x-kdmc-sso': d0.token, 'x-kdmc-sonde': 'supprimer-compte-test' };
 const lire = async () => (await (await fetch(`${DOMAINE}/__admin/accounts?limit=500`, { headers: H })).json().catch(() => ({}))).accounts || [];
 const avant = await lire();
+if (uid === TOUS) {
+  const liste = avant.filter((a) => UID_DE_TEST.test(a.uid) && !ADMIN_UIDS.has(a.uid));
+  annot('notice', 'Comptes de test', `${liste.length} compte(s) de test sur ${avant.length} fiches : ${liste.map((a) => a.uid).join(', ') || 'aucun'}`);
+  if (!confirmer) process.exit(0);
+  let ko = 0;
+  for (const c of liste) {
+    const rr = await fetch(`${DOMAINE}/__admin/compte-supprimer`, { method: 'POST', headers: H, body: JSON.stringify({ uid: c.uid, confirmer: true }) });
+    const jj = await rr.json().catch(() => ({}));
+    if (!rr.ok || !jj.ok) { ko++; annot('error', 'Comptes de test', `${c.uid} refusé : HTTP ${rr.status}`); }
+  }
+  const reste = (await lire()).filter((a) => UID_DE_TEST.test(a.uid));
+  annot(reste.length ? 'error' : 'notice', 'Comptes de test', `supprimés : ${liste.length - ko} — restent : ${reste.length ? reste.map((a) => a.uid).join(', ') : 'aucun'}`);
+  process.exit(reste.length ? 1 : 0);
+}
 const cible = avant.find((a) => a.uid === uid);
 if (!cible) { annot('notice', 'Supprimer un compte de test', `introuvable parmi ${avant.length} fiches (déjà supprimé ?)`); process.exit(0); }
 const resume = `${cible.hits || 0} connexion(s), dernière ${cible.last_seen ? new Date(cible.last_seen).toISOString().slice(0, 16) : 'jamais'}`;

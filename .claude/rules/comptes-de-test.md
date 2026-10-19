@@ -1,0 +1,5 @@
+# J'efface MES comptes de test, partout, à chaque fois (Kevin 19.10.2026 : « N'oublie pas d'effacer tes comptes partout à chaque fois »)
+- Tout compte que je crée pour mesurer ou vérifier (inscription réelle, robot, essai) est supprimé dans la MÊME livraison, sans attendre que Kevin le fasse.
+- Outil (dépôt public, gratuit) : workflow `supprimer-compte-test-public.yml`, uid = `TOUS-LES-TESTS` (essai à blanc) puis `confirmer=oui`. Il ne supprime que les préfixes de test connus (testparcours-, testmail-, testvitesse-, testdecoupe-, testsecours-, testrapide-, testlot-, testlecture-, testfinal-, testcache-, testpass-, parcours-robot) — jamais une vraie personne, jamais l'admin.
+- Un nouveau prénom de test = l'ajouter à la liste fermée `UID_DE_TEST` (tools/smoke/supprimer-compte-test.mjs) AVANT de créer le compte, et tester le refus des vrais noms.
+- Finir la livraison par « Comptes de test effacés : … / restent : … » (relu après suppression, pas supposé). Ne plus mettre « efface les comptes de test » dans KEVIN_ACTIONS_TODO.

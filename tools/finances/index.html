@@ -148,11 +148,11 @@
 <div id="app"></div>
 <div id="toast"></div>
 
-<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.3" data-color="#e8b830" defer></script>
+<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.4" data-color="#e8b830" defer></script>
 <script>
 (function(){
   'use strict';
-  var APP_VER = 'v0.15.3';
+  var APP_VER = 'v0.15.4';
   var PROXY = 'https://apex-secrets-proxy.9r4rxssx64.workers.dev';
 
   /* ============================ Utils ============================ */
@@ -509,7 +509,8 @@
         }
         if(p.id!==preferred.id) _aiFellToastOnce();   /* on n'a pas utilisé le moteur préféré */
         return out;
-      }catch(e){ lastErr=e; _aiMarkDown(p.id,(e&&e.message)||e); }   /* cause EXACTE mémorisée (leçon #97) */
+      }catch(e){ lastErr=e; if(/\bUnauthorized\b/.test((e&&e.message)||String(e))) break;   /* code refusé : les autres moteurs diraient la même chose, chacun compté par le verrou */
+        _aiMarkDown(p.id,(e&&e.message)||e); }   /* cause EXACTE mémorisée (leçon #97) */
     }
     throw lastErr||new Error('Aucun moteur IA disponible');
   }
@@ -542,8 +543,18 @@
     }
     return out;
   }
+  /* COUPE-CIRCUIT du code admin (Kevin 19.10 : 6 fichiers « Code admin refusé par le relais » d'un coup). Le relais compte CHAQUE refus dans un
+     verrou commun à tout le domaine (20/heure, même pour le bon code — y compris la connexion admin du routeur). Or chaque fichier essayait
+     toute la chaîne d'IA : même code, même refus, N moteurs × N fichiers = verrou fermé en un seul import. Désormais : dès qu'UN moteur répond
+     « Unauthorized », la chaîne s'arrête et ce même code n'est plus présenté au relais pendant 10 min (un NOUVEAU code est essayé tout de suite). */
+  var _pinRefuse=null;
   async function aiCallProvider(prov, parts, maxTokens){
     var hash=await aiPinHash(); if(!hash) throw new Error('IA non activée (code admin requis)');
+    if(_pinRefuse && _pinRefuse.h===hash && Date.now()-_pinRefuse.t<600000) throw new Error('Unauthorized (code déjà refusé : le relais n\'est plus appelé 10 min)');
+    try{ return await _aiCallProviderBrut(prov, parts, maxTokens, hash); }
+    catch(e){ if(/\bUnauthorized\b/.test((e&&e.message)||String(e))) _pinRefuse={h:hash,t:Date.now()}; throw e; }
+  }
+  async function _aiCallProviderBrut(prov, parts, maxTokens, hash){
     if(prov==='gemini'){
       var gp=parts.map(function(p){ return p.t!==undefined?{text:p.t}:{inline_data:{mime_type:p.f.mime,data:p.f.data}}; });
       var body=JSON.stringify({ contents:[{role:'user',parts:gp}], generationConfig:{temperature:0,maxOutputTokens:maxTokens||4096} });

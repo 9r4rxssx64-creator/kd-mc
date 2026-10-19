@@ -85,7 +85,7 @@
 
 <div class="wrap" id="view"></div>
 
-<div class="ver" id="ver" title="Toucher pour forcer la mise à jour">Apex Messages v1.5</div>
+<div class="ver" id="ver" title="Toucher pour forcer la mise à jour">Apex Messages v1.6</div>
 
 <div class="imgov" id="imgov"><span class="x" id="imgx">✕</span><img id="imgel" alt="photo"></div>
 
@@ -321,7 +321,7 @@
   window.addEventListener("focus",pullAll);
 
   // ---- MAJ auto force (règle « toujours partout ») + 1-tap (lesson #102) ----
-  var APP_VER="v1.5";
+  var APP_VER="v1.6";
   function forceUpd(){
     try{ if("serviceWorker"in navigator)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});}); }catch(_){}
     try{ if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k);});}); }catch(_){}
@@ -363,7 +363,14 @@
   gbtn.addEventListener("click",tryPin);
   pin.addEventListener("keydown",function(e){ if(e.key==="Enter")tryPin(); });
   // reconnu sur cette session (onglet) → pas de re-saisie
-  try{ if(sessionStorage.getItem("apex_msg_ok")==="1"){ boot(); } else { setTimeout(function(){pin.focus();},200); } }catch(_){ setTimeout(function(){pin.focus();},200); }
+  /* Kevin 19.10 : « je suis reconnu par le domaine, pourquoi il me demande le code ? ». La session admin déjà prouvée (Face ID / code du domaine) vaut le code :
+     on demande d'abord /__admin/grant (même origine, cookie + jeton du domaine) ; l'écran du code ne reste que si le domaine ne reconnaît pas la session. */
+  function _reconnuParLeDomaine(){
+    var hd={}; try{ var pt=localStorage.getItem("kdmc_sso_token")||""; if(pt) hd.Authorization="Bearer "+pt; }catch(_){}
+    var url=/^https?:$/.test(location.protocol)?"/__admin/grant":"https://kd-mc.com/__admin/grant";
+    return fetch(url,{credentials:"include",cache:"no-store",headers:hd}).then(function(r){return r.ok?r.json():null;}).then(function(j){return !!(j&&j.ok&&j.grant);}).catch(function(){return false;});
+  }
+  try{ if(sessionStorage.getItem("apex_msg_ok")==="1"){ boot(); } else { _reconnuParLeDomaine().then(function(ok){ if(ok){ try{ sessionStorage.setItem("apex_msg_ok","1"); }catch(_){} boot(); } else { setTimeout(function(){pin.focus();},200); } }); } }catch(_){ setTimeout(function(){pin.focus();},200); }
 })();
 </script>
 </body>

@@ -5992,6 +5992,25 @@ async function handleFin(request, url, env) {
     const needCode = !!(env && env.KDMC_ADMIN_PIN_SHA256);
     return new Response(JSON.stringify({ ok: false, reason: needCode ? 'need_admin_code' : 'admin_only' }), { status: 403, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
   }
+  /* L'IA de Finances par la session admin (Kevin 19.10 : « Marche pas » — le code enregistré dans l'app était refusé par le relais). Le routeur
+     détient déjà le même secret (KDMC_ADMIN_PIN_SHA256 = APEX_ADMIN_PIN_SHA256 du relais) : il le présente lui-même au relais, le navigateur n'a plus
+     aucun code à porter. Admin seulement (contrôle ci-dessus) ; liste blanche de fournisseurs d'IA (jamais Telegram, e-mail, bases…). L'en-tête
+     `x-fin-ia: 1` dit à l'app que la réponse vient bien d'ici (sinon repli sur l'ancien chemin). */
+  if (url.pathname.startsWith('/__fin/ia/')) {
+    const marque = { 'x-fin-ia': '1', 'cache-control': 'no-store', 'content-type': 'application/json' };
+    const rep = (o, st) => new Response(JSON.stringify(o), { status: st, headers: marque });
+    if (request.method !== 'POST') return rep({ ok: false, reason: 'post_seulement' }, 405);
+    const cible = url.pathname.slice('/__fin/ia'.length);
+    if (!/^\/(gemini|anthropic|mistral|groq|openai|deepseek|cerebras|xai|cohere|together|perplexity|qwen)\/[A-Za-z0-9._\/:\-]{1,200}$/.test(cible) || cible.includes('..')) return rep({ ok: false, reason: 'fournisseur_inconnu' }, 400);
+    if (!env.KDMC_ADMIN_PIN_SHA256) return rep({ ok: false, reason: 'code_relais_absent' }, 503);
+    const h = { 'x-apex-pin': env.KDMC_ADMIN_PIN_SHA256 };
+    for (const k of ['content-type', 'anthropic-version', 'anthropic-dangerous-direct-browser-access']) { const v = request.headers.get(k); if (v) h[k] = v; }
+    let r;
+    try { r = await fetch('https://apex-secrets-proxy.9r4rxssx64.workers.dev' + cible, { method: 'POST', headers: h, body: request.body }); }
+    catch { return rep({ ok: false, reason: 'relais_injoignable' }, 502); }
+    const out = new Headers(r.headers); out.set('x-fin-ia', '1'); out.set('cache-control', 'no-store');
+    return new Response(r.body, { status: r.status, headers: out });
+  }
   if (!env.ACCOUNTS) return J({ ok: false, reason: 'kv_absent' });
   const path = url.pathname;
   if (path === '/__fin/vault' && request.method === 'GET') {

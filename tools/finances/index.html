@@ -148,11 +148,11 @@
 <div id="app"></div>
 <div id="toast"></div>
 
-<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.4" data-color="#e8b830" defer></script>
+<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.5" data-color="#e8b830" defer></script>
 <script>
 (function(){
   'use strict';
-  var APP_VER = 'v0.15.4';
+  var APP_VER = 'v0.15.5';
   var PROXY = 'https://apex-secrets-proxy.9r4rxssx64.workers.dev';
 
   /* ============================ Utils ============================ */
@@ -547,6 +547,20 @@
      verrou commun à tout le domaine (20/heure, même pour le bon code — y compris la connexion admin du routeur). Or chaque fichier essayait
      toute la chaîne d'IA : même code, même refus, N moteurs × N fichiers = verrou fermé en un seul import. Désormais : dès qu'UN moteur répond
      « Unauthorized », la chaîne s'arrête et ce même code n'est plus présenté au relais pendant 10 min (un NOUVEAU code est essayé tout de suite). */
+  /* L'IA passe d'abord par le ROUTEUR avec la session admin déjà prouvée (Face ID / code du domaine) : le routeur ajoute lui-même le code au relais,
+     donc plus aucun code enregistré dans l'app à périmer (Kevin 19.10 : « Marche pas » après avoir retapé… le code stocké ne correspondait plus).
+     Repli sur l'ancien chemin (code du coffre → relais) seulement si le routeur n'a pas répondu lui-même (route absente, session non prouvée). */
+  async function _iaFetch(path, init, hash){
+    var g=''; try{ g=await ensureGrant(); }catch(e){}
+    if(g){
+      var h2={}; for(var k in (init.headers||{})) if(k!=='x-apex-pin') h2[k]=init.headers[k];
+      h2['x-kdmc-admin']=g;
+      try{ var r=await fetch('/__fin/ia'+path, { method:init.method, headers:h2, body:init.body, credentials:'include' });
+        if(r.headers.get('x-fin-ia')==='1') return r;
+      }catch(e){}
+    }
+    return fetch(PROXY+path, init);
+  }
   var _pinRefuse=null;
   async function aiCallProvider(prov, parts, maxTokens){
     var hash=await aiPinHash(); if(!hash) throw new Error('IA non activée (code admin requis)');
@@ -564,7 +578,7 @@
       var models=['gemini-flash-latest','gemini-2.5-flash','gemini-2.0-flash'];
       var t='', lastErr='';
       for(var mi=0; mi<models.length; mi++){
-        var r=await fetch(PROXY+'/gemini/v1beta/models/'+models[mi]+':generateContent',{ method:'POST',
+        var r=await _iaFetch('/gemini/v1beta/models/'+models[mi]+':generateContent',{ method:'POST',
           headers:{'content-type':'application/json','x-apex-pin':hash}, body:body });
         t=await r.text();
         if(r.ok){
@@ -593,7 +607,7 @@
       for(var mo=0; mo<models.length; mo++){
         var payload={ messages:[{role:'user',content:content}], temperature:0, max_tokens:maxTokens||4096 };
         if(models[mo]) payload.model=models[mo];
-        var ro=await fetch(PROXY+sp.path,{ method:'POST', headers:{'content-type':'application/json','x-apex-pin':hash}, body:JSON.stringify(payload) });
+        var ro=await _iaFetch(sp.path,{ method:'POST', headers:{'content-type':'application/json','x-apex-pin':hash}, body:JSON.stringify(payload) });
         var to=await ro.text();
         if(ro.ok){ var jo=JSON.parse(to); var co=(jo.choices&&jo.choices[0]&&jo.choices[0].message&&jo.choices[0].message.content)||'';
           if(!co) throw new Error(sp.label+' : réponse vide'); /* 200 mais vide → panne → moteur suivant (pas d'import vide silencieux) */
@@ -605,7 +619,7 @@
       throw new Error(last+' (aucun modèle '+sp.label+' disponible)');
     }
     var content2=parts.map(function(p){ return p.t!==undefined?{type:'text',text:p.t}:{type:(p.f.mime==='application/pdf'?'document':'image'),source:{type:'base64',media_type:p.f.mime,data:p.f.data}}; });
-    var r2=await fetch(PROXY+'/anthropic/v1/messages',{ method:'POST',
+    var r2=await _iaFetch('/anthropic/v1/messages',{ method:'POST',
       /* anthropic-dangerous-direct-browser-access requis : le proxy transmet l'Origin du navigateur,
          et l'API Claude exige ce header sinon 401 CORS (« must set anthropic-dangerous-direct-browser-access »). */
       headers:{'content-type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','x-apex-pin':hash},

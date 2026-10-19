@@ -409,6 +409,7 @@
   "tools/arbre/verify-cadrage.mjs",
   "tools/arbre/verify-domaine.mjs",
   "tools/arbre/verify-doublons-sans-perte.mjs",
+  "tools/arbre/verify-lecture-pistes.mjs",
   "tools/arbre/verify-liens-par-nom.mjs",
   "tools/arbre/verify-metier-notes.mjs",
   "tools/arbre/verify-nouvelle-personne.mjs",

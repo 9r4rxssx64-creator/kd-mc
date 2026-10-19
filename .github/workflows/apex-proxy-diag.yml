@@ -85,5 +85,16 @@ jobs:
             -H "access-control-request-headers: content-type,x-apex-pin,anthropic-version,anthropic-dangerous-direct-browser-access" \
             -D - -o /dev/null | grep -iE "^HTTP|access-control" | head -8
 
+          echo "== RELAIS GRATUITS Workers AI (20.10 : Qwen = contrôle, puis GLM et Kimi un par un, via body.model) =="
+          for M in "@cf/qwen/qwen3.8-27b" "@cf/zai-org/glm-4.7-flash" "@cf/moonshotai/kimi-k2.6"; do
+            T0=$(date +%s%3N)
+            OUT=$(curl -sS -m 60 -w '\n__HTTP:%{http_code}__' -X POST "$W/qwen/v1/chat/completions" \
+              -H "content-type: application/json" -H "x-apex-pin: $PIN_SHA" \
+              --data "{\"model\":\"$M\",\"max_tokens\":24,\"messages\":[{\"role\":\"user\",\"content\":\"Réponds uniquement par le mot : ok\"}]}")
+            MS=$(( $(date +%s%3N) - T0 ))
+            CODE=$(printf '%s' "$OUT" | grep -o '__HTTP:[0-9]*__' | tr -dc '0-9')
+            echo "::notice title=apex-diag::RELAIS $M → HTTP $CODE en ${MS} ms · $(printf '%s' "$OUT" | sed 's/__HTTP:[0-9]*__//' | tr '\n\r' '  ' | head -c 260 | redact)"
+          done
+
           echo "Diag terminé — lire les >>> lignes HTTP ci-dessus."
           exit 0

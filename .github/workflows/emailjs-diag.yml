@@ -18,7 +18,8 @@ jobs:
     steps:
       - name: Envoi réel + réponse exacte
         run: |
-          if [ -z "${EMAILJS_KEY:-}" ]; then echo "CLE ABSENTE du dépôt (secret EMAILJS_PRIVATE_KEY vide)"; exit 0; fi
+          if [ -z "${EMAILJS_KEY:-}" ]; then echo "::notice title=emailjs-diag::CLE ABSENTE du dépôt (secret EMAILJS_PRIVATE_KEY vide)"; exit 0; fi
           body=$(jq -n --arg k "$EMAILJS_KEY" '{service_id:"service_4s16z8l",template_id:"template_fzva9uf",user_id:"nUso3vcsGadvrWTtC",accessToken:$k,template_params:{to_email:"desarzens.kevin@gmail.com",store:"kd-mc.com",name:"kd-mc.com",from_name:"kd-mc.com",from_email:"no-reply@kd-mc.com",reply_to:"no-reply@kd-mc.com",title:"Test EmailJS diag kd-mc.com",message:"Test du robot de diagnostic (sans lien). Tu peux effacer ce mail."}}')
           code=$(curl -sS -o /tmp/r.txt -w '%{http_code}' -X POST https://api.emailjs.com/api/v1.0/email/send -H 'content-type: application/json' -d "$body" || echo curl-echec)
-          echo "HTTP $code"; head -c 400 /tmp/r.txt | sed "s/$EMAILJS_KEY/***/g"; echo
+          rep=$(head -c 300 /tmp/r.txt | tr -d '\n' | sed "s/$EMAILJS_KEY/***/g")
+          echo "HTTP $code $rep"; echo "::notice title=emailjs-diag::HTTP $code — $rep"

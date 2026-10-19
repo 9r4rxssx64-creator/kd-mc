@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 224 règles — le texte de Kevin, une par une
+## 📜 Les 225 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -984,6 +984,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 📖 RÈGLE ABSOLUE — LES TEXTES DES FICHES : À JOUR DES DOCUMENTS, EN HISTOIRES, SANS « PROBABLE » (Kevin 2026-10-17, ABSOLUE, POUR TOUT LE MONDE, TOUJOURS)
 **« Relis les textes : tu as vu dans le Journal officiel que Marie-France a divorcé d'Émile et tu écris quand même "probablement". Revérifie les textes de chaque fiche : tout d'actualité, mis à […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-les-textes-des-fiches-à-jour-des-documents-en-histoires-sans-probable-kevin-2026-10-17-absolue-pour-tout-le-monde-toujours)
+
+### 🖥️ RÈGLE ABSOLUE — LES MANIPULATIONS VONT AU PONT, LE LENOVO LES FAIT : KEVIN NE TAPE QUE MOT DE PASSE, CODE, PAIEMENT, DÉCISION IRRÉVERSIBLE (Kevin 2026-10-20, ABSOLUE, TOUTES LES BRANCHES)
+**« Si il y a des manipe à faire, donne le travail au pont sur le Lenovo pour qu'il fasse tout. Note-le pour toutes tes branches et rappelle-toi, et elles aussi. »** — Kevin 2026-10-20
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-les-manipulations-vont-au-pont-le-lenovo-les-fait-kevin-ne-tape-que-mot-de-passe-code-paiement-décision-irréversible-kevin-2026-10-20-absolue-toutes-les-branches)
 
 ---
 

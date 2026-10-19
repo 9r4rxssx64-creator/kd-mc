@@ -2692,6 +2692,16 @@
       "maj": "2026-10-19",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "comptes-cloud": {
+      "titre": "Comptes du domaine, relais IA, règles transversales (cloud)",
+      "branche": "claude/regle-pont-lenovo",
+      "sujet": "Session cloud : inscription, stockage, Finances/Messages/relais IA, règle pont-Lenovo",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-19",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -6390,6 +6400,15 @@
       "sujet": "Routeur : le secours D1 est lu AVANT le KV (kv-secours.js, leçon 652)",
       "corps": "Le journal d'alertes (aud:log) ne gardait que le dernier événement tant que le KV avait une vieille copie : demande de chef d'Adelli, nouvelles connexions… perdues depuis ~15h51 UTC. Corrigé et déployé (#4807). Si vous écrivez/lisez une clé du KV : le secours est plus récent que le KV.",
       "ts": "2026-10-17 18:02",
+      "etat": "ouvert"
+    },
+    {
+      "id": "m236-comptes-cloud",
+      "de": "comptes-cloud",
+      "a": "toutes",
+      "sujet": "RÈGLE DE KEVIN 20.10 : les manipulations vont au PONT, le Lenovo les fait",
+      "corps": "Avant d'écrire « Kevin doit faire X » : le Lenovo peut-il le faire dans son Chrome ? Oui → message au pont (kdmc-pont, pc-config / arbre-pc). Kevin garde seul : mot de passe, code reçu, code admin, paiement, décision irréversible. Lenovo éteint → la mission reste au pont + une ligne dans KEVIN_ACTIONS_TODO. Règle : .claude/rules/pont-lenovo-manipulations.md ; garde test:pont-lenovo-regle.",
+      "ts": "2026-10-19 22:36",
       "etat": "ouvert"
     }
   ]

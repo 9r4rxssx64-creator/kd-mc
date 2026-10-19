@@ -23,3 +23,6 @@ Les sessions **cloud** (claude.ai/code, iPhone) et les sessions **ordinateur** (
 
 ## Interdits
 Aucun secret dans la base (ni code, ni clé, ni empreinte) ; pas de données de santé ; les faits familiaux restent courts et sourcés.
+
+## Règle de Kevin (20.10.2026) : les manipulations vont ICI, le Lenovo les fait
+Voir `.claude/rules/pont-lenovo-manipulations.md` : avant d'écrire « Kevin doit faire X », poser la mission au pont (`pc-config` / `arbre-pc`). Kevin ne garde que mot de passe, code, paiement, décision irréversible.

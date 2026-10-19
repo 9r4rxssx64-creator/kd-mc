@@ -12380,3 +12380,13 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 3. **Décès : une phrase sobre, une seule fois** (« Il s'éteint à Nice en 1990 »). Jamais de cause, d'insistance, de « recherche négative INSEE : décédée avant 1970 » — on n'écrit pas ce qui n'a pas été trouvé sur un décès.
 4. **Récit, façon petite histoire** (voir `tools/arbre/consignes/HISTOIRES.md`) : chaleureux, vivant, varié, sans répétition, neutre (jamais « tu »), sans bruit de travail.
 5. **Contrôle systématique** : `node tools/arbre/session/textes-controle.mjs <export.json>` liste les fiches qui contiennent encore « probabl… / piste / à confirmer », une recherche négative sur un décès, ou une réponse de mairie non intégrée ; à passer avant de dire « à jour ».
+
+## 🖥️ RÈGLE ABSOLUE — LES MANIPULATIONS VONT AU PONT, LE LENOVO LES FAIT : KEVIN NE TAPE QUE MOT DE PASSE, CODE, PAIEMENT, DÉCISION IRRÉVERSIBLE (Kevin 2026-10-20, ABSOLUE, TOUTES LES BRANCHES)
+
+**« Si il y a des manipe à faire, donne le travail au pont sur le Lenovo pour qu'il fasse tout. Note-le pour toutes tes branches et rappelle-toi, et elles aussi. »** — Kevin 2026-10-20
+
+- Avant d'écrire « Kevin doit faire X » : le Lenovo (session PC, Chrome de Kevin déjà connecté) peut-il le faire ? Si oui → message au pont (D1 `kdmc-pont`) vers `pc-config` (configuration) ou `arbre-pc` (archives), mission précise, réponse en nombres et verdicts.
+- Kevin garde seul : mot de passe, code reçu, code admin, validation de paiement, captcha, décision irréversible (il dit oui). Jamais de clé ni de code dans le pont.
+- Lenovo non allumé : la mission reste au pont ET une ligne sur `KEVIN_ACTIONS_TODO.md`, sans attendre ni boucler.
+- Vérifier « comme Kevin » = mission PC.
+- Écrit aussi dans `.claude/rules/pont-lenovo-manipulations.md` (chargé par toute session) ; message « toutes » au pont et au registre des sessions ; garde `test:pont-lenovo-regle`.

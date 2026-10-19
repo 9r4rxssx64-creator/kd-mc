@@ -35,6 +35,8 @@ function confianceNavigateur() {
   if (!process.env.HTTPS_PROXY || !fs.existsSync(ca)) return 'pas de proxy de session (rien à faire)';
   const certutil = () => execFileSync('certutil', ['-L', '-d', db], { encoding: 'utf8' });
   try { if (/ccr-agent-proxy/.test(certutil())) return 'déjà en place'; } catch (e) {
+    /* 19.10 : l'index d'apt d'une session périmée donnait « 404 » sur libnss3-tools — on le rafraîchit d'abord */
+    try { execFileSync('apt-get', ['update', '-qq'], { stdio: 'ignore' }); } catch (e1) { /* on tente quand même l'installation */ }
     try { execFileSync('apt-get', ['install', '-y', 'libnss3-tools'], { stdio: 'ignore' }); } catch (e2) { return 'certutil absent et non installable — le navigateur refusera le domaine'; }
   }
   fs.mkdirSync(db.slice(4), { recursive: true });

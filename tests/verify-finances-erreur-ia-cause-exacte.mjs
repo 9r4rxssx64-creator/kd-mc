@@ -42,7 +42,7 @@ const _importErrMsg = new Function(isNetErrSrc + '\n' + importErrMsgSrc + '\n re
 // Cas 1 : NOTRE relais refuse le PIN de Kevin (corps brut « Unauthorized », comme le renvoie
 // vraiment le worker — services/apex-secrets-proxy, `return new Response('Unauthorized', {status:401})`).
 const msgPin = _importErrMsg(new Error('Claude HTTP 401 : Unauthorized'));
-rec(/revérifie le code/i.test(msgPin), '1. PIN de Kevin refusé (texte brut "Unauthorized") → le message dit bien de revérifier le code');
+rec(/session admin/i.test(msgPin) && /rien à retaper/i.test(msgPin), '1. relais qui refuse (texte brut "Unauthorized") → le message parle de la SESSION admin, jamais de retaper un code');
 rec(!/fournisseur/i.test(msgPin), '1b. ce cas-là ne doit PAS être présenté comme une panne fournisseur');
 
 // Cas 2 : le FOURNISSEUR refuse SA PROPRE clé (mesuré en réel, Gemini 403 API_KEY_SERVICE_BLOCKED).
@@ -69,7 +69,7 @@ rec(/limite ia/i.test(_importErrMsg(new Error('HTTP 429 : rate limit exceeded'))
 const aiWhySrc = extract('_aiWhy', src);
 const _aiWhy = new Function(aiWhySrc + '\n return _aiWhy;')();
 const whyPin = _aiWhy('Claude HTTP 401 : Unauthorized', 'anthropic');
-rec(/code admin/i.test(whyPin.t) && whyPin.mine === true, '6. _aiWhy : PIN de Kevin refusé → diagnostic nomme « ton code admin », marqué mine:true');
+rec(/session admin/i.test(whyPin.t) && whyPin.mine === true, '6. _aiWhy : PIN de Kevin refusé → diagnostic nomme « ta session admin », marqué mine:true');
 const whyGemini = _aiWhy('Gemini HTTP 403 : API_KEY_SERVICE_BLOCKED', 'gemini');
 rec(!whyGemini.mine && /fournisseur/i.test(whyGemini.t), '7. _aiWhy : clé Gemini bloquée côté fournisseur → PAS marqué mine:true');
 const whyCredit = _aiWhy('Gemini HTTP 402 : Your prepayment credits are depleted', 'gemini');

@@ -148,11 +148,11 @@
 <div id="app"></div>
 <div id="toast"></div>
 
-<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.5" data-color="#e8b830" defer></script>
+<script src="/tools/shared/version-badge-pwa.js" data-project="finances" data-version="v0.15.6" data-color="#e8b830" defer></script>
 <script>
 (function(){
   'use strict';
-  var APP_VER = 'v0.15.5';
+  var APP_VER = 'v0.15.6';
   var PROXY = 'https://apex-secrets-proxy.9r4rxssx64.workers.dev';
 
   /* ============================ Utils ============================ */
@@ -454,7 +454,7 @@
   function _aiWhy(err,prov){ var m=String(err||'');
     /* « Unauthorized » brut = c'est NOTRE relais qui a refusé le code admin de Kevin (PAS le fournisseur) — à distinguer
        d'un 401/403 avec corps JSON (fournisseur), sinon on dit à Kevin de retaper un code qui n'est jamais le problème. */
-    if(/\bUnauthorized\b/.test(m)) return {t:'Ton code admin est refusé par le relais (le fournisseur n\'est même pas appelé) — revérifie-le ci-dessus.', fix:true, mine:true};
+    if(/\bUnauthorized\b/.test(m)) return {t:'Ta session admin n\'est pas reconnue par le relais (le fournisseur n\'est même pas appelé) — rouvre Finances depuis le portail kd-mc.com ; rien à retaper.', fix:true, mine:true};
     /* 18.10 (mesuré en réel) : « crédit épuisé » (402/400, prepayment/balance) ≠ « clé invalide » — le conseil
        diffère (recharger, pas régénérer) et confond moins Kevin avec le diagnostic de son propre code. */
     if(/credit|balance|prepayment|billing/i.test(m)) return {t:'Le crédit de cette IA est épuisé chez le fournisseur — il faut recharger (pas régénérer la clé).', fix:true};
@@ -550,8 +550,20 @@
   /* L'IA passe d'abord par le ROUTEUR avec la session admin déjà prouvée (Face ID / code du domaine) : le routeur ajoute lui-même le code au relais,
      donc plus aucun code enregistré dans l'app à périmer (Kevin 19.10 : « Marche pas » après avoir retapé… le code stocké ne correspondait plus).
      Repli sur l'ancien chemin (code du coffre → relais) seulement si le routeur n'a pas répondu lui-même (route absente, session non prouvée). */
+  /* UN SEUL appel à ensureGrant pour tous les fichiers en parallèle (Kevin 19.10 nuit : « il a marché une fois, puis tout rouge » — ensureGrant répond ''
+     aux appels simultanés pendant qu'il travaille : les autres fichiers retombaient sur l'ancien code périmé → refus en chaîne). Réponse vide jamais mémorisée ;
+     3 essais espacés avant d'abandonner. La session admin du domaine suffit : aucun code à retaper. */
+  var _iaGrantP=null;
+  function _iaGrant(){
+    if(_iaGrantP) return _iaGrantP;
+    _iaGrantP=(async function(){
+      for(var i=0;i<3;i++){ var g=''; try{ g=await ensureGrant(); }catch(e){} if(g) return g; await new Promise(function(r){ setTimeout(r,500); }); }
+      return '';
+    })().then(function(g){ if(!g) _iaGrantP=null; else setTimeout(function(){ _iaGrantP=null; },60000); return g; });
+    return _iaGrantP;
+  }
   async function _iaFetch(path, init, hash){
-    var g=''; try{ g=await ensureGrant(); }catch(e){}
+    var g=await _iaGrant();
     if(g){
       var h2={}; for(var k in (init.headers||{})) if(k!=='x-apex-pin') h2[k]=init.headers[k];
       h2['x-kdmc-admin']=g;
@@ -1651,7 +1663,7 @@
        retaper son code n'y change rien (mesuré 18.10 : Gemini bloqué par Google, HTTP 403 API_KEY_SERVICE_BLOCKED,
        pour TOUS les imports PDF — aucun rapport avec le code admin de Kevin). Les deux étaient confondues sous
        le même message, qui envoyait Kevin corriger un code qui n'était jamais le problème. */
-    if(/\bUnauthorized\b/.test(m)) return 'Code admin refusé par le relais — revérifie le code (Réglages)';
+    if(/\bUnauthorized\b/.test(m)) return 'Session admin non reconnue par le relais — rouvre Finances depuis le portail (rien à retaper)';
     /* 18.10 (mesuré en réel, run coffre 39172252772) : Gemini et Claude refusent chacun SA clé pour
        MANQUE DE CRÉDIT (402 "prepayment credits are depleted", 400 "credit balance is too low") —
        pas une clé invalide. Un conseil « recharge » est plus juste et plus actionnable que « refuse sa clé ». */

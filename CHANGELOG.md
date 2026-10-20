@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.322 (2026-10-20 — service worker absent sur iPhone, micro iOS)
+
+- Le routeur sert `lib/sw-handlers.js` (importé par le service worker) sans session : avant, 401 → aucun service worker, aucun cache, push en erreur.
+- Micro : session audio remise en « play-and-record » avant `getUserMedia({audio})` (iOS récent : « AudioSession category is not compatible with audio capture »).
+- L'échec d'enregistrement du service worker est gardé (`apex_sw_error`), retenté une fois, et affiché dans « Diagnostic mise à jour ».
+
 ## CMCteams v9.980 + light v1.106 · Apex Chat v1.1.319 · Lingua v2.142.3 · Créa Studio v9.18.5 · boutiques (2026-10-17 — « toutes les conditions acceptées EN UN CLIC, en restant vague »)
 
 - **Règle de Kevin** (CLAUDE-HISTOIRE.md § « en un clic, en restant vague ») : UNE case « J'accepte les conditions. » (portail kdmc-home) ou la porte du routeur, une seule fois par compte, valable partout ; aucune app ne redemande un accord, une question déjà répondue ou une autorisation déjà donnée.

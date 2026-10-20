@@ -459,6 +459,9 @@ async function saveTurnKey() {
   refreshExport();
 }
 
+/* Même remède que l'app (iOS récent : session audio en « lecture » → capture refusée). */
+(function(){ try{ var md = navigator.mediaDevices; if(!md || typeof md.getUserMedia !== 'function' || md.__apexAudioSession) return; var o = md.getUserMedia.bind(md);
+  md.getUserMedia = function(c){ try{ if(c && c.audio && navigator.audioSession) navigator.audioSession.type = 'play-and-record'; }catch(e){ console.warn('audioSession', e && e.message); } return o(c); }; md.__apexAudioSession = true; }catch(e){ console.warn('garde micro', e && e.message); } })();
 async function testMic() { await testMedia({ audio: true }, 'd-call-mic', 'mic', 'Micro'); }
 async function testCam() { await testMedia({ video: true }, 'd-call-cam', 'cam', 'Caméra'); }
 async function testMedia(constraints, id, key, label) {

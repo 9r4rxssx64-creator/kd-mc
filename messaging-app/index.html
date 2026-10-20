@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.321",
+  "softwareVersion": "v1.1.322",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.321';
+const __APEX_CHAT_VERSION__ = 'v1.1.322';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -582,8 +582,39 @@ window._apexSafeReload = function(doReload, reason){
   return window._apexReloadPending ? 'reportee' : 'appliquee';
 };
 document.addEventListener('input', function(e){ if(e && e.target && e.target.id === 'msg-input') window._apexLastKeyTs = Date.now(); }, true);
+/* 20.10.2026 (iPhone de Kevin : « Micro — InvalidStateError — AudioSession category is not compatible with audio capture ») : sur iOS récent, une session audio
+   restée en « lecture » (un son joué, une notification) refuse la capture. Avant toute demande de micro on remet la session en « lecture + enregistrement ». */
+(function(){
+  try{
+    var md = navigator.mediaDevices;
+    if(!md || typeof md.getUserMedia !== 'function' || md.__apexAudioSession) return;
+    var orig = md.getUserMedia.bind(md);
+    md.getUserMedia = function(c){
+      try{ if(c && c.audio && navigator.audioSession) navigator.audioSession.type = 'play-and-record'; }
+      catch(e){ console.warn('[Audio] session audio non réglée :', e && e.message); }
+      return orig(c);
+    };
+    md.__apexAudioSession = true;
+  }catch(e){ console.warn('[Audio] garde micro non posée :', e && e.message); }
+})();
+/* 20.10.2026 : l'échec d'enregistrement du service worker était AVALÉ (`.catch(_=>{})`) — impossible de savoir pourquoi Apex Chat n'avait aucun SW sur l'iPhone
+   (cause trouvée : le routeur refusait l'import du module). Désormais l'erreur est gardée (localStorage `apex_sw_error`, visible dans « Diagnostic mise à jour »)
+   et l'enregistrement est retenté une fois après 8 s. */
+window._apexSwError = null;
+function _apexRegisterSw(essai){
+  return navigator.serviceWorker.register('./sw.js?v=' + __APEX_CHAT_VERSION__, {scope:'./', type:'module'}).then(function(reg){
+    window._apexSwError = null; try{ localStorage.removeItem('apex_sw_error'); }catch(_e){ /* stockage indisponible */ }
+    return reg;
+  }, function(e){
+    var msg = ((e && e.name) || 'Erreur') + ' : ' + ((e && e.message) || e);
+    window._apexSwError = msg; try{ localStorage.setItem('apex_sw_error', msg.slice(0, 300)); }catch(_e){ /* stockage indisponible */ }
+    console.warn('[SW] enregistrement échoué (essai ' + essai + ') — ' + msg);
+    if(essai < 2) return new Promise(function(res){ setTimeout(res, 8000); }).then(function(){ return _apexRegisterSw(essai + 1); });
+    throw e;
+  });
+}
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=' + __APEX_CHAT_VERSION__, {scope:'./', type:'module'}).then(reg=>{
+  _apexRegisterSw(1).then(reg=>{
     reg.update().catch(_=>{});
     reg.addEventListener('updatefound',()=>{
       const nw=reg.installing;
@@ -806,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.321" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.321</div>
+  <div id="splash-version" data-ver="v1.1.322" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.322</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -820,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.321</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.322</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -3975,6 +4006,9 @@ K._openUpdateDiagnostic = function(){
       </div>
       <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--ax-border)">
         <span>SW actif</span><code style="color:${swReg ? 'var(--ax-ok)' : 'var(--ax-err)'}">${swReg ? '✅ Oui' : '❌ Non'}</code>
+      </div>
+      ${swReg ? '' : `<div style="padding:4px 0;border-bottom:1px solid var(--ax-border);font-size:.8em;color:var(--ax-err)">Raison : ${esc(window._apexSwError || (()=>{ try{ return localStorage.getItem('apex_sw_error'); }catch(_e){ return ''; } })() || 'aucune erreur notée (installation en cours ?)')}</div>`}
+      <div style="display:none">
       </div>
       <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--ax-border)">
         <span>Connexion</span><code>${onlineState}</code>
@@ -19036,6 +19070,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.321", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.322", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

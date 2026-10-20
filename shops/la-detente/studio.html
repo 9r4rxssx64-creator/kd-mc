@@ -138,8 +138,8 @@ details.grp>.sublab:nth-child(2){margin-top:3px}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
 .modal.show{display:flex}
-.modal .box{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:24px;max-width:420px;width:100%;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.modal .box.wide{max-width:940px;max-height:90vh;overflow:auto}
+.modal .box{background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:24px;max-width:420px;width:100%;max-height:88vh;max-height:88dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal .box.wide{max-width:940px;max-height:90vh;max-height:90dvh;overflow:auto}
 .mvHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}
 .mvHead h2{margin:0;font-size:17px}
 .mvGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
@@ -157,7 +157,7 @@ details.grp>.sublab:nth-child(2){margin-top:3px}
  .wrap{flex-direction:column;height:auto;overflow-x:hidden;overflow-y:auto}
  .side{width:100%;border:none;border-bottom:1px solid var(--border);max-height:none}
  /* L'aperçu du produit en PREMIER (sinon il est poussé sous la liste d'options) */
- .stage-wrap{order:0;min-height:42vh;max-height:70vh;padding:10px;position:sticky;top:0;z-index:3}
+ .stage-wrap{order:0;min-height:42vh;min-height:42dvh;max-height:70vh;max-height:70dvh;padding:10px;position:sticky;top:0;z-index:3}
  .side{order:1}.side.right{order:2}
  #stageBox{width:min(78vw,40vh)}
  body{overflow:auto}

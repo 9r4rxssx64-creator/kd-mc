@@ -1,0 +1,77 @@
+name: Domaine — Sauvegarde nocturne (comptes KV + bases D1)
+
+# Kevin 20.10.2026 : « Revérifie les sauvegardes, partout. » Constat : Firebase est sauvegardé chaque nuit (firebase-backup.yml), mais le KV ACCOUNTS
+# (comptes, codes hachés) n'avait AUCUNE copie, et les bases D1 (cercle Lingua, pont, secours du KV) non plus. Ce robot comble le trou.
+# PAS de cron GitHub (suspension du 15.08) : il part avec le MÊME évènement « sauvegarde-quotidienne » que le cron Cloudflare de kdmc-outlook
+# envoie déjà une fois par jour. Sortie CHIFFRÉE (AES-256, PBKDF2 200k) sur la branche `d1-backups` du coffre privé, 14 jours gardés + latest.
+# RESTAURATION : git checkout origin/d1-backups -- backups/domaine/latest.tar.enc ;
+#   openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in latest.tar.enc -pass env:BACKUP_PASS | tar x   (BACKUP_PASS = BACKUP_ENCRYPTION_KEY)
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [sauvegarde-quotidienne]
+
+permissions:
+  contents: write
+
+concurrency: domaine-backup
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : borné
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: '22' }
+
+      - name: Export du KV des comptes + des bases D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NS: 8cfa33a28ac045adb7b7a9556ca8a073
+        run: |
+          set -e
+          mkdir -p /tmp/dom && cd /tmp/dom
+          SORTIE=/tmp/dom/kv-accounts.json node "$GITHUB_WORKSPACE/tools/backup/domaine-export.mjs"
+          # Bases D1 : une absente ne bloque pas les autres (notée), mais le KV des comptes est obligatoire (ci-dessus).
+          for B in kdmc-cercle kdmc-pont; do
+            if npx --yes wrangler@3 d1 export "$B" --remote --output "/tmp/dom/$B.sql" >/tmp/dom/$B.log 2>&1; then echo "$B : $(wc -c < /tmp/dom/$B.sql) octets"; else echo "::warning::$B non exporté : $(tail -2 /tmp/dom/$B.log | tr '\n' ' ')"; fi
+          done
+          ls -la /tmp/dom
+
+      - name: Archive + chiffrement (jamais de clair dans le dépôt)
+        env:
+          BACKUP_PASS: ${{ secrets.BACKUP_ENCRYPTION_KEY != '' && secrets.BACKUP_ENCRYPTION_KEY || (secrets.KDMC_SSO_SECRET != '' && secrets.KDMC_SSO_SECRET || secrets.JWT_SECRET) }}
+        run: |
+          set -e
+          if [ -z "${BACKUP_PASS:-}" ]; then echo "::error::aucun secret de chiffrement — abandon, rien n'est écrit en clair"; exit 1; fi
+          mkdir -p /tmp/out
+          tar -C /tmp/dom -cf - kv-accounts.json $(cd /tmp/dom && ls *.sql 2>/dev/null) | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -out /tmp/out/latest.tar.enc -pass env:BACKUP_PASS
+          cp /tmp/out/latest.tar.enc "/tmp/out/$(date -u +%Y%m%d).tar.enc"
+          ls -la /tmp/out
+
+      - name: Pousse sur la branche d1-backups (14 jours datés + latest)
+        run: |
+          set -e
+          MUSELIERE="$RUNNER_TEMP/museler-branche-orpheline.sh"
+          cp tools/vercel/museler-branche-orpheline.sh "$MUSELIERE"
+          git config user.name "domaine-backup[bot]"
+          git config user.email "actions@github.com"
+          git fetch origin d1-backups 2>/dev/null && git checkout -B d1-backups origin/d1-backups || git checkout --orphan d1-backups
+          if ! git rev-parse origin/d1-backups >/dev/null 2>&1; then git rm -rfq --cached . 2>/dev/null || true; git clean -fdq || true; fi
+          mkdir -p backups/domaine
+          cp /tmp/out/*.tar.enc backups/domaine/
+          ls -1 backups/domaine/2*.tar.enc 2>/dev/null | sort | head -n -14 | xargs -r rm -f
+          bash "$MUSELIERE"
+          git add backups/domaine
+          git commit -m "backup: domaine $(date -u +%Y-%m-%d) (KV comptes + D1, chiffré) [skip ci]" || { echo "rien à committer"; exit 0; }
+          git push -f origin d1-backups
+
+      - name: Copie de secours en artifact (30 jours)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: domaine-backup-${{ github.run_id }}
+          path: /tmp/out/latest.tar.enc
+          retention-days: 30

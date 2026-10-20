@@ -11,7 +11,7 @@ ok(sain({ 'acc:a': '{}' }).ok && !sain({ 'cred:a': '{}' }).ok, 'un export sans a
 const wf = readFileSync(new URL('../.github/workflows/domaine-backup.yml', import.meta.url), 'utf8');
 ok(/repository_dispatch:\s*\n\s*types:\s*\[sauvegarde-quotidienne\]/.test(wf), 'le robot part avec la sauvegarde quotidienne du cron Cloudflare');
 ok(!/^\s*schedule:/m.test(wf) && !/^\s*-\s*cron:/m.test(wf), 'aucun cron GitHub (règle du 15.08)');
-ok(/openssl enc -aes-256-cbc -pbkdf2/.test(wf) && /d1 export/.test(wf) && /domaine-export\.mjs/.test(wf), 'KV + D1 exportés puis chiffrés AES-256');
+ok(/openssl enc -aes-256-cbc -pbkdf2/.test(wf) && /d1\/database/.test(readFileSync(new URL('../tools/backup/domaine-export.mjs', import.meta.url), 'utf8')) && /domaine-export\.mjs/.test(wf), 'KV + D1 exportés puis chiffrés AES-256');
 const chat = readFileSync(new URL('../.github/workflows/apex-chat-d1-backup.yml', import.meta.url), 'utf8');
 ok(/repository_dispatch:\s*\n\s*types:\s*\[sauvegarde-quotidienne\]/.test(chat), 'la base D1 d\'Apex Chat est de nouveau sauvegardée chaque nuit (arrêtée depuis le 14.08)');
 console.log(`\n${pass} ok, ${fails.length} échec(s)`); process.exit(fails.length ? 1 : 0);

@@ -47,11 +47,30 @@ async function main() {
   };
   await Promise.all(Array.from({ length: 8 }, lire));
   if (refus) { console.error(`::error::${refus} clé(s) illisible(s) (${dernier}) — sauvegarde refusée`); process.exit(1); }
+  /* Les bases D1 par l'API (20.10, 2ᵉ passage réel : `wrangler d1 export` a échoué sur ce jeton). Chaque table est lue par pages de 2000 lignes et écrite en JSON.
+     Une base illisible est NOTÉE (annotation) sans arrêter la sauvegarde des comptes : mieux vaut les comptes seuls que rien. */
+  const d1 = {}; const D1 = (process.env.D1_NOMS || 'kdmc-cercle,kdmc-pont').split(',').map((x) => x.trim()).filter(Boolean);
+  try {
+    const lr = await fetch(`https://api.cloudflare.com/client/v4/accounts/${A}/d1/database?per_page=100`, { headers: H });
+    const lj = await lr.json();
+    if (!lr.ok || !lj.success) console.log(`::warning title=domaine-backup::liste des bases D1 refusée HTTP ${lr.status} ${((lj.errors || [])[0] || {}).message || ''}`);
+    else for (const nom of D1) {
+      const b = (lj.result || []).find((x) => x.name === nom);
+      if (!b) { console.log(`::warning title=domaine-backup::base D1 « ${nom} » introuvable dans ce compte`); continue; }
+      const q = async (sql) => { const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${A}/d1/database/${b.uuid}/query`, { method: 'POST', headers: { ...H, 'content-type': 'application/json' }, body: JSON.stringify({ sql }) }); const j = await r.json(); if (!r.ok || !j.success) throw new Error('HTTP ' + r.status + ' ' + (((j.errors || [])[0] || {}).message || '')); return (j.result && j.result[0] && j.result[0].results) || []; };
+      try {
+        const tables = (await q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'")).map((t) => t.name);
+        d1[nom] = {};
+        for (const t of tables) { const lignes = []; for (let off = 0; ; off += 2000) { const p = await q(`SELECT * FROM "${t.replace(/"/g, '')}" LIMIT 2000 OFFSET ${off}`); lignes.push(...p); if (p.length < 2000) break; } d1[nom][t] = lignes; }
+        console.log(`::notice title=domaine-backup::D1 ${nom} : ${tables.length} tables, ${Object.values(d1[nom]).reduce((n, l) => n + l.length, 0)} lignes`);
+      } catch (e) { console.log(`::warning title=domaine-backup::D1 « ${nom} » non exportée : ${String(e.message).slice(0, 160)}`); }
+    }
+  } catch (e) { console.log(`::warning title=domaine-backup::D1 : ${String(e.message).slice(0, 160)}`); }
   const s = sain(entrees);
   console.log(`::notice title=domaine-backup::${cles.length} clés, ${garder.length} gardées, ${Object.keys(entrees).length} lues, ${s.comptes} comptes`);
   console.log(`clés : ${cles.length} au total · ${garder.length} gardées (volatiles écartées) · ${Object.keys(entrees).length} lues · ${s.comptes} comptes`);
   if (!s.ok) { console.error('::error::aucun compte (acc:) dans l\'export — sauvegarde refusée'); process.exit(1); }
-  fs.writeFileSync(SORTIE, JSON.stringify({ jour: new Date().toISOString(), ns: NS, entrees }));
+  fs.writeFileSync(SORTIE, JSON.stringify({ jour: new Date().toISOString(), ns: NS, entrees, d1 }));
   console.log('écrit : ' + SORTIE + ' (' + fs.statSync(SORTIE).size + ' octets)');
 }
 if (process.argv[1] && import.meta.url === new URL('file://' + process.argv[1]).href) main();

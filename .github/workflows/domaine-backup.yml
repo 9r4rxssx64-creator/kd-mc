@@ -35,10 +35,7 @@ jobs:
           set -e
           mkdir -p /tmp/dom && cd /tmp/dom
           SORTIE=/tmp/dom/kv-accounts.json node "$GITHUB_WORKSPACE/tools/backup/domaine-export.mjs"
-          # Bases D1 : une absente ne bloque pas les autres (notée), mais le KV des comptes est obligatoire (ci-dessus).
-          for B in kdmc-cercle kdmc-pont; do
-            if npx --yes wrangler@3 d1 export "$B" --remote --output "/tmp/dom/$B.sql" >/tmp/dom/$B.log 2>&1; then echo "$B : $(wc -c < /tmp/dom/$B.sql) octets"; else echo "::warning::$B non exporté : $(tail -2 /tmp/dom/$B.log | tr '\n' ' ')"; fi
-          done
+          # Les bases D1 sont lues par l'API dans le même script (notées en annotation si illisibles).
           ls -la /tmp/dom
 
       - name: Archive + chiffrement (jamais de clair dans le dépôt)
@@ -48,13 +45,14 @@ jobs:
           set -e
           if [ -z "${BACKUP_PASS:-}" ]; then echo "::error::aucun secret de chiffrement — abandon, rien n'est écrit en clair"; exit 1; fi
           mkdir -p /tmp/out
-          tar -C /tmp/dom -cf - kv-accounts.json $(cd /tmp/dom && ls *.sql 2>/dev/null) | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -out /tmp/out/latest.tar.enc -pass env:BACKUP_PASS
+          tar -C /tmp/dom -cf - kv-accounts.json | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -out /tmp/out/latest.tar.enc -pass env:BACKUP_PASS
           cp /tmp/out/latest.tar.enc "/tmp/out/$(date -u +%Y%m%d).tar.enc"
           ls -la /tmp/out
 
       - name: Pousse sur la branche d1-backups (14 jours datés + latest)
         run: |
           set -e
+          trap 'echo "::error title=domaine-backup::ligne $LINENO : $BASH_COMMAND"' ERR
           MUSELIERE="$RUNNER_TEMP/museler-branche-orpheline.sh"
           cp tools/vercel/museler-branche-orpheline.sh "$MUSELIERE"
           git config user.name "domaine-backup[bot]"

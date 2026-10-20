@@ -7,7 +7,7 @@
    Env : CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, NS (id du KV), SORTIE (fichier). Le fichier est ensuite CHIFFRÉ par le workflow avant tout dépôt. */
 import fs from 'node:fs';
 
-export const VOLATILES = ['anonv:', 'anon:', 'q:', 'dep:', 'rl:', 'rlc:', 'gtts:', 'rlcode:', 'budget:', 'sauvegarde:', 'publication:'];
+export const VOLATILES = ['ltts:', 'anonv:', 'anon:', 'q:', 'dep:', 'rl:', 'rlc:', 'gtts:', 'rlcode:', 'budget:', 'sauvegarde:', 'publication:'];
 export const estVolatile = (cle) => VOLATILES.some((p) => String(cle).startsWith(p));
 export const aGarder = (cles) => cles.filter((c) => c && !estVolatile(c));
 /* (gardé pour les tests ; plus utilisé par l'export) */
@@ -66,6 +66,10 @@ async function main() {
       } catch (e) { console.log(`::warning title=domaine-backup::D1 « ${nom} » non exportée : ${String(e.message).slice(0, 160)}`); }
     }
   } catch (e) { console.log(`::warning title=domaine-backup::D1 : ${String(e.message).slice(0, 160)}`); }
+  /* Poids par famille de clés : un export de 102 Mo a dépassé la limite de GitHub (100 Mo) au 3ᵉ passage réel — on regarde QUI pèse. */
+  const poids = {}; for (const [k, v] of Object.entries(entrees)) { const f = k.split(':')[0] + ':'; poids[f] = poids[f] || { n: 0, o: 0 }; poids[f].n++; poids[f].o += String(v).length; }
+  const top = Object.entries(poids).sort((x, y) => y[1].o - x[1].o).slice(0, 8).map(([f, v]) => `${f} ${v.n} clés ${(v.o / 1048576).toFixed(1)} Mo`).join(' · ');
+  console.log(`::notice title=domaine-backup-poids::${top}`);
   const s = sain(entrees);
   console.log(`::notice title=domaine-backup::${cles.length} clés, ${garder.length} gardées, ${Object.keys(entrees).length} lues, ${s.comptes} comptes`);
   console.log(`clés : ${cles.length} au total · ${garder.length} gardées (volatiles écartées) · ${Object.keys(entrees).length} lues · ${s.comptes} comptes`);

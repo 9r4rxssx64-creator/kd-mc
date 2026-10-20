@@ -5,7 +5,7 @@ name: Domaine — Sauvegarde nocturne (comptes KV + bases D1)
 # PAS de cron GitHub (suspension du 15.08) : il part avec le MÊME évènement « sauvegarde-quotidienne » que le cron Cloudflare de kdmc-outlook
 # envoie déjà une fois par jour. Sortie CHIFFRÉE (AES-256, PBKDF2 200k) sur la branche `d1-backups` du coffre privé, 14 jours gardés + latest.
 # RESTAURATION : git checkout origin/d1-backups -- backups/domaine/latest.tar.enc ;
-#   openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in latest.tar.enc -pass env:BACKUP_PASS | tar x   (BACKUP_PASS = BACKUP_ENCRYPTION_KEY)
+#   openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -in latest.tar.enc -pass env:BACKUP_PASS | tar xz   (BACKUP_PASS = BACKUP_ENCRYPTION_KEY)
 on:
   workflow_dispatch:
   repository_dispatch:
@@ -28,7 +28,8 @@ jobs:
 
       - name: Export du KV des comptes + des bases D1
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # jeton DÉDIÉ à la sauvegarde (droits : D1 édition + KV lecture) ; à défaut, le jeton général (qui n'a pas le droit D1 : 401 mesuré le 20.10)
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_SAUVEGARDE != '' && secrets.CLOUDFLARE_API_TOKEN_SAUVEGARDE || secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NS: 8cfa33a28ac045adb7b7a9556ca8a073
         run: |
@@ -45,7 +46,9 @@ jobs:
           set -e
           if [ -z "${BACKUP_PASS:-}" ]; then echo "::error::aucun secret de chiffrement — abandon, rien n'est écrit en clair"; exit 1; fi
           mkdir -p /tmp/out
-          tar -C /tmp/dom -cf - kv-accounts.json | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -out /tmp/out/latest.tar.enc -pass env:BACKUP_PASS
+          tar -C /tmp/dom -czf - kv-accounts.json | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -out /tmp/out/latest.tar.enc -pass env:BACKUP_PASS
+          TAILLE=$(stat -c %s /tmp/out/latest.tar.enc); echo "::notice title=domaine-backup-taille::$TAILLE octets"
+          if [ "$TAILLE" -gt 90000000 ]; then echo "::error title=domaine-backup::archive de $TAILLE octets : trop lourde pour GitHub (100 Mo) — rien n'est poussé"; exit 1; fi
           cp /tmp/out/latest.tar.enc "/tmp/out/$(date -u +%Y%m%d).tar.enc"
           ls -la /tmp/out
 
@@ -65,7 +68,7 @@ jobs:
           bash "$MUSELIERE"
           git add backups/domaine
           git commit -m "backup: domaine $(date -u +%Y-%m-%d) (KV comptes + D1, chiffré) [skip ci]" || { echo "rien à committer"; exit 0; }
-          git push -f origin d1-backups
+          git push -f origin d1-backups 2>/tmp/push.err || { echo "::error title=push-refuse::$(tr '\n' ' ' </tmp/push.err | sed 's#https://[^ ]*@#https://***@#g' | head -c 400)"; exit 1; }
 
       - name: Copie de secours en artifact (30 jours)
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

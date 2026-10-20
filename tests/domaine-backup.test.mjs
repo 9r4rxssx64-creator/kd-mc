@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { estVolatile, aGarder, paquets, sain } from '../tools/backup/domaine-export.mjs';
 let pass = 0; const fails = [];
 const ok = (c, m) => { if (c) { pass++; console.log('  ✅ ' + m); } else { fails.push(m); console.log('  ❌ ' + m); } };
+ok(estVolatile('ltts:fr:bonjour'), 'le cache des voix (ltts:, 36 Mo, 1093 clés) n\'est pas sauvegardé : il se refabrique tout seul');
 ok(estVolatile('anonv:portail:123') && estVolatile('q:abc') && estVolatile('rl:codeadmin:1'), 'les compteurs et plafonds ne sont pas sauvegardés');
 ok(!estVolatile('acc:kdmc_admin') && !estVolatile('cred:xyz'), 'les comptes et les codes hachés le sont');
 ok(aGarder(['acc:a', 'anon:x', 'cred:b']).join() === 'acc:a,cred:b', 'le tri garde acc: et cred:, écarte anon:');
@@ -14,4 +15,5 @@ ok(!/^\s*schedule:/m.test(wf) && !/^\s*-\s*cron:/m.test(wf), 'aucun cron GitHub 
 ok(/openssl enc -aes-256-cbc -pbkdf2/.test(wf) && /d1\/database/.test(readFileSync(new URL('../tools/backup/domaine-export.mjs', import.meta.url), 'utf8')) && /domaine-export\.mjs/.test(wf), 'KV + D1 exportés puis chiffrés AES-256');
 const chat = readFileSync(new URL('../.github/workflows/apex-chat-d1-backup.yml', import.meta.url), 'utf8');
 ok(/repository_dispatch:\s*\n\s*types:\s*\[sauvegarde-quotidienne\]/.test(chat), 'la base D1 d\'Apex Chat est de nouveau sauvegardée chaque nuit (arrêtée depuis le 14.08)');
+ok(/CLOUDFLARE_API_TOKEN_SAUVEGARDE/.test(wf) && /CLOUDFLARE_API_TOKEN_SAUVEGARDE/.test(chat), 'les deux robots préfèrent le jeton dédié à la sauvegarde (droit D1) et retombent sur le général');
 console.log(`\n${pass} ok, ${fails.length} échec(s)`); process.exit(fails.length ? 1 : 0);

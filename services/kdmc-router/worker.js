@@ -368,6 +368,7 @@ async function handleDeces(request, url) {
    FAIL-OPEN côté app : l'app garde son contrôle local (empreinte mémorisée sur l'appareil)
    si le domaine est muet. FAIL-CLOSED ici : sans empreinte publiée → « code_non_publie ». */
 const ARBRE_HEX64 = /^[a-f0-9]{64}$/;
+const ARBRE_MEDIA_MAX = 8 * 1024 * 1024;   /* 8 Mo par image : une photo réduite fait ~0,4 Mo ; un scan PDF reste sous la limite */
 function hexEq(a, b) {
   a = String(a || '').toLowerCase(); b = String(b || '').toLowerCase();
   if (!ARBRE_HEX64.test(a) || !ARBRE_HEX64.test(b)) return false;
@@ -471,6 +472,41 @@ async function handleArbre(request, url, env) {
     await audLog(env, { ev: 'arbre_unlock_ok', ip: ipHash.slice(0, 12) });
     const m = await arbreSeedOut(env);
     return J({ ok: true, seed: m.seed, savedAt: m.savedAt, seedVersion: m.seedVersion });
+  }
+
+  /* PHOTOS ET SCANS DE L'ARBRE → R2 (20.10.2026). Adressage par le CONTENU : l'adresse est le SHA-256 des octets, recalculé ICI à l'envoi
+     (le serveur ne croit jamais l'appareil) → une image ne peut ni être écrasée par une autre, ni être envoyée deux fois pour rien.
+     Preuve exigée : l'empreinte du code famille (en-tête x-arbre-code, ou ?c= pour une balise <img>) ET un compte du domaine (déjà exigé plus haut).
+     Jamais d'effacement ici : une fiche qui retire une photo ne détruit pas l'image (« rien ne se perd »). R2 absent → 503 et l'app garde l'image en local. */
+  const mm = path.match(/^\/__arbre\/media\/([a-f0-9]{64})$/);
+  if (mm) {
+    if (!env.ARBRE_MEDIA || !env.ARBRE_MEDIA.get) return J({ ok: false, reason: 'stockage_absent' }, null, 503);
+    const hash = String(request.headers.get('x-arbre-code') || url.searchParams.get('c') || '').trim().toLowerCase();
+    if (!stored) return J({ ok: false, reason: 'code_non_publie' });
+    if (!hexEq(hash, stored)) return J({ ok: false, reason: 'code_invalide' }, null, 403);
+    const cle = 'm/' + mm[1];
+    if (request.method === 'GET' || request.method === 'HEAD') {
+      const o = request.method === 'HEAD' ? await env.ARBRE_MEDIA.head(cle) : await env.ARBRE_MEDIA.get(cle);
+      if (!o) return J({ ok: false, reason: 'absente' }, null, 404);
+      return new Response(request.method === 'HEAD' ? null : o.body, { status: 200, headers: {
+        'content-type': (o.httpMetadata && o.httpMetadata.contentType) || 'image/jpeg', 'content-length': String(o.size),
+        'cache-control': 'private, max-age=31536000, immutable', 'x-content-type-options': 'nosniff', etag: '"' + mm[1] + '"',
+        'content-security-policy': "default-src 'none'; img-src 'self' data:; sandbox" } });
+    }
+    if (request.method === 'PUT') {
+      const type = String(request.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+      if (!/^(image\/(jpeg|png|webp|gif)|application\/pdf)$/.test(type)) return J({ ok: false, reason: 'type_refuse' }, null, 415);
+      const len = parseInt(request.headers.get('content-length') || '0', 10);
+      if (len > ARBRE_MEDIA_MAX) return J({ ok: false, reason: 'trop_gros' }, null, 413);
+      const buf = await request.arrayBuffer();
+      if (!buf.byteLength) return J({ ok: false, reason: 'vide' }, null, 400);
+      if (buf.byteLength > ARBRE_MEDIA_MAX) return J({ ok: false, reason: 'trop_gros' }, null, 413);
+      const sha = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', buf))).map((x) => x.toString(16).padStart(2, '0')).join('');
+      if (sha !== mm[1]) return J({ ok: false, reason: 'empreinte_differente' }, null, 400);
+      await env.ARBRE_MEDIA.put(cle, buf, { httpMetadata: { contentType: type } });
+      return J({ ok: true, ref: 'm:' + sha, octets: buf.byteLength });
+    }
+    return J({ ok: false, reason: 'methode' }, null, 405);
   }
 
   if (path === '/__arbre/seed' && request.method === 'GET') {

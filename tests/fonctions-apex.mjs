@@ -65,7 +65,12 @@ async function entrer(browser, nomComplet, code, etiquette) {
   let diag = '';
   if (!ouvert) {
     const d = await p.evaluate(() => ({ etape: window.K && K.authStep, jeton: !!(window.K && K.token), pass: !!localStorage.getItem('kdmc_sso_token'), texte: (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 160) })).catch((e) => ({ erreur: String(e.message).slice(0, 60) }));
-    diag = `${url()} · ${JSON.stringify(d)} · réseau : ${reseau.slice(0, 8).join(' ; ')}`;
+    let rejeu = '';
+    try {   // on rejoue l'appel refusé depuis Node avec le même pass : le corps complet du refus (le navigateur ne le rend pas)
+      const tok = await p.evaluate(() => localStorage.getItem('kdmc_sso_token'));
+      if (tok) { const ua = await p.evaluate(() => navigator.userAgent); const rr = await fetch(API + '/api/auth/sso-from-kdmc', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': ua }, body: JSON.stringify({ kdmc_token: tok }) }); rejeu = ' · REJEU ' + rr.status + ' ' + (await rr.text()).replace(/\s+/g, ' ').slice(0, 260); const wh = await fetch(DOMAINE + '/__sso/whoami', { headers: { Authorization: 'Bearer ' + tok, 'User-Agent': ua } }); rejeu += ' · WHOAMI ' + wh.status + ' ' + (await wh.text()).replace(/\s+/g, ' ').replace(/"(uid|name|prenom|nom)":"[^"]*"/g, '"$1":"…"').slice(0, 240); }
+    } catch (e) { rejeu = ' · rejeu impossible : ' + String(e.message).slice(0, 60); }
+    diag = `${url()} · ${JSON.stringify(d)} · réseau : ${reseau.slice(0, 8).join(' ; ')}${rejeu}`;
   }
   return { ctx, p, ouvert, id, etiquette, diag };
 }

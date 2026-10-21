@@ -429,6 +429,7 @@
   "tools/arbre/verify-photo-ameliorer.mjs",
   "tools/arbre/verify-photo-fiche.mjs",
   "tools/arbre/verify-photo-fusion.mjs",
+  "tools/arbre/verify-photo-immediat.mjs",
   "tools/arbre/verify-photo-profil.mjs",
   "tools/arbre/verify-photos-r2.mjs",
   "tools/arbre/verify-poster.mjs",

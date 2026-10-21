@@ -113,10 +113,18 @@ try {
   if (!(await champ.isVisible().catch(() => false))) noter('champ de message introuvable chez A : ' + resume(await A.p.innerText('body').catch(() => '')));
   await champ.fill(jetonAB).catch(() => {});
   await champ.press('Enter').catch(() => {});
-  const dAB = await attendre(B.p, jetonAB, 110000);   // le battement (75 s) apporte « du nouveau pour toi » : on laisse 110 s
-  noter(`1. A → B : ${dAB >= 0 ? 'ARRIVÉ chez B en ' + (dAB / 1000).toFixed(1) + ' s, sans recharger' : 'PAS ARRIVÉ chez B après 110 s'}`);
+  /* B n'a PAS la conversation ouverte : elle doit APPARAÎTRE dans sa liste toute seule (signal du battement, 75 s), puis, ouverte, le message doit se DÉCHIFFRER à l'écran */
+  const apparue = async (maxMs) => { const t0 = Date.now(); while (Date.now() - t0 < maxMs) { const n = await B.p.evaluate(() => (window.K && K.conversations ? K.conversations.length : 0)).catch(() => 0); if (n > 0) return Date.now() - t0; await B.p.waitForTimeout(500); } return -1; };
+  const dApp = await apparue(110000);
+  noter(`1. A → B : la conversation ${dApp >= 0 ? 'APPARAÎT chez B en ' + (dApp / 1000).toFixed(1) + ' s, sans recharger' : 'N\'APPARAÎT PAS chez B après 110 s'}`);
+  let dAB = -1;
+  if (dApp >= 0) {
+    await B.p.evaluate(async () => { const c = K.conversations[0]; if (c && K.openConv) await K.openConv(c.id); }).catch((e) => noter('B : ouverture : ' + String(e.message).slice(0, 80)));
+    dAB = await attendre(B.p, jetonAB, 25000);
+    noter(`   B ouvre la conversation : le message ${dAB >= 0 ? 'est DÉCHIFFRÉ et lisible en ' + (dAB / 1000).toFixed(1) + ' s' : 'reste illisible après 25 s'}`);
+  }
   const eB1 = await etat(B.p, jetonAB);
-  noter(`   chez B : ${eB1.conv} conversation(s), ${eB1.msgs} message(s) en mémoire, direct ${eB1.ws ? 'oui' : 'NON'}`);
+  noter(`   chez B : ${eB1.conv} conversation(s), ${eB1.msgs} message(s) en mémoire`);
 
   /* 2. B répond (la conversation est déjà chez B si le temps réel marche ; sinon on l'ouvre par l'annuaire) */
   const jetonBA = 'pong-B-' + lettres(6);
@@ -127,7 +135,7 @@ try {
   await champB.press('Enter').catch(() => {});
   const dBA = await attendre(A.p, jetonBA, 20000);
   noter(`2. B → A : ${dBA >= 0 ? 'ARRIVÉ chez A en ' + (dBA / 1000).toFixed(1) + ' s, sans recharger' : 'PAS ARRIVÉ chez A après 20 s'}`);
-  ok = dAB >= 0 && dBA >= 0;
+  ok = dApp >= 0 && dAB >= 0 && dBA >= 0;
   await A.ctx.close().catch(() => {}); await B.ctx.close().catch(() => {});
 } catch (e) {
   noter('ERREUR du robot : ' + String(e && e.message).slice(0, 200));

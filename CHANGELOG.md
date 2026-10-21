@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.326 (2026-10-21 — comptes de Kevin réunis)
+
+- Une session d'admin ouverte avant le rattachement se représente au domaine une fois et se reconnecte au vrai compte (\`kdmc_admin\`) : conversations, contacts et notifications se réunissent sans action.
+- La clé de chiffrement de l'appareil est republiée quand le compte change.
+
 ## Apex Chat v1.1.325 (2026-10-21 — temps réel)
 
 - Le battement (75 s, app visible) reçoit « du nouveau pour toi » (dernière activité de tes conversations, nombre de conversations ; nombre de comptes pour l'admin) : une conversation neuve ou un message arrive sans attendre 3 min. L'admin voit « 🆕 Nouvelle inscription » et l'annuaire se met à jour.

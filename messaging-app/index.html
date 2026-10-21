@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.325",
+  "softwareVersion": "v1.1.326",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.325';
+const __APEX_CHAT_VERSION__ = 'v1.1.326';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.325" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.325</div>
+  <div id="splash-version" data-ver="v1.1.326" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.326</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.325</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.326</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -7881,13 +7881,14 @@ K._publishPubkey = async function(){
     let sigPub = null;
     try{ sigPub = (typeof K._grpSigPub === 'function') ? await K._grpSigPub() : null; }catch(_){ sigPub = null; }
     const caps = sigPub ? K._CRYPTO_CAPS + ',' + K._GRP_SIG_CAP : K._CRYPTO_CAPS;
-    if(lg('crypto_pub_published', null) === pub && lg('crypto_caps_published', null) === caps && (!sigPub || lg('crypto_sig_published', null) === sigPub)) return; // déjà publiée
+    // 21.10.2026 : « déjà publiée » vaut POUR CE COMPTE — après le rattachement de Kevin (kdmc_kdmc_admin → kdmc_admin), l'appareil republie sa clé pour le vrai compte.
+    if(lg('crypto_pub_published', null) === pub && lg('crypto_pub_published_uid', null) === ((K.user && K.user.id) || '') && lg('crypto_caps_published', null) === caps && (!sigPub || lg('crypto_sig_published', null) === sigPub)) return; // déjà publiée
     // v1.1.262 — publie AUSSI les capacités crypto qu'on sait déchiffrer, pour
     // que nos contacts activent auto le plus haut niveau commun.
     // v1.1.298 : la clé de signature part dans SA colonne (signing_key_pub).
     // v1.1.299 : prekey_signed n'est plus écrit (rendu au futur échange PQXDH — Kevin 09.10, « libère »).
     const r = await K._api('POST', '/api/keys/prekeys', sigPub ? { identity_key_pub: pub, crypto_caps: caps, signing_key_pub: sigPub } : { identity_key_pub: pub, crypto_caps: caps });
-    if(r && r.ok){ ls('crypto_pub_published', pub); ls('crypto_caps_published', caps); if(sigPub) ls('crypto_sig_published', sigPub); _logTelemetry('ok', 'pubkey-published', {}); }
+    if(r && r.ok){ ls('crypto_pub_published', pub); ls('crypto_pub_published_uid', (K.user && K.user.id) || ''); ls('crypto_caps_published', caps); if(sigPub) ls('crypto_sig_published', sigPub); _logTelemetry('ok', 'pubkey-published', {}); }
   }catch(e){ _safeCatch('publish-pubkey', e); }  // jamais bloquant
 };
 
@@ -17459,8 +17460,28 @@ K._profileIncomplete = function(u){
   return false;
 };
 
+/* 21.10.2026 (Kevin : « Rémi m'a écrit, je ne reçois rien » ; photo du téléphone de Rémy : DEUX « Kevin » dans sa liste) — Kevin avait deux comptes Apex Chat (`kdmc_admin` historique et
+   `kdmc_kdmc_admin` créé par le domaine). Le serveur les fond quand le domaine reconnaît l'admin avec Face ID ; mais une session ouverte AVANT reste valide 30 jours et ne repasse pas par le
+   domaine. Cette session se REPRÉSENTE donc au domaine UNE fois (jamais de boucle) : le serveur rattache, rend le jeton du vrai compte, et on s'y reconnecte — sans rien demander à Kevin. */
+K._ralliementKevin = async function(){
+  try{
+    const u = K.user;
+    if(!u || u.id === 'kdmc_admin' || !u.is_admin || !u.is_kevin_alias || u.source !== 'kdmc-sso') return false;
+    if(K._ralliementKevinFait) return false;
+    K._ralliementKevinFait = true;                       // une seule tentative par chargement de page
+    const r = await _authSsoFromKdmc();
+    if(!(r && r.token && r.user && r.user.id === 'kdmc_admin')) return false;
+    await K.login(r.user, r.token);
+    try{ await K._refreshConvs(); }catch(_e){ _safeCatch('ralliement-liste', _e); }
+    try{ K._fetchContacts(true); }catch(_e){ _safeCatch('ralliement-contacts', _e); }
+    try{ toast('✅ Tes comptes Apex Chat sont réunis', 'ok', 4000); }catch(_e){ /* écran sans toast */ }
+    return true;
+  }catch(e){ _safeCatch('ralliement-kevin', e); return false; }
+};
+
 K._postLogin = function(){
   if(!K.user) return;
+  setTimeout(() => { try { K._ralliementKevin && K._ralliementKevin(); } catch(_) {} }, 3000);
   // v1.1.173 FIX P0 (audit crew) : publier la clé publique E2E dès le login —
   // couvre les users dont la clé existait déjà localement (avant cette version)
   // mais n'avait jamais été poussée au serveur. Best-effort, non bloquant.
@@ -19095,6 +19116,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.325", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.326", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

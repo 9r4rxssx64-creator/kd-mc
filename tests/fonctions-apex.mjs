@@ -103,7 +103,9 @@ try {
   let convA = null, convB = null; const jeton1 = 'm1-' + lettres(6);
   await essayer('DM : ouverture + envoi', async () => {
     await ev(B.p, async () => { try { await K._sendHeartbeat(); } catch (e) { /* */ } });
-    convA = await ev(A.p, async (idB) => { await K._startConvWithUser(idB, 'B'); return K.viewData && K.viewData.id; }, B.id);
+    await ev(A.p, async (idB) => { await K._startConvWithUser(idB, 'B'); }, B.id);
+    await attendre(A.p, () => !!(K.viewData && K.viewData.id), '', 10000);
+    convA = await ev(A.p, () => (K.viewData && K.viewData.id) || ((K.conversations || [])[0] || {}).id || null);
     await A.p.waitForTimeout(1500);
     await A.p.locator('#msg-input').fill(jeton1); await A.p.locator('#msg-input').press('Enter');
     noter('DM : A ouvre la conversation et envoie', vrai(convA), vrai(convA) ? 'conversation ' + String(convA).slice(0, 8) : 'conversation non créée');

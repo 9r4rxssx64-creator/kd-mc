@@ -326,8 +326,11 @@ jobs:
           # (idempotent : on ne recrée pas si le secret existe déjà) et on pousse
           # CF_TURN_KEY_ID + CF_TURN_TOKEN comme secrets du Worker. Le Worker mint ensuite
           # des credentials éphémères via /api/turn (le token ne sort JAMAIS au client).
-          EXISTING=$(wrangler secret list 2>/dev/null || echo '[]')
-          if echo "$EXISTING" | grep -q '"CF_TURN_KEY_ID"'; then
+          # 21.10.2026 : le nombre de clés « TURN » MONTAIT à chaque déploiement (63 → 71, relevé du Lenovo) : la liste des secrets, illisible ou
+          # d'un autre format, valait « pas de clé » et en recréait une. Désormais : liste illisible = on NE CRÉE RIEN ; nom cherché sans guillemets.
+          if ! EXISTING=$(wrangler secret list --format json 2>&1); then
+            echo "::warning::Liste des secrets illisible — aucune clé TURN créée (TURN conservé tel quel)"
+          elif echo "$EXISTING" | grep -q 'CF_TURN_KEY_ID'; then
             echo "::notice::CF_TURN_KEY_ID déjà présent — TURN conservé (pas de nouvelle clé)"
           else
             echo "Création d'une clé TURN Cloudflare Realtime…"

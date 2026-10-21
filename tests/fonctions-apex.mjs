@@ -258,7 +258,7 @@ try {
       if (!(typeof lien === 'string' && /[?&]join=/.test(lien))) return;
       const joinRep = {}; for (const x of [B, C]) { joinRep[x.etiquette] = []; x.p.on('response', (r) => { if (/\/join$/.test(r.url())) joinRep[x.etiquette].push(r.status()); }); await x.p.goto(lien, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {}); await x.p.waitForTimeout(3000); }
       const membres = await Promise.all([B, C].map((x) => attendre(x.p, (g) => (K.conversations || []).some((c) => c.id === g), gid, 20000)));
-      noter('Groupe : B et C rejoignent par le lien d\'invitation', membres.every((m) => m >= 0), membres.map((m) => (m >= 0 ? sec(m) : 'NON')).join(' / ') + (membres.every((m) => m >= 0) ? '' : ' · réponses /join : ' + JSON.stringify(joinRep) + ' · en attente : ' + JSON.stringify(await Promise.all([B, C].map((x) => ev(x.p, () => ({ pend: sessionStorage.getItem('apex_join_pending') ? 'oui' : 'non', url: location.search, token: !!K.token })))))));
+      noter('Groupe : B et C rejoignent par le lien d\'invitation', membres.every((m) => m >= 0), membres.map((m) => (m >= 0 ? sec(m) : 'NON')).join(' / ') + (membres.every((m) => m >= 0) ? '' : ' · réponses /join : ' + JSON.stringify(joinRep) + ' · en attente : ' + JSON.stringify(await Promise.all([B, C].map(async (x) => ({ url: x.p.url().replace(/gi=[^&]+/, 'gi=…').slice(0, 90), texte: (await x.p.evaluate(() => (document.body.innerText || '').replace(/\\s+/g, ' ').slice(0, 110)).catch((e) => 'illisible')), pend: await x.p.evaluate(() => !!sessionStorage.getItem('apex_join_pending')).catch(() => '?') }))))));
       if (!membres.every((m) => m >= 0)) return;
       for (const x of [A, B, C]) await ev(x.p, async (g) => { await K.openConv(g); }, gid);
       await A.p.waitForTimeout(3000);

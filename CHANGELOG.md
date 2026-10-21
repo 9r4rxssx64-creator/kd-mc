@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.335 (2026-10-22 — rouvrir Apex Chat ne renvoie plus « Connexion au domaine requise »)
+
+- MESURÉ en vrai navigateur (robot, 2 personnes sur 2 : l'invité d'un groupe, et le témoin sans lien) : une personne dont le service worker est actif recevait « Connexion au domaine requise. » en texte brut à chaque réouverture, parce que le SW refaisait lui-même la requête de la page SANS le cookie du domaine ; avec le SW contourné, la même personne entrait. Le SW prend maintenant la requête d'origine du navigateur (pré-chargement de navigation), et ne met plus jamais une page de refus en cache.
+
 ## Apex Chat v1.1.334 (2026-10-22 — page seulement : le réessai d'entrée relit le pass le plus récent)
 
 - Le 1er réessai demande aussi au domaine (cookie, `/__sso/pass`) un pass FRAIS : celui de la mémoire peut être périmé ou d'une autre famille d'appareil (page rechargée = « Connexion au domaine requise », vu chez l'invité du groupe).

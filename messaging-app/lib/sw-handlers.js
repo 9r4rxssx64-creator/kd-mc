@@ -13,7 +13,7 @@
  *   - OFFLINE_CACHE  : fallback HTML hors-ligne
  */
 
-export const CACHE_VERSION = 'apex-chat-v1.1.334';
+export const CACHE_VERSION = 'apex-chat-v1.1.335';
 export const STATIC_CACHE = `${CACHE_VERSION}-static`;
 export const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 export const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
@@ -61,7 +61,9 @@ export async function handleInstall({ caches, response }) {
 // ----------------------------------------------------------------------------
 //  Activate : purge anciens caches qui ne matchent pas la version courante
 // ----------------------------------------------------------------------------
-export async function handleActivate({ caches, clients }) {
+export async function handleActivate({ caches, clients, registration }) {
+  // Pré-chargement de navigation (22.10.2026) : voir handleFetchNavigation. Sans lui, le SW refait lui-même la requête de la page, SANS le cookie du domaine.
+  try { if (registration && registration.navigationPreload && registration.navigationPreload.enable) await registration.navigationPreload.enable(); } catch { /* navigateur sans pré-chargement : repli */ }
   const keys = await caches.keys();
   const purged = [];
   for (const k of keys) {
@@ -105,11 +107,16 @@ export async function handleFetchApi(request, { fetch, response }) {
   }
 }
 
-export async function handleFetchNavigation(request, { fetch, caches, response }) {
+export async function handleFetchNavigation(request, { fetch, caches, response }, event) {
   try {
-    const fresh = await fetch(request);
+    // 22.10.2026 — MESURÉ en vrai navigateur (robot « toutes les fonctions », 2 personnes sur 2) : quand le SW refait lui-même la requête de la page, elle part SANS le
+    // cookie du domaine (ni « sec-fetch-dest: document ») → la porte du domaine répond « Connexion au domaine requise. » en texte brut à toute personne déjà installée.
+    // La requête d'origine du navigateur (pré-chargement de navigation) porte le cookie et le bon type : on la prend en priorité.
+    let fresh = null;
+    try { if (event && event.preloadResponse) fresh = await event.preloadResponse; } catch { fresh = null; }
+    if (!fresh) fresh = await fetch(request);
     const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(request, fresh.clone());
+    if (fresh.ok) cache.put(request, fresh.clone());   // jamais une page de refus en cache
     return fresh;
   } catch {
     const cached = await caches.match(request);
@@ -167,7 +174,7 @@ export async function handleFetch(event, deps) {
   // du domaine. Jamais en cache : un « qui es-tu » périmé rouvrirait une session fermée.
   if (url.pathname.startsWith('/__')) return deps.fetch(req);
   if (isApiHost(url)) return handleFetchApi(req, deps);
-  if (req.mode === 'navigate') return handleFetchNavigation(req, deps);
+  if (req.mode === 'navigate') return handleFetchNavigation(req, deps, event);
   if (isStaticAsset(url)) return handleFetchStatic(req, deps);
   return handleFetchSWR(req, deps);
 }

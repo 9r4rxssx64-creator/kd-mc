@@ -69,7 +69,7 @@ for (const a of APPS) {
     });
     libelle = r.libelle;
     if (statut >= 400 && statut !== 401) verdict = 'ℹ️ page absente (' + statut + ')';
-    else if (r.champs > 0 && /^coffre\./.test(hote)) { verdict = 'ℹ️ coffre chiffré : déverrouillage local (Face ID possible), non contournable par conception (' + r.champs + ' champ(s))'; muets++; }
+    else if (r.champs > 0 && (/^coffre\./.test(hote) || /\/finances\//.test(chemin))) { verdict = 'ℹ️ coffre chiffré (Coffre, Finances) : déverrouillage local (Face ID possible), non contournable par conception (' + r.champs + ' champ(s))'; muets++; }
     else if (r.champs > 0) { verdict = '❌ DEMANDE UN CODE (' + r.champs + ' champ(s)' + (r.libelle ? ' · « ' + r.libelle + ' »' : '') + ')'; demandent++; }
     else if (statut === 401 || statut === 403) { verdict = '🔒 porte fermée (' + statut + ')'; muets++; }
     else { verdict = '✅ aucun code demandé'; ok++; }

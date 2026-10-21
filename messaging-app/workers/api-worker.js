@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.322';
+export const API_VERSION = '1.1.323';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -609,7 +609,7 @@ export function parseUserAgent(ua) {
   return { os, browser, device };
 }
 
-export async function captureConnection(env, request, user) {
+export async function captureConnection(env, request, user, opts = {}) {
   try {
     if (!user || !user.id) return { isNew: false };
 
@@ -645,7 +645,7 @@ export async function captureConnection(env, request, user) {
     ).bind(crypto.randomUUID(), user.id, sig, device, os, browser, country, city, region, ip_hash, now, now).run();
 
     // Nouveau device OU nouveau lieu → push admin (sauf si c'est l'admin lui-même).
-    if (user.id !== 'kdmc_admin') {
+    if (user.id !== 'kdmc_admin' && !opts.sansPush) {
       try {
         await sendPushToUser('kdmc_admin', {
           title: '🔔 Nouvelle connexion',
@@ -1523,6 +1523,44 @@ export async function handleSsoFromApex(request, env) {
   return json({ ok: true, token: jwt, user });
 }
 
+/* 21.10.2026 (Kevin : « Rémi m'a envoyé un message, je ne reçois rien ») — MESURÉ en base : Kevin avait DEUX comptes Apex Chat. L'ancien `kdmc_admin` (23 messages, la conversation avec
+   Laurence, l'adresse que tout le monde vise : annuaire, « Assistance KDMC », notifications) et un NOUVEAU `kdmc_kdmc_admin` créé par la connexion du domaine (0 conversation). Rémi
+   a écrit à l'ancien ; Kevin, connecté sur le nouveau, ne voyait rien. Désormais, quand le domaine dit « admin » ET que Face ID est prouvé (la seule preuve valable), la connexion
+   rattache Kevin à son vrai compte `kdmc_admin` et fond les doublons du domaine (conversations, messages, abonnements push, clé de chiffrement de l'appareil vivant) dedans.
+   Jamais sans la double preuve : un uid « admin » venu d'un autre ne passe pas (garde audit2-p0-sso-collision-admin). */
+export async function _adoptKevinRow(env, uid, now = Date.now()) {
+  const DB = env.APEX_CHAT_DB;
+  const legacy = await DB.prepare("SELECT * FROM users WHERE id='kdmc_admin' AND status != 'deleted'").first();
+  if (!legacy) return null;                                   // pas d'ancienne ligne : comportement d'avant
+  const dups = (await DB.prepare(
+    "SELECT * FROM users WHERE id != 'kdmc_admin' AND status != 'deleted' AND source='kdmc-sso' AND is_admin=1 AND is_kevin_alias=1"
+  ).all()).results || [];
+  const clefReelle = (k) => typeof k === 'string' && k.length > 40 && !/^PENDING/.test(k);
+  // la clé publique de l'APPAREIL vivant = celle de la ligne la plus récemment vue (c'est elle que le téléphone de Kevin sait déchiffrer)
+  const vivant = dups.filter((d) => clefReelle(d.identity_key_pub)).sort((a, b) => (b.last_seen || 0) - (a.last_seen || 0))[0] || null;
+  const stmts = [];
+  for (const d of dups) {
+    stmts.push(DB.prepare("UPDATE OR IGNORE conversation_members SET user_id='kdmc_admin' WHERE user_id=?").bind(d.id));
+    stmts.push(DB.prepare('DELETE FROM conversation_members WHERE user_id=?').bind(d.id));
+    stmts.push(DB.prepare("UPDATE messages SET sender_id='kdmc_admin' WHERE sender_id=?").bind(d.id));
+    stmts.push(DB.prepare("UPDATE OR IGNORE push_subscriptions SET user_id='kdmc_admin' WHERE user_id=?").bind(d.id));
+    stmts.push(DB.prepare('DELETE FROM push_subscriptions WHERE user_id=?').bind(d.id));
+    stmts.push(DB.prepare(
+      "UPDATE users SET status='deleted', merged_into='kdmc_admin', kdmc_uid=NULL, phone='MERGED_' || id, phone_hash='MERGED_' || id, updated_at=? WHERE id=?"
+    ).bind(now, d.id));
+  }
+  if (vivant) {
+    stmts.push(DB.prepare(
+      'UPDATE users SET identity_key_pub=?, crypto_caps=?, signing_key_pub=?, kdmc_uid=?, last_seen=?, updated_at=? WHERE id=?'
+    ).bind(vivant.identity_key_pub, vivant.crypto_caps || null, vivant.signing_key_pub || null, uid, now, now, 'kdmc_admin'));
+  } else if (legacy.kdmc_uid !== uid) {
+    stmts.push(DB.prepare('UPDATE users SET kdmc_uid=?, updated_at=? WHERE id=?').bind(uid, now, 'kdmc_admin'));
+  }
+  if (stmts.length) await DB.batch(stmts);
+  try { await auditLog(env, 'kdmc_admin', 'kevin_comptes_fondus', 'user', 'kdmc_admin', { kdmc_uid: uid, doublons: dups.map((d) => d.id) }, '', ''); } catch (_) { /* journal : best-effort */ }
+  return await DB.prepare('SELECT * FROM users WHERE id=?').bind('kdmc_admin').first();
+}
+
 // ============================================================================
 //  SSO depuis le compte unique kd-mc.com (connexion auto via Face ID)
 // ============================================================================
@@ -1585,6 +1623,11 @@ export async function handleSsoFromKdmc(request, env) {
   // Revue 08.10.2026 (F1) : une ligne SUPPRIMÉE (RGPD) n'est ni retrouvée ni
   // ressuscitée par l'upsert — on repart sur un compte neuf (id libre).
   let user = await env.APEX_CHAT_DB.prepare("SELECT * FROM users WHERE kdmc_uid=? AND status != 'deleted'").bind(uid).first();
+  if (isAdmin && faceIdProuve && (!user || user.id !== 'kdmc_admin')) {
+    try { const kevin = await _adoptKevinRow(env, uid); if (kevin) user = kevin; }
+    catch (e) { console.warn('[SSO] rattachement du compte Kevin impossible :', e && e.message); }
+  }
+  let nouvelleInscription = false;
   if (!user) {
     const id = await _freshSsoId(env, 'kdmc_' + uid,
       (row) => row.source === 'kdmc-sso' && !row.kdmc_uid && !row.is_admin && !row.is_kevin_alias);
@@ -1618,8 +1661,17 @@ export async function handleSsoFromKdmc(request, env) {
       return err('Création SSO kd-mc.com échouée : ' + lastErr.message, 500, 'kdmc_create_failed');
     }
     user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(id).first();
+    nouvelleInscription = true;
   }
   if (!user || user.status === 'deleted') return err('User kd-mc.com introuvable après création', 500, 'kdmc_user_missing');
+  /* 21.10.2026 (Kevin : « que je sois au courant de toutes les inscriptions ») : une personne du domaine qui entre pour la PREMIÈRE fois dans Apex Chat → journal + notification à Kevin. */
+  if (nouvelleInscription && user.id !== 'kdmc_admin') {
+    const essaiRobot = /^(parcours-robot|temps-reel)/i.test(uid);   // comptes de TEST de nos robots : au journal, mais Kevin n'est pas dérangé
+    try { await auditLog(env, user.id, 'inscription_apex_kdmc', 'user', user.id, { kdmc_uid: uid, nom: name }, '', request.headers.get('User-Agent')); } catch (_) { /* journal : best-effort */ }
+    if (!essaiRobot) try {
+      await sendPushToUser('kdmc_admin', { title: '🆕 Nouvelle inscription Apex Chat', body: `${name} vient de s'inscrire — écris-lui, il/elle est dans tes contacts.`, data: { user_id: user.id, type: 'inscription' } }, env);
+    } catch (_) { /* notification : best-effort, ne bloque jamais l'entrée */ }
+  }
 
   // GARDE ADMIN : un compte déjà marqué admin ne s'ouvre JAMAIS sur un simple code — Face ID prouvé
   // exigé, même si la session « code prouvé » porte le même uid (sinon le jeton sortirait avec is_admin).
@@ -1643,7 +1695,7 @@ export async function handleSsoFromKdmc(request, env) {
   }, env.JWT_SIGN_KEY);
 
   await auditLog(env, user.id, 'login_sso_kdmc', 'user', user.id, { kdmc_uid: uid }, '', request.headers.get('User-Agent'));
-  await captureConnection(env, request, user);
+  await captureConnection(env, request, user, { sansPush: nouvelleInscription });
 
   return json({ ok: true, token: jwt, user });
 }

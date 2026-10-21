@@ -273,6 +273,7 @@
     "test:attendre-compte": "node tests/verify-attendre-compte.mjs --sabotage",
     "test:whoami-ua": "node tests/verify-whoami-ua.mjs --sabotage",
     "test:code-attendu": "node services/kdmc-router/code-attendu.test.mjs",
+    "test:temps-reel-apex": "node tests/verify-temps-reel-apex.mjs --sabotage",
     "test:supprimer-compte-test": "node tests/verify-supprimer-compte-test.mjs --sabotage",
     "test:sw-module-libre": "node services/kdmc-router/sw-module-libre.test.mjs",
     "test:fusion-rapide": "node services/kdmc-router/fusion-rapide.test.mjs",

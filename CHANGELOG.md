@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.323 (2026-10-21 — Kevin n'a plus qu'un compte, inscriptions notifiées)
+
+- Le compte du domaine reconnu admin + Face ID se rattache au compte historique `kdmc_admin` et fond ses doublons (conversations, messages, notifications, clé de l'appareil) : les messages écrits à Kevin arrivent chez lui.
+- Chaque personne du domaine qui s'inscrit dans Apex Chat → journal + une notification à Kevin.
+
 ## Apex Chat v1.1.322 (2026-10-20 — service worker absent sur iPhone, micro iOS)
 
 - Le routeur sert `lib/sw-handlers.js` (importé par le service worker) sans session : avant, 401 → aucun service worker, aucun cache, push en erreur.

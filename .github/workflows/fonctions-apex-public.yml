@@ -36,3 +36,12 @@ jobs:
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
         shell: bash -eo pipefail {0}
         run: node tests/fonctions-apex.mjs
+
+      - name: Captures d'écran des échecs (comptes de test seulement)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-fonctions-apex
+          path: captures/
+          if-no-files-found: ignore
+          retention-days: 2

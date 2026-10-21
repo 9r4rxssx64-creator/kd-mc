@@ -82,6 +82,8 @@ async function attendre(p, fn, arg, maxMs, pas = 300) { const t0 = Date.now(); w
 /** Trouve un message par son texte dans l'état de la page (toutes conversations). */
 const aMsg = (p, jeton, test) => attendre(p, ([j, t]) => { const tous = Object.values(K.messages || {}).flat(); return tous.some((m) => (JSON.stringify(m).includes(j)) && (!t || new Function('m', 'return ' + t)(m))); }, [jeton, test || ''], 0);
 
+import { mkdirSync } from 'node:fs';
+const capture = async (x, nom) => { try { mkdirSync('captures', { recursive: true }); await x.p.screenshot({ path: `captures/${nom}-${x.etiquette}.png`, fullPage: false }); } catch { /* jamais bloquant */ } };
 const RES = []; const noter = (nom, ok, detail) => { RES.push({ nom, ok, detail }); console.log(`${ok === true ? '✅' : ok === false ? '❌' : '➖'} ${nom} — ${detail}`); };
 async function essayer(nom, fn) { try { await fn(); } catch (e) { noter(nom, false, 'ERREUR du robot : ' + String(e && e.message).slice(0, 160)); } }
 
@@ -235,6 +237,7 @@ try {
       if (sonne < 0) { await ev(A.p, () => K._endCall()); return; }
       await ev(B.p, async () => { await K._answerIncomingCall(); return 1; });
       const conn = await attendre(A.p, () => K._activeCall && K._activeCall.peerConn && /connected|completed/.test(K._activeCall.peerConn.iceConnectionState || ''), '', 30000);
+      if (conn < 0) for (const x of [A, B]) await capture(x, 'appel');
       const dgA = conn >= 0 ? '' : JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => ({ ice: K._activeCall && K._activeCall.peerConn && K._activeCall.peerConn.iceConnectionState, conn: K._activeCall && K._activeCall.peerConn && K._activeCall.peerConn.connectionState, diag: K._callDiag ? { cand: K._callDiag.localCand, dist: K._callDiag.remoteCand, etats: (K._callDiag.states || K._callDiag.events || []).slice(-6) } : null, turn: !!(K._iceCache && K._iceCache.turn) }))))).slice(0, 700);
       noter('Appel : connexion média établie', conn >= 0, conn >= 0 ? 'décroché → connecté en ' + sec(Date.now() - t0) : 'jamais connecté en 30 s ' + dgA + ' · WS ' + JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => ({ rs: K.ws && K.ws.readyState, conv: K.viewData && K.viewData.id && K.viewData.id.slice(0, 6), call: !!K._activeCall, st: document.getElementById('call-status') && document.getElementById('call-status').textContent }))))) + ' · console ' + JSON.stringify(journal).slice(0, 900));
       if (conn >= 0) {
@@ -258,6 +261,7 @@ try {
       if (!(typeof lien === 'string' && /[?&]join=/.test(lien))) return;
       const joinRep = {}; for (const x of [B, C]) { joinRep[x.etiquette] = []; x.p.on('response', (r) => { if (/\/join$/.test(r.url())) joinRep[x.etiquette].push(r.status()); }); await x.p.goto(lien, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {}); await x.p.waitForTimeout(3000); }
       const membres = await Promise.all([B, C].map((x) => attendre(x.p, (g) => (K.conversations || []).some((c) => c.id === g), gid, 20000)));
+      if (!membres.every((m) => m >= 0)) for (const x of [B, C]) await capture(x, 'invite');
       noter('Groupe : B et C rejoignent par le lien d\'invitation', membres.every((m) => m >= 0), membres.map((m) => (m >= 0 ? sec(m) : 'NON')).join(' / ') + (membres.every((m) => m >= 0) ? '' : ' · /join:' + JSON.stringify(joinRep) + ' · ' + JSON.stringify(await Promise.all([B, C].map(async (x) => ({ join: /join=/.test(x.p.url()), gi: /gi=/.test(x.p.url()), texte: (await x.p.evaluate(() => (document.body.innerText || '').replace(/\\s+/g, ' ').slice(0, 70)).catch((e) => 'illisible')), pend: await x.p.evaluate(() => !!sessionStorage.getItem('apex_join_pending')).catch(() => '?') }))))));
       if (!membres.every((m) => m >= 0)) return;
       for (const x of [A, B, C]) await ev(x.p, async (g) => { await K.openConv(g); }, gid);

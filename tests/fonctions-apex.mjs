@@ -31,6 +31,12 @@ const post = async (H, chemin, corps) => { const r = await fetch(DOMAINE + chemi
 /* ---------- une personne qui entre dans Apex Chat (téléphone neuf) ---------- */
 async function entrer(browser, nomComplet, code, etiquette) {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', permissions: ['microphone', 'camera', 'notifications'] });
+  await ctx.addInitScript(() => {   // journal des types de messages WebSocket (aucun contenu) pour comprendre un appel qui ne sonne pas
+    const WS = window.WebSocket; window.__wsLog = [];
+    const noter = (sens, d) => { try { const j = JSON.parse(typeof d === 'string' ? d : ''); if (window.__wsLog.length < 80) window.__wsLog.push(sens + ':' + (j.type || '?') + (j.to ? '>' + String(j.to).slice(0, 6) : '')); } catch { /* binaire */ } };
+    window.WebSocket = function (...a) { const w = new WS(...a); const send = w.send.bind(w); w.send = (d) => { noter('s', d); return send(d); }; w.addEventListener('message', (e) => noter('r', e.data)); return w; };
+    window.WebSocket.prototype = WS.prototype; Object.assign(window.WebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 });
+  });
   const p = await ctx.newPage();
   p.on('dialog', (d) => d.accept().catch(() => {}));                     // « Quitter le groupe ? », etc.
   const reseau = [];
@@ -233,7 +239,9 @@ try {
       const t0 = Date.now();
       await ev(A.p, (id) => { K._call('audio', id); return 1; }, convA);
       const sonne = await attendre(B.p, () => !!(K._incomingCallMsg || K._pendingIncoming || K._activeCall || /Appel (audio|vidéo) entrant/i.test(document.body.innerText || '')), '', 20000);
-      noter('Appel : la sonnerie arrive chez B (conversation ouverte)', sonne >= 0, sonne >= 0 ? sec(sonne) : 'pas de sonnerie en 20 s');
+      const jr = sonne >= 0 ? '' : ' · WS ' + JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => ({ ws: K.ws && K.ws.readyState, conv: K.viewData && K.viewData.id && K.viewData.id.slice(0, 6), call: !!K._activeCall, st: (document.getElementById('call-status') || {}).textContent, log: (window.__wsLog || []).slice(-14).join(' ') }))))).slice(0, 700);
+      if (sonne < 0) for (const x of [A, B]) await capture(x, 'sonnerie');
+      noter('Appel : la sonnerie arrive chez B (conversation ouverte)', sonne >= 0, sonne >= 0 ? sec(sonne) : 'pas de sonnerie en 20 s' + jr);
       if (sonne < 0) { await ev(A.p, () => K._endCall()); return; }
       await ev(B.p, async () => { await K._answerIncomingCall(); return 1; });
       const conn = await attendre(A.p, () => K._activeCall && K._activeCall.peerConn && /connected|completed/.test(K._activeCall.peerConn.iceConnectionState || ''), '', 30000);
@@ -262,7 +270,7 @@ try {
       const joinRep = {}; for (const x of [B, C]) { joinRep[x.etiquette] = []; x.p.on('response', (r) => { if (/\/join$/.test(r.url())) joinRep[x.etiquette].push(r.status()); }); await x.p.goto(lien, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {}); await x.p.waitForTimeout(3000); }
       const membres = await Promise.all([B, C].map((x) => attendre(x.p, (g) => (K.conversations || []).some((c) => c.id === g), gid, 20000)));
       if (!membres.every((m) => m >= 0)) for (const x of [B, C]) await capture(x, 'invite');
-      noter('Groupe : B et C rejoignent par le lien d\'invitation', membres.every((m) => m >= 0), membres.map((m) => (m >= 0 ? sec(m) : 'NON')).join(' / ') + (membres.every((m) => m >= 0) ? '' : ' · /join:' + JSON.stringify(joinRep) + ' · ' + JSON.stringify(await Promise.all([B, C].map(async (x) => ({ join: /join=/.test(x.p.url()), gi: /gi=/.test(x.p.url()), texte: (await x.p.evaluate(() => (document.body.innerText || '').replace(/\\s+/g, ' ').slice(0, 70)).catch((e) => 'illisible')), pend: await x.p.evaluate(() => !!sessionStorage.getItem('apex_join_pending')).catch(() => '?') }))))));
+      noter('Groupe : B et C rejoignent par le lien d\'invitation', membres.every((m) => m >= 0), membres.map((m) => (m >= 0 ? sec(m) : 'NON')).join(' / ') + (membres.every((m) => m >= 0) ? '' : ' · /join:' + JSON.stringify(joinRep) + ' · ' + JSON.stringify(await Promise.all([B, C].map(async (x) => ({ join: /join=/.test(x.p.url()), gi: /gi=/.test(x.p.url()), texte: (await x.p.evaluate(() => (document.body.innerText || '').replace(/\\s+/g, ' ').slice(0, 70)).catch((e) => 'illisible')), pend: await x.p.evaluate(() => !!sessionStorage.getItem('apex_join_pending')).catch(() => '?'), rejeu: await x.p.evaluate(async ([api]) => { const t = localStorage.getItem('kdmc_sso_token'); const r = await fetch(api + '/api/auth/sso-from-kdmc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kdmc_token: t }) }); const b = await r.text(); const w = await fetch('/__sso/whoami', { credentials: 'include', headers: { Authorization: 'Bearer ' + t } }); const wj = await w.json().catch(() => ({})); return { http: r.status, corps: b.replace(/\\s+/g, ' ').slice(0, 130), pass: !!t, whoami: { ok: wj.ok, reason: wj.reason, code: wj.code, verified: wj.verified, renouvelee: !!wj.renouvelee, remplace: !!wj.remplace } }; }, [API]).catch((e) => 'illisible ' + String(e.message).slice(0, 40)) }))))));
       if (!membres.every((m) => m >= 0)) return;
       for (const x of [A, B, C]) await ev(x.p, async (g) => { await K.openConv(g); }, gid);
       await A.p.waitForTimeout(3000);

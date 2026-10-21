@@ -2040,7 +2040,7 @@ function porteCodePage(g, url, s) {
     + '.c{max-width:340px;width:100%}h1{font-size:19px;color:#f6d97a;margin:8px 0 6px}p{margin:0 0 14px;color:#cfd8cc}'
     + 'a.b{display:block;width:100%;box-sizing:border-box;margin-top:12px;min-height:50px;line-height:50px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
     + '<body><div class="c"><div style="font-size:44px">🔐</div><h1>' + esc(g.nom) + '</h1>'
-    + '<p><b>' + esc(s && s.name || 'Ton compte') + '</b>, ton compte n&#39;a pas encore de code. Pour continuer, choisis ton code (6 caractères ou plus) : il te servira dans toutes les apps KDMC. Sans code, plus d&#39;accès.</p>'
+    + '<p><b>' + esc(s && s.name || 'Ton compte') + '</b>, ton compte n&#39;a pas encore de code. <b>Crée ton code pour te connecter à l&#39;application</b> (6 caractères ou plus) : il te servira dans toutes les apps KDMC. Sans code, plus d&#39;accès.</p>'
     + '<a class="b" href="' + esc(portail) + '">Créer mon code sur kd-mc.com</a></div></body></html>';
   return new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
     'x-kdmc-porte': 'code', 'referrer-policy': 'strict-origin-when-cross-origin',

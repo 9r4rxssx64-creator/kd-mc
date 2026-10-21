@@ -222,6 +222,7 @@
     ".github/workflows/coffre-lire-factures-outlook.yml",
     ".github/workflows/coffre-lire-domaine.yml",
     ".github/workflows/coffre-mesure-firebase-poids.yml",
+    ".github/workflows/coffre-poids-arbre.yml",
     ".github/workflows/coffre-archiver-firebase.yml",
     ".github/workflows/coffre-sonde-voix.yml",
     ".github/workflows/coffre-cloudflare-analytics-couper.yml",

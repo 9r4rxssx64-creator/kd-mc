@@ -329,7 +329,7 @@
     box.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0b1409;color:#f3f0e6;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto';
     box.innerHTML = '<div style="max-width:360px;width:100%"><div style="font-size:44px;text-align:center">🔐</div>'
       + '<h1 style="font-size:19px;color:#f6d97a;margin:8px 0 6px;text-align:center">Crée ton code</h1>'
-      + '<p style="color:#cfd8cc;margin:0 0 14px"><b>' + esc(s.name || 'Ton compte') + '</b>, ton compte n\'a pas encore de code. Pour continuer, choisis ton code (6 caractères ou plus) : il te servira dans toutes les apps KDMC. Sans code, plus d\'accès.</p>'
+      + '<p style="color:#cfd8cc;margin:0 0 14px"><b>' + esc(s.name || 'Ton compte') + '</b>, ton compte n\'a pas encore de code. <b>Crée ton code pour te connecter à l\'application</b> (6 caractères ou plus) : il te servira dans toutes les apps KDMC. Sans code, plus d\'accès.</p>'
       + '<input class="fld" id="co-code" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Mon code (6 caractères ou plus)" aria-label="Mon code" style="min-height:48px;font-size:18px;width:100%;box-sizing:border-box;margin-bottom:10px">'
       + '<input class="fld" id="co-code2" type="password" inputmode="numeric" autocomplete="new-password" placeholder="Le même code, une 2e fois" aria-label="Confirme ton code" style="min-height:48px;font-size:18px;width:100%;box-sizing:border-box;margin-bottom:10px">'
       + '<button class="btn" id="co-go" type="button" style="min-height:50px;width:100%">Créer mon code</button>'

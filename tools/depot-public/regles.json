@@ -223,6 +223,7 @@
     ".github/workflows/coffre-lire-domaine.yml",
     ".github/workflows/coffre-mesure-firebase-poids.yml",
     ".github/workflows/coffre-poids-arbre.yml",
+    ".github/workflows/coffre-arbre-migrer-r2.yml",
     ".github/workflows/coffre-archiver-firebase.yml",
     ".github/workflows/coffre-sonde-voix.yml",
     ".github/workflows/coffre-cloudflare-analytics-couper.yml",

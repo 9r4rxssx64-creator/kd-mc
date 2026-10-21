@@ -1632,7 +1632,7 @@ export async function handleSsoFromKdmc(request, env) {
     return err('Session kd-mc.com injoignable', 401, 'kdmc_session_invalide', { detail: String(e?.message || '') });
   }
 
-  if (!who || who.ok !== true) return err('Session kd-mc.com invalide', 401, 'kdmc_session_invalide', { reason: who && typeof who.reason === 'string' ? who.reason.slice(0, 40) : 'inconnue' });   // la raison donnée par le domaine (ex. en_creation) : lisible dans la réponse
+  if (!who || who.ok !== true) return err('Session kd-mc.com invalide', 401, 'kdmc_session_invalide', { reason: who && typeof who.reason === 'string' ? who.reason.slice(0, 40) : 'inconnue', cause: who && typeof who.cause === 'string' ? who.cause.slice(0, 30) : undefined });   // la raison donnée par le domaine (ex. en_creation) : lisible dans la réponse
   // RÈGLE DU DOMAINE (Kevin 13.10) : une personne inscrite, sur son appareil connu, est reconnue
   // automatiquement dans toutes les apps. Deux preuves sont acceptées, et le domaine seul les juge :
   //  - verified === true : Face ID prouvé (passkey ES256) — seule preuve valable pour un ADMIN ;

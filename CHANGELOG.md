@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Domaine (routeur) + Apex Chat (serveur) — 2026-10-22 — le refus d'un pass dit pourquoi
+
+- MESURÉ : le robot ne fait entrer qu'une personne sur deux (2 passages sur 3), alors que le domaine la reconnaît dans le navigateur ; `/__sso/whoami` répondait `{ok:false}` sans motif.
+- `/__sso/whoami` rend `reason:'pass_refuse'` + `cause` (signature / expire / appareil / pass_mal_forme / …) quand un pass est présenté mais refusé ; Apex Chat la recopie dans le 401 `kdmc_session_invalide`. Rien de secret n'est rendu. Test `whoami-cause-refus.test.mjs`. Leçon 709.
+
+
 ## Apex Chat v1.1.337 (2026-10-22 — les candidats d'appel ne se perdent plus)
 
 - MESURÉ (compteurs WebSocket du robot) : quand la connexion temps réel n'était pas encore ouverte au lancement de l'appel (« Connexion temps réel… »), les candidats de connexion de l'appelant étaient jetés (0 envoyé sur 6) : l'appelé ne pouvait pas se connecter. Ils sont gardés puis envoyés dès que l'offre / la réponse part.

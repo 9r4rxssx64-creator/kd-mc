@@ -1339,6 +1339,20 @@ async function credEchec(env, uid) {
 }
 async function credReussite(env, uid) { try { if (env.ACCOUNTS.delete) await env.ACCOUNTS.delete('rlc:' + uid); } catch { /* */ } }
 const CODE_VALIDE = (c) => typeof c === 'string' && c.length >= 6 && c.length <= 64;
+/* 21.10.2026 (robot « toutes les fonctions » : whoami répondait `{ok:false}` SANS raison à un pass tout neuf, 1 entrée sur 2 — cause introuvable de l'extérieur) :
+   même contrôle que ssoVerify, mais rend le MOTIF du refus (mot court, jamais le pass ni le secret) pour qu'il soit lisible dans la réponse. */
+async function ssoRaisonRefus(secret, token, request) {
+  if (!token) return 'sans_pass';
+  if (token.indexOf('.') < 0) return 'pass_mal_forme';
+  const dot = token.indexOf('.'); const p = token.slice(0, dot); const sig = token.slice(dot + 1);
+  if (sig !== (await ssoHmac(secret, p))) return 'signature';
+  let d; try { const bin = b64urlToStr(p); d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))); } catch { return 'pass_illisible'; }
+  if (!d || !d.u || !d.exp) return 'pass_incomplet';
+  if (d.exp < Date.now()) return 'expire';
+  if (d.u === 'ci_smoke' && (d.iat || 0) < ROBOT_PREUVE_DEPUIS) return 'robot_ancien';
+  if (request && d.d && d.d !== appareilDe(request)) return 'appareil';
+  return 'inconnu';
+}
 async function ssoVerify(secret, token, request) {
   if (!token || token.indexOf('.') < 0) return null;
   const dot = token.indexOf('.'); const p = token.slice(0, dot); const sig = token.slice(dot + 1);
@@ -3620,7 +3634,7 @@ async function handleSso(request, url, env, ctx) {
       else if (choix.cookie && parEnTete) { rep.token = choix.tok; rep.remplace = true; }
       return J(rep, estAdmin ? MARQUEUR : cookieNeuf);   /* admin prouvé : le marqueur « c'est Kevin » (Bee partout, 17.10) ; les autres comptes n'en reçoivent jamais */
     }
-    return J({ ok: false });
+    { const tok = ssoToken(request); return J(tok ? { ok: false, reason: 'pass_refuse', cause: await ssoRaisonRefus(secret, tok, request) } : { ok: false }); }   /* pass présenté mais refusé : on dit pourquoi (motif court) */
   }
 
   /* ===== WebAuthn (passkey / Face ID) — fait du domaine un IdP à identité FORTE ===== */

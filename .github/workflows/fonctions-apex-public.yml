@@ -1,0 +1,38 @@
+name: Toutes les fonctions d'Apex Chat — trois téléphones, vrai domaine (dépôt PUBLIC, comptes de test)
+
+# 21.10.2026 (Kevin : « test vraiment toutes les fonctions, temps réel, sauvegardes, appels, groupes, etc »). Trois comptes de TEST (« Temps ReelA/B/C… ») entrent dans Apex Chat sur trois
+# téléphones neufs simulés (micro et caméra factices) ; chaque fonction est essayée et notée OK / KO / non testée avec un chiffre. Les comptes du domaine sont SUPPRIMÉS à la fin.
+# AU DÉPÔT PUBLIC (minutes gratuites) : journal sans nom réel, sans code, sans jeton. À la main / API uniquement — jamais de cron.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fonctions-apex
+  cancel-in-progress: false
+
+jobs:
+  temps-reel:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Toutes les fonctions, trois téléphones — verdicts seulement
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        shell: bash -eo pipefail {0}
+        run: node tests/fonctions-apex.mjs

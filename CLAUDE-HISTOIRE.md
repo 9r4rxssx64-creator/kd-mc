@@ -12402,6 +12402,15 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - **Vérifier partout** : 7 tailles d'écran (iPhone, Android, tablette, portable, bureau) × toutes les vues, 0 chevauchement ; honnêtement « Non vérifié » pour les vrais appareils et pour les comptes dont seul leur propriétaire a le code (le Lenovo, en admin, peut voir « comme » une personne avec « ⭐ Moi » puis remettre).
 - **J'efface mes traces de test, à chaque fois, sur toutes les applications** (comptes, fiches d'essai, messages, fichiers, préférences posées dans un navigateur réel) dans la MÊME livraison, et je termine par « Traces de test effacées : … / restent : … ». Écrit dans `.claude/rules/comptes-de-test.md` et `.claude/rules/arbre-affichage-donnees.md`.
 
+## 💾 RÈGLE ABSOLUE — ARBRE : UNE PHOTO OU UNE MODIFICATION DE N'IMPORTE QUEL COMPTE NE SE PERD JAMAIS, ET SI UN ENVOI BLOQUE, ÇA SE VOIT (Kevin 2026-10-21, ABSOLUE, TOUTES LES BRANCHES)
+
+**« Vérifie plus ce problème jamais et pour personne, aucun compte. »** — Kevin 2026-10-21 (après la 4ᵉ photo de son père, présente seulement sur son téléphone, pastille « synchro ok »).
+
+- **Une donnée ajoutée part tout de suite** : photo, acte, document entrent dans la fiche et au nuage dès qu'ils sont prêts, sans attendre « Enregistrer » (v3.136).
+- **Jamais de rechargement automatique pendant une modification** (formulaire ouvert).
+- **Un envoi bloqué se voit** : « ⚠️ N à envoyer » + cause dans Réglages › Dernière erreur (v3.138) ; la pastille verte ne masque plus une écriture refusée.
+- **Gardes** : `npm run test:arbre-rien-perdu` (dans test:ci) et `npm run test:arbre-navigateur` (vrai Chromium, deux appareils, sabotage prouvé). Écrit aussi dans `.claude/rules/arbre-rien-ne-se-perd.md` ; message « toutes » au pont.
+
 ## 2026-10-21 — « Un seul compte possible par personne » (règle absolue de Kevin)
 - **Déclencheur** : Rémi écrivait à l'ancien compte `kdmc_admin` pendant que Kevin lisait `kdmc_kdmc_admin` ; deux « Kevin » dans la liste de Rémy ; 3 comptes de test « Parcours Robot » toujours dans les contacts de Kevin.
 - **Écrit aussi dans** `.claude/rules/un-compte-par-personne.md` (chargé par toute session). Index unique en base, reprise des comptes prévus d'avance, rattachement de Kevin, ralliement automatique, contacts nettoyés. Gardes listées dans la règle.

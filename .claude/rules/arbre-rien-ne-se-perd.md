@@ -1,0 +1,9 @@
+# Arbre : une photo ou une modification de n'importe quel compte ne se perd JAMAIS, et si un envoi bloque ça se voit (Kevin 21.10.2026 : « Vérifie plus ce problème jamais et pour personne, aucun compte »)
+- Cas réel : la 4ᵉ photo de Gérard n'existait que sur le téléphone de Kevin (v3.136), pastille verte « synchro ok », absente du nuage et du PC. Causes corrigées : photo seulement en mémoire jusqu'à « Enregistrer » + rechargement automatique (v3.136) ; échec d'écriture masqué par la pastille verte (v3.138).
+- Règles pour TOUTE modification de l'app (toutes les sessions) :
+  1. Un fichier ajouté (photo, acte, document) entre dans la fiche et part au nuage TOUT DE SUITE ; jamais d'état « à enregistrer plus tard » pour une donnée ajoutée.
+  2. Jamais de `location.reload()` pendant qu'un formulaire est ouvert (`#saveP`).
+  3. Ce qui reste « à envoyer » se voit toujours (« ⚠️ N à envoyer » + cause dans Réglages › Dernière erreur) ; une tolérance d'affichage ne cache jamais une donnée que le nuage n'a pas confirmée.
+  4. Après toute modification de la synchro, des photos ou du formulaire : `npm run test:arbre-navigateur` (vrai Chromium, deux appareils, faux nuage) doit rester vert ET rouge sous sabotage (`SABOTAGE=1` / `ARBRE_DIR=<ancien arbre>`).
+- Gardes : `npm run test:arbre-rien-perdu` (statique, dans test:ci : les quatre protections sont dans le code, la règle et l'histoire existent) · `npm run test:arbre-navigateur` (navigateur : verify-photo-immediat, verify-envoi-visible, verify-synchro-appareils, verify-photo-fusion, verify-photo-profil, verify-ouverture-acte, verify-sw-cookie).
+- Un appareil qui a une donnée absente du nuage : ne rien tirer ni vider, copie de sécurité, puis envoyer ; mission au pont (arbre-pc) pour lire l'état du Lenovo.

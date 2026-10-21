@@ -236,6 +236,7 @@
   "tests/verify-apex-passerelle.mjs",
   "tests/verify-apis-clients-compte.mjs",
   "tests/verify-app-as-kevin.mjs",
+  "tests/verify-arbre-rien-ne-se-perd.mjs",
   "tests/verify-assets-prive.mjs",
   "tests/verify-attente-partout.mjs",
   "tests/verify-aucun-code-admin-stocke.mjs",

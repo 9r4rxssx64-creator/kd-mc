@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 227 règles — le texte de Kevin, une par une
+## 📜 Les 228 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -992,6 +992,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🌳 RÈGLE ABSOLUE — ARBRE : TOUTE SA FAMILLE D'OFFICE, UN AFFICHAGE SANS EFFORT, DES TEXTES TOUJOURS JUSTES, RIEN QUI SE PERDE ENTRE APPAREILS — ET J'EFFACE MES TRACES DE TEST À CHAQUE FOIS (Kevin 2026-10-21, ABSOLUE, TOUTES LES BRANCHES)
 **« Quand Laurence se connecte, je veux qu'elle voie toute sa famille sur l'arbre, toutes les personnes, toutes les branches ; en mettant Combiné, elle rajoute les autres familles au choix. […] […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-toute-sa-famille-doffice-un-affichage-sans-effort-des-textes-toujours-justes-rien-qui-se-perde-entre-appareils-et-jefface-mes-traces-de-test-à-chaque-fois-kevin-2026-10-21-absolue-toutes-les-branches)
+
+### 💾 RÈGLE ABSOLUE — ARBRE : UNE PHOTO OU UNE MODIFICATION DE N'IMPORTE QUEL COMPTE NE SE PERD JAMAIS, ET SI UN ENVOI BLOQUE, ÇA SE VOIT (Kevin 2026-10-21, ABSOLUE, TOUTES LES BRANCHES)
+**« Vérifie plus ce problème jamais et pour personne, aucun compte. »** — Kevin 2026-10-21 (après la 4ᵉ photo de son père, présente seulement sur son téléphone, pastille « synchro ok »).
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-une-photo-ou-une-modification-de-nimporte-quel-compte-ne-se-perd-jamais-et-si-un-envoi-bloque-ça-se-voit-kevin-2026-10-21-absolue-toutes-les-branches)
 
 ### 2026-10-21 — « Un seul compte possible par personne » (règle absolue de Kevin)
 - **Déclencheur** : Rémi écrivait à l'ancien compte `kdmc_admin` pendant que Kevin lisait `kdmc_kdmc_admin` ; deux « Kevin » dans la liste de Rémy ; 3 comptes de test « Parcours Robot » toujours […]

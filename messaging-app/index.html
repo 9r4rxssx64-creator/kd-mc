@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.332",
+  "softwareVersion": "v1.1.333",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.332';
+const __APEX_CHAT_VERSION__ = 'v1.1.333';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.332" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.332</div>
+  <div id="splash-version" data-ver="v1.1.333" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.333</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.332</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.333</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -6271,7 +6271,7 @@ K._groupInviteLink = async function(conv){
   if(!conv || !conv.id || String(conv.id).startsWith('group_local_') || String(conv.id).startsWith('local_')) return { err: 'Ce groupe n\'est pas encore enregistré sur le serveur : recrée-le avec « Nouveau groupe » pour pouvoir inviter.' };
   let r;
   try{ r = await K._api('POST', '/api/conversations/' + encodeURIComponent(conv.id) + '/invite', {}); }catch(e){ r = null; }
-  if(r && r.ok && r.token) return { link: `${location.origin}${location.pathname}?join=${encodeURIComponent(conv.id)}&t=${encodeURIComponent(r.token)}` };
+  if(r && r.ok && r.token) return { link: `${location.origin}${location.pathname}?join=${encodeURIComponent(conv.id)}&gi=${encodeURIComponent(r.token)}` };
   return { err: (r && r.code === 'owner_required') ? 'Seul le propriétaire ou un administrateur du groupe peut inviter.' : 'Impossible de créer l\'invitation pour l\'instant — réessaie.' };
 };
 K._inviteToGroup = async function(){
@@ -14842,14 +14842,14 @@ K._joinPendingGroup = function(){
   return false;
 };
 
-// Lien d'invitation de groupe (?join=<id>&t=<invitation>) : gardé AU CHARGEMENT de la page (avant toute connexion) puis traité dès que la session est prête.
+// Lien d'invitation de groupe (?join=<id>&gi=<invitation>) : gardé AU CHARGEMENT de la page (avant toute connexion) puis traité dès que la session est prête.
 // Avant (mesuré par le robot, 2 personnes sur 2 n'ont jamais rejoint) : traité 1,5 s après le chargement SEULEMENT si la session était déjà restaurée — sinon perdu en silence.
 (function(){
   try{
-    const q = new URLSearchParams(location.search), c = q.get('join'), t = q.get('t');
+    const q = new URLSearchParams(location.search), c = q.get('join'), t = q.get('gi');   // PAS « t » : le routeur du domaine lit ?t= comme un jeton de session
     if(c && t){
       sessionStorage.setItem('apex_join_pending', JSON.stringify({ c, t, at: Date.now() }));
-      q.delete('join'); q.delete('t');
+      q.delete('join'); q.delete('gi');
       history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q.toString() : '') + location.hash);
     }
   }catch(_e){ /* sans stockage : le lien ne marchera pas, rien d'autre ne casse */ }
@@ -19064,7 +19064,7 @@ async function _boot(){
     }
     /* Query param ?join=<convId> : join groupe via lien invitation */
     const joinId = params.get('join');
-    if(joinId && !params.get('t')){   // lien sans invitation : ouvre le groupe si on en est membre, sinon le dit
+    if(joinId && !params.get('gi')){   // lien sans invitation : ouvre le groupe si on en est membre, sinon le dit
       K._joinGroupByLink(joinId, null);
       history.replaceState(null, '', location.pathname);
     }
@@ -19184,6 +19184,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.332", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.333", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

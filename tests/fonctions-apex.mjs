@@ -70,7 +70,7 @@ async function entrer(browser, nomComplet, code, etiquette) {
       const tok = await p.evaluate(() => localStorage.getItem('kdmc_sso_token'));
       if (tok) { const ua = await p.evaluate(() => navigator.userAgent); const rr = await fetch(API + '/api/auth/sso-from-kdmc', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': ua }, body: JSON.stringify({ kdmc_token: tok }) }); rejeu = ' · REJEU ' + rr.status + ' ' + (await rr.text()).replace(/\s+/g, ' ').slice(0, 260); const wh = await fetch(DOMAINE + '/__sso/whoami', { headers: { Authorization: 'Bearer ' + tok, 'User-Agent': ua } }); rejeu += ' · WHOAMI ' + wh.status + ' ' + (await wh.text()).replace(/\s+/g, ' ').replace(/"(uid|name|prenom|nom)":"[^"]*"/g, '"$1":"…"').slice(0, 240); }
     } catch (e) { rejeu = ' · rejeu impossible : ' + String(e.message).slice(0, 60); }
-    diag = `${url()} · ${JSON.stringify(d)} · réseau : ${reseau.slice(0, 8).join(' ; ')}${rejeu}`;
+    diag = `${url()} · ${JSON.stringify(d)} · réseau : ${reseau.slice(0, 16).join(' ; ')}${rejeu}`;
   }
   return { ctx, p, ouvert, id, etiquette, diag };
 }
@@ -226,6 +226,8 @@ try {
     /* ===== appel audio ===== */
     await essayer('Appel audio', async () => {
       await ev(A.p, async (id) => { await K.openConv(id); }, convA); await ev(B.p, async (id) => { await K.openConv(id); }, convB); await A.p.waitForTimeout(2500);
+      const journal = { A: [], B: [] };
+      for (const x of [A, B]) x.p.on('console', (m) => { const t = m.text(); if (/appel|call|webrtc|ice|offer|answer|candidate|signal/i.test(t) && journal[x.etiquette].length < 25) journal[x.etiquette].push(t.slice(0, 110)); });
       const t0 = Date.now();
       await ev(A.p, (id) => { K._call('audio', id); return 1; }, convA);
       const sonne = await attendre(B.p, () => !!(K._incomingCallMsg || K._pendingIncoming || K._activeCall || /Appel (audio|vidéo) entrant/i.test(document.body.innerText || '')), '', 20000);
@@ -234,7 +236,7 @@ try {
       await ev(B.p, async () => { await K._answerIncomingCall(); return 1; });
       const conn = await attendre(A.p, () => K._activeCall && K._activeCall.peerConn && /connected|completed/.test(K._activeCall.peerConn.iceConnectionState || ''), '', 30000);
       const dgA = conn >= 0 ? '' : JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => ({ ice: K._activeCall && K._activeCall.peerConn && K._activeCall.peerConn.iceConnectionState, conn: K._activeCall && K._activeCall.peerConn && K._activeCall.peerConn.connectionState, diag: K._callDiag ? { cand: K._callDiag.localCand, dist: K._callDiag.remoteCand, etats: (K._callDiag.states || K._callDiag.events || []).slice(-6) } : null, turn: !!(K._iceCache && K._iceCache.turn) }))))).slice(0, 700);
-      noter('Appel : connexion média établie', conn >= 0, conn >= 0 ? 'décroché → connecté en ' + sec(Date.now() - t0) : 'jamais connecté en 30 s ' + dgA);
+      noter('Appel : connexion média établie', conn >= 0, conn >= 0 ? 'décroché → connecté en ' + sec(Date.now() - t0) : 'jamais connecté en 30 s ' + dgA + ' · WS ' + JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => ({ rs: K.ws && K.ws.readyState, conv: K.viewData && K.viewData.id && K.viewData.id.slice(0, 6), call: !!K._activeCall, st: document.getElementById('call-status') && document.getElementById('call-status').textContent }))))) + ' · console ' + JSON.stringify(journal).slice(0, 900));
       if (conn >= 0) {
         const typ = await ev(A.p, async () => { const st = await K._activeCall.peerConn.getStats(); let t = ''; st.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') { const l = st.get(r.localCandidateId); t = l && l.candidateType; } }); return t; });
         noter('Appel : chemin utilisé (relais TURN = fiable entre réseaux différents)', typ === 'relay', 'type de candidat : ' + String(typ));
@@ -252,7 +254,7 @@ try {
       noter('Groupe : A crée le groupe (au serveur)', vrai(gid) && !String(gid).startsWith('group_local_'), vrai(gid) ? String(gid).slice(0, 14) : 'non créé');
       if (!vrai(gid)) return;
       const lien = await ev(A.p, async (g) => { const inv = await K._groupInviteLink((K.conversations || []).find((c) => c.id === g)); return inv.link || ('ERREUR : ' + inv.err); }, gid);
-      noter('Groupe : A obtient un lien d\'invitation signé', typeof lien === 'string' && /[?&]join=.+&t=.+/.test(lien), typeof lien === 'string' ? lien.replace(/t=.+/, 't=…').slice(0, 90) : 'aucun lien');
+      noter('Groupe : A obtient un lien d\'invitation signé', typeof lien === 'string' && /[?&]join=.+&gi=.+/.test(lien), typeof lien === 'string' ? lien.replace(/gi=.+/, 'gi=…').slice(0, 90) : 'aucun lien');
       if (!(typeof lien === 'string' && /[?&]join=/.test(lien))) return;
       const joinRep = {}; for (const x of [B, C]) { joinRep[x.etiquette] = []; x.p.on('response', (r) => { if (/\/join$/.test(r.url())) joinRep[x.etiquette].push(r.status()); }); await x.p.goto(lien, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {}); await x.p.waitForTimeout(3000); }
       const membres = await Promise.all([B, C].map((x) => attendre(x.p, (g) => (K.conversations || []).some((c) => c.id === g), gid, 20000)));

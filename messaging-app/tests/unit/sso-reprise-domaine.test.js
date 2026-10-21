@@ -36,4 +36,9 @@ describe('sso-from-kdmc : un raté ponctuel du domaine ne refuse pas la personne
     let n = 0; globalThis.fetch = vi.fn(async () => { n++; return new Response('{}', { status: 401 }); });
     expect((await sso(ENV({ APEX_CHAT_DB: d1Reel() }))).status).toBe(401); expect(n).toBe(1);
   });
+  it('le refus donne la raison du domaine (ex. compte en cours de création), pour qu\'on la lise au lieu de la deviner', async () => {
+    globalThis.fetch = vi.fn(async () => new Response(JSON.stringify({ ok: false, reason: 'en_creation' })));
+    const r = await sso(ENV({ APEX_CHAT_DB: d1Reel() })); const j = await r.json();
+    expect(r.status).toBe(401); expect(j.context.reason).toBe('en_creation');
+  });
 });

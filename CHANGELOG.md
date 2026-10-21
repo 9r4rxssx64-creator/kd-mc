@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.333 (2026-10-21 — le lien d'invitation de groupe passe enfin le routeur du domaine)
+
+- Mesuré par le robot : les invités n'arrivaient jamais dans le groupe — le routeur du domaine lit `?t=` comme un jeton de session, il rejetait la page. Le lien utilise `?gi=`. Le refus d'entrée par le domaine donne maintenant la raison du domaine (ex. `en_creation`).
+
 ## Apex Chat v1.1.332 (2026-10-21 — première entrée au domaine : un pass tout neuf est réessayé)
 
 - Mesuré par le robot (1 personne sur 3 bloquée sur « Connexion au domaine requise » ; le même pass rejoué quelques secondes plus tard → 200) : un pass tout juste émis n'est pas encore visible du serveur → « session invalide » une fois. L'app réessaie deux fois (1,5 s puis 3 s), seulement sur ce refus précis.

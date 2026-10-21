@@ -19,7 +19,7 @@ function monter({ api, token = 'jeton', convs = [], storage = {} } = {}) {
 describe('lien d\'invitation de groupe', () => {
   it('le lien porte l\'invitation signée du serveur', async () => {
     const { K } = monter({ api: async (m, p) => (p === '/api/conversations/g1/invite' && m === 'POST' ? { ok: true, token: 'abc.def.ghi' } : null) });
-    expect((await K._groupInviteLink({ id: 'g1' })).link).toBe('https://apex-chat.kd-mc.com/?join=g1&t=abc.def.ghi');
+    expect((await K._groupInviteLink({ id: 'g1' })).link).toBe('https://apex-chat.kd-mc.com/?join=g1&gi=abc.def.ghi');
   });
   it('groupe resté local : message clair, pas de lien inutilisable', async () => {
     const { K } = monter();
@@ -65,7 +65,7 @@ describe('lien d\'invitation de groupe', () => {
 });
 
 describe('lien d\'invitation reçu avant la connexion', () => {
-  const m = html.match(/\/\/ Lien d'invitation de groupe \(\?join=<id>&t=<invitation>\)[\s\S]*?\n\}\)\(\);/);
+  const m = html.match(/\/\/ Lien d'invitation de groupe \(\?join=<id>&gi=<invitation>\)[\s\S]*?\n\}\)\(\);/);
   const lancer = (search, hash = '') => {
     const storage = {}; const remplace = vi.fn();
     // eslint-disable-next-line no-new-func
@@ -75,12 +75,12 @@ describe('lien d\'invitation reçu avant la connexion', () => {
   };
   it('trouvé dans la page', () => { expect(m).toBeTruthy(); });
   it('?join + t : gardés AU CHARGEMENT puis retirés de l\'adresse (les autres paramètres restent)', () => {
-    const { storage, remplace } = lancer('?join=g1&t=tok&inviter=u9');
+    const { storage, remplace } = lancer('?join=g1&gi=tok&inviter=u9');
     expect(JSON.parse(storage.apex_join_pending)).toMatchObject({ c: 'g1', t: 'tok' });
     expect(remplace).toHaveBeenCalledWith(null, '', '/?inviter=u9');
   });
   it('sans invitation (t absent) ou sans ?join : rien n\'est gardé, l\'adresse n\'est pas touchée', () => {
-    for (const q of ['?join=g1', '?t=tok', '']) { const { storage, remplace } = lancer(q); expect(storage.apex_join_pending).toBeUndefined(); expect(remplace).not.toHaveBeenCalled(); }
+    for (const q of ['?join=g1', '?gi=tok', '?join=g1&t=tok', '']) { const { storage, remplace } = lancer(q); expect(storage.apex_join_pending).toBeUndefined(); expect(remplace).not.toHaveBeenCalled(); }
   });
 });
 

@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.332';
+export const API_VERSION = '1.1.333';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1632,7 +1632,7 @@ export async function handleSsoFromKdmc(request, env) {
     return err('Session kd-mc.com injoignable', 401, 'kdmc_session_invalide', { detail: String(e?.message || '') });
   }
 
-  if (!who || who.ok !== true) return err('Session kd-mc.com invalide', 401, 'kdmc_session_invalide');
+  if (!who || who.ok !== true) return err('Session kd-mc.com invalide', 401, 'kdmc_session_invalide', { reason: who && typeof who.reason === 'string' ? who.reason.slice(0, 40) : 'inconnue' });   // la raison donnée par le domaine (ex. en_creation) : lisible dans la réponse
   // RÈGLE DU DOMAINE (Kevin 13.10) : une personne inscrite, sur son appareil connu, est reconnue
   // automatiquement dans toutes les apps. Deux preuves sont acceptées, et le domaine seul les juge :
   //  - verified === true : Face ID prouvé (passkey ES256) — seule preuve valable pour un ADMIN ;

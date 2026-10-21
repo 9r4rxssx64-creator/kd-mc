@@ -7,46 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 21/10/2026 23:45 UTC
-
-- **Branche** : `main` · **Commit** : `a8dad563` · **Run** : `39694874500`
-- **Ce qui a lâché** : deploy › Le domaine sert-il vraiment les 31 adresses ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/39694874500
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  grep -E "^  · |MESURE|paire|réseau" /tmp/sonde.txt | head -25 | sed 's/^/::error::sonde — /'^[[0m
-^[[36;1m    echo "::error::paquet — $f : $(wc -c < services/kdmc-router/public/CMCteams/$f 2>/dev/null || echo ABSENT)"; done^[[0m
-^[[36;1m    echo "::error::domaine — $u : $R · $(grep -i '^x-kdmc-router\|^x-kdmc-secours\|^x-kdmc-porte' /tmp/r.h | tr -d '\r' | tr '\n' ' ' | cut -c1-120)"; done^[[0m
-❌ dashboard.kd-mc.com            0        0 car.  fetch failed
-❌ arbre.kd-mc.com                0        0 car.  fetch failed
-❌ rotaplan.kd-mc.com             0        0 car.  fetch failed
-❌ shops.kd-mc.com                0        0 car.  fetch failed
-=== 28 servies / 4 en échec ===
-  · dashboard.kd-mc.com → https://dashboard.kd-mc.com/  (HTTP 0, fetch failed)
-  · arbre.kd-mc.com → https://arbre.kd-mc.com/  (HTTP 0, fetch failed)
-  · rotaplan.kd-mc.com → https://rotaplan.kd-mc.com/  (HTTP 0, fetch failed)
-  · shops.kd-mc.com → https://shops.kd-mc.com/  (HTTP 0, fetch failed)
-##[error]sonde —   · dashboard.kd-mc.com → https://dashboard.kd-mc.com/  (HTTP 0, fetch failed)
-##[error]sonde —   · arbre.kd-mc.com → https://arbre.kd-mc.com/  (HTTP 0, fetch failed)
-##[error]sonde —   · rotaplan.kd-mc.com → https://rotaplan.kd-mc.com/  (HTTP 0, fetch failed)
-##[error]sonde —   · shops.kd-mc.com → https://shops.kd-mc.com/  (HTTP 0, fetch failed)
-##[error]paquet — index.html : 3444344
-##[error]paquet — tools/departs/index.html : 357781
-##[error]paquet — arbre/index.html : 629223
-##[error]paquet — coffre-fort/index.html : 54477
-##[error]paquet — apex-ai-v13/index.html : 23756
-##[error]domaine — cmcteams.kd-mc.com/index.html : 200 3444441 · x-kdmc-router: cmcteams.kd-mc.com
-##[error]domaine — cmcteams.kd-mc.com/version.txt : 200 7 · x-kdmc-router: cmcteams.kd-mc.com
-##[error]domaine — cmcteams.kd-mc.com/manifest.json : 200 3462 · x-kdmc-router: cmcteams.kd-mc.com
-##[error]domaine — arbre.kd-mc.com/index.html : 200 629320 · x-kdmc-router: arbre.kd-mc.com
-##[error]domaine — lingua.kd-mc.com/ : 200 88314 · x-kdmc-router: lingua.kd-mc.com
-##[error]domaine — lingua.kd-mc.com/index.html : 200 88314 · x-kdmc-router: lingua.kd-mc.com
-##[error]domaine — la-detente.kd-mc.com/ : 200 5956 · x-kdmc-router: la-detente.kd-mc.com
-##[error]domaine — kd-mc.com/CMCteams/index.html : 301 0 · x-kdmc-router: kd-mc.com (CMCteams à sa belle adresse)
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -568,4 +528,17 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
+##[error]Process completed with exit code 1.
 ```

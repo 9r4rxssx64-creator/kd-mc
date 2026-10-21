@@ -33,6 +33,8 @@ async function entrer(browser, nomComplet, code, etiquette) {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', permissions: ['microphone', 'camera', 'notifications'] });
   const p = await ctx.newPage();
   p.on('dialog', (d) => d.accept().catch(() => {}));                     // « Quitter le groupe ? », etc.
+  const reseau = [];
+  p.on('response', async (r) => { try { const u = new URL(r.url()); if (/sso-from-kdmc|\/__sso\/(whoami|login|issue|pass)$/.test(u.pathname)) { const j = await r.json().catch(() => null); reseau.push(`${u.pathname} → ${r.status()}${j && (j.reason || j.code || j.error) ? ' (' + String(j.reason || j.code || j.error).slice(0, 30) + ')' : ''}`); } } catch { /* jamais bloquant */ } });
   const url = () => { try { const u = new URL(p.url()); return u.host + u.pathname; } catch { return p.url(); } };
   await p.goto(APEX, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {});
   await p.waitForTimeout(1500);
@@ -60,7 +62,12 @@ async function entrer(browser, nomComplet, code, etiquette) {
     if (!ouvert) await p.waitForTimeout(1000);
   }
   const id = ouvert ? await p.evaluate(() => K.user.id).catch(() => null) : null;
-  return { ctx, p, ouvert, id, etiquette };
+  let diag = '';
+  if (!ouvert) {
+    const d = await p.evaluate(() => ({ etape: window.K && K.authStep, jeton: !!(window.K && K.token), pass: !!localStorage.getItem('kdmc_sso_token'), texte: (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 160) })).catch((e) => ({ erreur: String(e.message).slice(0, 60) }));
+    diag = `${url()} · ${JSON.stringify(d)} · réseau : ${reseau.slice(0, 8).join(' ; ')}`;
+  }
+  return { ctx, p, ouvert, id, etiquette, diag };
 }
 
 /* ---------- petits outils ---------- */
@@ -87,7 +94,7 @@ try {
   }
   navigateur = await chromium.launch({ executablePath: process.env.PW_EXE || undefined, proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
   const [B, C, A] = [await entrer(navigateur, noms[1], codes[1], 'B'), await entrer(navigateur, noms[2], codes[2], 'C'), await entrer(navigateur, noms[0], codes[0], 'A')];
-  for (const x of [A, B, C]) noter(`Entrée de ${x.etiquette} dans Apex Chat (sans SMS)`, x.ouvert, x.ouvert ? 'compte du domaine reconnu, ' + x.id : 'PAS entré(e)');
+  for (const x of [A, B, C]) noter(`Entrée de ${x.etiquette} dans Apex Chat (sans SMS)`, x.ouvert, x.ouvert ? 'compte du domaine reconnu, ' + x.id : 'PAS entré(e) : ' + x.diag);
   if (!A.ouvert || !B.ouvert || !C.ouvert) throw new Error('une personne n\'a pas pu entrer');
   await B.p.waitForTimeout(2000);
   const wsOk = async (x) => vrai(await ev(x.p, () => !!(K.ws && K.ws.readyState === 1)));

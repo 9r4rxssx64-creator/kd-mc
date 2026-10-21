@@ -26,6 +26,9 @@ function baseDuMatin() {
   r.prepare("UPDATE users SET kdmc_uid=NULL, identity_key_pub='CLE_ANCIENNE_PERDUE' WHERE id='kdmc_admin'").run();
   r.prepare(`INSERT INTO users (id, pseudo, real_name, phone, phone_hash, is_admin, is_kevin_alias, identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status, kdmc_uid, last_seen, crypto_caps)
              VALUES ('kdmc_kdmc_admin','kevindesarzen_iznxii','kevin Desarzens','PENDING_SSO_kdmc_kdmc_admin','PENDING_SSO_kdmc_kdmc_admin',1,1,?,'PENDING_PQXDH','PENDING_PQXDH','kdmc_kdmc_admin','kdmc-sso',1,'active','kdmc_admin',5,'media,grp1')`).run(CLE_VIVANTE);
+  // le 3e compte de Kevin (production : kdmc_kevin-desarzens, juillet) : plus ANCIEN, avec une autre clé → c'est la clé la plus récente qui doit gagner
+  r.prepare(`INSERT INTO users (id, pseudo, real_name, phone, phone_hash, is_admin, is_kevin_alias, identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status, kdmc_uid, last_seen)
+             VALUES ('kdmc_kevin-desarzens','kevindesarzens','kevin Desarzens','PENDING_SSO','PENDING_SSO',1,1,'CLE_DE_JUILLET_' || ?,'PENDING_PQXDH','PENDING_PQXDH','kdmc_kevin-desarzens','kdmc-sso',1,'active','kevin-desarzens',1)`).run('x'.repeat(40));
   r.prepare(`INSERT INTO users (id, pseudo, real_name, phone, phone_hash, is_admin, is_kevin_alias, identity_key_pub, pq_key_pub, prekey_signed, apex_uid, source, created_at, status, kdmc_uid)
              VALUES ('kdmc_remy-ledren','remy','Remy Ledren','PENDING_SSO_kdmc_remy-ledren','PENDING_SSO_kdmc_remy-ledren',0,0,'x','PENDING_PQXDH','PENDING_PQXDH','kdmc_remy-ledren','kdmc-sso',2,'active','remy-ledren')`).run();
   r.prepare("INSERT INTO conversations (id, type, created_by, created_at, sharded_to_do, member_count, last_msg_ts, e2e_version) VALUES ('conv-remy','dm','kdmc_remy-ledren',3,'do_x',2,3,1)").run();
@@ -50,6 +53,7 @@ describe('Kevin n\'a qu\'UN compte Apex Chat', () => {
     expect(JSON.parse(atob(j.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub).toBe('kdmc_admin');
     const dup = ligne(DB, 'kdmc_kdmc_admin');
     expect(dup.status).toBe('deleted'); expect(dup.merged_into).toBe('kdmc_admin'); expect(dup.kdmc_uid).toBeNull();
+    expect(ligne(DB, 'kdmc_kevin-desarzens').status).toBe('deleted');                  // le 3e compte de Kevin est fondu aussi
     expect(ligne(DB, 'kdmc_admin').kdmc_uid).toBe('kdmc_admin');
     expect(ligne(DB, 'kdmc_admin').identity_key_pub).toBe(CLE_VIVANTE);               // la clé de l'appareil de Kevin, pas l'ancienne perdue
     expect(membres(DB, 'conv-remy')).toEqual(['kdmc_admin', 'kdmc_remy-ledren']);       // Rémi écrit toujours à Kevin

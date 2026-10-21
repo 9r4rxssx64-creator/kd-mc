@@ -100,6 +100,23 @@ describe('entrée par le domaine : un pass tout juste émis n\'est pas encore vi
     const { f, appels, attentes } = monterSso([refus('kdmc_session_invalide'), bon]);
     expect((await f()).token).toBe('t'); expect(appels.length).toBe(2); expect(attentes).toEqual([1500]);
   });
+  it('le pass a été renouvelé pendant l\'attente : l\'essai suivant envoie le PLUS RÉCENT', async () => {
+    const envoyes = []; const store = { kdmc_sso_token: 'ancien' };
+    const fetch = vi.fn(async (u, o) => { envoyes.push(JSON.parse(o.body).kdmc_token); store.kdmc_sso_token = 'recent'; return envoyes.length === 1 ? refus('kdmc_session_invalide')() : bon(); });
+    // eslint-disable-next-line no-new-func
+    const f = new Function('K', 'fetch', 'API_BASE', 'localStorage', '_kdmcConsumeHashPass', '_safeCatch', 'setTimeout', extractDef(html, 'async function _authSsoFromKdmc(){') + '\nreturn _authSsoFromKdmc;')(
+      { _domainePass: null }, fetch, 'https://api', { getItem: (k) => store[k] ?? null }, () => {}, () => {}, (fn) => fn());
+    expect((await f()).token).toBe('t'); expect(envoyes).toEqual(['ancien', 'recent']);
+  });
+  it('1er réessai : un pass FRAIS demandé au domaine (cookie) remplace celui de la mémoire', async () => {
+    const envoyes = []; const store = { kdmc_sso_token: 'perime' };
+    const fetch = vi.fn(async (u, o) => { envoyes.push(JSON.parse(o.body).kdmc_token); return envoyes.length === 1 ? refus('kdmc_session_invalide')() : bon(); });
+    const K = { _domainePass: vi.fn(async () => 'frais') };
+    // eslint-disable-next-line no-new-func
+    const f = new Function('K', 'fetch', 'API_BASE', 'localStorage', '_kdmcConsumeHashPass', '_safeCatch', 'setTimeout', extractDef(html, 'async function _authSsoFromKdmc(){') + '\nreturn _authSsoFromKdmc;')(
+      K, fetch, 'https://api', { getItem: (k) => store[k] ?? null }, () => {}, () => {}, (fn) => fn());
+    expect((await f()).token).toBe('t'); expect(envoyes).toEqual(['perime', 'frais']); expect(K._domainePass).toHaveBeenCalledTimes(1);
+  });
   it('toujours refusé : 3 essais au plus, puis on retombe sur la connexion normale', async () => {
     const { f, appels } = monterSso([refus('kdmc_session_invalide')]);
     expect(await f()).toBeNull(); expect(appels.length).toBe(3);

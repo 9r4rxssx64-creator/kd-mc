@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.334 (2026-10-22 — page seulement : le réessai d'entrée relit le pass le plus récent)
+
+- Le 1er réessai demande aussi au domaine (cookie, `/__sso/pass`) un pass FRAIS : celui de la mémoire peut être périmé ou d'une autre famille d'appareil (page rechargée = « Connexion au domaine requise », vu chez l'invité du groupe).
+- Le réessai de la 1.1.332 renvoyait le MÊME pass ; le portail peut le renouveler pendant l'attente (le rejeu du robot, avec le pass du moment, passait toujours). Chaque essai relit le pass le plus récent. Le serveur reste en 1.1.333 (aucun déploiement du worker, clé TURN en attente).
+
 ## Apex Chat v1.1.333 (2026-10-21 — le lien d'invitation de groupe passe enfin le routeur du domaine)
 
 - Mesuré par le robot : les invités n'arrivaient jamais dans le groupe — le routeur du domaine lit `?t=` comme un jeton de session, il rejetait la page. Le lien utilise `?gi=`. Le refus d'entrée par le domaine donne maintenant la raison du domaine (ex. `en_creation`).

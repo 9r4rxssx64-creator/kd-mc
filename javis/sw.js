@@ -9,9 +9,11 @@ self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return Promise.all(ASSETS.map(function (a) { return c.add(a).catch(function () {}); })); }));
 });
 self.addEventListener("activate", function (e) {
+  /* Pré-chargement de navigation (Apex Chat l'a MESURÉ le 22.10, même motif ici : quand le SW refait lui-même la requête de la page, elle peut partir SANS le cookie
+     du domaine → « Connexion au domaine requise » à la réouverture d'une app installée). On prend la requête d'origine du navigateur ; sans pré-chargement, repli sur fetch(req). */
   e.waitUntil(caches.keys().then(function (ks) {
     return Promise.all(ks.map(function (k) { return k !== CACHE ? caches.delete(k) : null; }));
-  }).then(function () { return self.clients.claim(); }));
+  }).then(function () { try { if (self.registration && self.registration.navigationPreload) return self.registration.navigationPreload.enable(); } catch (x) { /* navigateur sans pré-chargement : on continue */ } }).then(function () { return self.clients.claim(); }));
 });
 self.addEventListener("fetch", function (e) {
   if(new URL(e.request.url).pathname.indexOf("/__")===0)return; /* SW-IDENTITE : /__sso (qui es-tu ?), /__demande… = réponses du domaine, jamais en cache (sinon identité périmée) */
@@ -23,8 +25,9 @@ self.addEventListener("fetch", function (e) {
   /* Hors ligne OU domaine en panne (429 quota, 5xx) : la copie gardée plutôt qu'un écran d'erreur brut
      (audit complet 30.09, mesuré : l'app installée affichait « Error 1027 » quand le quota était atteint). */
   var copie = function () { return caches.match(req).then(function (m) { return m || (req.mode === "navigate" ? caches.match("./") : undefined); }); };
+  var origine = (req.mode === "navigate" && e.preloadResponse) ? e.preloadResponse.then(function (r) { return r || fetch(req); }, function () { return fetch(req); }) : fetch(req);
   e.respondWith(
-    fetch(req).then(function (r) {
+    origine.then(function (r) {
       if (r && r.ok) { var cp = r.clone(); caches.open(CACHE).then(function (c) { c.put(req, cp); }); return r; }
       if (r && (r.status === 429 || r.status >= 500)) return copie().then(function (m) { return m || r; });
       return r;

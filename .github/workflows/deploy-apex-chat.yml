@@ -28,6 +28,10 @@ on:
         description: 'Appliquer migrations D1 (yes/no)'
         required: false
         default: 'yes'
+      forcer_turn_unique:
+        description: 'oui = créer UNE nouvelle clé TURN et remplacer celle du worker (nettoyage des doublons, Kevin 21.10) ; non = ne rien créer si elle existe'
+        required: false
+        default: 'non'
 
 jobs:
   # Lot E2 (audit A5, F4, 15.10.2026) : PORTE QUALITÉ. Mesuré : le déploiement partait EN
@@ -320,6 +324,8 @@ jobs:
 
       - name: Provision Cloudflare TURN (appels P2P cross-réseau) — idempotent
         working-directory: messaging-app/workers
+        env:
+          FORCER_TURN: ${{ github.event.inputs.forcer_turn_unique }}
         run: |
           # v1.1.229 — appels fiables sur réseaux différents (cellulaire/NAT symétrique).
           # Le TURN gratuit OpenRelay est mort. On crée UNE clé TURN Cloudflare Realtime
@@ -328,30 +334,36 @@ jobs:
           # des credentials éphémères via /api/turn (le token ne sort JAMAIS au client).
           # 21.10.2026 : le nombre de clés « TURN » MONTAIT à chaque déploiement (63 → 71, relevé du Lenovo) : la liste des secrets, illisible ou
           # d'un autre format, valait « pas de clé » et en recréait une. Désormais : liste illisible = on NE CRÉE RIEN ; nom cherché sans guillemets.
-          if ! EXISTING=$(wrangler secret list --format json 2>&1); then
+          # 21.10.2026 (pont 149) : `forcer_turn_unique=oui` (entrée MANUELLE seulement) crée UNE nouvelle clé et remplace celle du worker, pour pouvoir supprimer
+          # les doublons en gardant la bonne. Le jeton n'est JAMAIS affiché (masqué) ; seul l'identifiant PUBLIC de la clé l'est.
+          if ! EXISTING=$(wrangler secret list --format json 2>&1) && [ "$FORCER_TURN" != "oui" ]; then
             echo "::warning::Liste des secrets illisible — aucune clé TURN créée (TURN conservé tel quel)"
-          elif echo "$EXISTING" | grep -q 'CF_TURN_KEY_ID'; then
+          elif [ "$FORCER_TURN" != "oui" ] && echo "$EXISTING" | grep -q 'CF_TURN_KEY_ID'; then
             echo "::notice::CF_TURN_KEY_ID déjà présent — TURN conservé (pas de nouvelle clé)"
           else
             echo "Création d'une clé TURN Cloudflare Realtime…"
             RESP=$(curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/calls/turn_keys" \
               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
               -d '{"name":"apex-chat-turn"}')
-            echo "$RESP" | python3 -m json.tool 2>/dev/null || echo "$RESP"
+            echo "$RESP" | python3 -c "import json,sys; r=json.load(sys.stdin); print('Réponse Cloudflare : success=%s erreurs=%s' % (r.get('success'), r.get('errors')))" 2>/dev/null || echo "Réponse Cloudflare illisible"
             OK=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('success'))" 2>/dev/null || echo "False")
             if [ "$OK" != "True" ]; then
               echo "::warning::Création clé TURN ÉCHOUÉE — les appels retomberont en STUN (peuvent ne pas se connecter cross-réseau)."
               echo "::warning::Cause probable : le token CLOUDFLARE_API_TOKEN n'a pas la permission 'Calls' (Account > Cloudflare Calls > Edit). Réponse API ci-dessus."
             else
               KID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin)['result']['uid'])")
-              # Le bearer de la clé TURN est dans result.key (doc Cloudflare), PAS result.token.
-              KTOK=$(echo "$RESP" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']; print(r.get('key') or r.get('token') or '')")
+              # Le jeton de la clé TURN est dans result.secret (MESURÉ le 21.10.2026 sur la réponse réelle : uid, name, secret, created, modified).
+              # Avant : lu dans result.key / result.token → vide → jamais enregistré dans le worker → UNE NOUVELLE CLÉ À CHAQUE DÉPLOIEMENT (63 → 71) ET la réponse brute,
+              # jeton compris, écrite dans le journal PUBLIC. Désormais : le jeton est masqué avant tout affichage et la réponse brute n'est jamais affichée.
+              KTOK=$(echo "$RESP" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']; print(r.get('secret') or r.get('key') or r.get('token') or '')")
+              [ -n "$KTOK" ] && echo "::add-mask::$KTOK"
               if [ -n "$KID" ] && [ -n "$KTOK" ]; then
                 printf '%s' "$KID" | wrangler secret put CF_TURN_KEY_ID
                 printf '%s' "$KTOK" | wrangler secret put CF_TURN_TOKEN
                 echo "::notice::✅ Clé TURN Cloudflare créée + secrets poussés — appels cross-réseau actifs"
+                echo "::notice::TURN : ID À GARDER = $KID (identifiant PUBLIC, créée à $(date -u +%H:%M) UTC)"
               else
-                echo "::warning::Réponse TURN sans uid/token — STUN seul. Réponse : $RESP"
+                echo "::warning::Réponse TURN sans uid/jeton — STUN seul (le contenu de la réponse n'est pas affiché)."
               fi
             fi
           fi

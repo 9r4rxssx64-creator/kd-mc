@@ -83,3 +83,29 @@ describe('lien d\'invitation reçu avant la connexion', () => {
     for (const q of ['?join=g1', '?t=tok', '']) { const { storage, remplace } = lancer(q); expect(storage.apex_join_pending).toBeUndefined(); expect(remplace).not.toHaveBeenCalled(); }
   });
 });
+
+describe('entrée par le domaine : un pass tout juste émis n\'est pas encore visible du serveur', () => {
+  function monterSso(reponses) {
+    const appels = []; const attentes = [];
+    const fetch = vi.fn(async () => { appels.push(1); return reponses[Math.min(appels.length - 1, reponses.length - 1)](); });
+    const store = { kdmc_sso_token: 'pass' };
+    // eslint-disable-next-line no-new-func
+    const f = new Function('K', 'fetch', 'API_BASE', 'localStorage', '_kdmcConsumeHashPass', '_safeCatch', 'setTimeout', extractDef(html, 'async function _authSsoFromKdmc(){') + '\nreturn _authSsoFromKdmc;')(
+      { _domainePass: null }, fetch, 'https://api', { getItem: (k) => store[k] ?? null }, () => {}, () => {}, (fn, ms) => { attentes.push(ms); fn(); });
+    return { f, appels, attentes };
+  }
+  const refus = (code) => () => new Response(JSON.stringify({ error: code }), { status: 401 });
+  const bon = () => new Response(JSON.stringify({ ok: true, token: 't', user: { id: 'u' } }), { status: 200 });
+  it('« session invalide » puis OK : la personne entre (2 appels, attente 1,5 s)', async () => {
+    const { f, appels, attentes } = monterSso([refus('kdmc_session_invalide'), bon]);
+    expect((await f()).token).toBe('t'); expect(appels.length).toBe(2); expect(attentes).toEqual([1500]);
+  });
+  it('toujours refusé : 3 essais au plus, puis on retombe sur la connexion normale', async () => {
+    const { f, appels } = monterSso([refus('kdmc_session_invalide')]);
+    expect(await f()).toBeNull(); expect(appels.length).toBe(3);
+  });
+  it('autre refus (Face ID requis) : aucun nouvel essai', async () => {
+    const { f, appels } = monterSso([refus('face_id_requis'), bon]);
+    expect(await f()).toBeNull(); expect(appels.length).toBe(1);
+  });
+});

@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.332 (2026-10-21 — première entrée au domaine : un pass tout neuf est réessayé)
+
+- Mesuré par le robot (1 personne sur 3 bloquée sur « Connexion au domaine requise » ; le même pass rejoué quelques secondes plus tard → 200) : un pass tout juste émis n'est pas encore visible du serveur → « session invalide » une fois. L'app réessaie deux fois (1,5 s puis 3 s), seulement sur ce refus précis.
+
 ## Apex Chat v1.1.331 (2026-10-21 — sourdine et surnoms enfin envoyés, invitation de groupe gardée au chargement)
 
 - Mesuré par le robot : le serveur n'annonçait pas la méthode PUT au navigateur (CORS) → la sourdine d'une conversation et le surnom d'un contact n'atteignaient JAMAIS le serveur (notifications app fermée toujours envoyées malgré le muet). Corrigé + garde générale `cors-methodes.test.js` (toute méthode d'une route doit être annoncée).

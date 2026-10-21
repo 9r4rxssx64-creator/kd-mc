@@ -344,7 +344,7 @@ jobs:
             echo "Création d'une clé TURN Cloudflare Realtime…"
             RESP=$(curl -s -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/calls/turn_keys" \
               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
-              -d '{"name":"apex-chat-turn"}')
+              -d '{"name":"apex-chat-relais-unique"}')
             echo "$RESP" | python3 -c "import json,sys; r=json.load(sys.stdin); print('Réponse Cloudflare : success=%s erreurs=%s' % (r.get('success'), r.get('errors')))" 2>/dev/null || echo "Réponse Cloudflare illisible"
             OK=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('success'))" 2>/dev/null || echo "False")
             if [ "$OK" != "True" ]; then

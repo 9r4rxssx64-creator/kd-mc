@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.329';
+export const API_VERSION = '1.1.330';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1612,8 +1612,22 @@ export async function handleSsoFromKdmc(request, env) {
     };
     // Timeout 8s — best-effort (AbortSignal.timeout absent de certains runtimes).
     try { if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) fetchOpts.signal = AbortSignal.timeout(8000); } catch (_) { /* sans timeout */ }
-    const r = await fetch('https://kd-mc.com/__sso/whoami', fetchOpts);
+    /* 21.10.2026 (robot « toutes les fonctions », 1 entrée sur 3 refusée sans raison visible : sso-from-kdmc → 401 alors que le navigateur, lui, était reconnu) : un raté ponctuel du domaine
+       (réseau, 5xx, 429) renvoyait « session invalide » et la personne restait sur « Connexion au domaine requise ». Une seule nouvelle tentative, seulement sur un raté de transport
+       — jamais quand le domaine répond clairement « non » (200 avec ok:false). */
+    let r = null, derniere = null;
+    for (let essai = 0; essai < 2; essai++) {
+      try {
+        if (essai && typeof AbortSignal !== 'undefined' && AbortSignal.timeout) fetchOpts.signal = AbortSignal.timeout(8000);
+        r = await fetch('https://kd-mc.com/__sso/whoami', fetchOpts);
+        derniere = null;
+        if (r.ok || (r.status < 500 && r.status !== 429)) break;
+      } catch (e) { derniere = e; r = null; }
+      if (essai === 0) await new Promise((res) => setTimeout(res, 400));
+    }
+    if (derniere || !r) return err('Session kd-mc.com injoignable', 401, 'kdmc_session_invalide', { detail: String(derniere?.message || ''), transport: true });
     who = r.ok ? await r.json().catch(() => null) : null;
+    if (!r.ok) return err('Session kd-mc.com invalide', 401, 'kdmc_session_invalide', { http: r.status });
   } catch (e) {
     return err('Session kd-mc.com injoignable', 401, 'kdmc_session_invalide', { detail: String(e?.message || '') });
   }

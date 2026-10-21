@@ -34,7 +34,7 @@ async function entrer(browser, nomComplet, code, etiquette) {
   const p = await ctx.newPage();
   p.on('dialog', (d) => d.accept().catch(() => {}));                     // « Quitter le groupe ? », etc.
   const reseau = [];
-  p.on('response', async (r) => { try { const u = new URL(r.url()); if (/sso-from-kdmc|\/__sso\/(whoami|login|issue|pass)$/.test(u.pathname)) { const j = await r.json().catch(() => null); reseau.push(`${u.pathname} → ${r.status()}${j && (j.reason || j.code || j.error) ? ' (' + String(j.reason || j.code || j.error).slice(0, 30) + ')' : ''}`); } } catch { /* jamais bloquant */ } });
+  p.on('response', async (r) => { try { const u = new URL(r.url()); if (/sso-from-kdmc|\/__sso\/(whoami|login|issue|pass)$/.test(u.pathname)) { const j = await r.json().catch(() => null); reseau.push(`${u.pathname} → ${r.status()}${j && (j.reason || j.code || j.error) ? ' (' + String(j.reason || j.code || j.error || j.message).slice(0, 30) + (j.http ? ' http' + j.http : '') + (j.transport ? ' transport' : '') + ')' : ''}`); } } catch { /* jamais bloquant */ } });
   const url = () => { try { const u = new URL(p.url()); return u.host + u.pathname; } catch { return p.url(); } };
   await p.goto(APEX, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {});
   await p.waitForTimeout(1500);

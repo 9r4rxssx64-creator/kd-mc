@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.330 (2026-10-21 — entrée au domaine : une seule nouvelle tentative sur raté ponctuel)
+
+- Mesuré par le robot (1 entrée sur 3 refusée, `sso-from-kdmc` → 401 alors que le navigateur était reconnu) : un raté de transport vers le domaine (coupure, 5xx, 429) valait « session invalide ». Une seule nouvelle tentative, jamais quand le domaine répond clairement « non » ; le refus indique désormais `http` / `transport`.
+
 ## Apex Chat v1.1.329 (2026-10-21 — les groupes marchent de bout en bout)
 
 - Mesuré par le robot « toutes les fonctions » (vrai navigateur, 3 téléphones) : le serveur refusait tout groupe créé sans membre (« Membres requis ») → chaque « Nouveau groupe » restait LOCAL, invisible des autres ; et aucun écran n'ajoutait un membre (le lien `?join=` n'était traité par rien). Corrigé : groupe créé vide au serveur ; invitation par lien signé (jeton typé, 7 jours, ce groupe seulement, délivré au propriétaire / administrateur) ; `POST /api/conversations/:id/invite` et `/join`.

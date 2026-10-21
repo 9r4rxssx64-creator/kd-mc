@@ -63,3 +63,23 @@ describe('lien d\'invitation de groupe', () => {
     expect(await dedans.K._joinPendingGroup()).toBe(false); expect(api).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('lien d\'invitation reçu avant la connexion', () => {
+  const m = html.match(/\/\/ Lien d'invitation de groupe \(\?join=<id>&t=<invitation>\)[\s\S]*?\n\}\)\(\);/);
+  const lancer = (search, hash = '') => {
+    const storage = {}; const remplace = vi.fn();
+    // eslint-disable-next-line no-new-func
+    new Function('location', 'sessionStorage', 'history', 'URLSearchParams', m[0])({ search, pathname: '/', hash },
+      { setItem: (k, v) => { storage[k] = v; } }, { replaceState: remplace }, URLSearchParams);
+    return { storage, remplace };
+  };
+  it('trouvé dans la page', () => { expect(m).toBeTruthy(); });
+  it('?join + t : gardés AU CHARGEMENT puis retirés de l\'adresse (les autres paramètres restent)', () => {
+    const { storage, remplace } = lancer('?join=g1&t=tok&inviter=u9');
+    expect(JSON.parse(storage.apex_join_pending)).toMatchObject({ c: 'g1', t: 'tok' });
+    expect(remplace).toHaveBeenCalledWith(null, '', '/?inviter=u9');
+  });
+  it('sans invitation (t absent) ou sans ?join : rien n\'est gardé, l\'adresse n\'est pas touchée', () => {
+    for (const q of ['?join=g1', '?t=tok', '']) { const { storage, remplace } = lancer(q); expect(storage.apex_join_pending).toBeUndefined(); expect(remplace).not.toHaveBeenCalled(); }
+  });
+});

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.331 (2026-10-21 — sourdine et surnoms enfin envoyés, invitation de groupe gardée au chargement)
+
+- Mesuré par le robot : le serveur n'annonçait pas la méthode PUT au navigateur (CORS) → la sourdine d'une conversation et le surnom d'un contact n'atteignaient JAMAIS le serveur (notifications app fermée toujours envoyées malgré le muet). Corrigé + garde générale `cors-methodes.test.js` (toute méthode d'une route doit être annoncée).
+- Le lien d'invitation d'un groupe est gardé dès le chargement de la page (avant la connexion) puis traité quand la session est prête, y compris session restaurée.
+
 ## Apex Chat v1.1.330 (2026-10-21 — entrée au domaine : une seule nouvelle tentative sur raté ponctuel)
 
 - Mesuré par le robot (1 entrée sur 3 refusée, `sso-from-kdmc` → 401 alors que le navigateur était reconnu) : un raté de transport vers le domaine (coupure, 5xx, 429) valait « session invalide ». Une seule nouvelle tentative, jamais quand le domaine répond clairement « non » ; le refus indique désormais `http` / `transport`.

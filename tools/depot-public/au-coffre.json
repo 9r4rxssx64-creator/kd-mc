@@ -265,6 +265,7 @@
   "tests/verify-crea-comptes.mjs",
   "tests/verify-creer-invite-page.mjs",
   "tests/verify-cuisine-boutons.mjs",
+  "tests/verify-dashboard-reconnu-domaine.mjs",
   "tests/verify-declaration-domaine.mjs",
   "tests/verify-departs-ancre.mjs",
   "tests/verify-departs-boot-robuste.mjs",

@@ -15,7 +15,7 @@ const APPS = (process.env.APPS || [
   'sourcing.kd-mc.com/', 'coffre.kd-mc.com/', 'departs.kd-mc.com/', 'bot.kd-mc.com/', 'beatbot.kd-mc.com/', 'autorisations.kd-mc.com/', 'arbre.kd-mc.com/',
   'lingua.kd-mc.com/', 'studio.kd-mc.com/', 'cuisine.kd-mc.com/', 'worldmonitor.kd-mc.com/', 'osint.kd-mc.com/', 'ia.kd-mc.com/', 'outils.kd-mc.com/',
   'shops.kd-mc.com/', 'kit.kd-mc.com/', 'dossiers.kd-mc.com/', 'tor.kd-mc.com/', 'rotaplan.kd-mc.com/', 'croupier.kd-mc.com/', 'croupier.kd-mc.com/entrainement.html',
-  'outils.kd-mc.com/finances/', 'outils.kd-mc.com/messages/',
+  'cmcteams.kd-mc.com/tools/finances/', 'cmcteams.kd-mc.com/tools/messages/',
 ].join(',')).split(',').map((x) => x.trim()).filter(Boolean);
 const lignes = [];
 const dire = (t) => { console.log(t); lignes.push(t); };
@@ -69,6 +69,7 @@ for (const a of APPS) {
     });
     libelle = r.libelle;
     if (statut >= 400 && statut !== 401) verdict = 'ℹ️ page absente (' + statut + ')';
+    else if (r.champs > 0 && /^coffre\./.test(hote)) { verdict = 'ℹ️ coffre chiffré : déverrouillage local (Face ID possible), non contournable par conception (' + r.champs + ' champ(s))'; muets++; }
     else if (r.champs > 0) { verdict = '❌ DEMANDE UN CODE (' + r.champs + ' champ(s)' + (r.libelle ? ' · « ' + r.libelle + ' »' : '') + ')'; demandent++; }
     else if (statut === 401 || statut === 403) { verdict = '🔒 porte fermée (' + statut + ')'; muets++; }
     else { verdict = '✅ aucun code demandé'; ok++; }

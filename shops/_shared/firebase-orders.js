@@ -54,6 +54,18 @@
       .then(function(j){ if(j&&j.grant){ _tok=null;_tokExp=0;_tokPromise=null; return true; } return false; })
       .catch(function(){ return false; });
   };
+  /* Kevin 21.10 : « reconnu partout, aucun code » — la session admin déjà prouvée (Face ID / code du domaine) vaut le code : on demande d'abord /__admin/grant
+     (cookie + jeton du domaine) ; la saisie du code ne reste que si le domaine ne reconnaît pas la session. Une seule tentative par page (pas de martèlement). */
+  var _reconnuP=null;
+  window.kdmcAdminReconnu=function(){
+    if(_reconnuP) return _reconnuP;
+    var hd={}; try{ var pt=localStorage.getItem("kdmc_sso_token")||""; if(pt) hd.Authorization="Bearer "+pt; }catch(_){}
+    _reconnuP=fetch("/__admin/grant",{credentials:"include",cache:"no-store",headers:hd})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){ var ok=!!(j&&j.ok&&j.grant); if(ok){ _tok=null;_tokExp=0;_tokPromise=null; } return ok; })
+      .catch(function(){ return false; });
+    return _reconnuP;
+  };
   /* Modale de saisie du code admin (vanilla DOM, sans re-render → pas de « clavier
      qui saute » iOS ; font 16px = pas de zoom ; input password numérique). */
   function _builtinPinModal(){
@@ -89,6 +101,10 @@
         if(r&&r.ok) return r;
         var st=r&&r.status;
         if(st===401||st===403){
+          return window.kdmcAdminReconnu().then(function(ok){
+            if(!ok) return null;
+            return _authQS().then(function(qs1){ return fetch(url+qs1,opts).then(function(r1){ return r1&&r1.ok?r1:null; }); });
+          }).then(function(r1){ if(r1) return r1;
           return _askAdminPin().then(function(pin){
             if(!pin) return Promise.reject(new Error("admin_blocked_"+st));
             return window.kdmcAdminLogin(pin).then(function(okg){
@@ -97,6 +113,7 @@
                 return fetch(url+qs2,opts).then(function(r2){ if(r2&&r2.ok) return r2; return Promise.reject(new Error("admin_blocked_"+(r2&&r2.status))); });
               });
             });
+          });
           });
         }
         return Promise.reject(new Error("write_http_"+st));

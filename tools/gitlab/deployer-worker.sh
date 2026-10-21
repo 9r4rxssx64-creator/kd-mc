@@ -46,4 +46,4 @@ if [ -n "$LIGNE" ]; then
     fi
   done
 fi
-echo "   OK $NOM vivant -> https://${NOM}.desarzens-kevin.workers.dev"
+echo "   OK $NOM vivant -> https://${NOM}.9r4rxssx64.workers.dev"

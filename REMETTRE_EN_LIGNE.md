@@ -40,10 +40,10 @@ l'autre.
 
 **Le bon compte est celui dont le sous-domaine est `9r4rxssx64.workers.dev`**
 (visible en bas de la page *Workers & Pages*, section « Détails du compte »).
-Jamais `desarzens-kevin.workers.dev` — celui-là ne contient que 4 vieux Workers.
+Jamais `desarzens-kevin.workers.dev` — l'ancien compte est VIDÉ et ABANDONNÉ (Kevin, 21.10.2026) : plus aucun Worker, KV, D1, R2 ni jeton ; tout se crée sur le compte principal `425377ca…`.
 
 Signe qui ne trompe pas : dans le bon compte, la liste contient **`kdmc-router`**
-et une quinzaine d'autres. Dans le mauvais, seulement 4 ou 5.
+et une quinzaine d'autres. Dans le mauvais, rien (compte vidé).
 
 > À savoir : un projet **Pages** peut vivre dans n'importe lequel des deux —
 > son adresse `*.pages.dev` est publique, le routeur la joint par Internet.

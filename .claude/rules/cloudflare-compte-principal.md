@@ -1,0 +1,6 @@
+# Cloudflare : UN SEUL compte, le principal (Kevin 21.10.2026, absolue, toutes les branches)
+- « Toutes les branches doivent être au courant qu'on ne se sert plus de l'ancien compte. À partir de maintenant, tout doit être créé, le futur etc., sur le nouveau, sur le compte principal. »
+- Compte principal : `425377ca5c9259cbbef9d8b11cfbfee0` (sous-domaine `9r4rxssx64.workers.dev`). L'ancien (`ffaca6f3…`, `desarzens-kevin.workers.dev`) est vidé et abandonné : plus de Worker, KV, D1, R2, jeton ni domaine.
+- Tout nouveau Worker / KV / D1 / R2 / Pages / jeton / clé TURN / domaine se crée là, jamais sur l'ancien. Aucune adresse `*.desarzens-kevin.workers.dev` ni identifiant `ffaca6f3…` dans le code, les workflows ou les documents (seules exceptions : l'auto-réparation des vieilles URL, les tests qui l'interdisent, les outils de nettoyage, les archives et l'historique daté).
+- Une erreur 401/403 Cloudflare ou GitLab après ce changement : l'écrire au pont (sujet « PANNE JETON »), sans clé ; ne jamais recréer un jeton soi-même.
+- Garde : `npm run test:cloudflare-compte-principal`.

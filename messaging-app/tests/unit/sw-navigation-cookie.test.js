@@ -31,4 +31,13 @@ describe('SW : navigation avec le cookie du domaine', () => {
     expect(enable).toHaveBeenCalledTimes(1);
     await expect(sw.handleActivate({ ...deps, registration: {} })).resolves.toBeDefined();
   });
+  it('le pré-chargement échoue (promesse rejetée) : repli sur la requête du SW', async () => {
+    const fetch = vi.fn(async () => reponse('reseau'));
+    const r = await sw.handleFetchNavigation({ url: 'https://x/' }, { fetch, caches: caches(), response: Response }, { preloadResponse: Promise.reject(new Error('annulé')) });
+    expect(r.body).toBe('reseau');
+  });
+  it('l\'activation survit à un navigateur dont enable() échoue', async () => {
+    const deps = { caches: { keys: async () => [], delete: async () => true }, clients: { claim: async () => {}, matchAll: async () => [] } };
+    await expect(sw.handleActivate({ ...deps, registration: { navigationPreload: { enable: async () => { throw new Error('non supporté'); } } } })).resolves.toBeDefined();
+  });
 });

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.329 (2026-10-21 — les groupes marchent de bout en bout)
+
+- Mesuré par le robot « toutes les fonctions » (vrai navigateur, 3 téléphones) : le serveur refusait tout groupe créé sans membre (« Membres requis ») → chaque « Nouveau groupe » restait LOCAL, invisible des autres ; et aucun écran n'ajoutait un membre (le lien `?join=` n'était traité par rien). Corrigé : groupe créé vide au serveur ; invitation par lien signé (jeton typé, 7 jours, ce groupe seulement, délivré au propriétaire / administrateur) ; `POST /api/conversations/:id/invite` et `/join`.
+- Un lien reçu avant la connexion est gardé puis traité à l'entrée.
+
 ## Apex Chat v1.1.328 (2026-10-21 — un seul compte par personne)
 
 - Index unique en base sur l'uid du domaine (comptes actifs) ; une course à la première connexion reprend le compte existant ; un compte prévu d'avance jamais ouvert est repris par la personne (même nom complet, un seul candidat) au lieu d'un 2e compte.

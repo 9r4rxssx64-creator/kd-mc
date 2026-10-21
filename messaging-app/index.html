@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.328",
+  "softwareVersion": "v1.1.329",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.328';
+const __APEX_CHAT_VERSION__ = 'v1.1.329';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.328" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.328</div>
+  <div id="splash-version" data-ver="v1.1.329" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.329</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.328</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.329</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -6255,10 +6255,21 @@ K._openGroupMenu = function(){
   `);
 };
 
-K._inviteToGroup = function(){
+// Inviter par lien (21.10.2026) : le lien porte une invitation signée par le serveur (7 jours, ce groupe seulement, délivrée au
+// propriétaire / administrateur). Avant : ?join=<id> seul, que rien ne traitait — impossible d'ajouter quelqu'un à un groupe.
+K._groupInviteLink = async function(conv){
+  if(!conv || !conv.id || String(conv.id).startsWith('group_local_') || String(conv.id).startsWith('local_')) return { err: 'Ce groupe n\'est pas encore enregistré sur le serveur : recrée-le avec « Nouveau groupe » pour pouvoir inviter.' };
+  let r;
+  try{ r = await K._api('POST', '/api/conversations/' + encodeURIComponent(conv.id) + '/invite', {}); }catch(e){ r = null; }
+  if(r && r.ok && r.token) return { link: `${location.origin}${location.pathname}?join=${encodeURIComponent(conv.id)}&t=${encodeURIComponent(r.token)}` };
+  return { err: (r && r.code === 'owner_required') ? 'Seul le propriétaire ou un administrateur du groupe peut inviter.' : 'Impossible de créer l\'invitation pour l\'instant — réessaie.' };
+};
+K._inviteToGroup = async function(){
   const conv = K.viewData;
   if(!conv) return;
-  const link = `${location.origin}${location.pathname}?join=${encodeURIComponent(conv.id)}`;
+  const inv = await K._groupInviteLink(conv);
+  if(inv.err){ toast(inv.err, 'warn', 6000); return; }
+  const link = inv.link;
   // v1.1.65 : QR code via API publique qrserver (zéro dépendance, 240×240 gold/dark)
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(link)}&bgcolor=1a1a1f&color=e8b830&qzone=2`;
   K._showModal('📤 Inviter au groupe', `
@@ -14787,6 +14798,40 @@ K._startConvWithUser = async function(userId, displayName){
   K.openConv && K.openConv(conv.id);
 };
 
+// Rejoindre un groupe avec le lien reçu (21.10.2026). Déjà membre → on l'ouvre. Pas encore connecté → on garde l'invitation
+// et on la traite dès l'entrée (K._postLogin). Jamais de message technique à l'écran.
+K._joinGroupByLink = async function(convId, token){
+  if(!convId) return false;
+  const exists = (K.conversations || []).find(c => c.id === convId);
+  if(exists){ K.openConv(convId); return true; }
+  if(!token){ toast('Ce lien d\'invitation est incomplet — demande-en un nouveau', 'warn', 5000); return false; }
+  if(!K.token || String(K.token).startsWith('local-')){
+    try{ sessionStorage.setItem('apex_join_pending', JSON.stringify({ c: convId, t: token, at: Date.now() })); }catch(_e){ _safeCatch('silent', _e); }
+    return false;
+  }
+  let r;
+  try{ r = await K._api('POST', '/api/conversations/' + encodeURIComponent(convId) + '/join', { token }); }catch(e){ r = null; }
+  if(r && r.ok && r.conversation){
+    try{ await K._refreshConvs(); }catch(_e){ _safeCatch('join-refresh', _e); }
+    if(!(K.conversations || []).find(c => c.id === convId)){
+      K.conversations = K.conversations || [];
+      K.conversations.unshift({ id: r.conversation.id, type: r.conversation.type || 'group', name: r.conversation.name || 'Groupe', member_count: r.conversation.member_count || 2, last_msg_ts: Date.now(), created_at: Date.now() });
+      ls('conversations', K.conversations);
+    }
+    toast('✅ Tu as rejoint « ' + (r.conversation.name || 'le groupe') + ' »', 'ok', 3000);
+    K.openConv(convId);
+    return true;
+  }
+  toast('Cette invitation n\'est plus valable (expirée ou refusée) — demande un nouveau lien', 'warn', 6000);
+  return false;
+};
+K._joinPendingGroup = function(){
+  let p = null;
+  try{ p = JSON.parse(sessionStorage.getItem('apex_join_pending') || 'null'); sessionStorage.removeItem('apex_join_pending'); }catch(_e){ p = null; }
+  if(p && p.c && p.t && Date.now() - (p.at || 0) < 3600000) return K._joinGroupByLink(p.c, p.t);
+  return false;
+};
+
 // v1.1.170 : promeut une conv locale (dm_local_) en conv serveur réelle.
 // Crée la conv côté serveur, migre messages + id local → id serveur.
 K._promoteConvToServer = async function(localConvId){
@@ -17486,6 +17531,7 @@ K._ralliementKevin = async function(){
 K._postLogin = function(){
   if(!K.user) return;
   setTimeout(() => { try { K._ralliementKevin && K._ralliementKevin(); } catch(_) {} }, 3000);
+  setTimeout(() => { try { K._joinPendingGroup && K._joinPendingGroup(); } catch(_) {} }, 2500);   // invitation de groupe reçue avant la connexion
   // v1.1.173 FIX P0 (audit crew) : publier la clé publique E2E dès le login —
   // couvre les users dont la clé existait déjà localement (avant cette version)
   // mais n'avait jamais été poussée au serveur. Best-effort, non bloquant.
@@ -18995,13 +19041,7 @@ async function _boot(){
     /* Query param ?join=<convId> : join groupe via lien invitation */
     const joinId = params.get('join');
     if(joinId){
-      const exists = (K.conversations || []).find(c => c.id === joinId);
-      if(exists){
-        K.openConv(joinId);
-      } else if(K.token){
-        /* Trigger backend join group (à wirer si endpoint existe) */
-        toast('📥 Demande rejoindre groupe ' + joinId.slice(0, 8), 'info');
-      }
+      K._joinGroupByLink(joinId, params.get('t'));
       history.replaceState(null, '', location.pathname);
     }
     /* v1.1.170 : ?invite=<magic_token> — utilisé pour 2 cas :
@@ -19120,6 +19160,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.328", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.329", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

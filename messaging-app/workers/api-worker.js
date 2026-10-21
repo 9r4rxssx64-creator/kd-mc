@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.328';
+export const API_VERSION = '1.1.329';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -2620,7 +2620,9 @@ export async function handleCreateConversation(request, env) {
 
   const { type, name, members } = await readJson(request);
   if (!['dm', 'group', 'community', 'channel'].includes(type)) return err('Type invalide');
-  if (!Array.isArray(members) || members.length < 1) return err('Membres requis');
+  // Un groupe / une communauté / un canal se crée VIDE (le formulaire « Nouveau groupe » n'envoie aucun membre, on invite après) ;
+  // un message direct, lui, exige son correspondant. Avant : tout groupe restait local (group_local_…), invisible des autres.
+  if (!Array.isArray(members) || (type === 'dm' && members.length < 1)) return err('Membres requis');
   // Lot 2 (M) : types stricts (un objet dans members/name faisait échouer le bind → 500).
   if (members.length > 1024 || members.some(m => m !== null && m !== undefined && (typeof m !== 'string' || m.length > 128))) {
     return err('Membres invalides (identifiants texte attendus)', 400, 'bad_members');
@@ -5317,6 +5319,54 @@ async function handleUpdateConv(convId, request, env) {
   return json({ ok: true });
 }
 
+// ----- Inviter dans un groupe PAR LIEN (21.10.2026) -----
+// Mesuré par le robot « toutes les fonctions » : l'app n'avait AUCUN moyen d'ajouter quelqu'un à un groupe (le lien ?join=<id>
+// affichait « à wirer »). Une invitation est un jeton signé, typé (il ne vaut JAMAIS comme session), limité à UN groupe, valable 7 jours,
+// délivré seulement par le propriétaire ou un administrateur ; celui qui l'utilise doit avoir un compte connecté.
+const GROUP_INVITE_TTL_S = 7 * 86400;
+export async function handleGroupInvite(convId, request, env) {
+  const auth = await getAuthUser(request, env);
+  if (!auth) return err('Non authentifié', 401, 'unauthorized');
+  if (!convId || convId.length > 128) return err('Conversation invalide', 400, 'bad_conv_id');
+  const DB = env.APEX_CHAT_DB;
+  const me = await DB.prepare('SELECT role FROM conversation_members WHERE conv_id=? AND user_id=?').bind(convId, auth.sub).first();
+  if (!me || !['owner', 'admin'].includes(me.role)) return err('Droits insuffisants (propriétaire ou administrateur requis)', 403, 'owner_required');
+  const conv = await DB.prepare('SELECT type FROM conversations WHERE id=?').bind(convId).first();
+  if (!conv) return err('Conversation introuvable', 404, 'not_found');
+  if (conv.type === 'dm') return err('On n\'invite pas dans un message direct', 400, 'dm_no_invite');
+  const now = Math.floor(Date.now() / 1000);
+  const token = await signJWT({ typ: 'ginv', cid: convId, by: auth.sub, iat: now, exp: now + GROUP_INVITE_TTL_S }, env.JWT_SIGN_KEY);
+  return json({ ok: true, token, expires_at: (now + GROUP_INVITE_TTL_S) * 1000 });
+}
+
+export async function handleGroupJoin(convId, request, env) {
+  const auth = await getAuthUser(request, env);
+  if (!auth) return err('Non authentifié', 401, 'unauthorized');
+  if (!convId || convId.length > 128) return err('Conversation invalide', 400, 'bad_conv_id');
+  const body = await readJson(request);
+  const token = body && typeof body.token === 'string' ? body.token : '';
+  const payload = token ? await verifyJWT(token, env.JWT_SIGN_KEY) : null;
+  if (!payload || payload.typ !== 'ginv' || payload.cid !== convId) return err('Invitation invalide ou expirée', 403, 'bad_invite');
+  const DB = env.APEX_CHAT_DB;
+  const conv = await DB.prepare('SELECT id, type, name, member_count, archived_at FROM conversations WHERE id=?').bind(convId).first();
+  if (!conv || conv.archived_at) return err('Groupe introuvable', 404, 'not_found');
+  if (conv.type === 'dm') return err('On ne rejoint pas un message direct', 400, 'dm_no_join');
+  const selfId = await _canonicalId(DB, auth.sub);
+  const deja = await DB.prepare('SELECT 1 FROM conversation_members WHERE conv_id=? AND user_id=?').bind(convId, selfId).first();
+  if (!deja) {
+    const config = await getModeConfig(env);
+    const maxSize = parseInt(config.MAX_GROUP_SIZE || '1024');
+    if ((conv.member_count || 0) >= maxSize) return err(`Limite ${maxSize} membres atteinte`, 403, 'group_full');
+    await DB.prepare(`INSERT OR IGNORE INTO conversation_members (conv_id, user_id, role, joined_at, kevin_invisible) VALUES (?, ?, 'member', ?, 0)`).bind(convId, selfId, Date.now()).run();
+    const recount = await DB.prepare('SELECT COUNT(*) AS c FROM conversation_members WHERE conv_id=?').bind(convId).first();
+    await DB.prepare('UPDATE conversations SET member_count=? WHERE id=?').bind(recount.c, convId).run();
+    conv.member_count = recount.c;
+    await auditLog(env, selfId, 'join_by_link', 'conv', convId, { invited_by: payload.by || null },
+      await sha256(request.headers.get('CF-Connecting-IP') || ''), request.headers.get('User-Agent'));
+  }
+  return json({ ok: true, already_member: !!deja, conversation: { id: conv.id, type: conv.type, name: conv.name, member_count: conv.member_count } });
+}
+
 // ----- Lot C2 (audit A4 P1-2) : muet côté serveur -----
 // « Mettre en muet » n'existait que sur le téléphone : app fermée, le serveur poussait quand même
 // chaque notification. Le muet de CHAQUE membre (le sien seulement) est gardé dans conv_mutes
@@ -7209,6 +7259,9 @@ const _workerHandler = {
       // Lot C2 (A4 P1-2) : muet gardé par le serveur (plus de notification app fermée)
       const convMuteMatch = path.match(/^\/api\/conversations\/([^\/]+)\/mute$/);
       if (convMuteMatch && method === 'PUT') return await handleSetConvMute(convMuteMatch[1], request, env);
+      // Inviter dans un groupe par lien (21.10.2026)
+      const convInviteMatch = path.match(/^\/api\/conversations\/([^\/]+)\/(invite|join)$/);
+      if (convInviteMatch && method === 'POST') return convInviteMatch[2] === 'invite' ? await handleGroupInvite(convInviteMatch[1], request, env) : await handleGroupJoin(convInviteMatch[1], request, env);
 
       // Phase 4 — Stories
       if (path === '/api/stories' && method === 'POST') return await handleCreateStory(request, env);

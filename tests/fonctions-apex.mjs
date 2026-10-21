@@ -174,10 +174,11 @@ try {
       const r = await ev(A.p, async () => {
         const c = document.createElement('canvas'); c.width = 64; c.height = 64; const g = c.getContext('2d'); g.fillStyle = '#e8b830'; g.fillRect(0, 0, 64, 64);
         const blob = await new Promise((res) => c.toBlob(res, 'image/png')); const f = new File([blob], 'test.png', { type: 'image/png' });
-        const avant = (K.messages[K.viewData.id] || []).length; await K._uploadImage(f); return { avant, apres: (K.messages[K.viewData.id] || []).length };
+        const avant = (K.messages[K.viewData.id] || []).length; await K._uploadMedia(f); return { avant, apres: (K.messages[K.viewData.id] || []).length };
       });
       const d = await attendre(B.p, () => Object.values(K.messages || {}).flat().some((m) => m.image_data || m.media_url || /APXMEDIA1/.test(JSON.stringify(m))), '', 30000);
-      noter('Photo : A envoie, B la reçoit', d >= 0, d >= 0 ? sec(d) : 'photo non reçue (' + JSON.stringify(r).slice(0, 80) + ')');
+      const dernierB = await ev(B.p, () => { const l = (K.messages[K.viewData.id] || []); const m = l[l.length - 1] || {}; return Object.keys(m).join(','); });
+      noter('Photo : A envoie, B la reçoit', d >= 0, d >= 0 ? sec(d) : 'photo non reçue (' + JSON.stringify(r).slice(0, 80) + ' · dernier message chez B : ' + String(dernierB && dernierB.__err ? dernierB.__err : dernierB).slice(0, 80) + ')');
     });
 
     await essayer('Sondage', async () => {
@@ -192,14 +193,17 @@ try {
         const idp = await ev(B.p, () => { const m = Object.values(K.messages || {}).flat().find((q) => q.poll); return m && m.id; });
         await ev(B.p, (i) => K._votePoll(i, 0), idp);
         const v = await attendre(A.p, (i) => { const m = Object.values(K.messages || {}).flat().find((q) => q.id === i); return !!m && m.poll && m.poll.votes && Object.keys(m.poll.votes).length > 0; }, idp, 20000);
-        noter('Sondage : A voit le vote de B', v >= 0, v >= 0 ? sec(v) : 'le vote n\'arrive pas');
+        const dg = v >= 0 ? '' : JSON.stringify(await ev(A.p, ([i]) => ({ ws: !!(K.ws && K.ws.readyState === 1), memeId: !!Object.values(K.messages || {}).flat().find((q) => q.id === i), sondages: Object.values(K.messages || {}).flat().filter((q) => q.poll).map((q) => q.id.slice(0, 10) + ':' + Object.keys(q.poll.votes || {}).length) }), [idp])).slice(0, 160) + ' · idB=' + String(idp).slice(0, 10);
+        noter('Sondage : A voit le vote de B', v >= 0, v >= 0 ? sec(v) : 'le vote n\'arrive pas ' + dg);
       }
     });
 
     await essayer('Sourdine / épingle', async () => {
-      await ev(A.p, (id) => K._toggleConvMuted(id), convA); await A.p.waitForTimeout(2500);
+      const rep = [];
+      A.p.on('response', (r) => { if (/\/mute$/.test(r.url())) rep.push(r.request().method() + ' ' + r.status()); });
+      const retMute = await ev(A.p, async (id) => { await K._toggleConvMuted(id); const c = K.conversations.find((x) => x.id === id) || {}; return { muted: c.muted, pending: !!c.mute_pending, token: !!K.token }; }, convA); await A.p.waitForTimeout(2500);
       const srv = await A.p.evaluate(async ([api, id]) => { const r = await fetch(api + '/api/conversations', { headers: { Authorization: 'Bearer ' + K.token } }); const j = await r.json(); const c = (j.conversations || []).find((x) => x.id === id); return c ? JSON.stringify({ muted: c.muted, mute: c.mute, muted_until: c.muted_until, notif: c.notif_level }) : 'absent'; }, [API, convA]).catch((e) => String(e.message).slice(0, 60));
-      noter('Sourdine d\'une conversation : mémorisée au serveur', /true|none|"muted":1|muted_until":[1-9]/.test(String(srv)), String(srv).slice(0, 100));
+      noter('Sourdine d\'une conversation : mémorisée au serveur', /"muted":true/.test(String(srv)), String(srv).slice(0, 100) + ' · app : ' + JSON.stringify(retMute) + ' · réponses : ' + rep.join(','));
       await ev(A.p, (id) => K._toggleConvPinned(id), convA);
       noter('Épingler une conversation', vrai(await ev(A.p, (id) => (K.conversations.find((c) => c.id === id) || {}).pinned, convA)), 'état local');
     });
@@ -222,10 +226,10 @@ try {
       const sonne = await attendre(B.p, () => !!(K._pendingIncoming || K._activeCall || /Appel entrant|📞|Répondre/i.test(document.body.innerText || '')), '', 20000);
       noter('Appel : la sonnerie arrive chez B (conversation ouverte)', sonne >= 0, sonne >= 0 ? sec(sonne) : 'pas de sonnerie en 20 s');
       if (sonne < 0) { await ev(A.p, () => K._endCall()); return; }
-      const inc = await ev(B.p, () => K._pendingIncoming || null);
-      await ev(B.p, async (i) => { await K._answerCall({ callType: 'audio', convId: i && i.convId, from: i && i.from }); return 1; }, inc);
+      await ev(B.p, async () => { await K._answerIncomingCall(); return 1; });
       const conn = await attendre(A.p, () => K._activeCall && K._activeCall.peerConn && /connected|completed/.test(K._activeCall.peerConn.iceConnectionState || ''), '', 30000);
-      noter('Appel : connexion média établie', conn >= 0, conn >= 0 ? 'décroché → connecté en ' + sec(Date.now() - t0) : 'jamais connecté en 30 s');
+      const dgA = conn >= 0 ? '' : JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => ({ ice: K._activeCall && K._activeCall.peerConn && K._activeCall.peerConn.iceConnectionState, conn: K._activeCall && K._activeCall.peerConn && K._activeCall.peerConn.connectionState, diag: K._callDiag ? { cand: K._callDiag.localCand, dist: K._callDiag.remoteCand, etats: (K._callDiag.states || K._callDiag.events || []).slice(-6) } : null, turn: !!(K._iceCache && K._iceCache.turn) }))))).slice(0, 700);
+      noter('Appel : connexion média établie', conn >= 0, conn >= 0 ? 'décroché → connecté en ' + sec(Date.now() - t0) : 'jamais connecté en 30 s ' + dgA);
       if (conn >= 0) {
         const typ = await ev(A.p, async () => { const st = await K._activeCall.peerConn.getStats(); let t = ''; st.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') { const l = st.get(r.localCandidateId); t = l && l.candidateType; } }); return t; });
         noter('Appel : chemin utilisé (relais TURN = fiable entre réseaux différents)', typ === 'relay', 'type de candidat : ' + String(typ));
@@ -242,7 +246,10 @@ try {
       const gid = await ev(A.p, (n) => { const g = (K.conversations || []).find((c) => c.type === 'group' && c.name === n); return g && g.id; }, nomG);
       noter('Groupe : A crée le groupe (au serveur)', vrai(gid) && !String(gid).startsWith('group_local_'), vrai(gid) ? String(gid).slice(0, 14) : 'non créé');
       if (!vrai(gid)) return;
-      for (const x of [B, C]) { await x.p.goto(APEX + '?join=' + encodeURIComponent(gid), { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {}); await x.p.waitForTimeout(3000); }
+      const lien = await ev(A.p, async (g) => { const inv = await K._groupInviteLink((K.conversations || []).find((c) => c.id === g)); return inv.link || ('ERREUR : ' + inv.err); }, gid);
+      noter('Groupe : A obtient un lien d\'invitation signé', typeof lien === 'string' && /[?&]join=.+&t=.+/.test(lien), typeof lien === 'string' ? lien.replace(/t=.+/, 't=…').slice(0, 90) : 'aucun lien');
+      if (!(typeof lien === 'string' && /[?&]join=/.test(lien))) return;
+      for (const x of [B, C]) { await x.p.goto(lien, { waitUntil: 'networkidle', timeout: 45000 }).catch(() => {}); await x.p.waitForTimeout(3000); }
       const membres = await Promise.all([B, C].map((x) => attendre(x.p, (g) => (K.conversations || []).some((c) => c.id === g), gid, 20000)));
       noter('Groupe : B et C rejoignent par le lien d\'invitation', membres.every((m) => m >= 0), membres.map((m) => (m >= 0 ? sec(m) : 'NON')).join(' / '));
       if (!membres.every((m) => m >= 0)) return;
@@ -277,8 +284,11 @@ try {
 
   /* ===== notifications push ===== */
   await essayer('Notifications push', async () => {
-    const r = await ev(A.p, async () => { try { const ok = await K._subscribePush(); const st = await K._checkPushStatus(); return { ok, st, sw: !!navigator.serviceWorker.controller, err: window._apexSwError || null }; } catch (e) { return { err: String(e.message).slice(0, 80) }; } });
-    noter('Notifications : abonnement push', r && r.st === 'active', JSON.stringify(r).slice(0, 140));
+    const r = await ev(A.p, async () => { try { const ok = await K._subscribePush(); const st = await K._checkPushStatus(); const reg = await navigator.serviceWorker.ready; let brut = ''; if (st !== 'active') { try { await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: K._urlBase64ToUint8Array(await K._serverVapidKey()) }); brut = 'ok'; } catch (e) { brut = e.name + ': ' + String(e.message).slice(0, 60); } } return { ok, st, perm: Notification.permission, brut, sw: !!navigator.serviceWorker.controller, err: window._apexSwError || null }; } catch (e) { return { err: String(e.message).slice(0, 80) }; } });
+    const sansService = r && r.st !== 'active' && /AbortError|push service|NotSupported|NotAllowed/i.test(String(r.brut));
+    noter('Notifications : abonnement push', sansService ? null : r && r.st === 'active', (sansService ? 'NON TESTÉ : le Chromium de test n\'a pas de service de notifications (' + r.brut + ') — à vérifier sur un vrai iPhone · ' : '') + JSON.stringify(r).slice(0, 160));
+    const srvPush = await A.p.evaluate(async ([api]) => { const ep = 'https://push.example.invalid/robot-' + Math.random().toString(36).slice(2, 8); const post = await fetch(api + '/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + K.token }, body: JSON.stringify({ subscription: { endpoint: ep, keys: { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' } } }) }); const j = await post.json().catch(() => ({})); await fetch(api + '/api/push/unsubscribe', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + K.token }, body: JSON.stringify({ endpoint: ep }) }).catch(() => {}); return { http: post.status, ok: j.ok }; }, [API]).catch((e) => ({ err: String(e.message).slice(0, 60) }));
+    noter('Notifications : le serveur enregistre un abonnement (puis le retire)', srvPush && srvPush.http === 200 && srvPush.ok === true, JSON.stringify(srvPush));
     const sw = await ev(A.p, async () => { const regs = await navigator.serviceWorker.getRegistrations(); return { regs: regs.length, actif: regs.some((g) => g.active), caches: (await caches.keys()).length }; });
     noter('Service worker installé (hors-ligne + notifications)', sw && sw.actif, JSON.stringify(sw));
   });

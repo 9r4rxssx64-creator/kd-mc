@@ -1246,7 +1246,15 @@ export class ConversationDO {
           ts: Date.now(),
         };
         if (target) this.sendToUser(target, frame, ws);
-        else this.broadcast(frame, ws);
+        else {
+          // 22.10.2026 — MESURÉ (robot, journal WebSocket) : l'offre d'appel revenait à l'APPELANT lui-même (une 2e connexion de la même personne sur la conversation :
+          // un autre appareil ou une connexion restée ouverte) ; l'app répondait « occupé » à son propre appel, ce qui coupait l'appel des deux côtés. Un appel ne sonne jamais
+          // chez l'appelant : on ne relaie à AUCUNE connexion de la même personne.
+          for (const [sock, s] of this.sessions) {
+            if (sock === ws || (s && s.userId === session.userId)) continue;
+            try { sock.send(JSON.stringify(frame)); } catch (e) { /* client mort */ }
+          }
+        }
       }
         // v1.1.150 : push d'appel — sur un OFFER, si le destinataire n'est pas
         // connecté en WS, on lui envoie une notification "📞 Appel entrant".

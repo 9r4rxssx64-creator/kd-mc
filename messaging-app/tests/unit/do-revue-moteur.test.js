@@ -448,6 +448,16 @@ describe('7. signaling ciblé', () => {
     expect(alice.frames('webrtc-offer')).toHaveLength(0);
   });
 
+  it('sans `to` : une 2e connexion de L\'APPELANT ne reçoit JAMAIS son propre appel (sinon « occupé » à soi-même → appel coupé)', async () => {
+    const { _do } = await makeDO();
+    const alice = new MockWS(); const alice2 = new MockWS(); const bob = new MockWS();
+    _do.sessions.set(alice, sess('alice')); _do.sessions.set(alice2, sess('alice')); _do.sessions.set(bob, sess('bob'));
+    await _do.handleMessage(alice, { type: 'webrtc-offer', offer: { sdp: 'S' } });
+    await _do.handleMessage(alice, { type: 'webrtc-candidate', candidate: { c: 1 } });
+    expect(bob.frames('webrtc-offer')).toHaveLength(1); expect(bob.frames('webrtc-candidate')).toHaveLength(1);
+    expect(alice2.frames('webrtc-offer')).toHaveLength(0); expect(alice2.frames('webrtc-candidate')).toHaveLength(0);
+  });
+
   it('sans `to` (1:1 legacy) : broadcast aux autres sessions', async () => {
     const { _do } = await makeDO();
     const alice = new MockWS(); const bob = new MockWS(); const carol = new MockWS();

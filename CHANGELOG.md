@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.336 (2026-10-22 — l'appel ne se coupe plus lui-même)
+
+- MESURÉ (journal WebSocket du robot) : l'offre d'appel revenait à l'appelant par une autre connexion de son propre compte ; l'app répondait « occupé » à son propre appel et l'appel était coupé des deux côtés (même scénario avec iPhone + ordinateur ouverts en même temps). La salle ne relaie plus la signalisation aux autres connexions de l'appelant, et la page ignore sa propre offre.
+
 ## Apex Chat v1.1.335 (2026-10-22 — rouvrir Apex Chat ne renvoie plus « Connexion au domaine requise »)
 
 - MESURÉ en vrai navigateur (robot, 2 personnes sur 2 : l'invité d'un groupe, et le témoin sans lien) : une personne dont le service worker est actif recevait « Connexion au domaine requise. » en texte brut à chaque réouverture, parce que le SW refaisait lui-même la requête de la page SANS le cookie du domaine ; avec le SW contourné, la même personne entrait. Le SW prend maintenant la requête d'origine du navigateur (pré-chargement de navigation), et ne met plus jamais une page de refus en cache.

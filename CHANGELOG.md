@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.337 (2026-10-22 — les candidats d'appel ne se perdent plus)
+
+- MESURÉ (compteurs WebSocket du robot) : quand la connexion temps réel n'était pas encore ouverte au lancement de l'appel (« Connexion temps réel… »), les candidats de connexion de l'appelant étaient jetés (0 envoyé sur 6) : l'appelé ne pouvait pas se connecter. Ils sont gardés puis envoyés dès que l'offre / la réponse part.
+
 ## Apex Chat v1.1.336 (2026-10-22 — l'appel ne se coupe plus lui-même)
 
 - MESURÉ (journal WebSocket du robot) : l'offre d'appel revenait à l'appelant par une autre connexion de son propre compte ; l'app répondait « occupé » à son propre appel et l'appel était coupé des deux côtés (même scénario avec iPhone + ordinateur ouverts en même temps). La salle ne relaie plus la signalisation aux autres connexions de l'appelant, et la page ignore sa propre offre.

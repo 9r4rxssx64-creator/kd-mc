@@ -19,7 +19,7 @@ dérivées en PBKDF2 100 000 itérations). Transport en HTTPS, serveur privé.
 > Repo : `9r4rxssx64-creator/cmcteams` — dossier `messaging-app/`
 > Status : **en production**
 <!-- MAJ-AUTO:debut apex-chat -->
-> État mesuré (mis à jour tout seul) : **v1.1.336** · page ≈ 19 000 lignes · serveur ≈ 8 000 · salles de conversation ≈ 2 000 · ≈ 160 fichiers de tests
+> État mesuré (mis à jour tout seul) : **v1.1.337** · page ≈ 19 000 lignes · serveur ≈ 8 000 · salles de conversation ≈ 2 000 · ≈ 170 fichiers de tests
 <!-- MAJ-AUTO:fin apex-chat -->
 > Live : `https://apex-chat.kd-mc.com/` (adresse officielle ; l'ancienne adresse github.io est un miroir technique)
 

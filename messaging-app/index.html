@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.336",
+  "softwareVersion": "v1.1.337",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.336';
+const __APEX_CHAT_VERSION__ = 'v1.1.337';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.336" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.336</div>
+  <div id="splash-version" data-ver="v1.1.337" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.337</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.336</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.337</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -11243,6 +11243,20 @@ K._failCall = function(){
     if(pc && pc.getStats){ K._captureCallStats(pc).then(done, done); } else { done(); }
   }catch(_){ try{ K._endCall(); }catch(__){} }
 };
+// 22.10.2026 — MESURÉ (robot : l'appelant n'avait envoyé AUCUN candidat, 6 générés) : quand la connexion temps réel n'est pas encore ouverte au moment d'appeler (« Connexion temps réel… »),
+// les candidats ICE produits pendant l'attente étaient JETÉS → l'appelé ne pouvait jamais se connecter. On les garde, puis on les envoie dès que l'offre (ou la réponse) est partie.
+K._sendCallCand = function(frame){
+  if(K.ws && K.ws.readyState === WebSocket.OPEN){ K.ws.send(JSON.stringify(frame)); return true; }
+  if(K._activeCall){ (K._activeCall._outCands = K._activeCall._outCands || []).push(frame); }
+  return false;
+};
+K._flushCallCands = function(){
+  const ac = K._activeCall; if(!ac || !ac._outCands || !ac._outCands.length) return 0;
+  if(!(K.ws && K.ws.readyState === WebSocket.OPEN)) return 0;
+  const q = ac._outCands; ac._outCands = [];
+  for(const f of q){ try{ K.ws.send(JSON.stringify(f)); }catch(_e){ _safeCatch('silent', _e); } }
+  return q.length;
+};
 K._call = async function(type, convId){
   if(!navigator.mediaDevices){ return toast('WebRTC non supporté', 'err'); }
 
@@ -11309,9 +11323,7 @@ K._call = async function(type, convId){
     pc.onicecandidate = (e) => {
       if(e.candidate){
         K._callDiagCand(e.candidate.candidate);
-        if(K.ws?.readyState === WebSocket.OPEN){
-          K.ws.send(JSON.stringify({ type: 'webrtc-candidate', candidate: e.candidate, convId }));
-        }
+        K._sendCallCand({ type: 'webrtc-candidate', candidate: e.candidate, convId });
       }
     };
 
@@ -11336,6 +11348,7 @@ K._call = async function(type, convId){
     await pc.setLocalDescription(offer);
     if(K.ws?.readyState === WebSocket.OPEN){
       K.ws.send(JSON.stringify({ type: 'webrtc-offer', offer, convId, callType: type }));
+      K._flushCallCands();
       $('#call-status').textContent = '📞 Appel en cours...';
     } else {
       // v1.1.170 : WS pas prêt → on l'ouvre et on réessaie une fois avant d'abandonner
@@ -11344,6 +11357,7 @@ K._call = async function(type, convId){
       setTimeout(() => {
         if(K.ws?.readyState === WebSocket.OPEN){
           K.ws.send(JSON.stringify({ type: 'webrtc-offer', offer, convId, callType: type }));
+          K._flushCallCands();
           const c2 = $('#call-status'); if(c2) c2.textContent = '📞 Appel en cours...';
         } else {
           toast('Connexion temps réel indisponible — réessaie dans un instant', 'err', 4000);
@@ -11747,9 +11761,7 @@ K._answerCall = async function(incoming){
     pc.onicecandidate = (e) => {
       if(e.candidate){
         K._callDiagCand(e.candidate.candidate);
-        if(K.ws?.readyState === WebSocket.OPEN){
-          K.ws.send(JSON.stringify({ type: 'webrtc-candidate', candidate: e.candidate, to: incoming.from, convId: incoming.convId }));
-        }
+        K._sendCallCand({ type: 'webrtc-candidate', candidate: e.candidate, to: incoming.from, convId: incoming.convId });
       }
     };
     pc.onconnectionstatechange = () => {
@@ -11782,6 +11794,7 @@ K._answerCall = async function(incoming){
     await pc.setLocalDescription(answer);
     if(K.ws?.readyState === WebSocket.OPEN){
       K.ws.send(JSON.stringify({ type: 'webrtc-answer', answer, to: incoming.from, convId: incoming.convId }));
+      K._flushCallCands();
     }
   }catch(e){
     _safeCatch('call-answer', e);
@@ -19193,6 +19206,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.336", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.337", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

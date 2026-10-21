@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.325 (2026-10-21 — temps réel)
+
+- Le battement (75 s, app visible) reçoit « du nouveau pour toi » (dernière activité de tes conversations, nombre de conversations ; nombre de comptes pour l'admin) : une conversation neuve ou un message arrive sans attendre 3 min. L'admin voit « 🆕 Nouvelle inscription » et l'annuaire se met à jour.
+- Budget de requêtes inchangé (≤ 100/h) : contrôle de version 10 min, mise à jour forcée 15 min, liste complète 30 min (filet de sécurité).
+
 ## Apex Chat v1.1.323 (2026-10-21 — Kevin n'a plus qu'un compte, inscriptions notifiées)
 
 - Le compte du domaine reconnu admin + Face ID se rattache au compte historique `kdmc_admin` et fond ses doublons (conversations, messages, notifications, clé de l'appareil) : les messages écrits à Kevin arrivent chez lui.

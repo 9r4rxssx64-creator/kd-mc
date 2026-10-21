@@ -101,8 +101,10 @@ try {
 
   /* 3a. A voit B dans ses contacts SANS recharger (B est arrivé avant A, mais A n'avait pas rechargé son annuaire) */
   const contactsA = await A.p.evaluate(async (idB) => { try { await K._fetchContacts(true); } catch (e) { /* */ } return { total: (K.contacts || []).length, voitB: (K.contacts || []).some((c) => c.id === idB) }; }, B.id).catch(() => ({ total: -1, voitB: false }));
-  noter(`3. contacts de A : ${contactsA.total} · voit B : ${contactsA.voitB ? 'OUI' : 'NON'}`);
+  noter(`3. contacts de A (compte ordinaire : il ne voit que ses interlocuteurs, c'est voulu) : ${contactsA.total} · voit B avant tout message : ${contactsA.voitB ? 'oui' : 'non'}`);
 
+  /* repère du battement de B (comme une personne qui a l'app ouverte depuis un moment) */
+  await B.p.evaluate(async () => { try { await K._sendHeartbeat(); } catch (e) { /* */ } }).catch(() => {});
   /* 1. A écrit à B */
   const jetonAB = 'ping-A-' + lettres(6);
   await A.p.evaluate(async (idB) => { await K._startConvWithUser(idB, 'B'); }, B.id).catch((e) => noter('ouverture de la conversation : ' + String(e.message).slice(0, 80)));
@@ -110,10 +112,9 @@ try {
   const champ = A.p.locator('#msg-input');
   if (!(await champ.isVisible().catch(() => false))) noter('champ de message introuvable chez A : ' + resume(await A.p.innerText('body').catch(() => '')));
   await champ.fill(jetonAB).catch(() => {});
-  const tSend = Date.now();
   await champ.press('Enter').catch(() => {});
-  const dAB = await attendre(B.p, jetonAB, 20000);
-  noter(`1. A → B : ${dAB >= 0 ? 'ARRIVÉ chez B en ' + (dAB / 1000).toFixed(1) + ' s, sans recharger' : 'PAS ARRIVÉ chez B après 20 s'}`);
+  const dAB = await attendre(B.p, jetonAB, 110000);   // le battement (75 s) apporte « du nouveau pour toi » : on laisse 110 s
+  noter(`1. A → B : ${dAB >= 0 ? 'ARRIVÉ chez B en ' + (dAB / 1000).toFixed(1) + ' s, sans recharger' : 'PAS ARRIVÉ chez B après 110 s'}`);
   const eB1 = await etat(B.p, jetonAB);
   noter(`   chez B : ${eB1.conv} conversation(s), ${eB1.msgs} message(s) en mémoire, direct ${eB1.ws ? 'oui' : 'NON'}`);
 

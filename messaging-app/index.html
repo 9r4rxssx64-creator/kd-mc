@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.323",
+  "softwareVersion": "v1.1.325",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.323';
+const __APEX_CHAT_VERSION__ = 'v1.1.325';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -717,7 +717,7 @@ if('serviceWorker' in navigator){
   let _lastFullFetchTs = 0;
   // Lot E1 : un contrôle au plus toutes les 5 min, QUEL QUE SOIT le déclencheur (minuterie, retour à l'app,
   // focus, navigation) — avant : 8 s, et chaque rafraîchissement de la liste en relançait un (60 à 120 req/h).
-  const _VERSION_MIN_GAP_MS = 5 * 60000;
+  const _VERSION_MIN_GAP_MS = 10 * 60000;   // 21.10 : 5 → 10 min pour faire de la place au battement à 75 s (la mise à jour arrive aussi par le service worker et le push)
   async function _checkRemoteVersion(reason){
     if(_versionCheckRunning) return;
     if(Date.now() - _lastVersionCheckTs < (reason === 'boot' ? 8000 : _VERSION_MIN_GAP_MS)) return;
@@ -825,7 +825,7 @@ if('serviceWorker' in navigator){
     } catch(_e){_safeCatch('silent',_e)}
   }
   setTimeout(_checkAdminForceUpdate, 7000);
-  window._apexPoll('force-update', 10 * 60000, _checkAdminForceUpdate, { idle: 3 });
+  window._apexPoll('force-update', 15 * 60000, _checkAdminForceUpdate, { idle: 3 });
   document.addEventListener('visibilitychange', () => {
     if(!document.hidden) _checkAdminForceUpdate();
   });
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.323" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.323</div>
+  <div id="splash-version" data-ver="v1.1.325" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.325</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.323</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.325</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1740,7 +1740,7 @@ K._startHeartbeat = function(){
   // Lot E1 : plus rien quand l'onglet est caché (avant : 20 req/h + 6 lignes D1 écrites chacune) ;
   // 4 min 30 sans geste (reste < 5 min) ; retour à l'app / focus : au plus un battement par minute.
   setTimeout(K._sendHeartbeat, 5000);
-  window._apexPoll('heartbeat', 3 * 60 * 1000, () => K._sendHeartbeat(), { idle: 1.5 });
+  window._apexPoll('heartbeat', 75 * 1000, () => K._sendHeartbeat(), { idle: 1.5 });   // 21.10 : porte le signal « du nouveau pour toi » (K._applyPulse) — budget E1 : voir tests/unit/lot-e1-sondages-client.test.js
   const beatSoon = () => { if(!document.hidden && Date.now() - (K._lastBeatTs || 0) > 60000) K._sendHeartbeat(); };
   document.addEventListener('visibilitychange', beatSoon);
   window.addEventListener('focus', beatSoon);
@@ -7617,6 +7617,24 @@ if(typeof window !== 'undefined' && document.readyState !== 'loading'){
   document.addEventListener('DOMContentLoaded', () => K._installLongPressOnce());
 }
 
+/* Signal « du nouveau pour toi » porté par le battement (21.10.2026). `convs_ts` = dernière activité de mes conversations, `convs_n` = leur nombre, `users_n` = nombre de comptes (admin).
+   Le 1er signal sert de repère ; ensuite, un changement relance la liste des conversations (et l'annuaire s'il est ouvert) — jamais de rafraîchissement « à vide ». */
+K._applyPulse = function(r){
+  try{
+    if(!r || typeof r.convs_ts !== 'number') return false;
+    const prev = K._pulse;
+    K._pulse = { ts: r.convs_ts, n: r.convs_n || 0, users: typeof r.users_n === 'number' ? r.users_n : null };
+    if(!prev) return false;
+    const changed = r.convs_ts > prev.ts || (r.convs_n || 0) !== prev.n;
+    const newUsers = K._pulse.users != null && prev.users != null && K._pulse.users > prev.users;
+    if(changed && K._refreshConvs) K._refreshConvs();
+    if(newUsers){
+      if(K.view === 'contacts' && K._fetchContacts) K._fetchContacts(true);
+      try{ toast('🆕 Nouvelle inscription', 'info', 3500); }catch(_e){ /* écran sans toast */ }
+    }
+    return changed || newUsers;
+  }catch(_e){ _safeCatch('pulse', _e); return false; }
+};
 K._sendHeartbeat = async function(){
   if(!K.user || !K.token) return;
   K._lastBeatTs = Date.now();
@@ -7647,7 +7665,10 @@ K._sendHeartbeat = async function(){
       }catch(_e){_safeCatch('silent',_e)}
     }
   }
-  try{ await K._api('POST', '/api/users/heartbeat', payload); }catch(_e){_safeCatch('silent',_e)}
+  try{
+    const r = await K._api('POST', '/api/users/heartbeat', payload);
+    K._applyPulse && K._applyPulse(r);
+  }catch(_e){_safeCatch('silent',_e)}
 };
 
 // ============================================================================
@@ -17454,7 +17475,11 @@ K._postLogin = function(){
     // Lot E1 : 3 min (6 min sans geste), jamais onglet caché — avant 60 s. Le temps réel vient de la
     // WebSocket (conversation ouverte) et du push : un message reçu ailleurs relance la liste aussitôt
     // (message 'push-received' du service worker). Retour à l'app / focus : au plus une fois par minute.
-    window._apexPoll('conversations', 3 * 60000, () => K._refreshConvs && K._refreshConvs(), { idle: 2 });
+    /* 21.10.2026 (Kevin : « Rémi m'a écrit, je ne reçois rien… vérifie le temps réel ») — MESURÉ en vrai navigateur (robot temps-reel-apex, 2 téléphones) : une conversation NEUVE créée par
+       quelqu'un d'autre n'apparaissait chez le destinataire qu'au rafraîchissement suivant (3 min) : la connexion en direct est par conversation ouverte, et le push (app fermée) ne couvre pas
+       l'app ouverte sur une autre vue. Sans dépasser le budget de requêtes (≤ 100 /h, garde Lot E1) : le BATTEMENT (toutes les 75 s app visible) reçoit du serveur un signal « du nouveau pour
+       toi » (dernière activité de tes conversations, nombre de conversations) et ne relance la liste QUE si ça a changé (voir K._sendHeartbeat). Cette minuterie n'est plus qu'un filet de sécurité. */
+    window._apexPoll('conversations', 30 * 60000, () => K._refreshConvs && K._refreshConvs(), { idle: 2 });
     K._refreshConvsSoon = function(minGapMs){
       if(document.hidden || Date.now() - (K._lastConvRefreshTs || 0) < (minGapMs == null ? 60000 : minGapMs)) return;
       try { K._refreshConvs && K._refreshConvs(); } catch(_) {}
@@ -19070,6 +19095,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.323", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.325", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

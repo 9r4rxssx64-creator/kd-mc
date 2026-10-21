@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.323';
+export const API_VERSION = '1.1.325';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1933,20 +1933,38 @@ async function handleUserHeartbeat(request, env) {
     geoLabel = (cfCity ? cfCity + ', ' : '') + (cfCountry || '');
   }
 
+  const maintenant = Date.now();
   await env.APEX_CHAT_DB.prepare(
     `UPDATE users SET last_seen=?, last_ip_hash=?, last_user_agent=?, last_device_label=?,
                        last_lat=COALESCE(?, last_lat), last_lng=COALESCE(?, last_lng),
                        last_geo_label=COALESCE(?, last_geo_label), updated_at=?
      WHERE id=?`
-  ).bind(Date.now(), ipHash, ua, deviceLabel, lat, lng, geoLabel, Date.now(), auth.sub).run().catch(() => {});
+  ).bind(maintenant, ipHash, ua, deviceLabel, lat, lng, geoLabel, maintenant, auth.sub).run().catch(() => {});
 
   // Activity log — purgé à 30 jours (purgeLocationHistory, cron 03:00)
   await env.APEX_CHAT_DB.prepare(
     `INSERT INTO user_activity (user_id, ts, ip_hash, user_agent, lat, lng, geo_label, action)
      VALUES (?, ?, ?, ?, ?, ?, ?, 'heartbeat')`
-  ).bind(auth.sub, Date.now(), ipHash, ua, lat, lng, geoLabel).run().catch(() => {});
+  ).bind(auth.sub, maintenant, ipHash, ua, lat, lng, geoLabel).run().catch(() => {});
 
-  return json({ ok: true });
+  /* Signal « du nouveau pour toi » (Kevin 21.10 : « Rémi m'a écrit, je ne reçois rien ») : dernière activité de MES conversations + leur nombre ; l'admin reçoit aussi le nombre de comptes
+     (une inscription neuve se voit sans recharger). Deux lectures indexées, aucune écriture. */
+  const sortie = { ok: true };
+  try {
+    const p = await env.APEX_CHAT_DB.prepare(
+      `SELECT MAX(c.last_msg_ts) AS t, COUNT(*) AS n FROM conversation_members m JOIN conversations c ON c.id = m.conv_id
+        WHERE m.user_id = ? AND c.archived_at IS NULL`
+    ).bind(auth.sub).first();
+    if (p) {
+      sortie.convs_ts = Number(p.t) || 0;
+      sortie.convs_n = Number(p.n) || 0;
+    }
+    if (p && auth.is_admin) {
+      const u = await env.APEX_CHAT_DB.prepare("SELECT COUNT(*) AS n FROM users WHERE status != 'deleted'").first();
+      sortie.users_n = Number(u && u.n) || 0;
+    }
+  } catch (_e) { /* signal absent : la liste se rafraîchit quand même toutes les 10 min */ }
+  return json(sortie);
 }
 
 // Pseudo : même règle que l'inscription (handleVerifyOtp).

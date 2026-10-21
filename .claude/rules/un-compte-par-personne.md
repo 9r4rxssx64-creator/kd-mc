@@ -1,0 +1,6 @@
+# Un seul compte possible par personne (Kevin 21.10.2026, absolue, partout)
+- Une personne = UN compte Apex Chat actif (et un seul uid au domaine). Jamais deux : pas de « Kevin » en double chez Rémy, pas de compte de test fantôme dans les contacts.
+- Garanti par : index unique en base (`ux_users_kdmc_uid_actif`, migration 0026) · reprise du compte déjà créé en cas de course · reprise d'un compte PRÉVU D'AVANCE jamais ouvert (même nom complet, un seul candidat) · rattachement de Kevin (domaine admin + Face ID) à `kdmc_admin`, doublons fondus · ralliement automatique d'une session ouverte avant la fusion · contacts de l'admin : un compte effacé disparaît.
+- Avant de créer un compte quelque part : chercher la personne d'abord (uid du domaine, nom complet, compte prévu). Jamais de fusion sur le nom SEUL d'un compte déjà utilisé (homonymes) : seulement avec la preuve du domaine.
+- Comptes de test des robots : noms « Parcours Robot… » / « Temps Reel… », supprimés à la fin (domaine ET Apex Chat) ; outil `tools/smoke/supprimer-compte-test.mjs`.
+- Gardes : `messaging-app/tests/unit/un-compte-par-personne.test.js`, `kevin-un-seul-compte.test.js`, `ralliement-kevin.test.js`, `contacts-fantomes.test.js`.

@@ -4,6 +4,14 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.328 (2026-10-21 — un seul compte par personne)
+
+- Index unique en base sur l'uid du domaine (comptes actifs) ; une course à la première connexion reprend le compte existant ; un compte prévu d'avance jamais ouvert est repris par la personne (même nom complet, un seul candidat) au lieu d'un 2e compte.
+
+## Apex Chat v1.1.327 (2026-10-21 — contacts fantômes)
+
+- Un compte du domaine effacé en base disparaît des contacts de l'admin (avant : gardé à vie dans le cache de l'app).
+
 ## Apex Chat v1.1.326 (2026-10-21 — comptes de Kevin réunis)
 
 - Une session d'admin ouverte avant le rattachement se représente au domaine une fois et se reconnecte au vrai compte (\`kdmc_admin\`) : conversations, contacts et notifications se réunissent sans action.

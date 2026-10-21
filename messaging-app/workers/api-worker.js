@@ -109,7 +109,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.326';
+export const API_VERSION = '1.1.328';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1523,6 +1523,25 @@ export async function handleSsoFromApex(request, env) {
   return json({ ok: true, token: jwt, user });
 }
 
+/* 21.10.2026 (Kevin : « Un seul compte possible par personne ») — un compte PRÉVU D'AVANCE (placeholder créé pour une personne attendue, jamais utilisé) est REPRIS par la personne quand le
+   domaine la reconnaît (code ou Face ID prouvé), au lieu de lui créer un 2e compte à côté. Reprise seulement si : nom complet (≥ 2 mots, accents/casse ignorés) identique, UN SEUL
+   candidat, jamais ouvert (last_seen vide), pas encore lié à un uid du domaine, pas admin. Un homonyme d'un compte déjà utilisé n'est jamais repris. */
+export async function _claimSeededByName(env, uid, name) {
+  const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const cible = norm(name);
+  if (cible.split(' ').filter(Boolean).length < 2) return null;
+  const DB = env.APEX_CHAT_DB;
+  const rows = (await DB.prepare(
+    "SELECT * FROM users WHERE status = 'active' AND kdmc_uid IS NULL AND (is_admin IS NULL OR is_admin = 0) AND (is_kevin_alias IS NULL OR is_kevin_alias = 0) AND last_seen IS NULL AND source = 'apex-sso'"
+  ).all()).results || [];
+  const candidats = rows.filter((r) => norm(r.real_name || r.display_name) === cible);
+  if (candidats.length !== 1) return null;
+  const c = candidats[0];
+  await DB.prepare("UPDATE users SET kdmc_uid=?, updated_at=? WHERE id=? AND kdmc_uid IS NULL").bind(uid, Date.now(), c.id).run();
+  try { await auditLog(env, c.id, 'compte_prevu_repris', 'user', c.id, { kdmc_uid: uid }, '', ''); } catch (_) { /* journal : best-effort */ }
+  return await DB.prepare('SELECT * FROM users WHERE id=?').bind(c.id).first();
+}
+
 /* 21.10.2026 (Kevin : « Rémi m'a envoyé un message, je ne reçois rien ») — MESURÉ en base : Kevin avait DEUX comptes Apex Chat. L'ancien `kdmc_admin` (23 messages, la conversation avec
    Laurence, l'adresse que tout le monde vise : annuaire, « Assistance KDMC », notifications) et un NOUVEAU `kdmc_kdmc_admin` créé par la connexion du domaine (0 conversation). Rémi
    a écrit à l'ancien ; Kevin, connecté sur le nouveau, ne voyait rien. Désormais, quand le domaine dit « admin » ET que Face ID est prouvé (la seule preuve valable), la connexion
@@ -1627,6 +1646,10 @@ export async function handleSsoFromKdmc(request, env) {
     try { const kevin = await _adoptKevinRow(env, uid); if (kevin) user = kevin; }
     catch (e) { console.warn('[SSO] rattachement du compte Kevin impossible :', e && e.message); }
   }
+  if (!user && !isAdmin) {
+    try { user = await _claimSeededByName(env, uid, name); }
+    catch (e) { console.warn('[SSO] reprise du compte prévu impossible :', e && e.message); }
+  }
   let nouvelleInscription = false;
   if (!user) {
     const id = await _freshSsoId(env, 'kdmc_' + uid,
@@ -1657,11 +1680,18 @@ export async function handleSsoFromKdmc(request, env) {
         if (!/UNIQUE/i.test(String(e && e.message)) || !/pseudo/i.test(String(e && e.message))) break;
       }
     }
+    if (lastErr && /kdmc_uid/i.test(String(lastErr.message))) {
+      /* Deux premières connexions simultanées de la MÊME personne : la base (index unique, migration 0026) a refusé la 2e — on reprend le compte créé par la 1re. */
+      const deja = await env.APEX_CHAT_DB.prepare("SELECT * FROM users WHERE kdmc_uid=? AND status != 'deleted'").bind(uid).first();
+      if (deja) { user = deja; lastErr = null; }
+    }
     if (lastErr) {
       return err('Création SSO kd-mc.com échouée : ' + lastErr.message, 500, 'kdmc_create_failed');
     }
-    user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(id).first();
-    nouvelleInscription = true;
+    if (!user) {
+      user = await env.APEX_CHAT_DB.prepare('SELECT * FROM users WHERE id=?').bind(id).first();
+      nouvelleInscription = true;
+    }
   }
   if (!user || user.status === 'deleted') return err('User kd-mc.com introuvable après création', 500, 'kdmc_user_missing');
   /* 21.10.2026 (Kevin : « que je sois au courant de toutes les inscriptions ») : une personne du domaine qui entre pour la PREMIÈRE fois dans Apex Chat → journal + notification à Kevin. */

@@ -12401,3 +12401,8 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - **Rien ne se perd entre appareils** : fusion à trois voies (ma copie, le nuage, la base) ; la saisie la plus récente reste, l'autre est gardée dans l'historique ; une photo n'est « en sécurité » que quand le nuage l'a reçue — l'app le dit (☁️ / ⚠️). Garde : `verify-synchro-appareils.mjs` (deux appareils, faux nuage, sabotage prouvé).
 - **Vérifier partout** : 7 tailles d'écran (iPhone, Android, tablette, portable, bureau) × toutes les vues, 0 chevauchement ; honnêtement « Non vérifié » pour les vrais appareils et pour les comptes dont seul leur propriétaire a le code (le Lenovo, en admin, peut voir « comme » une personne avec « ⭐ Moi » puis remettre).
 - **J'efface mes traces de test, à chaque fois, sur toutes les applications** (comptes, fiches d'essai, messages, fichiers, préférences posées dans un navigateur réel) dans la MÊME livraison, et je termine par « Traces de test effacées : … / restent : … ». Écrit dans `.claude/rules/comptes-de-test.md` et `.claude/rules/arbre-affichage-donnees.md`.
+
+## 2026-10-21 — « Un seul compte possible par personne » (règle absolue de Kevin)
+- **Déclencheur** : Rémi écrivait à l'ancien compte `kdmc_admin` pendant que Kevin lisait `kdmc_kdmc_admin` ; deux « Kevin » dans la liste de Rémy ; 3 comptes de test « Parcours Robot » toujours dans les contacts de Kevin.
+- **Écrit aussi dans** `.claude/rules/un-compte-par-personne.md` (chargé par toute session). Index unique en base, reprise des comptes prévus d'avance, rattachement de Kevin, ralliement automatique, contacts nettoyés. Gardes listées dans la règle.
+

@@ -4,7 +4,7 @@
  * Pont D1, 22.10.2026 (apex-cloud, mesuré au robot) : refaire `fetch(req)` dans le handler de navigation d'un service worker
  * renvoyait la page SANS le cookie du domaine → « Connexion au domaine requise » à chaque réouverture d'une app installée.
  * Le correctif d'Apex Chat et de l'arbre : activation = navigationPreload.enable() ; navigation = preloadResponse, sinon fetch(req).
- * Ce test EXÉCUTE le vrai sw.js de CMCteams (racine) et du portail (kdmc-home) : (1) l'activation active le pré-chargement ;
+ * Ce test EXÉCUTE le vrai sw.js de CMCteams (racine) et du portail (kdmc-home) et de Lingua : (1) l'activation active le pré-chargement ;
  * (2) une navigation sert la réponse pré-chargée SANS rappeler fetch ; (3) sans pré-chargement (ou s'il échoue) elle retombe sur fetch.
  */
 import fs from 'node:fs';
@@ -45,7 +45,7 @@ async function navigue(sw, preload) {
   const r = await rep; return { texte: r ? await r.text() : 'rien', appels: sw.appels.slice() };
 }
 
-for (const f of ['sw.js', 'kdmc-home/sw.js']) {
+for (const f of ['sw.js', 'kdmc-home/sw.js', 'lingua/sw.js']) {
   const sw = await charge(f);
   let fini; sw.ecoute.activate({ waitUntil(p) { fini = p; } }); await fini;
   vrai(sw.preloadActive(), `${f} : l'activation active le pré-chargement de navigation`);

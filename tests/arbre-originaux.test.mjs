@@ -23,7 +23,7 @@ ok(/async function chargerOriginal\(ref\)/.test(html) && /sha256\(CODEHASH\+":or
 ok((visio.match(/ERR_ABORTED\|Download is starting/g) || []).length === 2, 'visionneuse : une navigation devenue téléchargement est reconnue sous SES DEUX formes (ERR_ABORTED et « Download is starting »), aux 2 endroits — sinon rouge une fois sur deux (10.10)');
 ok(/if\(d\.ref&&!d\.data\)\{ouvrirOriginal\(d\);return;\}/.test(html), 'toucher un document « ref » ouvre l\'original DANS l\'app');
 ok(/var vis=d\.preview\|\|d\.thumb\|\|/.test(html), 'la vignette de l\'original s\'affiche sur la carte du document');
-ok(/class="origsrc" href="'\+esc\(a\.src\)/.test(html) && /\^https\?:\\\/\\\//.test(html), 'le lien source reste affiché comme référence (échappé, http(s) seulement)');
+ok(/l\.className="origsrc";l\.href=u;/.test(html) && /\^https\?:\\\/\\\//.test(html), 'le lien source reste affiché comme référence (échappé, http(s) seulement)');
 ok(!/cloudBase\(\)\+"\/originaux/.test(html), 'les originaux ne sont PAS sous la racine de la synchro (sinon chaque synchro les téléchargerait)');
 
 // 2. l'outil, en simulation
@@ -69,7 +69,7 @@ ok(py, 'originaux.py compile');
 {
   const outilV = fs.readFileSync(path.join(ROOT, 'tools', 'arbre', 'originaux.py'), 'utf8');
   const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'arbre-nuage.yml'), 'utf8');
-  ok(/'archives\.mairie\.mc' in url and \('visionneuse' in url or '\/ark:\/' in url\)/.test(outilV) && /visionneuse-image\.mjs/.test(outilV), 'originaux.py : une page de visionneuse de Monaco passe par le navigateur (visionneuse-image.mjs)');
+  ok(/def est_visionneuse\(url\)/.test(outilV) && /if est_visionneuse\(url\):/.test(outilV) && /visionneuse-image\.mjs/.test(outilV), 'originaux.py : une page de visionneuse passe par le navigateur (visionneuse-image.mjs)');
   ok(/inputs\.synchro \|\| inputs\.originaux != ''/.test(wf), 'le workflow installe le navigateur quand il range des originaux');
   const http = await import('node:http'); const os = await import('node:os');
   const page = '<html><body><canvas id=c width=1600 height=1100></canvas><img id=i><script>var c=document.getElementById("c"),x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,1600,1100);x.fillStyle="#000";x.font="80px serif";x.fillText("ACTE N 56",300,500);document.getElementById("i").src=c.toDataURL("image/png");c.remove();</script></body></html>';
@@ -125,6 +125,69 @@ ok(py, 'originaux.py compile');
     const outilO = fs.readFileSync(path.join(ROOT, 'tools', 'arbre', 'originaux.py'), 'utf8');
     ok(/endswith\('\.pdf'\) and not _CACHE\[cible\]\[0\]\[:4\] == b'%PDF'/.test(outilO) && /telecharger-navigateur\.mjs/.test(outilO), 'originaux.py : un « PDF » qui n\'en est pas un repart par le navigateur');
   }
+}
+// 12.10.2026 — Archives des Alpes-Maritimes (archives06.fr) : une vue de registre passe par la visionneuse (navigateur)
+{
+  const { execFile } = await import('node:child_process'); const { promisify } = await import('node:util');
+  const http = await import('node:http');
+  // a. le ROUTAGE, sur les vraies fonctions d'originaux.py (sans réseau : la visionneuse est remplacée par un témoin)
+  const py = [
+    'import json, sys, types',
+    'sys.path.insert(0, sys.argv[1])',
+    'try:\n    import pymupdf\nexcept Exception:\n    sys.modules["pymupdf"] = types.ModuleType("pymupdf")',
+    'import originaux as o',
+    'appels = []',
+    'o.visionneuse = lambda e: (appels.append(e["url"]) or ([], "témoin"))',
+    'def lire_interdit(*a, **k):\n    raise RuntimeError("téléchargement direct")',
+    'o.lire = lire_interdit',
+    'urls = json.loads(sys.argv[2])',
+    'res = {}',
+    'for u in urls:\n    try:\n        r = o.traiter({"id": "x", "url": u})[1]\n    except Exception as x:\n        r = "ERR " + str(x)\n    res[u] = {"visionneuse": u in appels, "est": o.est_visionneuse(u), "err": r}',
+    'print(json.dumps(res))',
+  ].join('\n');
+  const A = 'https://archives06.fr/ark:/79346/ec4210a8824d21a2f2f495c179da1cf8d3/';
+  const urls = [A + 'daogrp/0/215', A + 'canvas/0/215', 'https://archives.mairie.mc/ark:/63956/a/b', 'https://archives06.fr/recherche?q=Sospel', 'https://archives06.fr.exemple.test/ark:/79346/x/daogrp/0/1', 'https://exemple.test/ark:/79346/x/daogrp/0/1'];
+  let r = {};
+  try { r = JSON.parse((await promisify(execFile)('python3', ['-I', '-c', py, path.join(ROOT, 'tools', 'arbre'), JSON.stringify(urls)], { encoding: 'utf8', timeout: 60000 })).stdout.trim().split('\n').pop()); } catch (e) { r = { erreur: String(e.stderr || e.message).slice(-300) }; }
+  const v = (u) => r[u] && r[u].visionneuse && r[u].est && r[u].err === 'témoin';
+  ok(v(urls[0]) && v(urls[1]), 'archives06.fr : une vue de registre (…/daogrp/0/215 et …/canvas/0/215) part dans la visionneuse (navigateur), pas en téléchargement direct', JSON.stringify(r).slice(0, 300));
+  ok(v(urls[2]), 'archives.mairie.mc (ARK) : toujours la visionneuse (pas de régression Monaco)', JSON.stringify(r[urls[2]]));
+  ok(r[urls[3]] && !r[urls[3]].visionneuse && r[urls[4]] && !r[urls[4]].est && r[urls[5]] && !r[urls[5]].est, 'une page de recherche archives06, un faux hôte « archives06.fr.exemple.test » ou un autre site ne sont PAS pris pour une visionneuse', JSON.stringify([r[urls[3]], r[urls[4]], r[urls[5]]]));
+
+  // b. le NAVIGATEUR : page JavaScript de contrôle (comme F5 « TSPD ») qui se recharge seule, puis visionneuse à TUILES
+  //    IIIF (aucune <img> entière) → l'image entière est prise au même service IIIF, avec la même session
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ad06-'));
+  const jpg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(9000, 7), Buffer.from([0xff, 0xd9])]);   /* contenu témoin (« JPEG » de 9 Ko) : on vérifie l'octet près */
+  const vues = [];
+  const srv = http.createServer((q, res) => {
+    const passe = /TS01=ok/.test(q.headers.cookie || '');
+    if (q.url.startsWith('/iiif/')) {
+      if (!passe) { res.writeHead(403); return res.end(); }
+      vues.push(q.url); res.writeHead(200, { 'content-type': 'image/jpeg' }); return res.end(jpg);
+    }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    if (!passe) return res.end('<html><head><script>/*TSPD*/setTimeout(function(){document.cookie="TS01=ok;path=/";location.reload();},400)</script></head><body></body></html>');
+    res.end('<html><body><div id=v style="width:800px;height:600px"></div><script>var t=new Image();t.onload=function(){var c=document.createElement("canvas");c.width=512;c.height=512;c.getContext("2d").drawImage(t,0,0);document.getElementById("v").appendChild(c)};t.src="/iiif/reg215/0,0,1024,1024/512,/0/default.jpg";</script></body></html>');
+  }).listen(0);
+  await new Promise((x) => srv.once('listening', x));
+  const base = 'http://127.0.0.1:' + srv.address().port + '/ark:/79346/ec42/daogrp/0/215';
+  let o5 = ''; try { const x = await promisify(execFile)('node', [path.join(ROOT, 'tools', 'arbre', 'visionneuse-image.mjs'), base, path.join(dir, 'ad06')], { encoding: 'utf8', timeout: 180000 }); o5 = x.stdout + x.stderr; } catch (e) { o5 = 'ÉCHEC ' + String(e.stdout || '') + String(e.stderr || ''); }
+  srv.close();
+  const f5 = path.join(dir, 'ad06-1.jpg');
+  ok(fs.existsSync(f5) && fs.readFileSync(f5).equals(jpg) && vues.some((u) => /\/iiif\/reg215\/full\/(max|full)\/0\/default\.jpg/.test(u)), 'page de contrôle JavaScript passée seule, puis visionneuse à tuiles : l\'image ENTIÈRE est prise au service IIIF de la page (même session)', o5.trim().slice(0, 200) + ' · ' + vues.join(' '));
+
+  // c. un CAPTCHA : arrêt immédiat et clair, aucun fichier
+  const srv6 = http.createServer((q, res) => { res.writeHead(200, { 'content-type': 'text/html' }); res.end('<html><body><h1>Vérification</h1><p>Je ne suis pas un robot</p><div class="g-recaptcha"></div></body></html>'); }).listen(0);
+  await new Promise((x) => srv6.once('listening', x));
+  const t0 = Date.now();
+  let o6 = ''; try { const x = await promisify(execFile)('node', [path.join(ROOT, 'tools', 'arbre', 'visionneuse-image.mjs'), 'http://127.0.0.1:' + srv6.address().port + '/ark:/79346/x/canvas/0/1', path.join(dir, 'capt')], { encoding: 'utf8', timeout: 180000 }); o6 = x.stdout + x.stderr; } catch (e) { o6 = 'ÉCHEC ' + String(e.stdout || '') + String(e.stderr || ''); }
+  srv6.close();
+  ok(/ÉCHEC/.test(o6) && /captcha demandé par le site : arrêt/.test(o6) && !fs.existsSync(path.join(dir, 'capt-1.jpg')) && Date.now() - t0 < 60000, 'un captcha : arrêt immédiat, message clair, aucun fichier (on n\'en résout jamais)', o6.trim().slice(0, 160));
+
+  // d. l'essai à blanc garde l'image entière dans la pièce jointe privée (jamais dans le dépôt)
+  const wfA = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'arbre-nuage.yml'), 'utf8');
+  const outilA = fs.readFileSync(path.join(ROOT, 'tools', 'arbre', 'originaux.py'), 'utf8');
+  ok(/ORIGINAUX_CAPTURES: \$\{\{ inputs\.captures && '\/tmp\/captures' \|\| '' \}\}/.test(wfA) && /os\.environ\.get\('ORIGINAUX_CAPTURES'\)/.test(outilA) && /path: \/tmp\/captures/.test(wfA), 'essai à blanc avec « captures » : l\'image intégrale part dans la pièce jointe privée (1 jour), jamais dans le dépôt');
 }
 console.log((ko ? '❌' : '✅') + ' arbre-originaux : v3.68 — les originaux s\'ouvrent dans la fiche, le lien reste la référence (' + (n - ko) + '/' + n + ')');
 process.exit(ko ? 1 : 0);

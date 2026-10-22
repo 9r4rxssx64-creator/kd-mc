@@ -3,7 +3,7 @@
    en ligne (plus jamais bloqué sur une ancienne page « collée » en mémoire), et on
    garde une copie en cache pour marcher hors-ligne. Aligné sur la règle « MAJ auto
    forcée toujours » : une nouvelle version publiée s'affiche dès la prochaine ouverture. */
-var CACHE = "lingua-v2.142.6";
+var CACHE = "lingua-v2.142.7";
 /* IMAGES : un cache À PART, au nom STABLE (13.10). Avant, les 12 images webp (1,9 Mo) étaient préchargées dans « lingua-<version> » : chaque
    nouvelle version rejetait le cache entier et retéléchargeait 1,9 Mo d'images qui n'avaient pas changé. Maintenant elles restent d'une version
    à l'autre. Une image qui CHANGE vraiment : la renommer (ou changer le nom ci-dessous) — l'ancien cache d'images est alors purgé. */
@@ -24,6 +24,10 @@ self.addEventListener("install", function(e){
 self.addEventListener("activate", function(e){
   e.waitUntil(caches.keys().then(function(keys){
     return Promise.all(keys.map(function(k){ if(k!==CACHE && k!==IMG) return caches.delete(k); }));
+  }).then(function(){
+    /* Pré-chargement de navigation (pont D1, 22.10 — mesuré sur Apex Chat) : la requête de la page part du NAVIGATEUR, avec le cookie du domaine ;
+       la refaire par fetch(req) dans le SW pouvait la renvoyer SANS ce cookie (« Connexion au domaine requise » à chaque réouverture de l'app installée). */
+    return self.registration && self.registration.navigationPreload ? self.registration.navigationPreload.enable().catch(function(){}) : null;
   }).then(function(){ return self.clients.claim(); }));
 });
 /* copie gardée : exacte d'abord ; pour une navigation (hors ligne, adresse avec ?… ), sans la partie ?… */
@@ -33,12 +37,14 @@ function copie(req){
     return caches.match(req,{ignoreSearch:true}).then(function(n){ return n || caches.match("./index.html",{ignoreSearch:true}); });
   });
 }
-function reseauPuisCopie(req){
+function reseauPuisCopie(req,pre){
+  /* navigation : la réponse PRÉ-CHARGÉE par le navigateur d'abord ; sans elle (ou en échec) on retombe sur fetch(req), comme avant */
+  var obtenir=function(){ return (req.mode==="navigate" && pre) ? pre.then(function(r){ return r || fetch(req); }, function(){ return fetch(req); }) : fetch(req); };
   return new Promise(function(ok){
     var fait=false;
     function fin(r){ if(!fait){ fait=true; ok(r); } }
     var t=setTimeout(function(){ copie(req).then(function(m){ if(m) fin(m); }).catch(function(){}); }, DELAI_RESEAU_MS);
-    fetch(req).then(function(r){
+    obtenir().then(function(r){
       clearTimeout(t);
       if(r && r.status===200 && r.type==="basic"){ var cp=r.clone(); caches.open(CACHE).then(function(c){ c.put(req,cp); }); }
       fin(r);
@@ -82,7 +88,7 @@ self.addEventListener("fetch", function(e){
      app.js est appelé avec ?v=<version> depuis le 10.10 (Kevin : « on attend bcp trop ») : avant, ses 370 Ko repartaient
      au domaine à CHAQUE ouverture (porte + hébergeur, ~0,65 s) ; maintenant il sort du téléphone, et une nouvelle version
      = une nouvelle adresse (index.html, toujours frais, la donne). Garde : test:lingua-maj (point 9). */
-  e.respondWith(reseauPuisCopie(req));
+  e.respondWith(reseauPuisCopie(req,e.preloadResponse));
 });
 
 /* 📞 BEE T'APPELLE, MÊME APP FERMÉE (3.10.2026, Kevin : « Intègre ») : le domaine envoie la notification à

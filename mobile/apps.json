@@ -39,6 +39,7 @@
         "tools/shared/pointage-bouton.js",
         "tools/shared/chefs-equipe.js",
         "tools/shared/chefs-cmc.js",
+        "tools/shared/anciennetes-domaine.js",
         "tools/shared/presence-cmc.js",
         "tools/shared/accord-unique.js",
         "tools/shared/secrets-cmc.js",

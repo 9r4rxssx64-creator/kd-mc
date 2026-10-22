@@ -2752,6 +2752,766 @@
       "maj": "2026-10-22",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "pont-point-ci": {
+      "titre": "Passe complète test:ci",
+      "branche": "claude/seed-parser-v9980",
+      "sujet": "13 rouges de main réparés",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "code-admin-verrou-global": {
+      "titre": "code-admin-verrou-global",
+      "branche": "claude/code-admin-verrou-global",
+      "sujet": "claude/code-admin-verrou-global",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "arbre-stockage": {
+      "titre": "arbre-stockage",
+      "branche": "claude/arbre-stockage",
+      "sujet": "Arbre v3.128 : photos neuves dans R2 (bucket kdmc-arbre-medias, route /__arbre/media)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "fluidite-photos": {
+      "titre": "fluidite-photos",
+      "branche": "claude/fluidite-photos",
+      "sujet": "Arbre v3.127 (photos 2× plus légères, bouton qui compte, glissement), 100vh→dvh sur 47 fichiers, sauvegardes D1 Apex Chat + domaine-backup",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "diag-emailjs": {
+      "titre": "diag-emailjs",
+      "branche": "claude/diag-emailjs",
+      "sujet": "emailjs-diag.yml : robot qui envoie un vrai mail de test EmailJS (le mail de confirmation ne part plus, 19.10)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "br-cf-portes-moyennes": {
+      "titre": "br-cf-portes-moyennes",
+      "branche": "claude/cf-portes-moyennes",
+      "sujet": "Routeur notify-kevin (session) + dep/membre (frein) + crea-famille (frein code admin)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "cf-portes-test-alerte": {
+      "titre": "cf-portes-test-alerte",
+      "branche": "claude/cf-portes-test-alerte",
+      "sujet": "Test alerte-nouveau du routeur avec pass signé (débloque le déploiement du lot 2)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-clone-laissez-passer": {
+      "titre": "apex-clone-laissez-passer",
+      "branche": "claude/apex-clone-laissez-passer",
+      "sujet": "Apex 13.4.380 : l'outil clone_site envoie le laissez-passer (aide)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "crea-famille-sans-code": {
+      "titre": "crea-famille-sans-code",
+      "branche": "claude/crea-famille-sans-code",
+      "sujet": "Créa Famille : plus de code admin dans la requête (session du domaine seule) + leçon 632 corrigée",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "clone-smoke": {
+      "titre": "clone-smoke",
+      "branche": "claude/clone-smoke",
+      "sujet": "Contrôle d'après-déploiement de kdmc-clone : prouve le laissez-passer",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "robot-preuve": {
+      "titre": "robot-preuve",
+      "branche": "claude/robot-preuve",
+      "sujet": "CRITIQUE : pass du robot ci_smoke sous preuve signée",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "robot-anciens-pass": {
+      "titre": "robot-anciens-pass",
+      "branche": "claude/robot-anciens-pass",
+      "sujet": "Pass robot émis avant la fermeture = refusés",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "docs-prives": {
+      "titre": "docs-prives",
+      "branche": "claude/docs-prives",
+      "sujet": "Documents de travail (noms, matricules, e-mails) hors du dépôt public",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "message-attente-mail": {
+      "titre": "message-attente-mail",
+      "branche": "claude/message-attente-mail",
+      "sujet": "Message d'attente → « ouvre le mail de confirmation » + preuve réelle du parcours mail",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "proxy-verrou": {
+      "titre": "proxy-verrou",
+      "branche": "claude/proxy-verrou",
+      "sujet": "Verrou global du code admin sur apex-secrets-proxy",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "tests-portail-mail": {
+      "titre": "tests-portail-mail",
+      "branche": "claude/tests-portail-mail",
+      "sujet": "4 tests du portail : e-mail rempli (rouges sur main)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "inscription-rapide": {
+      "titre": "inscription-rapide",
+      "branche": "claude/inscription-rapide",
+      "sujet": "Inscription : journal + notification en fond (9,2 s mesurés)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "inscription-rapide-2": {
+      "titre": "inscription-rapide-2",
+      "branche": "claude/inscription-rapide-2",
+      "sujet": "Inscription : le mail de confirmation part en fond (5,7 s serveur mesurés)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "inscription-rapide-3": {
+      "titre": "inscription-rapide-3",
+      "branche": "claude/inscription-rapide-3",
+      "sujet": "Inscription : chaque clé KV écrite une fois (lot-kv.js, 1 écriture/s/clé au KV)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "inscription-rapide-4": {
+      "titre": "inscription-rapide-4",
+      "branche": "claude/inscription-rapide-4",
+      "sujet": "Fiche pas encore lisible : apps fermées, jamais recréée (ficheEnCreation)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "inscription-rapide-5": {
+      "titre": "inscription-rapide-5",
+      "branche": "claude/inscription-rapide-5",
+      "sujet": "Lot KV : relire fiche/code/nom après l'écriture (cache du lieu)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "inscription-rapide-6": {
+      "titre": "inscription-rapide-6",
+      "branche": "claude/inscription-rapide-6",
+      "sujet": "Pass w=1 (en attente) + écritures refusées signalées",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "inscription-docs-7": {
+      "titre": "inscription-docs-7",
+      "branche": "claude/inscription-docs-7",
+      "sujet": "Docs : stockage plein ce soir, actions Kevin",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "kv-secours-d1": {
+      "titre": "kv-secours-d1",
+      "branche": "claude/kv-secours-d1",
+      "sujet": "Secours D1 du KV des comptes (écritures refusées → D1)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "kv-secours-finitions": {
+      "titre": "kv-secours-finitions",
+      "branche": "claude/kv-secours-finitions",
+      "sujet": "Page d'app : message « lien du mail » ; secours vu en 5 s",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "lenovo-attente": {
+      "titre": "lenovo-attente",
+      "branche": "claude/lenovo-attente",
+      "sujet": "Docs : missions Lenovo en attente (pont n° 15)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "lenovo-habitude": {
+      "titre": "lenovo-habitude",
+      "branche": "claude/lenovo-habitude",
+      "sujet": "Docs : le Lenovo s'allume le soir (NOTES_USER)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "lenovo-ce-soir": {
+      "titre": "lenovo-ce-soir",
+      "branche": "claude/lenovo-ce-soir",
+      "sujet": "Docs : correction — Lenovo allumé seulement CE soir, pas une habitude",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "arbre-dans-le-domaine": {
+      "titre": "arbre-dans-le-domaine",
+      "branche": "claude/arbre-dans-le-domaine",
+      "sujet": "L'arbre s'ouvre aux comptes du domaine ; clé non remise, code famille gardé",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "entrainement-pour-tous": {
+      "titre": "entrainement-pour-tous",
+      "branche": "claude/entrainement-pour-tous",
+      "sujet": "Entraînement de croupier ouvert à tous (28 exercices, sans code)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "lenovo-secours-auto": {
+      "titre": "lenovo-secours-auto",
+      "branche": "claude/lenovo-secours-auto",
+      "sujet": "Lenovo en secours automatique des robots (cron kdmc-outlook) + mission 3 au PC",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "finances-coupe-circuit": {
+      "titre": "finances-coupe-circuit",
+      "branche": "claude/finances-coupe-circuit",
+      "sujet": "Finances v0.15.4 : coupe-circuit du code admin refusé (verrou global)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "missions-restantes": {
+      "titre": "missions-restantes",
+      "branche": "claude/missions-restantes",
+      "sujet": "Docs : missions restantes de Kevin en tête de KEVIN_ACTIONS_TODO",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "finances-ia-par-session": {
+      "titre": "finances-ia-par-session",
+      "branche": "claude/finances-ia-par-session",
+      "sujet": "Finances v0.15.5 : IA via /__fin/ia (session admin), plus de code à retaper",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "finances-session-partout": {
+      "titre": "finances-session-partout",
+      "branche": "claude/finances-session-partout",
+      "sujet": "Finances v0.15.6 : session admin partagée par tous les fichiers en parallèle",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "effacer-comptes-test": {
+      "titre": "effacer-comptes-test",
+      "branche": "claude/effacer-comptes-test",
+      "sujet": "Règle + outil : j'efface mes comptes de test (TOUS-LES-TESTS)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "admin-reconnu-partout": {
+      "titre": "admin-reconnu-partout",
+      "branche": "claude/admin-reconnu-partout",
+      "sujet": "Messages v1.6 : reconnu par le domaine, plus de code à retaper + revue des autres pages",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "ia-chinoises-gratuites": {
+      "titre": "ia-chinoises-gratuites",
+      "branche": "claude/ia-chinoises-gratuites",
+      "sujet": "Examen de la vidéo « IA chinoises gratuites » (notes seulement, rien de branché)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "qwen-relais-glm-kimi": {
+      "titre": "qwen-relais-glm-kimi",
+      "branche": "claude/qwen-relais-glm-kimi",
+      "sujet": "Relais gratuits GLM puis Kimi derrière Qwen (relais Apex, Workers AI)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "diag-relais-glm-kimi": {
+      "titre": "diag-relais-glm-kimi",
+      "branche": "claude/diag-relais-glm-kimi",
+      "sujet": "Diag réel du relais : Qwen / GLM / Kimi mesurés un par un",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "relais-sans-kimi": {
+      "titre": "relais-sans-kimi",
+      "branche": "claude/relais-sans-kimi",
+      "sujet": "Kimi retiré du relais (payant, mesuré) ; GLM gratuit confirmé",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "import-kapso-whatsapp": {
+      "titre": "import-kapso-whatsapp",
+      "branche": "claude/import-kapso-whatsapp",
+      "sujet": "Examen vidéo Kapso (numéro WhatsApp pour agent IA) — notes seulement",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "decision-garde-le-mail": {
+      "titre": "decision-garde-le-mail",
+      "branche": "claude/decision-garde-le-mail",
+      "sujet": "Décision : pas de WhatsApp Kapso, on garde le mail",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "admin-tuiles-reel": {
+      "titre": "admin-tuiles-reel",
+      "branche": "claude/admin-tuiles-reel",
+      "sujet": "Test admin-tuiles-reel : va dans la rubrique et l'onglet de chaque tuile (tableau unique)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-ameliorations-en-tetes": {
+      "titre": "apex-ameliorations-en-tetes",
+      "branche": "claude/apex-ameliorations-en-tetes",
+      "sujet": "Apex Chat : en-têtes de sécurité, lectures D1 sobres, clé hors adresse, erreurs sans détail (lot F1)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-deploy-diag": {
+      "titre": "apex-deploy-diag",
+      "branche": "claude/apex-deploy-diag",
+      "sujet": "Déploiement Apex Chat : la cause d'un refus Cloudflare devient une annotation lisible (journal wrangler, identifiants masqués)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-e2e-attend-deploiement": {
+      "titre": "apex-e2e-attend-deploiement",
+      "branche": "claude/apex-e2e-attend-deploiement",
+      "sujet": "E2E prod Apex Chat : attendre la fin du déploiement serveur du même commit (plus de test sur l'ancienne version)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-e2e-gif-hote-reel": {
+      "titre": "apex-e2e-gif-hote-reel",
+      "branche": "claude/apex-e2e-gif-hote-reel",
+      "sujet": "Apex Chat : test GIF en vrai navigateur avec une vraie adresse Giphy + cas d'hôte refusé (CI remise au vert)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-e2e-ticket-partout": {
+      "titre": "apex-e2e-ticket-partout",
+      "branche": "claude/apex-e2e-ticket-partout",
+      "sujet": "E2E prod Apex Chat : le test deux clients se connecte par ticket (v1.1.306 refuse ?token=) + test du refus",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-lot-a-messages": {
+      "titre": "apex-lot-a-messages",
+      "branche": "claude/apex-lot-a-messages",
+      "sujet": "Apex Chat v1.1.303 (ultra-audit lot A) : plus aucun message perdu — rattrapage paginé, sauvegarde avant ✓, révocation immédiate, éphémères envoyés",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-lot-b-vie-privee": {
+      "titre": "apex-lot-b-vie-privee",
+      "branche": "claude/apex-lot-b-vie-privee",
+      "sujet": "Apex Chat v1.1.302 (ultra-audit lot B) : vie privée et IA — rien ne part vers une IA sans toucher, gratuit d'abord partout, position purgée à 30 j, charte vraie",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-lot-c1-chiffrement": {
+      "titre": "apex-lot-c1-chiffrement",
+      "branche": "claude/apex-lot-c1-chiffrement",
+      "sujet": "Apex Chat v1.1.304 (ultra-audit lot C1) : le serveur ne peut plus affaiblir le chiffrement ; purge et effacement de compte complets ; quotas",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-lot-c2-appli": {
+      "titre": "apex-lot-c2-appli",
+      "branche": "claude/apex-lot-c2-appli",
+      "sujet": "Apex Chat v1.1.305 (ultra-audit lot C2) : muet serveur, mise à jour sans interruption, erreurs en français simple, version dans la barre, connexion claire, boîte d'envoi jamais tronquée, GIF, position",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-lot-d-finitions": {
+      "titre": "apex-lot-d-finitions",
+      "branche": "claude/apex-lot-d-finitions",
+      "sujet": "Apex Chat v1.1.306 (lot D) : position obligatoire alignée partout, clavier iPhone, guide d'installation avant le SMS, plus jamais de jeton dans une adresse, sel PIN par personne, sourdine côté serveur",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-lot-e1-gratuit": {
+      "titre": "apex-lot-e1-gratuit",
+      "branche": "claude/apex-lot-e1-gratuit",
+      "sujet": "Apex Chat v1.1.307 (lot E1) : chat en direct en veille (hibernation), requêtes divisées par 4 (0 onglet caché), plus d'écritures KV pour les soins, index",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-lot-e2-fiabilite": {
+      "titre": "apex-lot-e2-fiabilite",
+      "branche": "claude/apex-lot-e2-fiabilite",
+      "sujet": "Apex Chat (lot E2) : sauvegarde restaurable (clé dédiée, par pages, outil + exercice), santé réelle, alertes, mise en ligne seulement si les tests passent, registre des migrations, plus de jeton dans ",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-p0-sso-collision": {
+      "titre": "apex-p0-sso-collision",
+      "branche": "claude/apex-p0-sso-collision",
+      "sujet": "Apex Chat (ultra-audit P0) : une collision d'identifiant SSO ne donne plus jamais le compte administrateur",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-test-prive-public": {
+      "titre": "apex-test-prive-public",
+      "branche": "claude/apex-test-prive-public",
+      "sujet": "Apex Chat : débloquer les déploiements — le test de l'exercice de restauration tolère sa copie publique",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "arbre-famille-simple": {
+      "titre": "arbre-famille-simple",
+      "branche": "claude/arbre-famille-simple",
+      "sujet": "Arbre v3.139 : toute la famille remonte et descend, barre des familles simple, fiche des liens en petite carte",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "arbre-photo-profil": {
+      "titre": "arbre-photo-profil",
+      "branche": "claude/arbre-photo-profil",
+      "sujet": "Arbre v3.134 : photo de profil au choix + fiches, actes et documents qui s'ouvrent vite",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "bee-diag2": {
+      "titre": "bee-diag2",
+      "branche": "claude/bee-diag2",
+      "sujet": "Robot Bee partout : sonde de partout.js et /qui sur les pages sans widget",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "bee-modifie-arbre": {
+      "titre": "bee-modifie-arbre",
+      "branche": "claude/bee-modifie-arbre",
+      "sujet": "Bee modifie, cherche et arrange l'arbre derrière le bouton ✅ (copie avant, relecture, rien ne se supprime)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "bee-name-shim": {
+      "titre": "bee-name-shim",
+      "branche": "claude/bee-name-shim",
+      "sujet": "Registre des sessions + documents régénérés",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "fiche-lecture": {
+      "titre": "fiche-lecture",
+      "branche": "claude/fiche-lecture",
+      "sujet": "Arbre v3.125 : lecture seule par fiche",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "finances-pdf-mistral-gratuit": {
+      "titre": "finances-pdf-mistral-gratuit",
+      "branche": "claude/finances-pdf-mistral-gratuit",
+      "sujet": "Finances : un PDF se lit par Mistral (gratuit, déjà possédé) sans attendre Gemini/Claude",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "invitation-gi": {
+      "titre": "invitation-gi",
+      "branche": "claude/invitation-gi",
+      "sujet": "Apex Chat v1.1.333 : lien d'invitation de groupe en ?gi= (le routeur lit ?t= comme jeton), raison du refus visible",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "lecture-suggestions": {
+      "titre": "lecture-suggestions",
+      "branche": "claude/lecture-suggestions",
+      "sujet": "Arbre v3.124 : droit de lecture seule et pistes sur la fiche",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "memo-verifs-1-1-318": {
+      "titre": "memo-verifs-1-1-318",
+      "branche": "claude/memo-verifs-1-1-318",
+      "sujet": "MEMO : v1.1.318 vérifiée en ligne (santé, page servie, e2e 28/0)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "pin-verrou-fix": {
+      "titre": "pin-verrou-fix",
+      "branche": "claude/pin-verrou-fix",
+      "sujet": "test:pin-verrou accepte le compteur d'échecs étendu au verrou global",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "textes-integration": {
+      "titre": "textes-integration",
+      "branche": "claude/textes-integration",
+      "sujet": "Arbre textes : contrôle --avant (aucun fait perdu à une réécriture), dates en lettres, docs",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "turn-cle-unique": {
+      "titre": "turn-cle-unique",
+      "branche": "claude/turn-cle-unique",
+      "sujet": "Déploiement Apex Chat : plus de clé TURN créée à chaque fois ; robot : diagnostic des invités",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-cle-sauvegarde-auto": {
+      "titre": "apex-cle-sauvegarde-auto",
+      "branche": "claude/apex-cle-sauvegarde-auto",
+      "sujet": "Apex Chat : robot qui crée la clé des sauvegardes (une fois, jamais affichée) et relance le déploiement",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-e2e-photo-diagnostic": {
+      "titre": "apex-e2e-photo-diagnostic",
+      "branche": "claude/apex-e2e-photo-diagnostic",
+      "sujet": "E2E prod Apex Chat : la photo non reçue dit pourquoi (diagnostic dans le message d'échec)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "apex-ws-ticket-sobre": {
+      "titre": "apex-ws-ticket-sobre",
+      "branche": "claude/apex-ws-ticket-sobre",
+      "sujet": "Apex Chat : connexion au chat = 1 requête D1 au lieu de 3 (ticket WebSocket)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "bee-arbre-contexte": {
+      "titre": "bee-arbre-contexte",
+      "branche": "claude/bee-arbre-contexte",
+      "sujet": "Fusion de main (conflit package.json résolu, leçon renumérotée 554)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "corrige-tout": {
+      "titre": "corrige-tout",
+      "branche": "claude/corrige-tout",
+      "sujet": "Merge remote-tracking branch 'origin/main' into claude/corrige-tout",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

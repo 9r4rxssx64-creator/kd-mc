@@ -82,7 +82,7 @@
     { t: 'Lire et répondre aux messages', k: 'message boite repondre lire mail whatsapp', go: 'boite' },
     { t: 'Valider une inscription', k: 'inscription valider accepter nouveau compte cmcteams', go: '#tb-attente' },
     { t: 'Accepter ou refuser un code', k: 'code valider accepter refuser connexion inconnue', go: '#tb-attente' },
-    { t: 'Comptes en attente de leur mail de confirmation', k: 'mail inscription accepter refuser attente', go: '#tb-attente' },
+    { t: 'Comptes en attente de leur mail de confirmation', k: 'mail inscription accepter refuser attente whatsapp confirmation', go: '#tb-attente' },
     { t: 'Voir qui est connecté', k: 'connecte en ligne presence qui', go: '#presence' },
     { t: 'Fiche d\'une personne', k: 'fiche client compte personne appareil lieu', go: '#list' },
     { t: 'Où une personne peut aller (périmètre)', k: 'perimetre acces app bloquer fermer autoriser', go: '#list' },

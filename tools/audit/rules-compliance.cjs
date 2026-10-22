@@ -165,6 +165,13 @@ const REGISTRE = [
   // Règle « BEE ET BOURRICOT : TOUT LE CORPS BOUGE, PARTOUT, TOUJOURS » (Kevin 3.10.2026) : garde = la marionnette
   // jouée dans Chromium + WebGL (chaque membre, 15 dessins sans pli, humeurs, replis, sobriété).
   [/CHAQUE SESSION VÉRIFIE SON PROPRE TRAVAIL/i, ['npm:test:hygiene-depot', 'file:tests/verify-hygiene-depot.mjs']],
+  // 22.10 : quatre règles récentes avaient leur garde mais pas leur entrée ici (ratchet 19 → 23, test:improvements-guard rouge).
+  [/VALIDATION DES INSCRIPTIONS SE FAIT PAR MAIL/i, ['npm:test:validation-par-mail-docs', 'npm:test:mail-confirme']],
+  [/LES MANIPULATIONS VONT AU PONT/i, ['npm:test:pont-lenovo-regle']],
+  [/TOUT TESTER, PARTOUT, TOUT LE TEMPS/i, ['npm:test:tout-tester-partout']],
+  [/ARBRE : CHERCHER PHOTOS, PRESSE, GUERRE ET DOCUMENTS/i, ['npm:test:arbre-recherches-regle']],
+  [/ARBRE : TOUTE SA FAMILLE D'OFFICE/i, ['file:tools/arbre/verify-famille-simple.mjs', 'file:tools/arbre/verify-synchro-appareils.mjs']],
+  [/ARBRE : UNE PHOTO OU UNE MODIFICATION/i, ['npm:test:arbre-rien-perdu']],
   [/PAS D'INFOS INUTILES, NULLE PART/i, ['npm:test:pas-d-infos-inutiles', 'file:tests/verify-pas-d-infos-inutiles.mjs']],   // Kevin 13.10 : garde déjà là, entrée du registre oubliée (test:improvements-guard rouge)
   [/ASSISTANTE PERSONNELLE DE KEVIN/i, ['npm:test:bee-partout', 'npm:test:bee-agir', 'npm:test:bee-partout-navigateur', 'npm:test:bee-fil', 'npm:test:bee-fil-navigateur', 'npm:test:bee-droits', 'npm:test:bee-voir', 'npm:test:bee-arbre-ecrire', 'npm:test:bee-diag', 'npm:test:bee-droits-plus', 'npm:test:bee-taches', 'npm:test:bee-arbre-navigateur', 'npm:test:liens-json', 'file:services/kdmc-router/bee-droits.js', 'file:services/kdmc-router/bee-voir.js', 'file:services/kdmc-router/bee-arbre-ecrire.js', 'file:services/kdmc-router/bee-diag.js', 'file:services/kdmc-router/bee-droits-plus.js', 'file:services/kdmc-router/bee-taches.js', 'file:services/kdmc-router/bee-agir.js', 'file:services/kdmc-router/bee-fil.js']],
   [/BEE ET BOURRICOT SONT COMPÉTENTS/i, ['npm:test:bee-outils', 'npm:test:bee-parite', 'file:services/_shared/outils-lecture.js', 'file:services/kdmc-router/bee-arbre.js']],

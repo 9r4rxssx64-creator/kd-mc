@@ -106,14 +106,14 @@ export function nonceBee() {
   return btoa(String.fromCharCode.apply(null, b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 const minus = (v) => v.map((x) => String(x).toLowerCase());
-export function cspPourBee(csp, nonce) {
+export function cspPourBee(csp, nonce, sansCadre) {
   const un = (politique) => {
     const dirs = [];
     for (const brut of String(politique).split(';')) { const t = brut.trim(); if (!t) continue; const m = t.split(/\s+/); dirs.push([m[0].toLowerCase(), m.slice(1)]); }
     const get = (n) => dirs.find((d) => d[0] === n);
     const mettre = (n, v) => { const d = get(n); if (d) d[1] = v; else dirs.push([n, v]); };
     const fb = get('frame-src') || get('child-src') || get('default-src');
-    if (fb) { const v = minus(fb[1]); if (!v.includes("'self'") && !v.includes('*')) mettre('frame-src', fb[1].filter((x) => x.toLowerCase() !== "'none'").concat("'self'")); }
+    if (fb && !sansCadre) { const v = minus(fb[1]); if (!v.includes("'self'") && !v.includes('*')) mettre('frame-src', fb[1].filter((x) => x.toLowerCase() !== "'none'").concat("'self'")); }
     const sb = get('script-src') || get('default-src');
     if (sb && nonce) {
       const v = minus(sb[1]);

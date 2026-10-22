@@ -1076,9 +1076,16 @@ export async function injecterBouton(res, extra, opts) {
        (cspPourBee). Un visiteur ordinaire n'a pas de nonce : sa page reste exactement telle que son auteur l'a écrite. */
     const nonce = String((opts && opts.nonce) || '');
     const cspOrig = res.headers.get('content-security-policy');
-    const cspEntete = nonce && cspOrig ? cspPourBee(cspOrig, nonce) : cspOrig;
+    let cspEntete = nonce && cspOrig ? cspPourBee(cspOrig, nonce) : cspOrig;
+    /* 📲 L'INSTALLATION POUR TOUT LE MONDE (Kevin 22.10 : « chaque application »). Une page dont la CSP refuse nos scripts (Rotaplan, Croupier, Apex AI) reçoit, pour CETTE réponse seulement, un nonce
+       aléatoire sur `script-src` — et rien d'autre (ni cadre, ni autre source) : seul le script d'installation, qui porte ce nonce, s'exécute. Chez Kevin le nonce de Bee sert déjà. */
+    let nonceI = '', instOk = true;
+    if (!nonce && cspOrig && !cspAccepteNosScripts(cspOrig)) {
+      const n = nonceBee(), patched = cspPourBee(cspOrig, n, true);
+      if (patched !== cspOrig) { nonceI = n; cspEntete = patched; } else instOk = false;
+    }
     const h = new Headers(res.headers); h.delete('content-length');
-    if (nonce && cspEntete !== cspOrig) { h.set('content-security-policy', cspEntete); h.set('cache-control', 'no-store'); h.delete('etag'); }   // une page personnalisée par réponse ne se met pas en cache
+    if ((nonce || nonceI) && cspEntete !== cspOrig) { h.set('content-security-policy', cspEntete); h.set('cache-control', 'no-store'); h.delete('etag'); }   // une page personnalisée par réponse ne se met pas en cache
     const ajout = BOUTON_TAG + INSTALLER_TAG + (extra || '');
     const avecNonce = (tag) => (nonce ? tag.replace('<script ', '<script nonce="' + nonce + '" ') : tag);
     let ajoutBee = (extra || '') ? avecNonce(extra) : '';
@@ -1092,13 +1099,18 @@ export async function injecterBouton(res, extra, opts) {
           if (!cspAccepteNosScripts(c)) refuse = true;
           if (!cspAccepteStyleEnLigne(c)) styleOk = false;
           if (nonce && c) { const n = cspPourBee(c, nonce); if (n !== c) e.setAttribute('content', n); if (!cspAccepteBee(n, nonce)) beeOk = false; }
+          else if (!nonce && c && !cspAccepteNosScripts(c)) {   /* installateur : même nonce que l'en-tête s'il y en a un, sinon un neuf pour cette réponse */
+            if (!nonceI) nonceI = nonceBee();
+            const n = cspPourBee(c, nonceI, true); if (n !== c) e.setAttribute('content', n); else instOk = false;
+          }
         } })
         .on('meta[name="kdmc-retour"]', { element(e) { if (/^own$/i.test(e.getAttribute('content') || '')) lien = true; } })
         .on('a[href^="https://kd-mc.com"], [data-kdmc-retour]', { element() { lien = true; } })
         .on('body', { element(e) {
           if (!refuse) { pose = true; e.append(ajout, { html: true }); return; }
           /* scripts refusés : pas de bouton ✉️ ; Bee SEULE (son script porte le nonce de CETTE réponse) chez Kevin ; sinon la sortie reste, en simple lien */
-          if (nonce && beeOk && ajoutBee) { pose = true; e.append(ajoutBee, { html: true }); }
+          if (nonce && beeOk && ajoutBee) { pose = true; e.append(ajoutBee + (instOk ? INSTALLER_TAG.replace('<script ', '<script nonce="' + nonce + '" ') : ''), { html: true }); }
+          if (!pose && nonceI && instOk && !/^admin\./.test(String((opts && opts.hote) || ''))) { pose = true; e.append(INSTALLER_TAG.replace('<script ', '<script nonce="' + nonceI + '" '), { html: true }); }   // l'installation reste proposée, la page garde sa politique
           if (!sansPastille && styleOk) e.onEndTag((fin) => { if (!lien) fin.before(PASTILLE_SANS_SCRIPT, { html: true }); });
         } })
         .onDocument({ end(fin) {   // une page sans balise <body> (Cuisine) : à la toute fin du document
@@ -1113,6 +1125,10 @@ export async function injecterBouton(res, extra, opts) {
     const contenu = (balise.match(/content="([^"]*)"/i) || balise.match(/content='([^']*)'/i) || [])[1];
     let contenuBee = contenu;
     if (nonce && contenu) { contenuBee = cspPourBee(contenu, nonce); if (contenuBee !== contenu) t = t.replace(balise, balise.replace(contenu, contenuBee)); }
+    else if (!nonce && contenu && !cspAccepteNosScripts(contenu)) {   /* installateur : politique en balise <meta> (même règle que le chemin en flux) */
+      if (!nonceI) nonceI = nonceBee();
+      const n = cspPourBee(contenu, nonceI, true); if (n !== contenu) t = t.replace(balise, balise.replace(contenu, n)); else instOk = false;
+    }
     const i = t.toLowerCase().lastIndexOf('</body>');
     const pose = (txt) => new Response(i >= 0 ? t.slice(0, i) + txt + t.slice(i) : t + txt, { status: res.status, statusText: res.statusText, headers: h });
     if (!cspAccepteNosScripts(cspOrig) || (contenu && !cspAccepteNosScripts(contenu))) {
@@ -1120,7 +1136,9 @@ export async function injecterBouton(res, extra, opts) {
       const deja = /href=["']https:\/\/kd-mc\.com/i.test(t) || /data-kdmc-retour/i.test(t) || /<meta[^>]*name=["']kdmc-retour["'][^>]*content=["']own["']/i.test(t);
       const beeSeule = nonce && ajoutBee && cspAccepteBee(cspEntete, nonce) && (!contenuBee || cspAccepteBee(contenuBee, nonce));
       const base = !sansPastille && styleOk && !deja ? PASTILLE_SANS_SCRIPT : '';
-      return beeSeule || base ? pose((beeSeule ? ajoutBee : '') + base) : new Response(t, { status: res.status, statusText: res.statusText, headers: h });
+      const inst = !beeSeule && nonceI && instOk && !(opts && /^admin\./.test(String(opts.hote || ''))) ? INSTALLER_TAG.replace('<script ', '<script nonce="' + nonceI + '" ') : '';
+      const instBee = beeSeule && instOk ? INSTALLER_TAG.replace('<script ', '<script nonce="' + nonce + '" ') : '';
+      return beeSeule || inst || base ? pose((beeSeule ? ajoutBee + instBee : '') + inst + base) : new Response(t, { status: res.status, statusText: res.statusText, headers: h });
     }
     return pose(ajout);
   } catch (e) { return res; }   /* un bouton ne doit JAMAIS empêcher une page de s'afficher */

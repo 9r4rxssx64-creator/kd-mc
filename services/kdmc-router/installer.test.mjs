@@ -82,4 +82,16 @@ statutPush = 201;
 const page = new Response('<html><body><p>Bonjour</p></body></html>', { headers: { 'content-type': 'text/html' } });
 const o = await (await injecterBouton(page, '', { hote: 'arbre.kd-mc.com' })).text();
 ok(o.includes(INSTALLER_TAG) && o.includes('/__boite/bouton.js'), '6. chaque page reçoit le script d\'installation (avec ✉️)');
+/* 6b — une page dont la CSP REFUSE nos scripts (Rotaplan, Croupier, Apex AI) : le script d'installation passe quand même, avec un nonce propre à la réponse, sans rien ouvrir d'autre */
+const refus = (csp, meta) => new Response('<html><head>' + (meta ? '<meta http-equiv="Content-Security-Policy" content="' + meta + '">' : '') + '</head><body><p>x</p></body></html>', { headers: Object.assign({ 'content-type': 'text/html' }, csp ? { 'content-security-policy': csp } : {}) });
+let rr = await injecterBouton(refus("default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'"), '', { hote: 'rotaplan.kd-mc.com' }); let tt = await rr.text(); let hh = rr.headers.get('content-security-policy');
+let nn = (/nonce="([^"]+)"/.exec(tt) || [])[1];
+ok(nn && tt.includes('/__installer/installer.js') && !tt.includes('/__boite/bouton.js'), '6b. page qui refuse les scripts : seul le script d\'installation est ajouté, avec un nonce', tt.slice(0, 300));
+ok(hh.includes("'nonce-" + nn + "'") && !hh.includes('frame-src') && /frame-ancestors 'none'/.test(hh) && rr.headers.get('cache-control') === 'no-store', '6c. la politique gagne SEULEMENT ce nonce sur script-src (pas de cadre, rien d\'autre), page non mise en cache', hh);
+rr = await injecterBouton(refus('', "default-src 'none'; script-src 'self' 'strict-dynamic' 'nonce-ABC'"), '', { hote: 'apex-ai.kd-mc.com' }); tt = await rr.text();
+ok(/<meta[^>]*nonce-[^"]*"/.test(tt) && tt.includes('/__installer/installer.js'), '6d. politique en balise <meta> (strict-dynamic) : même traitement');
+const t1 = (await (await injecterBouton(refus('', ''), '', { hote: 'cmcteams.kd-mc.com' })).text());
+ok(t1.includes('/__installer/installer.js') && !/nonce=/.test(t1), '6e. page ordinaire : script sans nonce, politique non touchée');
+rr = await injecterBouton(refus("script-src 'self'"), '', { hote: 'cmcteams.kd-mc.com' }); ok(!rr.headers.get('content-security-policy').includes('nonce-'), '6f. une CSP qui accepte déjà nos scripts n\'est pas modifiée');
+rr = await injecterBouton(refus("default-src 'none'; script-src 'none'"), '', { hote: 'admin.kd-mc.com' }); tt = await rr.text(); ok(!tt.includes('/__installer/installer.js'), '6g. jamais dans l\'admin');
 console.log('\n' + (fail ? '❌' : '✅') + ' installer : ' + pass + ' OK / ' + fail + ' échec(s)'); process.exit(fail ? 1 : 0);

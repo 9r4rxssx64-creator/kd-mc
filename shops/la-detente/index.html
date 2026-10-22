@@ -328,13 +328,13 @@ function searchSuggestHtml(){
  return h+'</div>';
 }
 function footer(){return '<div class="footer"><div class="footer-inner">'
-+'<div><h4>'+esc(STORE_NAME)+'</h4><a href="#" onclick="sv(\'about\');return false">À propos</a><a href="#" onclick="sv(\'contact\');return false">Contact</a><a href="../legal/livraison.html">Livraison</a><a href="../legal/cgv.html">CGV</a></div>'
++'<div><h4>'+esc(STORE_NAME)+'</h4><a href="#" onclick="sv(\'about\');return false">À propos</a><a href="#" onclick="sv(\'contact\');return false">Contact</a><a href="https://shops.kd-mc.com/legal/livraison.html">Livraison</a><a href="https://shops.kd-mc.com/legal/cgv.html">CGV</a></div>'
 +'<div><h4>Catégories</h4>'+CATS.slice(0,5).map(function(c){return '<a href="#" onclick="S.cat=\''+c.id+'\';sv(\'products\');return false">'+c.icon+" "+esc(c.name)+"</a>"}).join("")+'</div>'+'<div><h4>Créer</h4><a href="occasions.html">🎉 Modèles &amp; Occasions</a>'+(LD_ADMIN?'<a href="bibliotheque.html">📚 Bibliothèque de designs</a><a href="studio.html">🎨 Studio</a>':'')+'</div>'+'<div><h4>La boutique</h4><a href="#" onclick="sv(\'lookbook\');return false">📸 Lookbook</a><a href="#" onclick="sv(\'orders\');return false">📦 Mes commandes</a></div>'
-+'<div><h4>Aide</h4><a href="../legal/faq.html">FAQ</a><a href="../legal/retours.html">Retours</a><a href="../legal/livraison.html">Livraison</a><a href="../legal/confidentialite.html">Confidentialité</a></div>'
++'<div><h4>Aide</h4><a href="https://shops.kd-mc.com/legal/faq.html">FAQ</a><a href="https://shops.kd-mc.com/legal/retours.html">Retours</a><a href="https://shops.kd-mc.com/legal/livraison.html">Livraison</a><a href="https://shops.kd-mc.com/legal/confidentialite.html">Confidentialité</a></div>'
 +'<div><h4>Newsletter</h4><p style="font-size:13px;color:var(--muted);margin-bottom:8px">Recevez nos offres exclusives</p>'
 +'<div style="display:flex;gap:8px"><input type="email" aria-label="Votre adresse email" placeholder="votre@email.com" style="flex:1;padding:10px;border-radius:var(--rs);border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px" id="nlEmail">'
 +'<button onclick="nlSub()" style="padding:10px 16px;background:var(--p);color:#fff;border-radius:var(--rs);font-weight:700;font-size:13px">OK</button></div></div>'
-+'</div><div class="footer-bottom">© 2026 '+esc(STORE_NAME)+' — KDMC. Tous droits réservés. <a href="../legal/cgv.html" style="color:var(--muted)">CGV</a> · <a href="../legal/mentions.html" style="color:var(--muted)">Mentions</a> · <a href="../legal/confidentialite.html" style="color:var(--muted)">Confidentialité</a> Paiement sécurisé — PayPal · Revolut · Virement 🔒</div></div>'}
++'</div><div class="footer-bottom">© 2026 '+esc(STORE_NAME)+' — KDMC. Tous droits réservés. <a href="https://shops.kd-mc.com/legal/cgv.html" style="color:var(--muted)">CGV</a> · <a href="https://shops.kd-mc.com/legal/mentions.html" style="color:var(--muted)">Mentions</a> · <a href="https://shops.kd-mc.com/legal/confidentialite.html" style="color:var(--muted)">Confidentialité</a> Paiement sécurisé — PayPal · Revolut · Virement 🔒</div></div>'}
 function stars(r){var f=Math.floor(r),h=r%1>=.3,s="";for(var i=0;i<f;i++)s+="★";if(h)s+="½";for(var j=f+(h?1:0);j<5;j++)s+="☆";return '<span class="stars" title="'+r+'/5">'+s+"</span>"}
 function fmtP(p){return p.toFixed(2).replace(".",",")+" €"}
 function disc(o,c){return o>c?Math.round((1-c/o)*100):0}
@@ -1318,7 +1318,7 @@ function ldConsentRefuse(el){try{
  if(c&&c.v===LD_CONSENT_V)return;
  var ck=document.createElement("div");ck.className="cookie";
  ck.innerHTML='<div style="flex:1;min-width:220px"><b style="color:var(--text)">Cookies &amp; conditions</b>'
-  +'<div style="margin-top:3px">En cliquant « Tout accepter », vous acceptez nos <a href="../legal/cgv.html">CGV</a>, notre <a href="../legal/confidentialite.html">politique de confidentialité</a>, les <a href="../legal/mentions.html">mentions légales</a> et les cookies &amp; autorisations nécessaires au bon fonctionnement de la boutique.</div></div>'
+  +'<div style="margin-top:3px">En cliquant « Tout accepter », vous acceptez nos <a href="https://shops.kd-mc.com/legal/cgv.html">CGV</a>, notre <a href="https://shops.kd-mc.com/legal/confidentialite.html">politique de confidentialité</a>, les <a href="https://shops.kd-mc.com/legal/mentions.html">mentions légales</a> et les cookies &amp; autorisations nécessaires au bon fonctionnement de la boutique.</div></div>'
   +'<div class="cookie-btns"><button class="btn-accept" onclick="ldConsentAcceptAll(this)">✅ Tout accepter</button><button class="btn-refuse" onclick="ldConsentRefuse(this)">Refuser</button></div>';
  document.body.appendChild(ck);})();
 /* 17.10 (Kevin : « toutes les conditions en UN clic, une seule fois, valables partout ») : si le DOMAINE a déjà l'accord (whoami cgu:true), pas de bannière « Tout accepter ».

@@ -71,11 +71,11 @@ for (const a of APPS) {
       let externes = 0;
       for (const x of liens) {
         const h = (x.getAttribute('href') || '').trim();
-        if (!h || h === '#' || /^javascript:\s*(void\(0\))?;?\s*$/i.test(h)) { if (vis(x)) vides.push(1); continue; }
+        if (!h || h === '#' || /^javascript:\s*(void\(0\))?;?\s*$/i.test(h)) { if (vis(x) && !x.id && !x.hasAttribute('onclick') && !x.getAttribute('role') && ![...x.attributes].some((a) => /^data-/.test(a.name))) vides.push(1); continue; }   /* un lien « # » qui porte un identifiant, un onclick ou un data-* est piloté par la page : pas un lien vide */
         if (/^javascript:/i.test(h)) continue;
         if (/^tel:/i.test(h)) { if (!/^tel:\+?[0-9 .()\-]{6,20}$/i.test(h)) malFormes.push('tel'); continue; }
         if (/^mailto:/i.test(h)) { if (!/^mailto:[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"'?]+(\?.*)?$/i.test(h)) malFormes.push('mailto'); continue; }
-        if (h[0] === '#') { const id = decodeURIComponent(h.slice(1)); if (id && !document.getElementById(id) && !document.getElementsByName(id).length && !/^[!\/]/.test(id)) ancresMortes.push(1); continue; }
+        if (h[0] === '#') { if (/skip/i.test(x.className || '') || x.hasAttribute('data-ax-skip-target')) continue; const id = decodeURIComponent(h.slice(1)); if (id && !document.getElementById(id) && !document.getElementsByName(id).length && !/^[!\/]/.test(id)) ancresMortes.push(1); continue; }
         let u; try { u = new URL(h, location.href); } catch (_) { malFormes.push('url'); continue; }
         if (!/^https?:$/.test(u.protocol)) continue;
         if (/(^|\.)kd-mc\.com$/.test(u.hostname)) internes.add(u.origin + u.pathname + u.search); else externes++;

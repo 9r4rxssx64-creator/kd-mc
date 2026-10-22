@@ -48,7 +48,8 @@ const metaRota = '<meta http-equiv="Content-Security-Policy" content="default-sr
 {
   const html = '<html><head>' + metaRota + '</head><body><p>Rotaplan</p></body></html>';
   const ordinaire = await (await injecterBouton(page(html), PARTOUT_TAG, { hote: 'rotaplan.kd-mc.com' })).text();
-  ok(!ordinaire.includes('partout.js') && !ordinaire.includes(BOUTON_TAG) && ordinaire.includes("script-src 'none'") && !/nonce/.test(ordinaire), '2a. VISITEUR ORDINAIRE : la page qui refuse nos scripts reste intacte (ni Bee, ni bouton, CSP inchangée, aucun nonce)', ordinaire);
+  /* 22.10 (Kevin : « toutes mes applications… un bouton pour installer ») : la SEULE exception pour un visiteur ordinaire = le script d'installation, avec son nonce ; ni Bee, ni ✉️, aucune autre ouverture */
+  ok(!ordinaire.includes('partout.js') && !ordinaire.includes(BOUTON_TAG) && !ordinaire.includes("script-src 'none'") && /script-src 'nonce-[^']+'/.test(ordinaire) && ordinaire.includes('/__installer/installer.js') && (ordinaire.match(/nonce=/g) || []).length === 1, '2a. VISITEUR ORDINAIRE : la page qui refuse nos scripts ne reçoit QUE le script d\'installation (avec son nonce) : ni Bee, ni bouton ✉️', ordinaire);
   const rk = await injecterBouton(page(html), PARTOUT_TAG, { hote: 'rotaplan.kd-mc.com', nonce: N });
   const kevin = await rk.text();
   ok(kevin.includes('<script nonce="' + N + '" src="/__javis/partout.js" defer></script>') && kevin.includes("script-src 'nonce-" + N + "'") && !kevin.includes(BOUTON_TAG), '3a. KEVIN, balise <meta> : le script de Bee porte le nonce, la CSP de la page le contient, pas de bouton ✉️ (la page refuse nos scripts)', kevin);
@@ -58,7 +59,7 @@ const metaRota = '<meta http-equiv="Content-Security-Policy" content="default-sr
   ok(hdr.headers.get('content-security-policy').includes("'nonce-" + N + "'") && /frame-src 'self'/.test(hdr.headers.get('content-security-policy')) && th.includes('nonce="' + N + '"'), '3c. KEVIN, CSP en en-tête : l\'en-tête contient le nonce et un cadre autorisé, la balise le porte', hdr.headers.get('content-security-policy'));
   ok(hdr.headers.get('cache-control') === 'no-store' && !hdr.headers.get('etag'), '3d. une réponse personnalisée par un nonce n\'est jamais mise en cache (ni ETag)');
   const ordHdr = await injecterBouton(page('<html><body>x</body></html>', { 'content-security-policy': "default-src 'none'; script-src 'none'" }), PARTOUT_TAG, { hote: 'croupier.kd-mc.com' });
-  ok(ordHdr.headers.get('content-security-policy') === "default-src 'none'; script-src 'none'" && ordHdr.headers.get('cache-control') === 'public, max-age=0, must-revalidate', '3e. visiteur ordinaire, en-tête : CSP et cache INCHANGÉS');
+  { const c = ordHdr.headers.get('content-security-policy') || ''; ok(/^default-src 'none'; script-src 'nonce-[^']+'$/.test(c) && ordHdr.headers.get('cache-control') === 'no-store', "3e. visiteur ordinaire, en-tête : seul un nonce (script-src) est ajouté — rien d'autre — et la page n'est pas mise en cache", c); }
   const ok1 = await (await injecterBouton(page('<html><body>x</body></html>', { 'content-security-policy': "default-src 'self'; script-src 'self'; frame-src https://tiers.example" }), PARTOUT_TAG, { hote: 'cmcteams.kd-mc.com', nonce: N })).text();
   ok(ok1.includes(BOUTON_TAG) && ok1.includes('src="/__javis/partout.js"') && !ok1.includes('nonce='), '3f. une page qui accepte déjà nos scripts : balises normales (bouton + Bee), sans nonce inutile');
   const inl = await (await injecterBouton(page('<html><body>x</body></html>', { 'content-security-policy': "script-src 'unsafe-inline'" }), PARTOUT_TAG, { hote: 'a.kd-mc.com', nonce: N })).text();

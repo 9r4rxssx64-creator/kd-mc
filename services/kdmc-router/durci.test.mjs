@@ -48,5 +48,19 @@ console.log('\nRouteur durci : en-têtes sur TOUTES les réponses + http → htt
 { const r = durcirReponse(new Response('x=1', { status: 200, headers: { 'content-type': 'application/javascript', 'cache-control': 'public, max-age=60' } }));
   ok(r.headers.get('cache-control') === 'public, max-age=60', `11. un script n'est pas touché  [${r.headers.get('cache-control')}]`); }
 
+/* 12-15 (22.10, tâche 29 du pont) : Permissions-Policy + CSP de base sur les pages HTML, sans rien casser
+   (Jitsi garde caméra/micro pour les visios de CMCteams ; aucune restriction de script ; la CSP d'une app gagne). */
+{ const r = durcirReponse(new Response('<html></html>', { status: 200, headers: { 'content-type': 'text/html' } }));
+  const pp = r.headers.get('permissions-policy') || '';
+  ok(/camera=\(self "https:\/\/meet\.jit\.si"\)/.test(pp) && /microphone=\(self "https:\/\/meet\.jit\.si"\)/.test(pp) && /browsing-topics=\(\)/.test(pp) && /usb=\(self\)/.test(pp),
+    `12. page HTML : Permissions-Policy posée (caméra/micro = la page + Jitsi, pistage publicitaire coupé)  [${pp}]`);
+  const csp = r.headers.get('content-security-policy') || '';
+  ok(/base-uri 'self'/.test(csp) && /object-src 'none'/.test(csp) && /frame-ancestors 'self'/.test(csp) && !/script-src/.test(csp),
+    `13. page HTML sans CSP : CSP de base (base-uri, object-src, frame-ancestors), aucun blocage de script  [${csp}]`); }
+{ const r = durcirReponse(new Response('<html></html>', { status: 200, headers: { 'content-type': 'text/html', 'content-security-policy': "default-src 'none'", 'permissions-policy': 'camera=()' } }));
+  ok(r.headers.get('content-security-policy') === "default-src 'none'" && r.headers.get('permissions-policy') === 'camera=()', '14. la CSP et la Permissions-Policy posées par une app ne sont PAS écrasées'); }
+{ const r = durcirReponse(new Response('x=1', { status: 200, headers: { 'content-type': 'application/javascript' } }));
+  ok(!r.headers.get('permissions-policy') && !r.headers.get('content-security-policy'), '15. un script ne reçoit ni Permissions-Policy ni CSP'); }
+
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

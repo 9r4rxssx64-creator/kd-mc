@@ -10,6 +10,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - « telemetry pushIncoming persist failed » (mémoire pleine) : file locale limitée à 50 entrées réduites ; si la mémoire refuse encore, 10 entrées, puis la file est vidée (Firebase a la copie). Tâches 22 et 4 du pont.
 - Preuves : `tests/unit/coffre-jeton-recharge.test.ts` 9/9 ; contre l'ancien code 6 rouges sur 8 (et 3 pour le seul fichier Gist). Leçon 739.
 
+## Staging v0.1.1 + routeur (2026-10-22 — en-têtes de sécurité, bulle de version)
+- Routeur : chaque page HTML du domaine qui n'en a pas reçoit `Permissions-Policy` (caméra/micro/partage d'écran = la page et Jitsi ; pistage publicitaire coupé) et une CSP de base (`base-uri`, `object-src`, `frame-ancestors`), sans aucune règle de script. Tâche 29 du pont.
+- Staging v0.1.1 : la bulle partagée de version (mise à jour forcée) est chargée — `test:bulles-partout` était rouge sur `main` depuis l'ajout de staging.
+
 ## Apex AI v13.4.382 (2026-10-22 — fausses alertes en moins, notifications réglées toutes seules)
 - Sentinelle « Bot 2026 (Vercel) » retirée : le projet n'existe plus sur Vercel (DEPLOYMENT_NOT_FOUND, liste des projets lue) ; le bot tourne dans `kdmc-agent-monaco` (200).
 - Pinecone sans clé = « non utilisé » (la mémoire passe par le worker Cloudflare `kdmc-rag`), plus une alerte.

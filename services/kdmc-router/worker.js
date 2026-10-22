@@ -1143,6 +1143,11 @@ export async function injecterBouton(res, extra, opts) {
     return pose(ajout);
   } catch (e) { return res; }   /* un bouton ne doit JAMAIS empêcher une page de s'afficher */
 }
+const JITSI = '"https://meet.jit.si"';
+const PERMISSIONS_PAGE = [
+  `camera=(self ${JITSI})`, `microphone=(self ${JITSI})`, `display-capture=(self ${JITSI})`,
+  'geolocation=(self)', 'payment=(self)', 'usb=(self)', 'serial=(self)', 'hid=(self)', 'midi=(self)', 'browsing-topics=()',
+].join(', ');
 export function durcirReponse(res) {
   if (!res || res.status === 101 || res.webSocket) return res;   // WebSocket : on n'y touche pas
   const h = new Headers(res.headers);
@@ -1157,6 +1162,13 @@ export function durcirReponse(res) {
      `no-transform` (sans toucher au reste de son Cache-Control) : Cloudflare ne modifie plus la page — ni compteur, ni minification,
      ni brouillage des adresses mail. Prouvé : durci.test.mjs 9-11 ; mesuré en ligne par coffre-cloudflare-analytics-couper.yml. */
   if (/^text\/html/i.test(h.get('content-type') || '')) {
+    /* 22.10.2026 (tâche 29, audit du domaine) : aucune page n'avait de Permissions-Policy, kd-mc.com n'avait pas de CSP.
+       Rien qui casse : caméra/micro/partage d'écran = la page ET Jitsi (visios de CMCteams) ; les fonctions qu'Apex sonde
+       (USB, série, HID, MIDI, paiement, géoloc) restent à la page ; seul le pistage publicitaire est coupé. La CSP de base
+       ne touche à aucun script (base-uri, object-src, frame-ancestors = l'équivalent de X-Frame-Options SAMEORIGIN).
+       Une app qui pose les siennes garde les siennes. Prouvé : durci.test.mjs 12-15. */
+    if (!h.has('permissions-policy')) h.set('permissions-policy', PERMISSIONS_PAGE);
+    if (!h.has('content-security-policy')) h.set('content-security-policy', "base-uri 'self'; object-src 'none'; frame-ancestors 'self'");
     const cc = h.get('cache-control') || '';
     if (!/\bno-transform\b/i.test(cc)) h.set('cache-control', cc ? cc + ', no-transform' : 'no-transform');
   }

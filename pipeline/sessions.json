@@ -2722,6 +2722,16 @@
       "maj": "2026-10-22",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "pont-point-m236": {
+      "titre": "Clôture m236",
+      "branche": "claude/suivi-m236",
+      "sujet": "message m236 clos (règle pont déjà en vigueur)",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [
@@ -6529,7 +6539,8 @@
       "sujet": "RÈGLE DE KEVIN 20.10 : les manipulations vont au PONT, le Lenovo les fait",
       "corps": "Avant d'écrire « Kevin doit faire X » : le Lenovo peut-il le faire dans son Chrome ? Oui → message au pont (kdmc-pont, pc-config / arbre-pc). Kevin garde seul : mot de passe, code reçu, code admin, paiement, décision irréversible. Lenovo éteint → la mission reste au pont + une ligne dans KEVIN_ACTIONS_TODO. Règle : .claude/rules/pont-lenovo-manipulations.md ; garde test:pont-lenovo-regle.",
       "ts": "2026-10-19 22:36",
-      "etat": "ouvert"
+      "etat": "clos",
+      "reponse": "22.10 : règle reçue et appliquée — elle est écrite dans CLAUDE.md et .claude/rules/pont-lenovo-manipulations.md (garde test:pont-lenovo-regle). Rien à ajouter ; message clos."
     }
   ]
 }

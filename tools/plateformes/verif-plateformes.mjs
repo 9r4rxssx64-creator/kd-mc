@@ -64,6 +64,10 @@ if (!Object.keys(lanceurs).length) { console.log('  ❌ aucun moteur disponible 
 /* une page qui se recharge pendant la mesure (« Execution context was destroyed ») : on rejoue, et le nombre de navigations est contrôlé à part */
 async function rejouer(f) { for (let k = 0; k < 4; k++) { try { return await f(); } catch (e) { if (!/context was destroyed|navigation/i.test(String(e.message)) || k === 3) throw e; await new Promise((r) => setTimeout(r, 800)); } } }
 async function mesure(moteur, ap) {
+  const navLog = [];
+  try { return await mesure2(moteur, ap, navLog); } catch (e) { e.message += ' | navigations : ' + (navLog.join(' > ') || 'aucune'); throw e; }
+}
+async function mesure2(moteur, ap, navLog) {
   const br = lanceurs[moteur];
   const opts = ap.dev ? { ...D[ap.dev], locale: 'fr-FR' } : ap.tactile ? { viewport: ap.vp, locale: 'fr-FR', hasTouch: true, isMobile: moteur !== 'firefox', deviceScaleFactor: 3 } : { viewport: ap.vp, locale: 'fr-FR', hasTouch: false };
   if (!ap.dev && moteur === 'chromium') opts.deviceScaleFactor = 1;
@@ -73,7 +77,7 @@ async function mesure(moteur, ap) {
   const p = await ctx.newPage(); const erreurs = [];
   p.on('pageerror', (e) => erreurs.push('js: ' + String(e.message).slice(0, 120)));
   p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|favicon|manifest|ERR_FAILED|status of 40[134]|403|NetworkError|Load failed|Cross-Origin Request Blocked|CORS request did not succeed|Fetch API cannot load|due to access control/i.test(m.text())) erreurs.push('console: ' + m.text().slice(0, 120)); });
-  let navs = 0; p.on('framenavigated', (f) => { if (f === p.mainFrame()) navs++; });
+  let navs = 0; const tNav = Date.now(); p.on('framenavigated', (f) => { if (f === p.mainFrame()) { navs++; navLog.push(String(f.url()).replace(base, '').slice(0, 60) + '@' + (Date.now() - tNav) + 'ms'); } });
   const t0 = Date.now();
   await p.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
   /* pas de waitForFunction : il évalue du texte dans la page, que la politique de sécurité (CSP) de l'arbre refuse (WebKit, 22.10) → on interroge par evaluate */
@@ -101,7 +105,7 @@ async function mesure(moteur, ap) {
     }));
   }
   /* une fiche : s'ouvre, tient dans l'écran, se referme */
-  sortie.fiche = await p.evaluate(async () => {
+  sortie.fiche = await rejouer(() => p.evaluate(async () => {
     try { const id = Object.keys(DB.persons)[0]; openPerson(id); } catch (e) { return { err: e.message }; }
     await new Promise((r) => setTimeout(r, 500));
     const ov = document.querySelector('.ov .sheet, .ov'); if (!ov) return { err: 'fiche non ouverte' };
@@ -111,7 +115,7 @@ async function mesure(moteur, ap) {
     try { closeOverlay(); } catch (e) { /* rien */ }
     await new Promise((r2) => setTimeout(r2, 300));
     return { ferme: !document.querySelector('.ov'), dansEcran, taille: r ? Math.min(r.width, r.height) : 0, deb };
-  });
+  }));
   sortie.erreurs = erreurs; sortie.navs = navs;
   await ctx.close();
   return sortie;

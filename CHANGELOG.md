@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.340 (2026-10-22 — la page adopte le compte réuni de Kevin : Rémi et Laurence reviennent)
+
+- MESURÉ (captures de Kevin) : après la fusion en base, une seule conversation « Kevin DESARZENS » + « Correspondant introuvable ». La page gardait l'ancien identifiant et prenait le vrai compte pour l'autre personne.
+- Au démarrage la page relit `/api/users/me` et adopte `kdmc_admin` si le serveur l'a réuni. Test `ralliement-kevin.test.js` (13, rouge sans la correction). Leçon 714.
+
+
 ## Apex Chat v1.1.339 (2026-10-22 — le Face ID pour réunir les comptes de Kevin se fait DANS l'app, avec un vrai bouton)
 
 - MESURÉ : Kevin a la v1.1.338, rouvre l'app : aucun Face ID demandé, ses 3 comptes restent séparés (base relue). L'aller-retour par le portail ne montrait rien dans l'app installée.

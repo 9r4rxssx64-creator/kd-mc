@@ -13,7 +13,7 @@ function monter(user, reponseSso) {
   const sso = vi.fn(async () => reponseSso);
   const toasts = [];
   // eslint-disable-next-line no-new-func
-  new Function('K', '_authSsoFromKdmc', 'toast', '_safeCatch', [extractDef(html, 'K._ralliementAppliquer = async function(r){'), extractDef(html, 'K._ralliementFaceId = async function(){'), extractDef(html, 'K._ralliementKevin = async function(){')].join('\n'))(K, sso, (m) => toasts.push(m), () => {});
+  new Function('K', '_authSsoFromKdmc', 'toast', '_safeCatch', [extractDef(html, 'K._ralliementAppliquer = async function(r){'), extractDef(html, 'K._ralliementAdopterCompte = async function(){'), extractDef(html, 'K._ralliementFaceId = async function(){'), extractDef(html, 'K._ralliementKevin = async function(){')].join('\n'))(K, sso, (m) => toasts.push(m), () => {});
   return { K, sso, toasts };
 }
 
@@ -42,6 +42,25 @@ describe('ralliement du compte Kevin en double', () => {
       const { K } = monter(DOUBLON, rep);
       expect(await K._ralliementKevin()).toBe(false); expect(K.login).not.toHaveBeenCalled();
     }
+  });
+  it("déjà fondu côté serveur : la page adopte l'identifiant du vrai compte (Rémy ne s'affiche plus « Kevin »), sans Face ID ni fenêtre", async () => {
+    globalThis.API_BASE = 'https://api.test';
+    const vue = [];
+    globalThis.fetch = vi.fn(async (url, init) => { vue.push({ url, auth: init && init.headers && init.headers.Authorization }); return { ok: true, json: async () => ({ ok: true, user: { id: 'kdmc_admin', kdmc_uid: 'kdmc_admin' } }) }; });
+    const { K, sso } = monter(DOUBLON, null);
+    K.token = 'JETON'; K._showModal = vi.fn(); K._closeModal = vi.fn();
+    expect(await K._ralliementKevin()).toBe(true);
+    expect(vue).toEqual([{ url: 'https://api.test/api/users/me', auth: 'Bearer JETON' }]);
+    expect(K.login).toHaveBeenCalledWith({ id: 'kdmc_admin', kdmc_uid: 'kdmc_admin' }, 'JETON');
+    expect(sso).not.toHaveBeenCalled(); expect(K._showModal).not.toHaveBeenCalled();
+  });
+  it("le serveur répond encore l'ancien compte (pas fondu) : on ne change rien et on passe au Face ID", async () => {
+    globalThis.API_BASE = 'https://api.test';
+    globalThis.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ ok: true, user: { id: 'kdmc_kdmc_admin' } }) }));
+    const { K, sso } = monter(DOUBLON, null);
+    K.token = 'JETON'; K._showModal = vi.fn();
+    expect(await K._ralliementKevin()).toBe(false);
+    expect(K.login).not.toHaveBeenCalled(); expect(sso).toHaveBeenCalledTimes(1); expect(K._showModal).toHaveBeenCalledTimes(1);
   });
   it("app installée : le pass du domaine est relu d'abord, puis une fenêtre propose Face ID (jamais d'aller-retour caché)", async () => {
     const ordre = [];

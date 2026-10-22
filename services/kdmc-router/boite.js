@@ -298,6 +298,41 @@ export async function ficheLignes(env, db, uid, now) {
   }
   return l;
 }
+/* Un lot de personnes à la fois (chaque lot en parallèle) : D1 et KV n'aiment pas 20 lectures simultanées par personne. */
+function parLots(liste, taille, f) {
+  const lots = [];
+  for (let i = 0; i < liste.length; i += taille) lots.push(liste.slice(i, i + taille));
+  return lots.reduce((suite, lot) => suite.then(async (acc) => acc.concat(await Promise.all(lot.map(f)))), Promise.resolve([]));
+}
+/* Une ligne d'activité de la base → un événement du fil de la personne. */
+function evenementActivite(a) {
+  const ou = a.app && a.type !== 'visite' && a.type !== 'connexion' ? ' (' + a.app.split('.')[0] + ')' : '';
+  return { ts: a.ts, texte: (activite.TYPES[a.type] || a.type) + (a.detail ? ' ' + a.detail : '') + ou + (a.appareil ? ' · 📲 ' + activite.appareilCourt(a.appareil) : ''), app: a.app };
+}
+/* LE NOM DU COMPTE, jamais « Inconnu » (Kevin 8.10, capture : « Inconnu — nouvel appareil… compte laurence-saint-polit ») : une alerte
+   enregistrée sans nom porte quand même le compte → on lit SA fiche ; sans fiche, le nom se lit dans l'identifiant lui-même. */
+async function nomDeLaPersonne(env, p) {
+  if (!p.nom && p.uid) { try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + p.uid)) || 'null'); if (a?.name) p.nom = String(a.name); } catch { /* fiche illisible : on passe à l'identifiant */ } }
+  if (p.nom) return p.nom;
+  if (p.id === 'systeme') return 'Alertes du domaine';
+  return p.uid ? nomDepuisUid(p.uid) : 'Inconnu';
+}
+/* La carte d'UNE personne (son fil, sa fiche, ses alertes non lues) ; null s'il n'y a rien à montrer. */
+async function cartePersonne(env, db, now, marq, p) {
+  if (p.uid) for (const a of await activite.fil(db, p.uid, activite.LIM.fil).catch(() => [])) p.evts.push(evenementActivite(a));
+  if (!p.evts.length) return null;
+  p.evts.sort((a, b) => a.ts - b.ts);
+  const fil = p.evts.slice(-activite.LIM.fil), dernier = fil[fil.length - 1];
+  const lu = marq.get('perso:' + p.id) || 0;
+  const nonLus = p.alertes.filter((e) => e.ts > lu && now - e.ts <= LIMITES.alerteFraicheur).length;
+  const nom = await nomDeLaPersonne(env, p);
+  const fiche = p.uid ? await ficheLignes(env, db, p.uid, now) : [];
+  /* les lignes de la DERNIÈRE alerte (réseau, d'où il venait, pourquoi) s'ajoutent à la fiche, sans répéter « qui » quand la fiche le dit déjà */
+  const derniereAlerte = p.alertes.length ? p.alertes[p.alertes.length - 1].infos.filter((x) => !(fiche.length && x.startsWith('👤'))) : [];
+  return { cle: 'perso:' + p.id, source: 'alertes', app: (dernier.app || 'domaine'), de: nom, ts: dernier.ts, texte: apercu(dernier.texte, 300), perso: true,
+    infos: fiche.concat(derniereAlerte),
+    nonLus, lu: !nonLus, repondre: null, fil: fil.map((e) => ({ moi: false, texte: e.texte, ts: e.ts })) };
+}
 /* UNE CARTE PAR PERSONNE (Kevin 4.10 : « le même compte qui se connecte ne se multiplie pas, il s'ajoute dans sa fiche, remonte dans le fil »).
    Les alertes du journal (nouvel appareil, changement de pays, nouvel inscrit) et l'activité de la personne (pages, questions, modifications, lieux) sont
    REGROUPÉES par compte : une seule carte, un fil du plus ancien au plus récent, la dernière activité la fait remonter. Seules les ALERTES comptent en rouge. */
@@ -337,26 +372,7 @@ async function lirePersonnes(env, db, now, outils) {
   const marq = new Map();
   if (ids.length) for (const r of await tous(db, `SELECT cle, ts FROM boite_lu WHERE cle IN (${ids.map(() => '?').join(',')})`, ...ids)) marq.set(r.cle, r.ts);
   /* UNE LECTURE PAR PERSONNE, TOUTES EN MÊME TEMPS (par lots de 8) : avant, 20 personnes × 4 lectures s'enchaînaient (≈ 11 s mesurées) */
-  const carte = async (p) => {
-    if (p.uid) for (const a of await activite.fil(db, p.uid, activite.LIM.fil).catch(() => [])) p.evts.push({ ts: a.ts, texte: (activite.TYPES[a.type] || a.type) + (a.detail ? ' ' + a.detail : '') + (a.app && a.type !== 'visite' && a.type !== 'connexion' ? ' (' + a.app.split('.')[0] + ')' : '') + (a.appareil ? ' · 📲 ' + activite.appareilCourt(a.appareil) : ''), app: a.app });
-    if (!p.evts.length) return null;
-    p.evts.sort((a, b) => a.ts - b.ts);
-    const fil = p.evts.slice(-activite.LIM.fil), dernier = fil[fil.length - 1];
-    const lu = marq.get('perso:' + p.id) || 0;
-    const nonLus = p.alertes.filter((e) => e.ts > lu && now - e.ts <= LIMITES.alerteFraicheur).length;
-    /* LE NOM DU COMPTE, jamais « Inconnu » (Kevin 8.10, capture : « Inconnu — nouvel appareil… compte laurence-saint-polit ») : une alerte
-       enregistrée sans nom porte quand même le compte → on lit SA fiche ; sans fiche, le nom se lit dans l'identifiant lui-même. */
-    if (!p.nom && p.uid) { try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + p.uid)) || 'null'); if (a && a.name) p.nom = String(a.name); } catch { /* fiche illisible : on passe à l'identifiant */ } }
-    const nom = p.nom || (p.id === 'systeme' ? 'Alertes du domaine' : p.uid ? nomDepuisUid(p.uid) : 'Inconnu');
-    const fiche = p.uid ? await ficheLignes(env, db, p.uid, now) : [];
-    /* les lignes de la DERNIÈRE alerte (réseau, d'où il venait, pourquoi) s'ajoutent à la fiche, sans répéter « qui » quand la fiche le dit déjà */
-    const derniereAlerte = p.alertes.length ? p.alertes[p.alertes.length - 1].infos.filter((x) => !(fiche.length && x.startsWith('👤'))) : [];
-    return { cle: 'perso:' + p.id, source: 'alertes', app: (dernier.app || 'domaine'), de: nom, ts: dernier.ts, texte: apercu(dernier.texte, 300), perso: true,
-      infos: fiche.concat(derniereAlerte),
-      nonLus, lu: !nonLus, repondre: null, fil: fil.map((e) => ({ moi: false, texte: e.texte, ts: e.ts })) };
-  };
-  const dossiers = [...P.values()], out = [];
-  for (let i = 0; i < dossiers.length; i += 8) for (const c of await Promise.all(dossiers.slice(i, i + 8).map((p) => carte(p)))) if (c) out.push(c);
+  const out = (await parLots([...P.values()], 8, (p) => cartePersonne(env, db, now, marq, p))).filter(Boolean);
   return out.sort((a, b) => b.ts - a.ts).slice(0, 20);
 }
 /* « laurence-saint-polit » → « Laurence Saint-Polit (compte laurence-saint-polit) » : lisible, et le compte reste nommé tel quel. */
@@ -527,10 +543,10 @@ export async function lireBoite(env, outils, now) {
   messages.sort((a, b) => rang(b) - rang(a) || b.ts - a.ts);
   const nonLus = SOURCES_MESSAGES.reduce((s, n) => s + sources[n].nonLus, 0);
   const inscriptions = insc ? insc.v : [], inscriptionsEtat = insc ? 'ok' : 'indisponible';
-  const connectesCercle = (cercle || {}).n || 0;
+  const connectesCercle = cercle?.n || 0;
   const connectes = Math.max(connectesCercle, enLigne.length);
   return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, enLigne, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste),
-    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, inscriptionsAdmin: inscrAdmin, maj: now, ms: Object.assign({ total: Date.now() - T0 }, ms) };
+    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, inscriptionsAdmin: inscrAdmin, maj: now, ms: { total: Date.now() - T0, ...ms } };
 }
 
 /* ── marquer lu / répondre ────────────────────────────────────────────────────────────────────────────────── */

@@ -12409,7 +12409,7 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - **Une donnée ajoutée part tout de suite** : photo, acte, document entrent dans la fiche et au nuage dès qu'ils sont prêts, sans attendre « Enregistrer » (v3.136).
 - **Jamais de rechargement automatique pendant une modification** (formulaire ouvert).
 - **Un envoi bloqué se voit** : « ⚠️ N à envoyer » + cause dans Réglages › Dernière erreur (v3.138) ; la pastille verte ne masque plus une écriture refusée.
-- **Gardes** : `npm run test:arbre-rien-perdu` (dans test:ci) et `npm run test:arbre-navigateur` (vrai Chromium, deux appareils, sabotage prouvé). Écrit aussi dans `.claude/rules/arbre-rien-ne-se-perd.md` ; message « toutes » au pont.
+- **Gardes** : `npm run test:arbre-rien-perdu` (dans test:ci) et `npm run verif:arbre-navigateur` (vrai Chromium, deux appareils, sabotage prouvé). Écrit aussi dans `.claude/rules/arbre-rien-ne-se-perd.md` ; message « toutes » au pont.
 
 ## 2026-10-21 — « Un seul compte possible par personne » (règle absolue de Kevin)
 - **Déclencheur** : Rémi écrivait à l'ancien compte `kdmc_admin` pendant que Kevin lisait `kdmc_kdmc_admin` ; deux « Kevin » dans la liste de Rémy ; 3 comptes de test « Parcours Robot » toujours dans les contacts de Kevin.

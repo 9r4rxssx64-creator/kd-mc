@@ -1,69 +1,68 @@
 # 🌐 KDMC_ADRESSES.md — Liste officielle des adresses (toujours à jour)
 
-> Domaine principal : **kd-mc.com** (acheté sur Cloudflare Registrar le 2026-06-06,
-> titulaire Kevin DESARZENS, auto-renew activé, expire 2027-06-06).
-> Structure : **une belle adresse par projet** (sous-domaine par app).
-> Dernière mise à jour : **2026-06-06** — branche `claude/kdmc-custom-domain-7hNn9`.
->
-> **Statut global : DÉPLOYÉ ✅ (2026-06-06 21:41 UTC)** — worker `kdmc-router` en ligne,
-> les 7 belles adresses attachées (custom domains Cloudflare créés sans erreur).
-> DNS + certificat SSL : propagation ~1-2 min. Les anciennes adresses restent valides.
+> Domaine principal : **kd-mc.com** (Cloudflare, compte principal `425377ca…`).
+> Règle : **une belle adresse par projet** (un sous-domaine par app), servie par le worker unique
+> `kdmc-router` (`services/kdmc-router/wrangler.toml` = la liste qui fait foi : 32 adresses).
+> **Dernière mesure réelle : 22.10.2026** (HTTPS depuis une session, une requête par adresse).
+> 🔒 401 = la porte demande un compte (normal : « aucune consultation sans compte »), pas une panne.
 
----
+## 🖥️ Les apps du domaine (mesuré le 22.10.2026)
 
-## 🖥️ Sites (les belles adresses des projets)
-
-| Projet | 🌟 Nouvelle adresse | Ancienne adresse (toujours valide) | Statut |
-|---|---|---|---|
-| **Accueil KDMC** | https://kd-mc.com | — (nouvelle page portfolio) | ✅ en ligne |
-| **CMCteams** | https://cmcteams.kd-mc.com | https://9r4rxssx64-creator.github.io/CMCteams/ | ✅ en ligne |
-| **Apex-ai** | https://apex-ai.kd-mc.com | https://9r4rxssx64-creator.github.io/CMCteams/apex-ai-v13/ | ✅ en ligne |
-| **Apex-chat** | https://apex-chat.kd-mc.com | https://9r4rxssx64-creator.github.io/CMCteams/messaging-app/ | ✅ en ligne |
-| **La détente** | https://la-detente.kd-mc.com | https://9r4rxssx64-creator.github.io/CMCteams/la-detente/ | ✅ en ligne |
-| **Chez-lolo** | https://chez-lolo.kd-mc.com | https://9r4rxssx64-creator.github.io/CMCteams/shops/chez-lolo/ | ✅ en ligne |
-
-> `www.kd-mc.com` pointe aussi sur la page d'accueil.
-> Comment ça marche : 1 worker Cloudflare unique (`services/kdmc-router`) reçoit la
-> belle adresse et sert le bon site GitHub Pages (reverse-proxy, même origine → PWA OK).
-
-## ⚙️ Serveurs / API (coulisses)
-
-| Belle adresse (à activer) | Worker Cloudflare | Adresse actuelle (toujours valide) |
+| Adresse | Ce que c'est | Mesure |
 |---|---|---|
-| https://api.kd-mc.com | apex-v13-backend | https://apex-v13-backend.9r4rxssx64.workers.dev |
-| https://chat-api.kd-mc.com | apex-chat-api | https://apex-chat-api.9r4rxssx64.workers.dev |
-| https://push.kd-mc.com | apex-push-worker | https://apex-push-worker.9r4rxssx64.workers.dev |
-| https://auth.kd-mc.com | apex-auth-worker | https://apex-auth-worker.9r4rxssx64.workers.dev |
-| https://secrets.kd-mc.com | apex-secrets-proxy | https://apex-secrets-proxy.9r4rxssx64.workers.dev |
-| https://vault.kd-mc.com | apex-vault-svc | https://apex-vault-svc.9r4rxssx64.workers.dev |
+| https://kd-mc.com · https://www.kd-mc.com | Portail du domaine | 200 · 200 |
+| https://cmcteams.kd-mc.com | CMCteams (planning du casino) | 200 |
+| https://cmcteams-light.kd-mc.com · https://departs.kd-mc.com | CMCteams light (départs) — même app, deux adresses | 200 · 200 |
+| https://apex-ai.kd-mc.com | Apex AI | 200 |
+| https://apex-chat.kd-mc.com | Apex Chat (messagerie) | 200 |
+| https://javis.kd-mc.com | Javis / Bee (assistant de Kevin) | 200 |
+| https://arbre.kd-mc.com | Arbre généalogique (code famille) | 200 |
+| https://lingua.kd-mc.com | Lingua (langues) | 200 |
+| https://studio.kd-mc.com | Créa Studio (vidéo, photo, dessin animé) | 200 |
+| https://la-detente.kd-mc.com | La Détente | 200 |
+| https://chez-lolo.kd-mc.com | Chez Lolo | 200 |
+| https://shops.kd-mc.com | Portail boutiques | 200 |
+| https://dashboard.kd-mc.com | Tableau de bord des boutiques | 200 |
+| https://sourcing.kd-mc.com | Sourcing des boutiques | 200 |
+| https://rotaplan.kd-mc.com | Rotaplan (planning en rotation, offre B2B) | 200 |
+| https://kit.kd-mc.com | Kit IA de l'indépendant | 200 |
+| https://croupier.kd-mc.com | Devenir croupier (guide) | 200 |
+| https://coffre.kd-mc.com | Coffre-fort | 200 |
+| https://autorisations.kd-mc.com | Coffre d'autorisations (admin) | 200 |
+| https://bot.kd-mc.com | Tableau de bord crypto-bot (admin) | 200 |
+| https://beatbot.kd-mc.com | PoolPilot (robot piscine) | 200 |
+| https://worldmonitor.kd-mc.com | World Monitor | 🔒 401 |
+| https://osint.kd-mc.com | OSINT | 🔒 401 |
+| https://ia.kd-mc.com | Outils IA | 🔒 401 |
+| https://outils.kd-mc.com | Mes outils gratuits | 🔒 401 |
+| https://dossiers.kd-mc.com | Index de sources officielles | 🔒 401 |
+| https://tor.kd-mc.com | « Tor en clair » (guide) | 🔒 401 |
+| https://cuisine.kd-mc.com · https://cocina.kd-mc.com · https://cujina.kd-mc.com | Livre de cuisine de la Riviera — un livre, trois adresses | 🔒 401 ×3 |
 
-> Les belles adresses serveurs sont **optionnelles** (les apps appellent encore les
-> `*.workers.dev`, qui ne changent pas). À brancher dans une étape ultérieure.
-> Côté autorisation : `kd-mc.com` (+ sous-domaines) est autorisé sur les 3 workers qui
-> filtraient par origine (apex-v13-backend, cmc-parser-proxy, ld-gemini-proxy) ; les
-> autres sont en CORS `*`. → les apps fonctionnent, **IA comprise**, dès la mise en ligne.
+## ⚙️ Serveurs (coulisses)
+
+**Il n'existe AUCUNE belle adresse serveur.** `api`, `chat-api`, `push`, `auth`, `secrets` et `vault.kd-mc.com`,
+annoncées « à activer » le 06.06, n'ont jamais été créées : le DNS répond « n'existe pas » (NXDOMAIN, mesuré le 22.10).
+Les apps appellent les workers par leur adresse `*.9r4rxssx64.workers.dev` (compte principal) ou par les chemins
+`/__…` du routeur, sur l'adresse de l'app elle-même. Ne pas écrire ces six adresses dans du code.
+
+| Worker | Mesure de la racine `/` (22.10) |
+|---|---|
+| `apex-chat-api` | répond (404 « Route inconnue » à la racine : normal) |
+| `apex-auth-worker` | répond (404 `not_found` à la racine : normal) |
+| `apex-push-worker` | répond (401 : normal) |
+| `apex-secrets-proxy` | répond 200 à la racine (signalé par l'audit du 22.10, point 3 : à fermer) |
+| `apex-v13-backend` · `apex-vault-svc` | `error code: 1042` (Cloudflare n'exécute pas le worker à cette adresse) — à vérifier par la session qui a la clé Cloudflare, sans conclure ici |
+
+> Ajouter une app = l'ajouter dans `services/kdmc-router/wrangler.toml` ET dans ce tableau, dans le même commit
+> (garde `tests/portail-adresses.test.mjs` pour le portail). Remesurer : `curl -s -o /dev/null -w '%{http_code}' https://<adresse>/`.
 
 ---
 
-## ✅ Ce qui est fait / ⏳ ce qu'il reste
+## 📜 Historique (gardé tel quel)
 
-**Fait (branche `claude/kdmc-custom-domain-7hNn9`)**
-- `services/kdmc-router/` (worker + wrangler routes custom_domain) + workflow de déploiement.
-- `kdmc-home/index.html` (page d'accueil portfolio des 5 projets).
-- Autorisation `kd-mc.com` dans les 3 workers qui filtraient par origine.
-
-**Reste**
-1. **Fusionner sur `main`** → le workflow déploie le routeur + provisionne DNS/SSL.
-2. ⚠️ La clé `CLOUDFLARE_API_TOKEN` doit avoir **Zone DNS Edit + Workers Routes Edit**
-   sur `kd-mc.com` pour la création auto des belles adresses (sinon : 1 case à cocher).
-3. (Optionnel) belles adresses serveurs `api/push/auth/...kd-mc.com`.
-4. (Cosmétique) canonical/OG des pages → `kd-mc.com` une fois validé en live.
-
----
-*Ce fichier est la source de vérité des adresses KDMC. À tenir à jour à chaque
-changement (règle « DOCS TEMPS RÉEL TOUJOURS À JOUR »).*
-
----
+> Le 06.06.2026, ce fichier listait 7 adresses (portail, cmcteams, apex-ai, apex-chat, la-detente, chez-lolo, www)
+> et 6 adresses serveurs « à activer » qui ne l'ont jamais été (voir ci-dessus).
 
 ## 🔧 Mise à jour 2026-08-13 — « pourquoi les adresses ne sont pas pareilles ? » (Kevin)
 

@@ -5,7 +5,7 @@ Les sessions **cloud** (claude.ai/code, iPhone) et les sessions **ordinateur** (
 
 ## Tables
 - `sessions(id, lieu, sujet, etat, maj)` — qui travaille sur quoi (`lieu` = cloud | pc). `maj` en millisecondes.
-- `messages(id, ts, de, a, sujet, corps, pj, lu_par)` — `a` = id d'une session ou `toutes` ; `lu_par` = « id1;id2; » ; `pj` = où trouver les pièces (ex. « Gmail [PONT→CLOUD] 1 »).
+- `messages(id, ts, de, a, sujet, corps, pj, lu_par)` — `ts` = entier en **millisecondes** (`CAST(strftime('%s','now') AS INTEGER)*1000`), jamais des secondes ni un texte (21.10 : 61 messages en secondes ou en texte se rangeaient en 1970, convertis) ; `a` = id d'une session ou `toutes` ; `lu_par` = « id1;id2; » ; `pj` = où trouver les pièces (ex. « Gmail [PONT→CLOUD] 1 »).
 
 ## Ce que fait CHAQUE session (règle `.claude/rules/pont.md`)
 1. **En commençant** : se déclarer, puis lire ses messages :

@@ -18,6 +18,7 @@ function serveur(js) {
     if (q.url === '/avec-manifeste') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><head><link rel="manifest" href="/mon.json"><link rel="apple-touch-icon" href="/i.png"></head><body><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
     if (q.url === '/entete') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body style="margin:0"><button id="deco" style="position:fixed;top:5px;right:5px;width:44px;height:44px;z-index:99">✕</button><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
     if (q.url === '/__sso/whoami') return json(q.headers.cookie && /anonyme/.test(q.headers.cookie) ? { ok: false } : { ok: true, uid: 'nouvelle-personne' });
+    if (q.url === '/abeille') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body style="margin:0"><iframe srcdoc="x" style="position:fixed;right:0;top:0;width:140px;height:110px;z-index:2147483000;border:0"></iframe><iframe srcdoc="y" style="position:fixed;right:0;bottom:0;width:140px;height:130px;z-index:2147483000;border:0"></iframe><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
     if (q.url === '/cadre') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body><iframe src="/"></iframe></body></html>'); }
     r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); r.end('<html><head><title>App</title></head><body><p>Bonjour</p><script src="/__installer/installer.js"></script></body></html>');
   });
@@ -68,6 +69,14 @@ async function suite(js, etiquette) {
     await p2.goto(base + '/'); await p2.waitForTimeout(5200);
     rec((await texte(p2)) === '', etiquette + " A''3. visiteur non connecté : rien ne s'ouvre");
     await ctx2.close();
+  });
+  /* A''' — la pastille n'est jamais cachée DERRIÈRE un cadre (la mascotte d'Apex Chat, pont 396) */
+  await essai(js, async (nav, base) => {
+    const ctx = await nav.newContext({ userAgent: UA_ANDROID, viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true }); const p = await ctx.newPage();
+    await p.goto(base + '/abeille'); await p.waitForTimeout(1900);
+    const haut = await p.evaluate(() => { const b = document.querySelector('[data-kdmc-installer="pastille"]').getBoundingClientRect(); const e = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return !!(e && e.getAttribute('data-kdmc-installer') === 'pastille'); });
+    rec(haut, etiquette + " A'''. la pastille reste cliquable (rien ne la recouvre, ni cadre ni mascotte)");
+    await ctx.close();
   });
   /* B — iPhone Safari : le guide */
   await essai(js, async (nav, base) => {

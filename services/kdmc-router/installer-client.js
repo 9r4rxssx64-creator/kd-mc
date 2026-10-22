@@ -91,7 +91,7 @@ export const INSTALLER_JS = String.raw`(function () {
         pastille = el('button', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;z-index:2147482000;min-width:44px;min-height:44px;border-radius:22px;border:1px solid ' + OR + ';background:' + NOIR + ';color:' + OR + ';font:700 18px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.45);cursor:pointer;padding:0 12px', '📲');
         pastille.type = 'button'; pastille.setAttribute('aria-label', "Installer l'application et activer les notifications"); pastille.setAttribute('data-kdmc-installer', 'pastille');
         pastille.onclick = ouvrir; document.body.appendChild(pastille);
-        placer(); setTimeout(placer, 1500); setTimeout(placer, 5000);
+        placer(); setTimeout(placer, 1500); setTimeout(placer, 5000); setTimeout(placer, 12000); setTimeout(placer, 25000);
       }
     }
     /* 22.10 (Lenovo, pont 383) : sur CMCteams la pastille couvrait « ✕ Déconnexion ». Elle choisit un coin où elle ne couvre RIEN de cliquable. */
@@ -102,6 +102,7 @@ export const INSTALLER_JS = String.raw`(function () {
       var r = pastille.getBoundingClientRect(), pts = [[.15, .15], [.85, .15], [.5, .5], [.15, .85], [.85, .85]];
       for (var i = 0; i < pts.length; i++) {
         var x = r.left + r.width * pts[i][0], y = r.top + r.height * pts[i][1], l = document.elementsFromPoint(x, y);
+        if (l.length && l[0] !== pastille && !(l[0].getAttribute && l[0].getAttribute('data-kdmc-installer')) && l[0] !== document.body && l[0] !== document.documentElement) return true;   /* quelque chose (la mascotte d'Apex Chat, un cadre) est PAR-DESSUS la pastille : on change de coin */
         for (var j = 0; j < l.length; j++) { if (l[j] === pastille || l[j].getAttribute('data-kdmc-installer') || l[j] === document.body || l[j] === document.documentElement) continue; if (cliquable(l[j])) return true; break; }
       }
       return false;

@@ -2732,6 +2732,26 @@
       "maj": "2026-10-22",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "pont-point-todo": {
+      "titre": "Liste d'actions : retirer les tests faits par robot",
+      "branche": "claude/todo-sans-test-main",
+      "sujet": "retire Apex Chat 1.1.329 (groupes), vérifié par le robot",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
+    },
+    "pont-point-robots": {
+      "titre": "Robots navigateur : e-mail du portail",
+      "branche": "claude/passkey-e2e-mail",
+      "sujet": "remplit #f-mail dans 4 robots",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-22",
+      "attend_kevin": null,
+      "attend_session": null
     }
   },
   "messages": [

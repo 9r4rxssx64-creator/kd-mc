@@ -115,7 +115,7 @@ try {
   console.log('— 1. Kevin se connecte sur kd-mc.com AVEC Face ID —');
   await page.goto('https://kd-mc.com/');
   await page.waitForSelector('#f-create', { timeout: 8000 });
-  await page.fill('#f-prenom', 'Kevin'); await page.fill('#f-nom', 'Desarzens'); await page.fill('#f-tel', '+377 06 12 34 56');
+  await page.fill('#f-prenom', 'Kevin'); await page.fill('#f-nom', 'Desarzens'); await page.fill('#f-tel', '+377 06 12 34 56'); await page.fill('#f-mail', 'essai@kd-mc.com');
   await page.fill('#f-code', CODE); await page.fill('#f-code2', CODE);
   await page.check('#cgu-ok'); await page.click('#f-create');
   /* (27.09.2026) Kevin n'a plus de « compte faible » : son nom → le portail demande le code ADMIN,

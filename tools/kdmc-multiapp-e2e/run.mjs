@@ -97,7 +97,7 @@ async function journey({ prenom, nom, code, enrolFaceId, codeAdmin }) {
   await page.goto(ORIGIN + '/');
   await page.waitForSelector('#f-create', { timeout: 6000 });
   await page.fill('#f-prenom', prenom);
-  await page.fill('#f-nom', nom); await page.fill('#f-tel', '+377 06 12 34 56');
+  await page.fill('#f-nom', nom); await page.fill('#f-tel', '+377 06 12 34 56'); await page.fill('#f-mail', 'essai@kd-mc.com');
   await page.fill('#f-code', code);
   await page.fill('#f-code2', code);
   await page.check('#cgu-ok');

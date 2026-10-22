@@ -82,6 +82,7 @@ try {
   await page.fill('#f-prenom', 'Lucie');
   await page.fill('#f-nom', 'Martin');
   await page.fill('#f-tel', '+377 06 12 34 56');
+  await page.fill('#f-mail', 'essai@kd-mc.com');   /* 17.10 : l'e-mail est obligatoire à l'inscription (portail 1.0.70) — sans lui le formulaire refuse et #pk-go n'apparaît jamais */
   await page.fill('#f-code', ADMIN_CODE);
   await page.fill('#f-code2', ADMIN_CODE);
   await page.check('#cgu-ok');

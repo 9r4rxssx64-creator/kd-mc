@@ -193,6 +193,9 @@ try {
   await vue(page, '3-liste-tous.png');
   const vrais = D ? (D.messages || []).filter((m) => m.source !== 'alertes') : [];
   ok(liste.noms.length === vrais.length, `la liste « Tous » montre ${liste.noms.length} entrée(s) = les ${vrais.length} vrais messages (aucune alerte, aucune connexion)`, detail(liste.noms));
+  /* 22.10 (capture de Kevin) : ses PROPRES modifications de l'arbre ne sont pas des messages pour lui. Un nombre seulement (le nom de Kevin n'est pas un secret du dépôt). */
+  const siennes = vrais.filter((m) => m.source === 'arbre' && /kevin/i.test(m.de || '') && /desarzens/i.test(m.de || '')).length;
+  ok(siennes === 0, `aucune de ses propres modifications de l'arbre dans sa boîte (${siennes} trouvée(s))`, `${siennes} entrée(s) de l'arbre faites par lui`);
   const parNom = new Map(vrais.map((m) => [m.de, m]));
   const rangs = liste.noms.map((n) => (parNom.get(n) ? rangDe(parNom.get(n)) : 9));
   ok(rangs.every((r, i) => i === 0 || rangs[i - 1] <= r) && !rangs.includes(9), 'l\'ordre affiché suit le classement : non lu → lu sans réponse → répondu → autres (rangs ' + rangs.join(',') + ')', detail(liste.noms));

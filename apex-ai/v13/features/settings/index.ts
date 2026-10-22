@@ -363,11 +363,10 @@ export function render(rootEl: HTMLElement): void {
         void (async () => {
           if (syncBtn) syncBtn.disabled = true;
           const results = await memoryBridge.runAutoSync();
-          const ok = results.filter((r) => r.ok).length;
           const { toast } = await import('../../ui/toast.js');
-          if (results.length === 0) toast.warn('Aucun backend configuré');
-          else if (ok === results.length) toast.success(`Sync OK (${ok}/${results.length})`);
-          else toast.warn(`Sync partielle (${ok}/${results.length})`);
+          const { messageSyncMemoire } = await import('./sync-message.js');
+          const m = messageSyncMemoire(results);
+          if (m.niveau === 'success') toast.success(m.texte); else toast.warn(m.texte);
           refreshStatus();
           if (syncBtn) syncBtn.disabled = false;
         })();

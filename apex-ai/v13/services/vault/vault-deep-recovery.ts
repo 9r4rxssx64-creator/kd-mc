@@ -119,6 +119,25 @@ function redactPhone(phone: string): string {
    Service
    ============================================================ */
 
+/**
+ * 22.10.2026 (captures de Kevin : « 1 clés restaurées » à chaque ouverture) : une clé DÉPLACÉE
+ * vers sa bonne case laisse l'ancienne case vide. Sans cette note, la sauvegarde Firebase
+ * (et l'ombre IDB) la remettaient au démarrage suivant → nouvelle migration → boucle, une
+ * bulle et une copie de secours de plus à chaque ouverture. Le registre `ax_credentials_deleted`
+ * est déjà respecté par la restauration Firebase, l'ombre IDB et l'audit de cohérence.
+ * Une vraie saisie de Kevin dans cette case l'en retire (vault.setKey, origine « saisie »).
+ */
+export function noterCleRetiree(cle: string): void {
+  try {
+    const liste = JSON.parse(localStorage.getItem('ax_credentials_deleted') ?? '[]') as unknown;
+    const retirees = Array.isArray(liste) ? liste.filter((x): x is string => typeof x === 'string') : [];
+    if (retirees.includes(cle)) return;
+    retirees.push(cle);
+    while (retirees.length > 200) retirees.shift();
+    localStorage.setItem('ax_credentials_deleted', JSON.stringify(retirees));
+  } catch { /* quota — non bloquant */ }
+}
+
 class VaultDeepRecovery {
   /**
    * Méthode principale au boot.
@@ -330,6 +349,7 @@ class VaultDeepRecovery {
               localStorage.setItem(backupKey, value);
               localStorage.removeItem(key);
             } catch { /* quota — non bloquant */ }
+            noterCleRetiree(key);
             migrated++;
             logger.info(
               'vault-deep-recovery',
@@ -476,6 +496,7 @@ class VaultDeepRecovery {
         try {
           localStorage.removeItem(currentKey);
         } catch { /* ignore */ }
+        noterCleRetiree(currentKey);
         moved.push({ from: currentKey, to: detected.storageKey, ok: true, reason: 'target_already_valid_kept_both' });
         continue;
       }
@@ -491,6 +512,7 @@ class VaultDeepRecovery {
       try {
         localStorage.removeItem(currentKey);
       } catch { /* ignore */ }
+      noterCleRetiree(currentKey);
 
       moved.push({ from: currentKey, to: detected.storageKey, ok: true });
     }

@@ -701,6 +701,16 @@ class Vault {
       this.audit('delete', { target: storageKey });
       return { ok: true, persisted };
     }
+    /* 22.10.2026 : une vraie saisie de Kevin rend la case de nouveau restaurable sur ses autres appareils
+     * (elle avait pu être notée « retirée » après le déplacement d'une clé mal rangée). */
+    if (opts.origine === 'saisie') {
+      try {
+        const liste = JSON.parse(localStorage.getItem('ax_credentials_deleted') ?? '[]') as unknown;
+        if (Array.isArray(liste) && liste.includes(storageKey)) {
+          localStorage.setItem('ax_credentials_deleted', JSON.stringify(liste.filter((x) => x !== storageKey)));
+        }
+      } catch { /* ignore */ }
+    }
     let encrypted: string;
     try {
       encrypted = await this.encryptAuto(plaintext);

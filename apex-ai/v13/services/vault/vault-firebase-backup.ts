@@ -397,8 +397,8 @@ class VaultFirebaseBackup {
         .then(({ kevinAlerts }) =>
           kevinAlerts.alertKevin({
             severity: 'info',
-            title: `🔓 ${result.restored} clés restaurées`,
-            body: 'Auto-restore depuis Firebase backup chiffré (cross-device).',
+            title: result.restored === 1 ? '🔓 1 clé restaurée' : `🔓 ${result.restored} clés restaurées`,
+            body: 'Récupérée depuis ta sauvegarde chiffrée (autre appareil ou appli réinstallée).',
           }),
         )
         .catch(() => {

@@ -57,6 +57,20 @@ describe('Vault Deep Recovery (Kevin 2026-05-09 P0 ABSOLUE)', () => {
     expect(backupFound).toBe(true);
   });
 
+  it("22.10.2026 — une clé déplacée est notée « retirée exprès » : la sauvegarde ne la remet plus (fin de la boucle « 1 clés restaurées » à chaque ouverture)", async () => {
+    const { vault } = await import('../../services/vault/vault.js');
+    const anthropicKey = 'sk-ant-api03-' + 'Y'.repeat(95);
+    await vault.setKey('ax_openai_key', anthropicKey);
+    await vaultDeepRecovery.reclassifyMisplacedKeys();
+    const retirees = JSON.parse(localStorage.getItem('ax_credentials_deleted') ?? '[]') as string[];
+    expect(retirees).toContain('ax_openai_key');
+    expect(localStorage.getItem('ax_openai_key')).toBeNull();
+    /* Kevin colle plus tard une VRAIE clé OpenAI dans cette case : elle redevient restaurable partout */
+    await vault.setKey('ax_openai_key', 'sk-proj-' + 'Z'.repeat(60), { origine: 'saisie' });
+    const apres = JSON.parse(localStorage.getItem('ax_credentials_deleted') ?? '[]') as string[];
+    expect(apres).not.toContain('ax_openai_key');
+  });
+
   it('autoWireWhatsApp : numéro dans ax_user.phone → set ax_kevin_whatsapp_phone', async () => {
     /* Profil Kevin avec numéro WhatsApp */
     localStorage.setItem('ax_user', JSON.stringify({

@@ -14,6 +14,9 @@
  *   GET    /api/admin/users/:pseudo/full → admin Kevin only — fiche complète
  *   POST   /api/keys/prekeys         → upload bundle prekeys X3DH + Kyber
  *   GET    /api/keys/:userId/bundle  → récupère bundle prekey
+ *   POST   /api/keys/device          → publie la clé de CET appareil (une clé par appareil, 22.10.2026)
+ *   GET    /api/keys/:userId/devices → appareils actifs d'un compte
+ *   DELETE /api/keys/device/:id      → retire un de ses appareils
  *   POST   /api/conversations        → créer conv DM/group/community/channel
  *   GET    /api/conversations        → liste convs user
  *   WS     /api/conversations/:id/ws → upgrade vers ConversationDO
@@ -109,7 +112,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.342';
+export const API_VERSION = '1.1.343';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1576,6 +1579,13 @@ export async function _adoptKevinRow(env, uid, now = Date.now()) {
     stmts.push(DB.prepare('UPDATE users SET kdmc_uid=?, updated_at=? WHERE id=?').bind(uid, now, 'kdmc_admin'));
   }
   if (stmts.length) await DB.batch(stmts);
+  // 22.10.2026 : ses appareils (une clé par appareil) suivent aussi le vrai compte. À part : une table absente ne bloque jamais la fusion.
+  for (const d of dups) {
+    try {
+      await DB.prepare("UPDATE OR IGNORE user_devices SET user_id='kdmc_admin' WHERE user_id=?").bind(d.id).run();
+      await DB.prepare('DELETE FROM user_devices WHERE user_id=?').bind(d.id).run();
+    } catch (_) { /* table pas encore créée */ }
+  }
   try { await auditLog(env, 'kdmc_admin', 'kevin_comptes_fondus', 'user', 'kdmc_admin', { kdmc_uid: uid, doublons: dups.map((d) => d.id) }, '', ''); } catch (_) { /* journal : best-effort */ }
   return await DB.prepare('SELECT * FROM users WHERE id=?').bind('kdmc_admin').first();
 }
@@ -2445,6 +2455,78 @@ async function handleKeyBundle(userId, request, env) {
       crypto_caps: caps,
     },
   });
+}
+
+// ============================================================================
+//  UNE CLÉ PAR APPAREIL (22.10.2026, Kevin : « une clé par appareil pour tous »)
+//  Registre des appareils d'un compte : chaque appareil publie SA clé publique ; l'émetteur d'un message
+//  privé emballe la clé du message pour chaque appareil actif (enveloppe E2EM1, lib/crypto-core.js).
+//  POST   /api/keys/device              → publier / rafraîchir l'appareil courant
+//  GET    /api/keys/:userId/devices     → appareils actifs d'un compte (suit merged_into)
+//  DELETE /api/keys/device/:deviceId    → retirer un de SES appareils (il ne recevra plus rien)
+// ============================================================================
+const DEVICE_ID_RX = /^[A-Za-z0-9_-]{8,64}$/;
+export const DEVICES_MAX = 12;
+export const DEVICE_ACTIF_MS = 90 * 86400000;
+
+export async function handleRegisterDevice(request, env) {
+  const auth = await getAuthUser(request, env);
+  if (!auth) return err('Non authentifié', 401);
+  const body = await request.json().catch(() => ({}));
+  const deviceId = String(body.device_id || '');
+  const idk = body.identity_key_pub;
+  if (!DEVICE_ID_RX.test(deviceId)) return err('Identifiant d’appareil invalide', 400, 'bad_device_id');
+  if (!idk || typeof idk !== 'string' || idk.length < 8 || idk.length > 4000 || idk.startsWith('PENDING')) {
+    return err('identity_key_pub invalide', 400, 'bad_pubkey');
+  }
+  const caps = (typeof body.crypto_caps === 'string' && body.crypto_caps.length <= 200 && /^[a-z0-9,]+$/.test(body.crypto_caps)) ? body.crypto_caps : null;
+  const label = String(body.label || '').replace(/[<>&"'\u0000-\u001f]/g, '').trim().slice(0, 60) || null;
+  const DB = env.APEX_CHAT_DB;
+  const now = Date.now();
+  const deja = await DB.prepare('SELECT revoked_at FROM user_devices WHERE user_id=? AND device_id=?').bind(auth.sub, deviceId).first();
+  // Un appareil RETIRÉ ne revient jamais tout seul (vol, perte) : il doit se présenter sous un nouvel identifiant.
+  if (deja && deja.revoked_at) return err('Appareil retiré', 403, 'device_revoked');
+  await DB.prepare(
+    `INSERT INTO user_devices (user_id, device_id, identity_key_pub, crypto_caps, label, created_at, last_seen)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, device_id) DO UPDATE SET identity_key_pub=excluded.identity_key_pub,
+       crypto_caps=excluded.crypto_caps, label=COALESCE(excluded.label, user_devices.label), last_seen=excluded.last_seen`
+  ).bind(auth.sub, deviceId, idk, caps, label, now, now).run();
+  // Plafond : au-delà de DEVICES_MAX appareils actifs, les moins récemment vus sont retirés.
+  const actifs = (await DB.prepare(
+    'SELECT device_id FROM user_devices WHERE user_id=? AND revoked_at IS NULL ORDER BY last_seen DESC'
+  ).bind(auth.sub).all()).results || [];
+  for (const r of actifs.slice(DEVICES_MAX)) {
+    await DB.prepare('UPDATE user_devices SET revoked_at=? WHERE user_id=? AND device_id=?').bind(now, auth.sub, r.device_id).run();
+  }
+  return json({ ok: true, device_id: deviceId });
+}
+
+export async function handleListDevices(userId, request, env) {
+  const auth = await getAuthUser(request, env);
+  if (!auth) return err('Non authentifié', 401);
+  const DB = env.APEX_CHAT_DB;
+  let target = userId;
+  try { target = await _canonicalId(DB, userId); } catch (_) { target = userId; }
+  const rows = (await DB.prepare(
+    `SELECT device_id, identity_key_pub, crypto_caps, label, created_at, last_seen FROM user_devices
+      WHERE user_id=? AND revoked_at IS NULL AND last_seen > ? ORDER BY last_seen DESC LIMIT ?`
+  ).bind(target, Date.now() - DEVICE_ACTIF_MS, DEVICES_MAX).all()).results || [];
+  const moi = target === auth.sub;
+  // Le nom d'un appareil (« iPhone », « PC Windows ») ne regarde que son propriétaire.
+  const devices = rows.map((r) => (moi ? r : { device_id: r.device_id, identity_key_pub: r.identity_key_pub, crypto_caps: r.crypto_caps, last_seen: r.last_seen }));
+  return json({ ok: true, user_id: target, devices });
+}
+
+export async function handleRevokeDevice(deviceId, request, env) {
+  const auth = await getAuthUser(request, env);
+  if (!auth) return err('Non authentifié', 401);
+  if (!DEVICE_ID_RX.test(String(deviceId || ''))) return err('Identifiant d’appareil invalide', 400, 'bad_device_id');
+  const r = await env.APEX_CHAT_DB.prepare(
+    'UPDATE user_devices SET revoked_at=? WHERE user_id=? AND device_id=? AND revoked_at IS NULL'
+  ).bind(Date.now(), auth.sub, deviceId).run();
+  if (!r || !r.meta || !r.meta.changes) return err('Appareil introuvable', 404, 'no_device');
+  return json({ ok: true });
 }
 
 // ============================================================================
@@ -7239,6 +7321,11 @@ const _workerHandler = {
 
       // E2E keys (v1.1.172 FIX P0 audit crew — distribution clés publiques)
       if (path === '/api/keys/prekeys' && method === 'POST') return await handleUploadPrekeys(request, env);
+      if (path === '/api/keys/device' && method === 'POST') return await handleRegisterDevice(request, env);
+      const deviceListMatch = path.match(/^\/api\/keys\/([a-zA-Z0-9_-]+)\/devices$/);
+      if (deviceListMatch && method === 'GET') return await handleListDevices(deviceListMatch[1], request, env);
+      const deviceRevokeMatch = path.match(/^\/api\/keys\/device\/([a-zA-Z0-9_-]+)$/);
+      if (deviceRevokeMatch && method === 'DELETE') return await handleRevokeDevice(deviceRevokeMatch[1], request, env);
       const keyBundleMatch = path.match(/^\/api\/keys\/([a-zA-Z0-9_-]+)\/bundle$/);
       if (keyBundleMatch && method === 'GET') return await handleKeyBundle(keyBundleMatch[1], request, env);
 

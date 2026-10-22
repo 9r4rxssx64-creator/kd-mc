@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.342",
+  "softwareVersion": "v1.1.343",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.342';
+const __APEX_CHAT_VERSION__ = 'v1.1.343';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.342" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.342</div>
+  <div id="splash-version" data-ver="v1.1.343" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.343</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.342</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.343</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -7904,6 +7904,7 @@ K._publishPubkey = async function(){
   try{
     const pub = lg('crypto_pub', null);
     if(!pub || !K.token) return;                       // besoin d'être authentifié
+    K._publishDevice && K._publishDevice();            // v1.1.343 : la clé de CET appareil, dans la liste de mes appareils
     // v1.1.296 : republiée si les capacités ont changé (sinon 'grp1' n'atteint jamais les contacts).
     // v1.1.297 : + clé publique de SIGNATURE de groupe (champ prekey_signed « GSIG1: », capacité
     // « gsig1 ») quand cet appareil en a une (IndexedDB) ; republiée si elle change.
@@ -7952,7 +7953,16 @@ K._pendingPeerKey = function(convId){
 };
 K._keyChangePending = function(conv){
   if(!conv || !conv.id || !K._convIsDm(conv)) return false;
-  return !!K._pendingPeerKey(conv.id);
+  const pend = K._pendingPeerKey(conv.id);
+  if(!pend) return false;
+  // v1.1.343 — une clé par appareil : la « nouvelle clé » est celle d'un appareil que le contact a DÉCLARÉ
+  // (liste du serveur, nouvel appareil signalé par _noteNouveauxAppareils) → ce n'est pas un changement suspect.
+  const c = conv.peer_id && K._devCache && K._devCache[conv.peer_id];
+  if(c && Array.isArray(c.list) && c.list.some((d) => d && d.identity_key_pub === pend)){
+    try{ localStorage.setItem('peerkey_' + conv.id, pend); localStorage.removeItem('peerkey_pending_' + conv.id); }catch(_e){ /* stockage */ }
+    return false;
+  }
+  return true;
 };
 // Renvoie la clé à UTILISER pour la session (la clé épinglée si la clé reçue diffère).
 K._tofuPeerKey = function(conv, freshPub){
@@ -9846,14 +9856,133 @@ K.openConv = async function(convId){
 //   - groupe / E2E OFF          → 'clear'   (chiffré en transit seulement, assumé
 //                                 et affiché dans l'en-tête pour un groupe)
 // ============================================================================
+// ============================================================================
+//  UNE CLÉ PAR APPAREIL (22.10.2026, Kevin : « une clé par appareil pour tous »)
+//  Avant : le serveur ne gardait QU'UNE clé par compte (celle du dernier appareil ouvert) → un message reçu n'était
+//  lisible que sur cet appareil (« impossible à lire sur cet appareil » sur le PC de Kevin). Désormais chaque appareil
+//  publie SA clé (/api/keys/device) et un message privé part dans une enveloppe « E2EM1: » lisible par chaque appareil
+//  du destinataire ET de l'émetteur (lib/crypto-core.js : mdevEncrypt / mdevDecrypt). Repli : un correspondant dont
+//  aucun appareil n'est encore à jour reçoit l'ancien format (E2E1), comme avant.
+// ============================================================================
+K._MDEV_CAP = 'mdev1';
+K._deviceId = function(){
+  let d = lg('device_id', null);
+  if(typeof d !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(d)){
+    const b = new Uint8Array(12); crypto.getRandomValues(b);
+    d = 'dev-' + Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+    ls('device_id', d);
+  }
+  return d;
+};
+K._deviceLabel = function(){
+  const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'PC Windows' : /Macintosh/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : 'Appareil';
+  const nav = /Edg\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : '';
+  return (os + (nav ? ' · ' + nav : '')).slice(0, 60);
+};
+// Publie la clé de CET appareil (au plus une fois par jour et par compte ; immédiatement si la clé change).
+K._publishDevice = async function(force){
+  try{
+    const pub = lg('crypto_pub', null);
+    if(!pub || !K.token || !K.user) return false;
+    const jour = new Date().toISOString().slice(0, 10);
+    const marque = [K.user.id, pub, K._deviceId(), jour].join('|');
+    if(!force && lg('device_published', null) === marque) return true;
+    const corps = { device_id: K._deviceId(), identity_key_pub: pub, crypto_caps: K._CRYPTO_CAPS + ',' + K._MDEV_CAP, label: K._deviceLabel() };
+    let r = await K._api('POST', '/api/keys/device', corps);
+    if(r && r.error === 'device_revoked'){
+      // Cet appareil avait été retiré : il se représente sous un NOUVEL identifiant (ses anciens messages restent illisibles ici).
+      ls('device_id', null); try{ localStorage.removeItem(PERSIST_PREFIX + 'device_id'); }catch(_e){ /* stockage */ }
+      corps.device_id = K._deviceId();
+      r = await K._api('POST', '/api/keys/device', corps);
+    }
+    if(r && r.ok){ ls('device_published', [K.user.id, pub, K._deviceId(), jour].join('|')); K._devCache = {}; return true; }
+  }catch(e){ _safeCatch('publish-device', e); }
+  return false;
+};
+// Appareils actifs d'un compte (cache 5 min ; force = relecture).
+K._devCache = K._devCache || {};
+K._devicesOf = async function(uid, force){
+  if(!uid || !K.token) return [];
+  const c = K._devCache[uid];
+  if(!force && c && Date.now() - c.at < 300000) return c.list;
+  try{
+    const r = await K._api('GET', '/api/keys/' + encodeURIComponent(uid) + '/devices');
+    const list = (r && r.ok && Array.isArray(r.devices)) ? r.devices.filter((d) => d && d.device_id && d.identity_key_pub) : [];
+    K._devCache[uid] = { at: Date.now(), list };
+    return list;
+  }catch(e){ _safeCatch('devices-of', e); return c ? c.list : []; }
+};
+// Chiffre pour chaque appareil du correspondant ET chacun des miens. null = repli sur l'ancien format.
+K._mdevEncrypt = async function(conv, plaintext, kind, id){
+  try{
+    if(!conv || !K._convIsDm(conv) || !conv.peer_id || !K.user || !window.ApexCrypto || !ApexCrypto.mdevEncrypt) return null;
+    if(!K._cryptoKeys){ try{ await _ensureCryptoKeys(); }catch(_e){ /* clé pas prête */ } }
+    const pub = lg('crypto_pub', null);
+    if(!K._cryptoKeys || !pub) return null;
+    const pair = await K._devicesOf(conv.peer_id);
+    if(!pair.length) return null;                                       // correspondant pas encore à jour : ancien format
+    K._noteNouveauxAppareils(conv, pair);
+    const miens = await K._devicesOf(K.user.id);
+    const moi = K._deviceId();
+    const dest = [];
+    const vus = new Set();
+    for(const d of pair.concat(miens, [{ device_id: moi, identity_key_pub: pub }])){
+      if(!d || vus.has(d.device_id)) continue;
+      vus.add(d.device_id); dest.push({ d: d.device_id, pub: d.identity_key_pub });
+    }
+    return await ApexCrypto.mdevEncrypt(plaintext, { conv: conv.id, fromDevice: moi, fromPub: pub, myPrivateKey: K._cryptoKeys.privateKey,
+      recipients: dest.slice(0, ApexCrypto.MDEV_MAX_DEVICES || 24), kind: kind || 'm', id: id || ('m_' + Date.now()) });
+  }catch(e){ _safeCatch('mdev-encrypt', e); return null; }
+};
+// Un nouvel appareil du correspondant est signalé une fois (il reçoit désormais les messages).
+K._noteNouveauxAppareils = function(conv, pair){
+  try{
+    const cle = 'mdev_vus_' + conv.peer_id;
+    const avant = lg(cle, null);
+    const ids = pair.map((d) => d.device_id).sort();
+    ls(cle, ids);
+    if(Array.isArray(avant) && ids.some((x) => !avant.includes(x))){
+      toast('🔐 ' + (conv.name || 'Ton contact') + ' utilise un nouvel appareil : il reçoit aussi tes messages', 'info', 5000);
+    }
+  }catch(_e){ /* information seulement */ }
+};
+// Déchiffre une enveloppe E2EM1 pour CET appareil ; vérifie que la clé de l'émetteur est bien celle d'un de SES appareils.
+K._mdevDecode = async function(conv, raw, meta){
+  meta = meta || {};
+  const illisible = (t) => ({ text: t, encrypted: false, unencrypted: false, undecryptable: true });
+  try{
+    if(!K._cryptoKeys){ try{ await _ensureCryptoKeys(); }catch(_e){ /* clé pas prête */ } }
+    if(!K._cryptoKeys) return illisible('🔒 Message chiffré — la clé de cet appareil n’est pas encore prête');
+    const r = await ApexCrypto.mdevDecrypt(raw, { conv: conv.id, myDevice: K._deviceId(), myPrivateKey: K._cryptoKeys.privateKey, ctxId: meta.edit });
+    const emetteur = meta.sender || meta.from;
+    if(emetteur){
+      const connu = (l) => l.some((d) => d.device_id === r.fromDevice && d.identity_key_pub === r.fromPub);
+      if(!connu(await K._devicesOf(emetteur)) && !connu(await K._devicesOf(emetteur, true))){
+        return illisible('🔒 Message d’un appareil que son auteur n’a pas déclaré — non affiché');
+      }
+    }
+    return { text: r.text, encrypted: true, unencrypted: false };
+  }catch(e){
+    if(e && e.code === 'no_entry') return illisible('🔒 Message chiffré pour ses autres appareils — envoyé avant que celui-ci soit ajouté');
+    _safeCatch('mdev-decode', e);
+    return illisible('🔒 Message chiffré (E2E) — impossible à lire sur cet appareil');
+  }
+};
 K._encryptOutgoing = async function(conv, plaintext){
   // v1.1.296 — groupe : E2E de groupe (Sender Keys) ou chemin honnête « en transit ».
   // v1.1.297 — 3ᵉ argument { mid, edit } transmis : liaison du chiffré de groupe à l'identifiant.
   if(conv && !K._convIsDm(conv) && typeof K._grpEncryptOutgoing === 'function') return K._grpEncryptOutgoing(conv, plaintext, arguments[2]);
   const e2e = K._e2eAppliesTo(conv);
+  if(e2e && conv && conv.peer_id && K._devicesOf) await K._devicesOf(conv.peer_id);   // v1.1.343 : liste des appareils avant le contrôle de clé
   const keyChanged = e2e && K._keyChangePending(conv);
   let payload = null;
   if(e2e && !keyChanged){
+    const o3 = arguments[2] || {};
+    const mdev = K._mdevEncrypt ? await K._mdevEncrypt(conv, plaintext, o3.edit ? 'e' : 'm', o3.edit || o3.mid) : null;
+    if(mdev) payload = mdev;
+  }
+  if(e2e && !keyChanged && !payload){
     try{
       await K._ensureFreshSession(conv);
       if(!K._keyChangePending(conv) && window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(conv.id)){
@@ -9959,11 +10088,15 @@ K._sendMsg = async function(){
   // v1.1.294 : E2E seulement pour un DM (jamais la session 1:1 d'un groupe) et
   // jamais vers une clé de contact changée non acceptée (message gardé en attente).
   const e2eConv = K._e2eAppliesTo(conv);
+  if(e2eConv && conv.peer_id && K._devicesOf) await K._devicesOf(conv.peer_id);       // v1.1.343 : liste des appareils avant le contrôle de clé
   if(e2eConv && !K._keyChangePending(conv)){
     try{
       // v1.1.262 — forward secrecy prioritaire si activée : chaque message a sa
       // clé jetable (E2E2:<n>:<ct>). Sinon E2E1 statique. Fail-open sur E2E1.
-      if(K._ratchetOn(conv) && await K._ensureRatchet(conv)){
+      const mdev = K._mdevEncrypt ? await K._mdevEncrypt(conv, text, 'm', msgId) : null;
+      if(mdev){
+        ratchetPayload = mdev;                                         // transporté tel quel (même place que l'ancien E2E2)
+      } else if(K._ratchetOn(conv) && await K._ensureRatchet(conv)){
         const rr = await ApexCrypto.ratchetEncrypt(conv.id, text);
         ratchetPayload = K._RATCHET_TAG + rr.n + ':' + rr.ct;
         K._persistRatchet(conv.id);
@@ -9985,7 +10118,7 @@ K._sendMsg = async function(){
     text: displayText,      // affichage local clair
     ciphertext: payload,    // envoyé au serveur (null si pas de session → clair)
     ts: Date.now(),
-    encrypted: grpDecision ? grpDecision.encrypted : !!ciphertext
+    encrypted: grpDecision ? grpDecision.encrypted : !!(ciphertext || ratchetPayload)
   };
 
   // v1.1.43 — Mode éphémère : ajoute expires_at + reset après envoi
@@ -10074,6 +10207,7 @@ K._flushPendingEncrypt = async function(convId){
       // acceptée (reste en attente), jamais en clair pour un DM sous E2E.
       const conv = (K.conversations || []).find(c => c && c.id === item.conv_id) ||
         ((K.viewData && K.viewData.id === item.conv_id) ? K.viewData : { id: item.conv_id });
+      if(conv.peer_id && K._devicesOf && K._convIsDm(conv)) await K._devicesOf(conv.peer_id);   // v1.1.343 : appareils déclarés avant le contrôle de clé
       if(!K._keyChangePending(conv)){
         const d = await K._encryptOutgoing(conv, item.text, item.kind === 'edit' ? { edit: item.message_id } : { mid: item.id });
         // Un message écrit sous E2E dans un DM ne repart JAMAIS en clair (même si
@@ -10553,6 +10687,10 @@ K._decodeIncoming = async function(convId, raw){
     const g = await K._grpDecode(conv, raw, meta);
     if(g) return g;
   }
+  if(window.ApexCrypto && ApexCrypto.isMdevPayload && ApexCrypto.isMdevPayload(raw)){
+    if(!K._convIsDm(conv)) return { text: '🔒 Message chiffré pour une conversation privée — illisible dans un groupe', encrypted: false, unencrypted: false, undecryptable: true };
+    return K._mdevDecode(conv, raw, meta);
+  }
   if(raw.indexOf(K._RATCHET_TAG) === 0){
     return { text: await K._decryptRatchetPayload(convId, raw), encrypted: true, unencrypted: false };
   }
@@ -10942,7 +11080,16 @@ async function _handleWsMessage(data, convId){
       const eMsgId = data.message_id;
       let newText = data.new_text;
       let editClearInE2e = false;
-      if(eMsgId && !newText && typeof data.ciphertext === 'string' && data.ciphertext.indexOf(K._E2E_TAG) === 0){
+      if(eMsgId && !newText && typeof data.ciphertext === 'string' && window.ApexCrypto && ApexCrypto.isMdevPayload && ApexCrypto.isMdevPayload(data.ciphertext)){
+        // 22.10.2026 : édition multi-appareils (E2EM1), liée à l'id du message édité ; seul son AUTEUR l'édite.
+        try{
+          const mconv = (K.viewData && K.viewData.id === convId) ? K.viewData : ((K.conversations || []).find(c => c && c.id === convId) || { id: convId });
+          const target = (K.messages[convId] || []).find(x => x && x.id === eMsgId);
+          const md = (target && target.from === data.userId) ? await K._mdevDecode(mconv, data.ciphertext, { sender: data.userId, edit: eMsgId }) : null;
+          if(md && md.encrypted) newText = md.text;
+          else if(target){ target.edit_refused = true; ls('messages_' + convId, K.messages[convId]); }
+        }catch(e){ _safeCatch('edit-mdev-decrypt', e); }
+      } else if(eMsgId && !newText && typeof data.ciphertext === 'string' && data.ciphertext.indexOf(K._E2E_TAG) === 0){
         try{ newText = await K._decryptE2EHeal(convId, data.ciphertext.slice(K._E2E_TAG.length)); }
         catch(e){ _safeCatch('edit-decrypt', e); }
       } else if(eMsgId && !newText && typeof data.ciphertext === 'string' && data.ciphertext.indexOf(K._GRP_TAG || 'E2EG1:') === 0){
@@ -19062,6 +19209,10 @@ async function _boot(){
        la réunion des comptes ne partait jamais (seule une connexion complète appelait _postLogin). On la lance aussi ici. */
     if(K.token && !String(K.token).startsWith('local-')){
       setTimeout(() => { try{ K._ralliementKevin && K._ralliementKevin(); }catch(_e){ _safeCatch('ralliement-reprise', _e); } }, 3000);
+      /* v1.1.343 (une clé par appareil, prouvé en vrai Chromium, tests/runtime-cle-par-appareil.mjs) : à la réouverture, l'appareil
+         ne publiait jamais sa clé (seule une connexion complète le faisait) → personne ne chiffrait pour lui. Clé chargée (jamais
+         régénérée si elle attend le PIN), puis publiée avec cet appareil. */
+      setTimeout(async () => { try{ await _ensureCryptoKeys(); K._publishPubkey && K._publishPubkey(); }catch(_e){ _safeCatch('cle-reprise', _e); } }, 900);
     }
 
     // v1.1.211 — Auto-(re)abonnement push SILENCIEUX au boot pour une session
@@ -19291,6 +19442,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.342", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.343", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

@@ -4,12 +4,21 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.343 (2026-10-22 — une clé par appareil : un message privé se lit sur TOUS les appareils)
+
+- Kevin : « Fais aussi une clef par appareil pour tous ». Avant : une seule clé publique par compte (la dernière publiée gagne) → un message écrit pour l'iPhone était illisible sur le PC (« impossible à lire sur cet appareil »).
+- Chaque appareil a SA clé (`user_devices`, migration 0027 ; routes `POST /api/keys/device`, `GET /api/keys/:uid/devices`, `DELETE /api/keys/device/:id` ; plafond 12, actifs 90 j ; fusion des comptes de Kevin emporte ses appareils).
+- Nouveau format `E2EM1:` (`lib/crypto-core.js`) : une clé aléatoire par message, emballée pour chaque appareil du destinataire ET de l'émetteur ; un appareil non déclaré par l'auteur est refusé ; nouvel appareil du contact signalé une fois et ne déclenche plus la fausse alerte « clé changée ». Repli sur l'ancien format si le contact n'a pas encore la 1.1.343.
+- Trouvé en vrai navigateur : à la RÉOUVERTURE (session gardée), l'appareil ne publiait jamais sa clé → corrigé.
+- Preuves : vitest 2267 verts, couverture 100 % `crypto-core` ; vrai Chromium 3 appareils `runtime-cle-par-appareil.mjs` 8/8 (1/8 avec la 1.1.342). Leçon 722. Limites : anciens messages restent illisibles ; médias et groupes = phase 2.
+
 ## Light v1.108 + Crea Studio v9.18.6 + seed CMCteams v9.980 (2026-10-22 — rouges de test:ci réparés)
 - Light v1.108 : le portillon ne remet plus le curseur sur « Prénom » 0,2 s après l'ouverture quand on tape déjà ailleurs (le nom finissait dans le prénom) ; test:matricule-fiche 6/6 au lieu d'environ 1 échec sur 3 (il servait aussi à la light le version.txt de CMCteams → rechargements).
 - Light v1.108 : « Horaires aménagés » (juillet, août, septembre 2026) ne disparaît plus quand Firebase répond — tableau spécial du PDF que le live ne reconstruit pas, gardé comme les cadres (v1.90). Prouvé dans un vrai navigateur : test rouge sans la correction, vert avec.
 - Light (page Départs) v1.107 : les tableaux Congés / Formation / Maladie suivent l'ordre du PDF (octobre et novembre 2026 étaient dans l'ordre de l'app) ; badge de version aligné (il affichait encore v1.106).
 - Crea Studio v9.18.6 : le journal d'usage ne part que depuis une page du domaine (*.kd-mc.com) — plus de requête refusée ni de trace de test en production.
 - CMCteams : le seed porte la version du parseur de l'app (v9.980), cellules identiques (0 différence sur 5 mois, mesuré) ; index.html repasse sous son plafond de taille (commentaire raccourci).
+
 ## Apex Chat v1.1.342 (2026-10-22 — plus jamais bloqué sur l'écran de démarrage)
 
 - MESURÉ : iPhone de Kevin bloqué sur l'écran de démarrage en v1.1.341 (la réunion des comptes relançait une connexion complète en plein démarrage).

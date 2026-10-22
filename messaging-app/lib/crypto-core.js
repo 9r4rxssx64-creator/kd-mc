@@ -771,6 +771,92 @@ export async function selfTest(__deps = {}) {
   }
 }
 
+
+// ----------------------------------------------------------------------------
+//  UNE CLÉ PAR APPAREIL (22.10.2026, Kevin : « une clé par appareil pour tous »)
+//  Avant : UNE clé publique par compte, celle du dernier appareil ouvert → un message
+//  reçu n'était lisible que sur cet appareil (« impossible à lire sur cet appareil »).
+//  « E2EM1: » = enveloppe multi-appareils d'un message privé :
+//   - une clé de contenu AES-GCM 256 aléatoire PAR message chiffre le texte ;
+//   - cette clé est emballée pour CHAQUE appareil du destinataire ET chaque appareil de
+//     l'émetteur (ECDH clé de MON appareil × clé de SON appareil, HKDF, AES-GCM) ;
+//   - l'emballage est lié (AAD) à : conversation, appareil émetteur, appareil destinataire,
+//     type de trame et identifiant du message (un serveur ne peut ni déplacer l'enveloppe
+//     d'une conversation à l'autre, ni la rejouer comme édition d'un autre message).
+// ----------------------------------------------------------------------------
+export const MDEV_TAG = 'E2EM1:';
+export const MDEV_MAX_DEVICES = 24;
+const _MDEV_ID = /^[A-Za-z0-9_-]{8,64}$/;
+
+function _mdevParts(conv, fromDevice, toDevice, kind, id) {
+  return ['mdev1', conv, fromDevice, toDevice, kind, id];
+}
+
+export function isMdevPayload(raw) {
+  return typeof raw === 'string' && raw.indexOf(MDEV_TAG) === 0;
+}
+
+export function parseMdev(raw) {
+  if (!isMdevPayload(raw)) throw new Error('pas une enveloppe E2EM1');
+  const o = _b64ToJson(raw.slice(MDEV_TAG.length));
+  if (!o || o.v !== 1 || typeof o.fd !== 'string' || !_MDEV_ID.test(o.fd) || typeof o.fk !== 'string'
+    || typeof o.ct !== 'string' || !o.k || typeof o.k !== 'object' || (o.t !== 'm' && o.t !== 'e')) {
+    throw new Error('enveloppe E2EM1 invalide');
+  }
+  return o;
+}
+
+// recipients : [{ d: identifiant d'appareil, pub: clé publique (JWK b64) }]
+// { conv, fromDevice, fromPub, myPrivateKey, kind: 'm' | 'e', id }
+export async function mdevEncrypt(plaintext, { conv, fromDevice, fromPub, myPrivateKey, recipients, kind = 'm', id }) {
+  if (typeof conv !== 'string' || !conv) throw new Error('conversation requise');
+  if (!_MDEV_ID.test(String(fromDevice || ''))) throw new Error('appareil émetteur invalide');
+  if (kind !== 'm' && kind !== 'e') throw new Error('type de trame invalide');
+  if (typeof id !== 'string' || !id) throw new Error('identifiant de message requis');
+  const list = (recipients || []).filter((r) => r && _MDEV_ID.test(String(r.d || '')) && typeof r.pub === 'string' && r.pub);
+  if (!list.length) throw new Error('aucun appareil destinataire');
+  if (list.length > MDEV_MAX_DEVICES) throw new Error('trop d\'appareils');
+  const raw = randomBytes(32);
+  try {
+    const contentKey = await importGroupSenderKey(raw);
+    const iv = randomBytes(12);
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: groupAad(['mdev1-ct', conv, fromDevice, kind, id]) },
+      contentKey, enc.encode(plaintext));
+    const k = {};
+    for (const r of list) {
+      if (k[r.d]) continue;
+      const wk = await deriveGroupWrapKey(myPrivateKey, await importPublicKey(r.pub));
+      k[r.d] = await wrapGroupSenderKey(wk, raw, _mdevParts(conv, fromDevice, r.d, kind, id));
+    }
+    const body = { v: 1, t: kind, fd: fromDevice, fk: fromPub, iv: bufToB64(iv), ct: bufToB64(ct), k };
+    if (kind === 'm') body.mid = id;
+    return MDEV_TAG + _jsonToB64(body);
+  } finally { raw.fill(0); }
+}
+
+// L'identifiant lié : pour un message, celui porté par l'enveloppe ; pour une édition, celui
+// du message ÉDITÉ pris dans le CONTEXTE du destinataire (jamais dans le corps).
+export function mdevBoundId(body, ctxId) {
+  const id = body.t === 'e' ? ctxId : body.mid;
+  if (typeof id !== 'string' || !id) throw new Error('identifiant de contexte requis');
+  return id;
+}
+
+// { conv, myDevice, myPrivateKey, ctxId } → { text, fromDevice, fromPub }
+export async function mdevDecrypt(raw, { conv, myDevice, myPrivateKey, ctxId }) {
+  const body = parseMdev(raw);
+  const entry = body.k[myDevice];
+  if (!entry) { const e = new Error('pas pour cet appareil'); e.code = 'no_entry'; throw e; }
+  const id = mdevBoundId(body, ctxId);
+  const wk = await deriveGroupWrapKey(myPrivateKey, await importPublicKey(body.fk));
+  const contentKey = await unwrapGroupSenderKey(wk, entry, _mdevParts(conv, body.fd, myDevice, body.t, id));
+  const pt = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: new Uint8Array(b64ToBuf(body.iv)), additionalData: groupAad(['mdev1-ct', conv, body.fd, body.t, id]) },
+    contentKey, b64ToBuf(body.ct));
+  return { text: dec.decode(pt), fromDevice: body.fd, fromPub: body.fk };
+}
+
+
 // ----------------------------------------------------------------------------
 //  Compat browser : expose window.ApexCrypto pour code legacy <script defer>
 // ----------------------------------------------------------------------------
@@ -838,6 +924,12 @@ if (typeof window !== 'undefined') {
     signGroupKeyMessages,
     groupVerifyKey,
     selfTest,
+    MDEV_TAG,
+    isMdevPayload,
+    parseMdev,
+    mdevEncrypt,
+    mdevDecrypt,
+    mdevBoundId,
     randomBytes,
     bufToB64,
     b64ToBuf,

@@ -12,6 +12,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DOCS_PRIVES } from '../../services/integrations/depot-github.js';
 import { reconsultKevinWatch } from '../../services/sentinels/reconsult-kevin-watch.js';
 
 function mockTextResponse(text: string, status = 200): Response {
@@ -50,6 +51,19 @@ describe('reconsult-kevin-watch — refetch CLAUDE.md & co', () => {
       const h1 = await reconsultKevinWatch.hashContent('hello world');
       const h2 = await reconsultKevinWatch.hashContent('hello world!');
       expect(h1).not.toBe(h2);
+    });
+  });
+
+  describe('documents gardés au coffre (22.10.2026, alerte « 4 doc(s) fetch failed »)', () => {
+    it('ne sont ni demandés ni comptés comme échecs', async () => {
+      const f = vi.spyOn(globalThis, 'fetch').mockImplementation(mockFetchAlways('# doc public'));
+      const result = await reconsultKevinWatch.runOnce();
+      expect(result.failed_count).toBe(0);
+      expect(result.changes.some((c) => DOCS_PRIVES.has(c.doc))).toBe(false);
+      expect(result.changes.length).toBeGreaterThan(0);
+      for (const call of f.mock.calls) {
+        for (const prive of DOCS_PRIVES) expect(decodeURIComponent(String(call[0]))).not.toContain(prive);
+      }
     });
   });
 

@@ -18,7 +18,7 @@
  */
 
 import { logger } from '../../core/logger.js';
-import { lireFichier as lireFichierDepot } from '../integrations/depot-github.js';
+import { adresseRelais, DOCS_PRIVES, lireFichier as lireFichierDepot } from '../integrations/depot-github.js';
 
 const DOC_FILES: readonly string[] = [
   'CLAUDE.md',
@@ -135,6 +135,9 @@ class ReconsultKevinWatch {
     let unchanged = 0;
 
     for (const doc of DOC_FILES) {
+      /* 22.10.2026 : un document gardé au coffre n'est jamais servi par le relais public.
+       * Le compter « fetch_failed » déclenchait l'alerte « 4 doc(s) fetch failed » à tort. */
+      if (adresseRelais() && DOCS_PRIVES.has(doc)) continue;
       const content = await this.fetchDoc(doc);
       if (content === null) {
         failed += 1;

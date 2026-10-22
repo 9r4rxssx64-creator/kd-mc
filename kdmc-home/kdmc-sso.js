@@ -131,6 +131,7 @@
           rp: o.rp,
           user: { id: _b64uToBuf(o.user.id), name: o.user.name, displayName: o.user.displayName },
           pubKeyCredParams: o.pubKeyCredParams,
+          excludeCredentials: (o.excludeCredentials || []).map(function (c) { return { type: 'public-key', id: _b64uToBuf(c.id) }; }),   /* 22.10 : un appareil qui a déjà sa clé n'en refait pas une 2e */
           authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
           timeout: 60000, attestation: 'none',
         } }).then(function (cred) {
@@ -141,7 +142,7 @@
             .then(function (j) { if (j && j.ok && j.token) setToken(j.token); if (j && j.ok && !j.credId) j.credId = _cid; return j || { ok: false }; });
         });
       })
-      .catch(function (e) { return { ok: false, reason: String((e && e.message) || e).slice(0, 120) }; });
+      .catch(function (e) { if (e && e.name === 'InvalidStateError') return { ok: false, reason: 'deja_enrole' }; return { ok: false, reason: String((e && e.message) || e).slice(0, 120) }; });
   }
 
   /* Connexion par passkey (Face ID). → {ok, verified, uid, name, ...} ; stocke le pass.
@@ -406,6 +407,7 @@
     /* Self-service : chacun gère SES appareils / connexions (uid pris dans le token). */
     myPasskeys: function () { return _selfFetch('/__sso/passkeys'); },
     deletePasskey: function (id) { return _selfFetch('/__sso/passkeys/delete', 'POST', { id: id }); },
+    keepOnlyPasskey: function (id) { return _selfFetch('/__sso/passkeys/garder-seulement', 'POST', { id: id }); },
     myHistory: function () { return _selfFetch('/__sso/me/history'); },
     revokeMyOtherSessions: function () {
       return _selfFetch('/__sso/me/revoke', 'POST').then(function (j) {

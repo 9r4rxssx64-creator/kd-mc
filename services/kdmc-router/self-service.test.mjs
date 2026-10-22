@@ -120,6 +120,26 @@ const run = async () => {
   r = await mod.fetch(REQ('/__sso/whoami', { headers: { authorization: fresh } }), env);
   ok((await r.json()).ok === true, 'la vraie session (Face ID) de Kevin est toujours vivante');
 
+  /* 8b) 22.10 — plus de doublons d'appareils : excludeCredentials, nom, « garder seulement » */
+  const dup = await enroll('dup-user', 'Dup User');
+  const pkDup = JSON.parse(store.get('pk:dup-user'));
+  ok(pkDup.length === 1 && typeof pkDup[0].label === 'string', 'l\'appareil enrôlé reçoit un nom (label)');
+  r = await mod.fetch(POST('/__sso/webauthn/register/options', {}, { authorization: dup.strong }), env);
+  j = await r.json();
+  ok(Array.isArray(j.excludeCredentials) && j.excludeCredentials.length === 1 && j.excludeCredentials[0].id === pkDup[0].credId, 'register/options liste les clés déjà rangées (excludeCredentials) → pas de doublon');
+  store.set('pk:dup-user', JSON.stringify([...pkDup, { credId: 'FAUX1-aaaaaaaaaa', jwk: {}, created: 1 }, { credId: 'FAUX2-bbbbbbbbbb', jwk: {}, created: 2, label: 'iPhone' }]));
+  r = await mod.fetch(REQ('/__sso/passkeys', { headers: { authorization: dup.strong } }), env);
+  j = await r.json();
+  ok(j.count === 3 && j.passkeys.some((p) => p.label === 'iPhone') && j.passkeys.every((p) => !p.jwk), 'la liste donne le nom, jamais la clé');
+  r = await mod.fetch(POST('/__sso/passkeys/garder-seulement', { id: 'inconnu' }, { authorization: dup.strong }), env);
+  j = await r.json();
+  ok(j.ok === false && JSON.parse(store.get('pk:dup-user')).length === 3, 'garder-seulement avec un id inconnu → refus, rien retiré');
+  r = await mod.fetch(POST('/__sso/passkeys/garder-seulement', { id: pkDup[0].credId.slice(0, 12) }, { cookie: 'kdmc_sso=' + passFaible('dup-user', 'Dup User') }), env);
+  ok((await r.json()).ok === false && JSON.parse(store.get('pk:dup-user')).length === 3, 'garder-seulement depuis session FAIBLE → refus');
+  r = await mod.fetch(POST('/__sso/passkeys/garder-seulement', { id: pkDup[0].credId.slice(0, 12) }, { authorization: dup.strong }), env);
+  j = await r.json();
+  ok(j.ok && j.removed === 2 && j.remaining === 1 && JSON.parse(store.get('pk:dup-user'))[0].credId === pkDup[0].credId, 'garder-seulement (Face ID) → ne reste que cet appareil');
+
   /* 9) Strix vuln-0001 (CSRF de connexion) : /issue refuse un site tiers, accepte le domaine */
   r = await mod.fetch(POST('/__sso/issue', { uid: 'csrf-user', name: 'Csrf User', cgu: true }, { origin: 'https://evil.example' }), env);
   ok(r.status === 403 && (await r.json()).ok === false && !r.headers.get('set-cookie'), '/issue depuis https://evil.example → 403, aucun cookie posé');

@@ -499,9 +499,10 @@
       var rows = pk.length
         ? pk.map(function (k) {
           var here = (mine && mine.indexOf(k.id) === 0) || soleHere;
-          return '<div class="ss-row"><span>🔑 Appareil <code>' + esc(k.id) + '…</code>'
+          /* 22.10 (Kevin : « j'ai pas autant d'appareils ») : le nom de l'appareil (iPhone · Safari…) pris à l'inscription ; les anciennes clés, sans nom, disent « ancien appareil » */
+          return '<div class="ss-row"><span>🔑 ' + (k.label ? esc(k.label) : 'Ancien appareil <code>' + esc(k.id) + '…</code>')
             + (here ? '<span class="ss-here"> · cet appareil ✓</span>' : '')
-            + '<span class="ss-mut"> — ajouté ' + esc(_ago(k.created)) + '</span></span>'
+            + '<span class="ss-mut"> — ajouté ' + esc(_ago(k.created)) + (k.last ? ', utilisé ' + esc(_ago(k.last)) : '') + '</span></span>'
             + '<button class="ss-del" data-pk="' + esc(k.id) + '" type="button">Retirer</button></div>';
         }).join('')
         : '<div class="ss-mut">Aucun appareil Face ID.' + (canEnroll
@@ -520,8 +521,19 @@
         actBtn = '<button class="ss-act" id="ss-enroll" type="button" style="border-color:rgba(232,184,48,.5);color:var(--gold2,#f6d97a)">'
           + (pk.length ? '🔎 Activer / vérifier Face ID sur cet appareil' : '➕ Activer Face ID sur cet appareil') + '</button>';
       }
+      /* plusieurs clés ET on sait laquelle est celle de cet appareil → nettoyage en un toucher (la 1re fois, les doublons d'avant les noms) */
+      var qui = pk.filter(function (k) { return mine && mine.indexOf(k.id) === 0; })[0];
       el.innerHTML = '<b>📱 Mes appareils Face ID</b>' + rows + actBtn
+        + (pk.length > 1 && qui ? '<button class="ss-act" id="ss-keep" type="button">🧹 Garder seulement cet appareil (retire les ' + (pk.length - 1) + ' autres)</button>' : '')
         + (pk.length ? '<button class="ss-act" id="ss-revoke" type="button">🚪 Déconnecter mes autres appareils</button>' : '');
+      var kp = document.getElementById('ss-keep');
+      if (kp) kp.addEventListener('click', function () {
+        if (!confirm('Garder seulement CET appareil ?\n\nLes ' + (pk.length - 1) + ' autres clés Face ID sont retirées (doublons ou anciens appareils). Tu pourras toujours en ajouter avec Face ID ou te connecter avec nom + code.')) return;
+        kp.disabled = true; kp.textContent = '…';
+        window.kdmcSSO.keepOnlyPasskey(qui.id).then(function (r) {
+          if (r && r.ok) loadMyPasskeys(); else { kp.disabled = false; kp.textContent = (r && r.reason) === 'Face ID requis pour gérer tes appareils' ? '🔒 Face ID requis' : 'Réessaie (' + ((r && r.reason) || 'erreur') + ')'; }
+        });
+      });
       var en = document.getElementById('ss-enroll');
       if (en) en.addEventListener('click', function () {
         var addMore = enrolledHere; /* clic « Ajouter un autre appareil » → on CRÉE un nouveau passkey */
@@ -532,6 +544,11 @@
               return window.kdmcSSO.registerPasskey(); /* pas de passkey sur ce téléphone → on enrôle */
             })
           : window.kdmcSSO.registerPasskey();
+        /* l'appareil a déjà sa clé (le navigateur refuse d'en refaire une) : on la RECONNAÎT par Face ID, au lieu d'un échec */
+        step = step.then(function (r) {
+          if (r && !r.ok && r.reason === 'deja_enrole' && window.kdmcSSO.loginPasskey) return window.kdmcSSO.loginPasskey(_ssUid).then(function (v) { return (v && v.ok) ? v : r; });
+          return r;
+        });
         step.then(function (r) {
           if (r && r.ok) { try { if (_ssUid) _setPasskey(_ssUid, r.credId); } catch (e) { /* */ } loadMyPasskeys(); applyAdminVisibility(); }
           else { en.disabled = false; en.textContent = '➕ Activer Face ID — réessaie (' + ((r && r.reason) || 'annulé') + ')'; }
@@ -1276,6 +1293,8 @@
   }
   boot();
 
+  /* 22.10 (Kevin : pastille « 4 » sur l'icône KDMC alors qu'il n'a rien) : le portail ne compte rien lui-même ; une pastille restée sur l'icône est effacée à l'ouverture. */
+  try { if (navigator.clearAppBadge) navigator.clearAppBadge().catch(function () { /* ignore */ }); } catch (e) { /* ignore */ }
   /* Service worker (MAJ auto, offline). Fail-safe. */
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(function () { /* ignore */ });

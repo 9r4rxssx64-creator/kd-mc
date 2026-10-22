@@ -3696,7 +3696,11 @@ async function handleSso(request, url, env, ctx) {
     if (!s) return J({ ok: false, reason: 'session requise' });
     if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session révoquée — reconnecte-toi' });
     const challenge = await makeChallenge(secret, 'reg');
-    return J({ ok: true, challenge, rp: { id: RP_ID, name: 'KDMC APEX' }, user: { id: b64uEnc(new TextEncoder().encode(s.uid)), name: s.name || s.uid, displayName: s.name || s.uid }, pubKeyCredParams: [{ type: 'public-key', alg: -7 }] });
+    /* 22.10 (Kevin : « j'ai pas autant d'appareils », 7 clés pour 2-3 appareils) : on liste les clés DÉJÀ rangées pour ce compte (excludeCredentials) → un appareil qui en
+       a déjà une ne peut plus en fabriquer une 2e (le navigateur refuse, l'appli se contente de le reconnaître). Fin des doublons à chaque réinstallation d'une app. */
+    let exclure = [];
+    try { if (env && env.ACCOUNTS) exclure = (JSON.parse((await env.ACCOUNTS.get(pkKey(s.uid))) || '[]') || []).map((k) => ({ type: 'public-key', id: String(k.credId || '') })).filter((k) => k.id).slice(0, 20); } catch { exclure = []; }
+    return J({ ok: true, challenge, excludeCredentials: exclure, rp: { id: RP_ID, name: 'KDMC APEX' }, user: { id: b64uEnc(new TextEncoder().encode(s.uid)), name: s.name || s.uid, displayName: s.name || s.uid }, pubKeyCredParams: [{ type: 'public-key', alg: -7 }] });
   }
   if (path === '/__sso/webauthn/register/verify' && request.method === 'POST') {
     const s = await ssoVerify(secret, ssoToken(request), request);
@@ -3729,7 +3733,7 @@ async function handleSso(request, url, env, ctx) {
           return J({ ok: false, reason: 'compte admin protégé — prouve le code admin (/__admin/login) pour ajouter un appareil' });
         }
       }
-      if (!already) list.push({ credId: reg.credId, jwk: reg.jwk, created: Date.now() });
+      if (!already) list.push({ credId: reg.credId, jwk: reg.jwk, created: Date.now(), label: appareilLabel(request.headers.get('user-agent')).slice(0, 80) });   /* « iPhone · iOS 17 · Safari » : on reconnaît ses appareils */
       await env.ACCOUNTS.put(pkKey(s.uid), JSON.stringify(list.slice(-10)));
       const acc = await accGet(env, s.uid);
       if (acc) { acc.passkey = true; acc.passkey_at = acc.passkey_at || Date.now(); await accPut(env, acc); }
@@ -3781,7 +3785,8 @@ async function handleSso(request, url, env, ctx) {
        synchronisés, qui restent à 0 — jamais de faux rejet, jamais de lockout). */
     if (env && env.ACCOUNTS) {
       if (r.count > 0 && (rec.count || 0) > 0 && r.count <= rec.count) return J({ ok: false, reason: 'compteur de signature régressé (clone suspecté)' });
-      if ((r.count || 0) > (rec.count || 0)) { rec.count = r.count; try { await env.ACCOUNTS.put(pkKey(uid), JSON.stringify(list)); } catch { /* fail-open */ } }
+      const plusRecent = !rec.last || Date.now() - rec.last > 20 * 3600e3;   /* « dernière utilisation » : une écriture par jour et par appareil au plus (le quota d'écritures est compté) */
+      if ((r.count || 0) > (rec.count || 0) || plusRecent) { if ((r.count || 0) > (rec.count || 0)) rec.count = r.count; if (plusRecent) rec.last = Date.now(); try { await env.ACCOUNTS.put(pkKey(uid), JSON.stringify(list)); } catch { /* fail-open */ } }
     }
     const acc = await accGet(env, uid);
     const name = (acc && acc.name) || uid;
@@ -4271,7 +4276,7 @@ async function handleSso(request, url, env, ctx) {
     let list = [];
     if (env && env.ACCOUNTS) { try { list = JSON.parse((await env.ACCOUNTS.get(pkKey(s.uid))) || '[]'); } catch { /* fail-open */ } }
     /* On ne renvoie JAMAIS la clé publique/jwk — juste un aperçu non sensible. */
-    const items = list.map((k) => ({ id: String(k.credId || '').slice(0, 12), created: k.created || 0 }));
+    const items = list.map((k) => ({ id: String(k.credId || '').slice(0, 12), created: k.created || 0, label: k.label || '', last: k.last || 0 }));
     return J({ ok: true, passkeys: items, count: items.length });
   }
   /* Supprimer un de MES appareils. Session VÉRIFIÉE requise (tu as prouvé Face ID
@@ -4290,6 +4295,21 @@ async function handleSso(request, url, env, ctx) {
     await env.ACCOUNTS.put(pkKey(s.uid), JSON.stringify(next));
     if (next.length === 0) { const acc = await accGet(env, s.uid); if (acc && acc.passkey) { acc.passkey = false; await accPut(env, acc, true); } }
     return J({ ok: true, removed: list.length - next.length, remaining: next.length });
+  }
+  /* « Garder seulement cet appareil » : retire TOUS mes autres passkeys d'un coup (nettoyage des doublons). Même exigence que « Retirer » : Face ID prouvé cette session. */
+  if (path === '/__sso/passkeys/garder-seulement' && request.method === 'POST') {
+    const s = await ssoVerify(secret, ssoToken(request), request);
+    if (!s) return J({ ok: false, reason: 'session requise' });
+    if (!s.verified) return J({ ok: false, reason: 'Face ID requis pour gérer tes appareils' });
+    if (revoked(await accGet(env, s.uid), s)) return J({ ok: false, reason: 'session_revoquee' });
+    let b = {}; try { b = await request.json(); } catch { /* ignore */ }
+    const id = String(b.id || b.credId || '').trim();
+    if (!id || !env || !env.ACCOUNTS) return J({ ok: false, reason: 'id requis' });
+    let list = []; try { list = JSON.parse((await env.ACCOUNTS.get(pkKey(s.uid))) || '[]'); } catch { /* */ }
+    const garde = list.filter((k) => String(k.credId || '').slice(0, 12) === id || k.credId === id);
+    if (garde.length !== 1) return J({ ok: false, reason: 'appareil introuvable : rien retiré' });   // jamais « tout effacer » par erreur
+    await env.ACCOUNTS.put(pkKey(s.uid), JSON.stringify(garde));
+    return J({ ok: true, removed: list.length - 1, remaining: 1 });
   }
   /* Mon historique de connexions (le mien uniquement). Session requise. */
   if (path === '/__sso/me/history' && request.method === 'GET') {

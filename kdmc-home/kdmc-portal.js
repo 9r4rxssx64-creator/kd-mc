@@ -131,6 +131,8 @@
       priv.hidden = !isPriv;
       /* 16.10 : le tableau de bord, tout en haut de la page, suit la même règle que « Mon espace » */
       var tdb = document.getElementById('tdb-haut'); if (tdb) tdb.hidden = !isPriv;
+      /* 22.10 : « Tableau KDMC » (qui fait quoi entre les branches, page claude.ai) — même règle que le tableau de bord */
+      var tabz = document.getElementById('tableau-zone'); if (tabz) tabz.hidden = !isPriv;
       /* Bot crypto : tuile visible dès que la session porte le nom Kevin/Laurence
          (OU admin/verified). Pas d'exigence Face ID car la page bot.kd-mc.com est
          protégée par son propre code admin — la tuile ne donne AUCUN accès (≠ leçon #99

@@ -13,7 +13,7 @@ function monter(user, reponseSso) {
   const sso = vi.fn(async () => reponseSso);
   const toasts = [];
   // eslint-disable-next-line no-new-func
-  new Function('K', '_authSsoFromKdmc', 'toast', '_safeCatch', [extractDef(html, 'K._ralliementAppliquer = async function(r){'), extractDef(html, 'K._ralliementAdopterCompte = async function(){'), extractDef(html, 'K._ralliementFaceId = async function(){'), extractDef(html, 'K._ralliementKevin = async function(){')].join('\n'))(K, sso, (m) => toasts.push(m), () => {});
+  new Function('K', '_authSsoFromKdmc', 'toast', '_safeCatch', [extractDef(html, 'K._ralliementAppliquer = async function(r, leger){'), extractDef(html, 'K._ralliementAdopterCompte = async function(){'), extractDef(html, 'K._ralliementFaceId = async function(){'), extractDef(html, 'K._ralliementKevin = async function(){')].join('\n'))(K, sso, (m) => toasts.push(m), () => {});
   return { K, sso, toasts };
 }
 
@@ -51,7 +51,9 @@ describe('ralliement du compte Kevin en double', () => {
     K.token = 'JETON'; K._showModal = vi.fn(); K._closeModal = vi.fn();
     expect(await K._ralliementKevin()).toBe(true);
     expect(vue).toEqual([{ url: 'https://api.test/api/users/me', auth: 'Bearer JETON' }]);
-    expect(K.login).toHaveBeenCalledWith({ id: 'kdmc_admin', kdmc_uid: 'kdmc_admin' }, 'JETON');
+    expect(K.user).toEqual({ id: 'kdmc_admin', kdmc_uid: 'kdmc_admin' });
+    expect(K.login).not.toHaveBeenCalled();            // jamais une connexion complète en plein démarrage (v1.1.341 : iPhone bloqué)
+    expect(K._refreshConvs).toHaveBeenCalled();
     expect(sso).not.toHaveBeenCalled(); expect(K._showModal).not.toHaveBeenCalled();
   });
   it("le serveur répond encore l'ancien compte (pas fondu) : on ne change rien et on passe au Face ID", async () => {

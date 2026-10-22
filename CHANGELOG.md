@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.342 (2026-10-22 — plus jamais bloqué sur l'écran de démarrage)
+
+- MESURÉ : iPhone de Kevin bloqué sur l'écran de démarrage en v1.1.341 (la réunion des comptes relançait une connexion complète en plein démarrage).
+- L'adoption du compte réuni ne change que l'identité gardée ; filet : l'écran de démarrage est enlevé tout seul pour une personne connectée (contrôle de 10 s à 70 s). Preuve vrai Chromium `runtime-ralliement-reprise.mjs` 7/7 (5/7 avec la 1.1.341). Leçon 720.
+
+
 ## Apex Chat v1.1.341 (2026-10-22 — la réunion des comptes de Kevin part AUSSI quand l'app se rouvre)
 
 - MESURÉ : en v1.1.340, Kevin rouvre l'app : toujours une seule conversation « Kevin DESARZENS ». Le chemin de réouverture (session gardée) ne lançait jamais la réunion : seule une connexion complète le faisait.

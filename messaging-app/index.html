@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.341",
+  "softwareVersion": "v1.1.342",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.341';
+const __APEX_CHAT_VERSION__ = 'v1.1.342';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.341" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.341</div>
+  <div id="splash-version" data-ver="v1.1.342" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.342</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.341</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.342</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -17558,11 +17558,18 @@ K._profileIncomplete = function(u){
    `kdmc_kdmc_admin` créé par le domaine). Le serveur les fond quand le domaine reconnaît l'admin avec Face ID ; mais une session ouverte AVANT reste valide 30 jours et ne repasse pas par le
    domaine. Cette session se REPRÉSENTE donc au domaine UNE fois (jamais de boucle) : le serveur rattache, rend le jeton du vrai compte, et on s'y reconnecte — sans rien demander à Kevin. */
 /* 22.10.2026 (Kevin : « Face ID fait, toujours pareil », puis « il ne me demande pas mon Face ID » ; app installée sur l'écran d'accueil) — mesuré en base : ses 3 comptes restaient séparés. Une app
-   installée a des cookies à elle : le Face ID de Safari ne l'atteint pas, et l'aller-retour par le portail (v1.1.341) ne lui demandait rien. Désormais : si le domaine ne rend pas le vrai compte,
+   installée a des cookies à elle : le Face ID de Safari ne l'atteint pas, et l'aller-retour par le portail (v1.1.342) ne lui demandait rien. Désormais : si le domaine ne rend pas le vrai compte,
    une fenêtre propose « 🔐 Face ID » — le geste de la personne lance le Face ID DANS l'app (passkey du domaine, comme sur Lingua), puis le rattachement se fait tout de suite. */
-K._ralliementAppliquer = async function(r){
+K._ralliementAppliquer = async function(r, leger){
   if(!(r && r.token && r.user && r.user.id === 'kdmc_admin')) return false;
-  await K.login(r.user, r.token);
+  /* 22.10.2026 (Kevin : « bloqué sur l'écran de démarrage » en v1.1.342) : à la réouverture, relancer une connexion COMPLÈTE (K.login : accueil,
+     fiche, abonnements, battement…) en plein démarrage était de trop. Le compte réuni est déjà celui du serveur : on change seulement l'identité gardée. */
+  if(leger){
+    K.user = r.user;
+    try{ if(typeof ls === 'function') ls('user', r.user); }catch(_e){ /* stockage plein : la mémoire suffit pour cette ouverture */ }
+  } else {
+    await K.login(r.user, r.token);
+  }
   try{ await K._refreshConvs(); }catch(_e){ _safeCatch('ralliement-liste', _e); }
   try{ K._fetchContacts(true); }catch(_e){ _safeCatch('ralliement-contacts', _e); }
   try{ if(typeof K._closeModal === 'function') K._closeModal(); }catch(_e){ /* pas de fenêtre */ }
@@ -17606,7 +17613,7 @@ K._ralliementAdopterCompte = async function(){
     const j = await r.json();
     const moi = j && j.user;
     if(!(moi && moi.id === 'kdmc_admin')) return false;
-    return await K._ralliementAppliquer({ token: K.token, user: moi });
+    return await K._ralliementAppliquer({ token: K.token, user: moi }, true);
   }catch(e){ _safeCatch('ralliement-adopter', e); return false; }
 };
 K._ralliementKevin = async function(){
@@ -18955,6 +18962,22 @@ async function _boot(){
   // Bottom nav handler
   $$('.bnav-btn').forEach(b => b.addEventListener('click', () => K.sv(b.dataset.view)));
 
+  /* 22.10.2026 (Kevin, iPhone : « je reste bloqué là », écran de démarrage v1.1.342) : quoi qu'il arrive au démarrage, une personne connectée ne reste
+     JAMAIS sur l'écran de démarrage (contrôle à 10 s puis toutes les 3 s jusqu'à 70 s) — on l'enlève et on affiche ses conversations. */
+  const _filetDemarrage = () => {
+    try{
+      const sp = document.querySelector('#splash');
+      if(K.user && sp && !sp.classList.contains('h')){
+        sp.classList.add('h');
+        ['#topbar', '#security-banner', '#bnav'].forEach((sel) => { const el = document.querySelector(sel); if(el) el.classList.remove('h'); });
+        if(!K.view || K.view === 'splash') K.view = 'chats';
+        try{ K.render(); }catch(_e){ _safeCatch('demarrage-filet-rendu', _e); }
+        _safeCatch('demarrage-filet', new Error('écran de démarrage enlevé par le filet (10 s)'));
+      }
+    }catch(_e){ _safeCatch('demarrage-filet', _e); }
+  };
+  for(let t = 10000; t <= 70000; t += 3000) setTimeout(_filetDemarrage, t);   // contrôlé de 10 s à 70 s (minuteries uniques, aucune requête)
+
   // Restaurer session
   let user = lg('user', null);
   let token = lg('token', null);
@@ -19035,7 +19058,7 @@ async function _boot(){
 
     K.render();
     setTimeout(() => { try{ K._joinPendingGroup && K._joinPendingGroup(); }catch(_e){ _safeCatch('silent', _e); } }, 2500);   // invitation de groupe reçue (session restaurée)
-    /* 22.10.2026 (Kevin : « toujours pas » en v1.1.341 ; prouvé en vrai Chromium, tests/runtime-ralliement-reprise.mjs) : à la RÉOUVERTURE avec une session gardée,
+    /* 22.10.2026 (Kevin : « toujours pas » en v1.1.342 ; prouvé en vrai Chromium, tests/runtime-ralliement-reprise.mjs) : à la RÉOUVERTURE avec une session gardée,
        la réunion des comptes ne partait jamais (seule une connexion complète appelait _postLogin). On la lance aussi ici. */
     if(K.token && !String(K.token).startsWith('local-')){
       setTimeout(() => { try{ K._ralliementKevin && K._ralliementKevin(); }catch(_e){ _safeCatch('ralliement-reprise', _e); } }, 3000);
@@ -19268,6 +19291,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.341", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.342", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

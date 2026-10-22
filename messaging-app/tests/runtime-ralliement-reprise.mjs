@@ -58,6 +58,8 @@ try {
     return route.abort();
   });
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => typeof window.K === 'object' && typeof window.K.login === 'function', null, { timeout: 15000 });
+  await page.evaluate(() => { const vrai = window.K.login; window.K.login = function(...a){ window.K.login.__appelee = true; return vrai.apply(this, a); }; });
   await page.waitForFunction(() => typeof window.K === 'object' && window.K.user, null, { timeout: 15000 });
   check(await page.evaluate(() => window.K.user.id === 'kdmc_kdmc_admin'), 'au démarrage, la session gardée est bien l\'ancien identifiant (situation de Kevin)');
   await page.waitForFunction(() => window.K.user && window.K.user.id === 'kdmc_admin', null, { timeout: 12000 }).catch(() => {});
@@ -67,6 +69,12 @@ try {
   await page.waitForFunction(() => (window.K.conversations || []).some((c) => c.id === 'conv-laurence'), null, { timeout: 8000 }).catch(() => {});
   const ids = await page.evaluate(() => (window.K.conversations || []).map((c) => c.id));
   check(ids.includes('conv-laurence') && ids.includes('conv-remy'), `Laurence ET Rémy sont dans la liste (${ids.join(', ')})`);
+  check(await page.evaluate(() => !window.K.login.__appelee), 'la réouverture n\'a pas relancé de connexion complète');
+  // Filet (v1.1.342) : l'écran de démarrage réapparaît (cas de l'iPhone de Kevin, « je reste bloqué là ») → enlevé tout seul à 10 s
+  await page.evaluate(() => { document.querySelector('#splash').classList.remove('h'); });
+  await page.waitForFunction(() => document.querySelector('#splash').classList.contains('h'), null, { timeout: 12000 }).catch(() => {});
+  check(await page.evaluate(() => document.querySelector('#splash').classList.contains('h') && !document.querySelector('#bnav').classList.contains('h')),
+    'écran de démarrage resté affiché : enlevé tout seul en ≤ 10 s, la barre du bas revient');
 } finally {
   await browser.close(); server.close();
 }

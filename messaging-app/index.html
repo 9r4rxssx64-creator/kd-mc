@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.343",
+  "softwareVersion": "v1.1.344",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.343';
+const __APEX_CHAT_VERSION__ = 'v1.1.344';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.343" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.343</div>
+  <div id="splash-version" data-ver="v1.1.344" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.344</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.343</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.344</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -967,6 +967,7 @@ K._KCALL_ALLOWED = new Set([
   '_scrubVoice', '_cycleVoiceSpeed', '_shareConvLink', '_shareInviteLink', '_createSuggestedLabel',
   '_reportUser', '_blockUser', '_startConvWithUser', '_deleteContact', '_rejectCall',
   '_answerIncomingCall', '_adminOpenTimeline', '_showTrajectory', '_copyDiag',
+  '_revokeDevice',         // v1.1.344 : retirer un de MES appareils (Réglages › Mes appareils)
   '_grpAcceptMemberKey',   // v1.1.296 : accepter la nouvelle clé d'un membre de groupe (après vérification)
   '_submitInviteFastLogin', '_submitOnboarding'
 ]);
@@ -6446,6 +6447,15 @@ K._DM_MEDIA_BLOCKED = '🔒 Pièce jointe NON envoyée : chiffrement impossible 
 //    { block:true } : E2E revendiqué mais chiffrement impossible → l'appelant N'UPLOADE RIEN.
 K._dmMediaEncrypt = async function(conv, blob){
   if(!K._mediaE2eOn(conv)) return {};
+  // v1.1.344 — une clé par appareil : le contact a déclaré ses appareils → clé PROPRE au fichier, transportée
+  // dans le marqueur (lui-même chiffré pour CHAQUE appareil, E2EM1). Avant : la clé de session 1:1 → photo
+  // illisible sur les autres appareils. { file } = clé du fichier (le marqueur ne part jamais en clair).
+  try{
+    if(conv.peer_id && K._devicesOf && window.ApexCrypto && ApexCrypto.encryptGroupFile && (await K._devicesOf(conv.peer_id)).length){
+      const ef = await ApexCrypto.encryptGroupFile(await blob.arrayBuffer());
+      return { body: new Blob([ef.ct], { type: 'application/octet-stream' }), enc: true, file: { k: ef.k, i: ef.i, h: ef.h } };
+    }
+  }catch(e){ _safeCatch('media-file-key', e); }
   try{
     await K._ensureSession(conv);
     if(window.ApexCrypto && ApexCrypto.getSessionKey && ApexCrypto.getSessionKey(conv.id)){
@@ -8702,6 +8712,13 @@ K._migrateKeyToPin = async function(pin){
   }catch(e){ _safeCatch('crypto-migrate', e); }
 };
 
+K._retirerCetAppareil = function(jeton){
+  // v1.1.344 — à la déconnexion : la clé de cet appareil est effacée → il sort de la liste de mes appareils
+  // (sinon mes contacts chiffreraient encore pour lui). Sans attendre plus que la déconnexion elle-même.
+  const dev = lg('device_id', null);
+  if(!jeton || typeof dev !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(dev)) return Promise.resolve();
+  return fetch(API_BASE + '/api/keys/device/' + encodeURIComponent(dev), { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + jeton } }).catch(() => {});
+};
 K.logout = function(){
   if(!confirm('Te déconnecter ? Tes messages chiffrés restent sur ton téléphone.')) return;
   // Déconnexion CÔTÉ SERVEUR de cet appareil (le jeton copié ailleurs ne marche plus). Sans attendre la réponse :
@@ -8711,7 +8728,10 @@ K.logout = function(){
   // plus bas : hors ligne, la déconnexion locale se fait quand même).
   let _srvLogout = Promise.resolve();
   try{
-    if(K.token) _srvLogout = Promise.resolve(fetch(API_BASE + '/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + K.token } })).catch(() => {});
+    if(K.token){
+      const jt = K.token, srv = () => fetch(API_BASE + '/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + jt } });
+      _srvLogout = Promise.resolve(K._retirerCetAppareil && K._retirerCetAppareil(jt)).catch(() => {}).then(srv).catch(() => {});   // v1.1.344 : appareil retiré d'abord
+    }
   }catch(_e){ _safeCatch('logout-serveur', _e); }
   // Whitelist-based clear (jamais clear() complet)
   const keep = ['theme','lang'];
@@ -9968,6 +9988,33 @@ K._mdevDecode = async function(conv, raw, meta){
     _safeCatch('mdev-decode', e);
     return illisible('🔒 Message chiffré (E2E) — impossible à lire sur cet appareil');
   }
+};
+// v1.1.344 — Réglages › Mes appareils : chaque appareil a SA clé ; on peut en retirer un (téléphone perdu, ancien PC).
+// Un appareil retiré ne reçoit plus les nouveaux messages ; s'il revient, il se représente sous un nouvel identifiant.
+K._openMyDevices = async function(){
+  if(!K.user) return;
+  const list = await K._devicesOf(K.user.id, true);
+  const moi = K._deviceId();
+  const jour = (t) => { try{ return t ? new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'; }catch(_){ return '—'; } };
+  const lignes = list.length ? list.map((d) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--ax-border)">
+      <span style="font-size:1.4em">${/iPhone|Android|iPad/.test(d.label || '') ? '📱' : '💻'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:15px">${esc(d.label || 'Appareil')}${d.device_id === moi ? ' <span style="color:var(--ax-gold);font-size:13px">· cet appareil</span>' : ''}</div>
+        <div style="font-size:13px;color:var(--ax-text-3)">Vu le ${esc(jour(d.last_seen))}</div>
+      </div>
+      ${d.device_id === moi ? '' : `<button class="btn btn-out" style="min-height:44px;min-width:44px"${kcall('_revokeDevice', [d.device_id])}>Retirer</button>`}
+    </div>`).join('') : '<p style="color:var(--ax-text-3)">Aucun appareil déclaré pour l’instant (il se déclare tout seul à l’ouverture de l’app).</p>';
+  K._showModal('📱 Mes appareils', `
+    <p style="font-size:14px;color:var(--ax-text-2);margin:0 0 10px">Chaque appareil a sa propre clé : tes messages privés se lisent sur tous ceux de la liste. Retire un téléphone perdu ou un ancien ordinateur : il ne recevra plus rien de nouveau.</p>
+    <div id="my-devices-list">${lignes}</div>`);
+};
+K._revokeDevice = async function(deviceId){
+  if(!deviceId || deviceId === K._deviceId()) return;
+  if(!confirm('Retirer cet appareil ? Il ne pourra plus lire les nouveaux messages.')) return;
+  const r = await K._api('DELETE', '/api/keys/device/' + encodeURIComponent(deviceId));
+  if(r && r.ok){ K._devCache = {}; toast('✅ Appareil retiré', 'ok', 2500); K._openMyDevices(); }
+  else toast('❌ Impossible de retirer cet appareil pour l’instant — réessaie', 'err', 4000);
 };
 K._encryptOutgoing = async function(conv, plaintext){
   // v1.1.296 — groupe : E2E de groupe (Sender Keys) ou chemin honnête « en transit ».
@@ -14374,7 +14421,7 @@ K._uploadMedia = async function(file){
     // uploadé (avant : « fail-open → clair » sous un en-tête 🛡 E2E).
     const dmEnc = await K._dmMediaEncrypt(conv, body);
     if(dmEnc.block){ toast(K._DM_MEDIA_BLOCKED, 'warn', 5000); return; }
-    if(dmEnc.enc){ body = dmEnc.body; ctype = 'application/octet-stream'; mediaEnc = true; }
+    if(dmEnc.enc){ body = dmEnc.body; ctype = 'application/octet-stream'; if(dmEnc.file) grpFile = dmEnc.file; else mediaEnc = true; }   // v1.1.344 : clé du fichier (multi-appareils)
     // Lot C2 (A6-09) : le fichier est rattaché à SA conversation → seuls ses membres peuvent le lire.
     const r = await fetch(API_BASE + '/api/media?conv_id=' + encodeURIComponent(conv.id), {
       method:'POST',
@@ -14570,7 +14617,7 @@ K._sendVoiceMessage = async function(){
         // v1.1.304 (audit A3 P2) : le vocal d'un DM chiffré partait EN CLAIR vers le stockage.
         const dmEnc = await K._dmMediaEncrypt(conv, pending.blob);
         if(dmEnc.block){ voiceBlocked = true; throw new Error('chiffrement du vocal impossible'); }
-        if(dmEnc.enc){ vBody = dmEnc.body; vType = 'application/octet-stream'; vEnc = true; }
+        if(dmEnc.enc){ vBody = dmEnc.body; vType = 'application/octet-stream'; if(dmEnc.file) vGk = dmEnc.file; else vEnc = true; }   // v1.1.344
         // Audit 16.10.2026 : le vocal est rattaché à SA conversation (le serveur l'exige) et l'envoi a un
         // délai maximal : sur un réseau qui n'avance plus, on prévient au bout de 60 s au lieu d'attendre sans fin.
         const _ctl = new AbortController();
@@ -15261,6 +15308,9 @@ function renderSettings(app){
       </div>
       <div class="card-row" onclick="K._openPushSettings()">
         <span>🔔</span><span style="flex:1">Notifications push (app fermée)</span><span>›</span>
+      </div>
+      <div class="card-row" onclick="K._openMyDevices()">
+        <span>📱</span><span style="flex:1">Mes appareils (une clé par appareil)</span><span>›</span>
       </div>
       <div class="card-row" onclick="K._openUpdateDiagnostic()">
         <span>🔧</span><span style="flex:1">Diagnostic MAJ${K.user?.is_admin ? ' + Forcer MAJ chez tous' : ''}</span><span>›</span>
@@ -19442,6 +19492,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.343", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.344", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

@@ -4,8 +4,16 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.344 (2026-10-22 — photos et vocaux lisibles sur chaque appareil ; écran « Mes appareils »)
+
+- Photos, vidéos, fichiers et vocaux d'un message privé : quand le contact a déclaré ses appareils, le fichier a SA clé, transportée dans le message chiffré pour chaque appareil (avant : clé de session 1:1 → illisible sur les autres appareils). Contact encore en ancienne version : chemin d'avant ; aucune clé : rien n'est envoyé.
+- Réglages › 📱 Mes appareils : la liste de tes appareils (nom, date), « cet appareil » repéré, bouton « Retirer » (≥ 44 px) pour un téléphone perdu ou un ancien PC.
+- Déconnexion : cet appareil est retiré de la liste avant la fermeture de la session (sa clé est effacée).
+- Preuves : vitest 2273 verts ; vrai Chromium 3 appareils 14/14 (photo ouverte sur l'iPhone de Rémy ET le PC de Kevin, écran au format iPhone 375 px) ; avec la 1.1.343 : 9/14. Reste : groupes (1.1.345, signature par appareil).
+
 ## Portail v1.0.78 + staging v0.1.0 (2026-10-22 — environnement de test)
 - staging.kd-mc.com : page de test réservée à l'admin (code / Face ID), jamais indexée ; tuile « Staging · Privé » au portail.
+
 
 ## Apex Chat v1.1.343 (2026-10-22 — une clé par appareil : un message privé se lit sur TOUS les appareils)
 

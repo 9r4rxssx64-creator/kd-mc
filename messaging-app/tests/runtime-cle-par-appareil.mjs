@@ -33,7 +33,7 @@ const corpsVus = [];                  // tout ce que le « serveur » reçoit
 const CONV = (peer) => ({ id: 'conv-kr', type: 'dm', peer_id: peer, members: ['kdmc_admin', 'kdmc_remy'], member_count: 2, last_msg_ts: Date.now() });
 
 async function ouvrir(nom, user, token, peer) {
-  const ctx = await browser.newContext({ serviceWorkers: 'block' });
+  const ctx = await browser.newContext({ serviceWorkers: 'block', ...(process.env.IPHONE ? { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } : {}) });
   await ctx.addInitScript(([u, t]) => {
     if (sessionStorage.getItem('seed')) return;
     sessionStorage.setItem('seed', '1');
@@ -57,7 +57,7 @@ async function ouvrir(nom, user, token, peer) {
       if (u.pathname === '/api/keys/device' && req.method() === 'POST') {
         const b = JSON.parse(corps || '{}');
         const l = (appareils[user.id] = appareils[user.id] || []).filter((d) => d.device_id !== b.device_id);
-        l.push({ device_id: b.device_id, identity_key_pub: b.identity_key_pub }); appareils[user.id] = l;
+        l.push({ device_id: b.device_id, identity_key_pub: b.identity_key_pub, label: b.label, last_seen: Date.now() }); appareils[user.id] = l;
         return j({ ok: true });
       }
       const m = /^\/api\/keys\/([^/]+)\/devices$/.exec(u.pathname);
@@ -96,6 +96,40 @@ try {
     const r = await qui.page.evaluate(async (x) => window.K._decodeIncoming('conv-kr', x, { sender: 'kdmc_admin', id: 'm_test_1' }), raw || '');
     check(r && r.text === TEXTE && r.encrypted === true, `${qui.nom} lit le message (${r && r.text})`);
   }
+  // Phase 2 (v1.1.344) : une PHOTO envoyée depuis l'iPhone de Kevin s'ouvre sur l'iPhone de Rémy ET sur le PC de Kevin.
+  const envoiPhoto = await kIphone.page.evaluate(async () => {
+    const conv = { id: 'conv-kr', type: 'dm', peer_id: 'kdmc_remy', members: ['kdmc_admin', 'kdmc_remy'] };
+    if (!window.K._dmMediaEncrypt) return null;
+    const r = await window.K._dmMediaEncrypt(conv, new Blob([new TextEncoder().encode('PHOTO-TEST-3-APPAREILS')], { type: 'image/jpeg' }));
+    if (!r || !r.file) return { sansCle: true };
+    const octets = Array.from(new Uint8Array(await r.body.arrayBuffer()));
+    const g = r.file;
+    const marqueur = 'APXMEDIA1:' + JSON.stringify({ u: 'https://apex-chat-api.9r4rxssx64.workers.dev/api/media/x', m: 'image/jpeg', n: 'photo.jpg', s: 22, c: '', e: 2, k: g.k, i: g.i, h: g.h });
+    const enveloppe = await window.K._mdevEncrypt(conv, marqueur, 'm', 'm_photo_1');
+    return { octets, enveloppe };
+  });
+  check(envoiPhoto && envoiPhoto.octets && envoiPhoto.enveloppe && envoiPhoto.enveloppe.startsWith('E2EM1:'), 'photo : octets chiffrés par une clé propre au fichier, clé envoyée dans une enveloppe pour chaque appareil');
+  check(!corpsVus.some((c) => c.includes('PHOTO-TEST')), 'photo : le serveur ne voit jamais le contenu');
+  for (const qui of [remy, kPc]) {
+    const vu = await qui.page.evaluate(async ([env, octets]) => {
+      const d = await window.K._decodeIncoming('conv-kr', env, { sender: 'kdmc_admin', id: 'm_photo_1' });
+      const f = window.K._markerFields(d.text);
+      if (!f || !f.media_gk) return null;
+      const clair = await window.ApexCrypto.decryptGroupFile(new Uint8Array(octets).buffer, f.media_gk);
+      return new TextDecoder().decode(clair);
+    }, [envoiPhoto && envoiPhoto.enveloppe, (envoiPhoto && envoiPhoto.octets) || []]).catch(() => null);
+    check(vu === 'PHOTO-TEST-3-APPAREILS', `${qui.nom} ouvre la photo (${vu})`);
+  }
+  // Réglages › Mes appareils sur le PC de Kevin : ses 2 appareils, « cet appareil » sans bouton Retirer.
+  await kPc.page.evaluate(() => window.K._openMyDevices && window.K._openMyDevices());
+  await kPc.page.waitForSelector('#my-devices-list', { timeout: 5000 }).catch(() => {});
+  const ecran = await kPc.page.evaluate(() => { const el = document.querySelector('#my-devices-list'); return el ? { lignes: el.children.length, retirer: el.querySelectorAll('[data-kcall="_revokeDevice"]').length, moi: el.textContent.includes('cet appareil') } : null; });
+  await kPc.page.waitForTimeout(800);
+  if (process.env.CAPTURE) await kPc.page.screenshot({ path: process.env.CAPTURE });
+  const tailles = await kPc.page.evaluate(() => Array.from(document.querySelectorAll('#my-devices-list button')).map((b) => { const r = b.getBoundingClientRect(); return Math.min(r.width, r.height); }));
+  const deborde = await kPc.page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  check(tailles.every((t) => t >= 44) && !deborde, `Mes appareils : boutons ≥ 44 px (${tailles.join(',')}), rien ne déborde`);
+  check(ecran && ecran.lignes === 2 && ecran.retirer === 1 && ecran.moi, `Mes appareils : 2 appareils, « cet appareil » repéré, 1 seul bouton Retirer (${JSON.stringify(ecran)})`);
 } catch (e) {
   check(false, 'erreur : ' + (e && e.message));
 } finally {

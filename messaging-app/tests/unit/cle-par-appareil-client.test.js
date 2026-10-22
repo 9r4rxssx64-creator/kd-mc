@@ -144,3 +144,89 @@ describe('une clé par appareil — code réel de la page', () => {
   });
   vi.restoreAllMocks();
 });
+
+// ---- Phase 2 (v1.1.344) : photos / vocaux, écran « Mes appareils », retrait à la déconnexion
+const DEFS2 = [
+  'K._mediaE2eOn = function(conv){',
+  'K._dmMediaEncrypt = async function(conv, blob){',
+  'K._openMyDevices = async function(){',
+  'K._revokeDevice = async function(deviceId){',
+].map((m) => extractDef(html, m)).join('\n');
+
+function monter2({ devices = {}, session = false } = {}) {
+  const store = { device_id: 'dev-kevin-iphone-01' };
+  const appels = []; const toasts = []; const modals = [];
+  const K = { user: { id: 'kdmc_admin' }, token: 'T', _devCache: {},
+    _e2eAppliesTo: () => true, _ensureSession: async () => session,
+    _api: async (m, c) => { appels.push(m + ' ' + c); const mm = /^\/api\/keys\/([^/]+)\/devices$/.exec(c); return mm ? { ok: true, devices: devices[decodeURIComponent(mm[1])] || [] } : { ok: true }; },
+    _showModal: (t, h) => modals.push({ t, h }) };
+  const AC = { ...C, getSessionKey: () => session, encryptBytes: async () => new Uint8Array([1, 2, 3]).buffer };
+  // eslint-disable-next-line no-new-func
+  new Function('K', 'lg', 'ls', 'toast', '_safeCatch', '_ensureCryptoKeys', 'localStorage', 'ApexCrypto', 'esc', 'kcall', 'confirm', DEFS + '\n' + DEFS2)(
+    K, (k, d) => (k in store ? store[k] : d), (k, v) => { store[k] = v; }, (t) => toasts.push(t), () => {}, async () => {}, memoire(), AC,
+    (x) => String(x || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
+    (n, a) => ` data-kcall="${n}" data-kargs='${JSON.stringify(a)}'`, () => true);
+  return { K, appels, toasts, modals };
+}
+
+describe('phase 2 — photos, Mes appareils, déconnexion', () => {
+  it("photo d'un message privé, contact multi-appareils : clé PROPRE au fichier (lisible partout), octets chiffrés", async () => {
+    globalThis.window = { ApexCrypto: C };
+    const { K } = monter2({ devices: { kdmc_remy: [{ device_id: 'dev-remy-iphone-003', identity_key_pub: 'x' }] } });
+    const photo = new Blob([new TextEncoder().encode('PHOTO-SECRETE')]);
+    const r = await K._dmMediaEncrypt({ id: 'c', type: 'dm', peer_id: 'kdmc_remy' }, photo);
+    expect(r.enc).toBe(true);
+    expect(r.file && r.file.k && r.file.i && r.file.h).toBeTruthy();
+    const octets = new Uint8Array(await r.body.arrayBuffer());
+    expect(new TextDecoder().decode(octets)).not.toContain('PHOTO-SECRETE');
+    const clair = await C.decryptGroupFile(octets.buffer, r.file);
+    expect(new TextDecoder().decode(clair)).toBe('PHOTO-SECRETE');
+  });
+  it("contact encore sur l'ancienne version (aucun appareil déclaré) : chemin d'avant (session 1:1), sans clé de fichier", async () => {
+    globalThis.window = { ApexCrypto: C };
+    const { K } = monter2({ session: true });
+    const r = await K._dmMediaEncrypt({ id: 'c', type: 'dm', peer_id: 'kdmc_ancien' }, new Blob(['x']));
+    expect(r.enc).toBe(true); expect(r.file).toBeUndefined();
+  });
+  it("aucune clé disponible : RIEN n'est envoyé (block), jamais en clair", async () => {
+    globalThis.window = { ApexCrypto: C };
+    const { K } = monter2({ session: false });
+    expect(await K._dmMediaEncrypt({ id: 'c', type: 'dm', peer_id: 'kdmc_ancien' }, new Blob(['x']))).toEqual({ block: true });
+  });
+  it('Mes appareils : liste mes appareils, nom échappé, pas de bouton « Retirer » pour celui-ci', async () => {
+    globalThis.window = { ApexCrypto: C };
+    const { K, modals } = monter2({ devices: { kdmc_admin: [
+      { device_id: 'dev-kevin-iphone-01', identity_key_pub: 'a', label: 'iPhone · Safari', last_seen: Date.now() },
+      { device_id: 'dev-kevin-pc-000002', identity_key_pub: 'b', label: '<img src=x onerror=alert(1)>', last_seen: Date.now() },
+    ] } });
+    await K._openMyDevices();
+    const h = modals[0].h;
+    expect(h).toContain('cet appareil');
+    expect(h).not.toContain('<img src=x');
+    expect(h).toContain('&lt;img');
+    expect((h.match(/_revokeDevice/g) || []).length).toBe(1);
+    expect(h).toContain('dev-kevin-pc-000002');
+  });
+  it('retirer un appareil : DELETE au serveur ; jamais cet appareil-ci', async () => {
+    globalThis.window = { ApexCrypto: C };
+    const { K, appels } = monter2({ devices: { kdmc_admin: [] } });
+    await K._revokeDevice('dev-kevin-iphone-01');                       // cet appareil : refusé
+    expect(appels.filter((a) => a.startsWith('DELETE'))).toEqual([]);
+    await K._revokeDevice('dev-kevin-pc-000002');
+    expect(appels).toContain('DELETE /api/keys/device/dev-kevin-pc-000002');
+  });
+  it('déconnexion : retire CET appareil de la liste AVANT de fermer la session serveur', async () => {
+    const journal = [];
+    const store = { device_id: 'dev-kevin-iphone-01' };
+    const K = { user: { id: 'u1' }, token: 'tok', conversations: [], messages: {}, view: 'chats', _keyStoreDelete: async () => {} };
+    const fetchF = vi.fn(async (url, init) => { journal.push((init && init.method) + ' ' + url); return { ok: true }; });
+    // eslint-disable-next-line no-new-func
+    new Function('K', 'lg', 'PERSIST_PREFIX', 'confirm', 'location', 'API_BASE', '_safeCatch', 'fetch', 'idbDel',
+      extractDef(html, 'K._retirerCetAppareil = function(jeton){') + '\n' + extractDef(html, 'K.logout = function(){'))(
+      K, (k, d) => (k in store ? store[k] : d), 'apex_chat_', () => true, { reload: () => journal.push('reload') }, 'https://api.test', () => {}, fetchF, async () => {});
+    K.logout();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(journal.slice(0, 2)).toEqual(['DELETE https://api.test/api/keys/device/dev-kevin-iphone-01', 'POST https://api.test/api/auth/logout']);
+    expect(journal).toContain('reload');
+  });
+});

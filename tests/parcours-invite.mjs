@@ -172,6 +172,12 @@ async function parcours(variante, H) {
       const porte = MOTS_PORTE.test(t);
       noter(`5. Apex Chat après connexion → ${url()} · « ${t} »`);
       noter(`   sur Apex Chat : ${surChat ? 'oui' : 'NON'} · porte encore là : ${porte ? 'OUI' : 'non'} · demande un numéro/SMS : ${demandeNumero ? 'OUI' : 'non'}`);
+      /* 22.10 : « Installer » proposé à l'inscription (Kevin) — la pastille 📲 est là et la feuille s'est ouverte d'elle-même (au plus 12 s après la connexion) */
+      if (surChat) {
+        await p.waitForTimeout(9000);
+        const inst = await p.evaluate(() => { const pa = document.querySelector('[data-kdmc-installer="pastille"]'); const fe = document.querySelector('[data-kdmc-installer="feuille"]'); let dessus = null; if (pa) { const r = pa.getBoundingClientRect(); const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); dessus = !!(e && e.getAttribute('data-kdmc-installer') === 'pastille'); } return { pastille: !!pa, cliquable: dessus, feuille: !!fe }; }).catch(() => ({}));
+        noter(`   📲 sur Apex Chat : pastille ${inst.pastille ? 'oui' : 'NON'} · cliquable (rien par-dessus) ${inst.cliquable ? 'oui' : 'NON'} · feuille « Installer » ouverte toute seule ${inst.feuille ? 'oui' : 'non'}`);
+      }
       out.apexChatOk = surChat && !porte && !demandeNumero && out.entreeAuto === true;
       if (surChat) {
         /* ce que la personne VOIT sur Apex Chat : le texte entier (≤ 1 400 car.), les champs et les boutons — pour savoir exactement ce qui la demande un numéro */

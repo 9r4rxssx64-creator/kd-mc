@@ -82,9 +82,9 @@ async function ouvrir(cible, largeur) {
   const ctx = await browser.newContext({ viewport: { width: largeur, height: mobile ? 844 : 900 }, deviceScaleFactor: mobile ? 3 : 1, isMobile: mobile, hasTouch: mobile, serviceWorkers: 'allow' });
   await ctx.addInitScript(() => { try { window.__lcp = 0; new PerformanceObserver((l) => { for (const e of l.getEntries()) window.__lcp = Math.round(e.startTime); }).observe({ type: 'largest-contentful-paint', buffered: true }); } catch (_) { /* pas de LCP */ } });
   const page = await ctx.newPage();
-  const sonde = { erreurs: 0, echecs: new Map() };
+  const sonde = { erreurs: 0, echecs: new Map(), lus: new Set() };
   page.on('pageerror', () => { sonde.erreurs++; });
-  page.on('response', (r) => { const s = r.status(); if (s >= 400) { let u = ''; try { u = new URL(r.url()).pathname.replace(/\/[0-9a-f]{12,}/gi, '/…'); } catch (_) { u = '?'; } const k = `${u.slice(0, 60)} ${s}`; sonde.echecs.set(k, (sonde.echecs.get(k) || 0) + 1); } });
+  page.on('response', (r) => { const s = r.status(); if (s < 400) { try { sonde.lus.add(new URL(r.url()).pathname.replace(/\/[0-9a-f]{12,}/gi, '/…').slice(0, 60)); } catch (_) { /* url illisible */ } } if (s >= 400) { let u = ''; try { u = new URL(r.url()).pathname.replace(/\/[0-9a-f]{12,}/gi, '/…'); } catch (_) { u = '?'; } const k = `${u.slice(0, 60)} ${s}`; sonde.echecs.set(k, (sonde.echecs.get(k) || 0) + 1); } });
   if (!LOCAL) { const c = await connecter(page, cible.url); if (!c.ok) { await ctx.close(); return { erreurConnexion: `HTTP ${c.st}` }; } }
   const t0 = Date.now();
   await page.goto(cible.url + '/', { waitUntil: 'domcontentloaded', timeout: 90000 });
@@ -109,6 +109,9 @@ try {
       ok(m.debord <= 1, `${cible.nom} ${largeur} px : pas de défilement horizontal (débord ${m.debord} px)`, `la page déborde de ${m.debord} px`);
       ok(sonde.erreurs === 0, `${cible.nom} ${largeur} px : aucune erreur JavaScript`, `${sonde.erreurs} erreur(s)`);
       dire(`   ℹ️ ${largeur} px : ${m.cibles} zones cliquables dont ${m.petitsBoutons} < 44 px · ${m.petitsTextes} textes < 14 px · pastille Portail ${m.pastille ? `${m.pastille.w}×${m.pastille.h} en (${m.pastille.x},${m.pastille.y}), recouvre ${m.recouverts} élément(s)` : 'absente'} · DCL ${perf.dcl} ms · load ${perf.load} ms · LCP ${perf.lcp} ms`);
+      /* un 401 suivi d'un 200 sur le même chemin = la session n'avait pas encore répondu, la donnée est bien arrivée ; sans 200 après = donnée jamais lue */
+      const jamaisLus = [...sonde.echecs.keys()].filter((k) => !sonde.lus.has(k.replace(/ \d+$/, '')));
+      dire(`   ℹ️ ${largeur} px : ${sonde.echecs.size - jamaisLus.length} lecture(s) refusée(s) puis relue(s) avec succès · ${jamaisLus.length} jamais relue(s)${jamaisLus.length ? ' : ' + jamaisLus.slice(0, 6).join(' · ') : ''}`);
       if (sonde.echecs.size) dire(`   ℹ️ ${largeur} px : ${sonde.echecs.size} requête(s) en échec (chemin, code) : ${[...sonde.echecs].slice(0, 8).map(([k, n]) => `${k} ×${n}`).join(' · ')}${sonde.echecs.size > 8 ? ' · …' : ''}`);
       /* HORS LIGNE, une seule fois par app (390 px) */
       if (largeur === 390) {

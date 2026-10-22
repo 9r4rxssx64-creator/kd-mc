@@ -103,6 +103,13 @@ const PRODUITS = {
 const JOURS_RECHERCHE = 14;      // fenêtre de réclamation
 const TTL_CODE = 60 * 60 * 24 * 365 * 2;  // un accès acheté dure 2 ans
 const TTL_DEMANDE = 60 * 60 * 24 * 60;    // une demande en attente : 60 jours
+/* ESSAIS (22.10.2026) : le robot de déploiement ouvrait de vrais paniers « preuve@example.com »
+   jamais effacés — 14 « à livrer » + 10 paniers fantômes dans le tableau de Kevin. Une adresse
+   example.com/.org/.net est RÉSERVÉE aux essais (RFC 2606) : jamais un acheteur. Elle vit
+   10 minutes, n'est jamais comptée, et la lecture admin efface celles qui restent. */
+const TTL_ESSAI = 60 * 10;
+export function estEssai(email) { return /@example\.(com|org|net)$/i.test(String(email || '').trim()); }
+const ttlDemande = (email) => (estEssai(email) ? TTL_ESSAI : TTL_DEMANDE);
 const MAX_RECLAM_PAR_HEURE = 10;          // anti-balayage d'e-mails
 
 /* ── Tableau de bord Commerce (kd-mc.com/admin/commerce.html, 17.09) ──────────
@@ -436,7 +443,7 @@ export function lienPaypalMe(produit) {
    PURE : elle se teste en l'exécutant, pas en relisant le fichier. */
 export function resumeIntentions(cmds, maintenant) {
   const now = Number(maintenant) || Date.now();
-  const ouvertes = (cmds || []).filter((c) => c && c.etat && c.etat !== 'livre');
+  const ouvertes = (cmds || []).filter((c) => c && c.etat && c.etat !== 'livre' && !estEssai(c.email));
   ouvertes.sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const age = (c) => Math.round((now - (c.ts || now)) / 36e5);
   return {
@@ -458,12 +465,7 @@ export function resumeIntentions(cmds, maintenant) {
 
 async function lireIntentions(env) {
   const { noms } = await listeToutes(env.VENTES, 'cmd:', 200);
-  const cmds = [];
-  for (const nom of noms) {
-    const v = await env.VENTES.get(nom);
-    if (!v) continue;
-    try { cmds.push(JSON.parse(v)); } catch (_) { /* ligne illisible : ignorée, jamais un tableau cassé */ }
-  }
+  const cmds = await lireSansEssais(env.VENTES, noms);
   return resumeIntentions(cmds);
 }
 
@@ -753,14 +755,21 @@ async function lireVentes(env) {
   }
   return { ...agregeVentes(fiches), tronque };
 }
+/* Lecture admin : une ligne d'essai (adresse example.*) est effacée au passage, jamais montrée. */
+export async function lireSansEssais(kv, noms) {
+  const lignes = [];
+  for (const nom of noms) {
+    const v = await kv.get(nom);
+    if (!v) continue;
+    let o; try { o = JSON.parse(v); } catch (_) { continue; }
+    if (o && estEssai(o.email)) { try { await kv.delete(nom); } catch (_) { /* elle expirera seule */ } continue; }
+    lignes.push(o);
+  }
+  return lignes;
+}
 async function lireFile(env) {
   const liste = await env.VENTES.list({ prefix: 'demande:', limit: 200 });
-  const demandes = [];
-  for (const k of liste.keys) {
-    const v = await env.VENTES.get(k.name);
-    if (!v) continue;
-    try { demandes.push(JSON.parse(v)); } catch (_) { /* idem */ }
-  }
+  const demandes = await lireSansEssais(env.VENTES, liste.keys.map((k) => k.name));
   demandes.sort((a, b) => (b.ts || 0) - (a.ts || 0));
   return demandes;
 }
@@ -896,7 +905,7 @@ export default {
           produit: null, email: email || null, methode: 'paypal-webhook', montant, devise,
           etat: 'a_trier', detail: 'montant sans produit correspondant',
           ts: Date.now(), ts_iso: new Date().toISOString(),
-        }), { expirationTtl: TTL_DEMANDE });
+        }), { expirationTtl: ttlDemande(email) });
         return json({ ok: true, en_attente: true, detail: 'montant ' + montant + ' ' + devise + ' sans produit — mis en file', step: 'webhook_produit' }, 200, origin);
       }
       const d = await delivre(env, { produitId: trouve[0], email: email || null, source: 'paypal-webhook', txId });
@@ -957,7 +966,7 @@ export default {
         etat: 'intention', moyen,
         consentement: { donne: true, texte: CONSENTEMENT, ts_iso: new Date().toISOString(), ip: req.headers.get('CF-Connecting-IP') || null },
         ts: Date.now(), ts_iso: new Date().toISOString(),
-      }), { expirationTtl: TTL_CMD });
+      }), { expirationTtl: estEssai(email) ? TTL_ESSAI : TTL_CMD });
       return json({ ok: true, ref, produit: produitId, ...instructionsPaiement(moyen, produit, ref, banque) }, 200, origin);
     }
 
@@ -1048,7 +1057,7 @@ export default {
           await env.VENTES.put('demande:' + id, JSON.stringify({
             id, produit: produitId, email, methode, etat: 'en_attente',
             detail: rech.raison, ts: Date.now(), ts_iso: new Date().toISOString(),
-          }), { expirationTtl: TTL_DEMANDE });
+          }), { expirationTtl: ttlDemande(email) });
           return json({
             ok: true, verifie: false, en_attente: true, demande: id,
             detail: rech.raison === 'montant_ne_correspond_pas'
@@ -1063,7 +1072,7 @@ export default {
             id, produit: produitId, email, methode, etat: 'en_attente',
             detail: 'panne vérification: ' + String(e.message || e).slice(0, 120),
             ts: Date.now(), ts_iso: new Date().toISOString(),
-          }), { expirationTtl: TTL_DEMANDE });
+          }), { expirationTtl: ttlDemande(email) });
           return json({ ok: true, verifie: false, en_attente: true, demande: id, detail: 'vérification indisponible — Kevin valide à la main sous peu', step: 'reclam_panne' }, 200, origin);
         }
       }
@@ -1082,10 +1091,10 @@ export default {
           ? 'panier ouvert le ' + intention.ts_iso + ' — paiement annoncé par l\'acheteur'
           : (methode === 'paypal' ? 'vérification PayPal non configurée' : 'méthode sans vérification automatique'),
         ts: Date.now(), ts_iso: new Date().toISOString(),
-      }), { expirationTtl: TTL_DEMANDE });
+      }), { expirationTtl: ttlDemande(email) });
       if (intention) {
         intention.etat = 'dit_paye'; intention.demande = id; intention.dit_paye_iso = new Date().toISOString();
-        await env.VENTES.put('cmd:' + refInt, JSON.stringify(intention), { expirationTtl: TTL_CMD });
+        await env.VENTES.put('cmd:' + refInt, JSON.stringify(intention), { expirationTtl: estEssai(intention.email) ? TTL_ESSAI : TTL_CMD });
       }
       return json({ ok: true, verifie: false, en_attente: true, demande: id, ref: refInt || null, detail: 'demande enregistrée — Kevin valide et tu reçois ton accès', step: 'reclam_manuel' }, 200, origin);
     }
@@ -1143,12 +1152,7 @@ export default {
       const g = await requireAdmin(req);
       if (!g.ok) return json({ ok: false, error: 'forbidden', detail: g.detail, step: g.step }, g.status, origin);
       const liste = await env.VENTES.list({ prefix: 'demande:', limit: 200 });
-      const demandes = [];
-      for (const k of liste.keys) {
-        const v = await env.VENTES.get(k.name);
-        if (!v) continue;
-        try { demandes.push(JSON.parse(v)); } catch (_) { /* ligne illisible : on l'ignore, on ne casse pas la file */ }
-      }
+      const demandes = await lireSansEssais(env.VENTES, liste.keys.map((k) => k.name));
       demandes.sort((a, b) => (b.ts || 0) - (a.ts || 0));
       return json({ ok: true, demandes }, 200, origin);
     }

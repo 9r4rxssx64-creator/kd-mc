@@ -104,6 +104,23 @@ async function mesure2(moteur, ap, navLog) {
       return { W, H, debordeLargeur: document.documentElement.scrollWidth - W, dehors, chev, minBtn: bt.length ? Math.min(...bt.map((b) => Math.min(b.w, b.h))) : 99, st, sansAlt, noeuds: document.querySelectorAll('#stage .tnode, #stage .tmed, #wrap .pcard, #wrap [data-open]').length };
     }));
   }
+  /* RÉTRÉCI = LISIBLE (Kevin 22.10.2026 : « Rétréci on voit rien ou mal. Partout ») : sur la vue Arbre, à ×0,6 / ×0,42 le nom doit faire ≥ 8,5 px à l'écran sans que deux noms se touchent ;
+     à ×0,3 les noms de famille en grand remplacent les noms individuels (≥ 10 px, sans se toucher). Un ancien arbre (sans paliers) doit être rouge ici. */
+  sortie.zoom = await rejouer(() => p.evaluate(async () => {
+    try {
+      const wr = document.querySelector('#stageWrap'); if (!wr || typeof VIEWST === 'undefined' || !_lay) return { err: 'pas de scène' };
+      const att = (ms) => new Promise((r) => setTimeout(r, ms));
+      const cnt = (sel) => { const Q = [...document.querySelectorAll(sel)].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0); let o = 0; for (let i = 0; i < Q.length; i++) for (let j = i + 1; j < Q.length; j++) { const a = Q[i], b = Q[j]; if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) o++; } return o; };
+      const aller = async (sc) => { VIEWST.sc = sc; VIEWST.tx = wr.clientWidth / 2 - (_lay.w / 2) * sc; VIEWST.ty = wr.clientHeight / 2 - (_lay.h / 2) * sc; applyST(); await att(200); };
+      const nomPx = (sc) => { const st = document.querySelector('#stage'); const ls = parseFloat(getComputedStyle(st).getPropertyValue('--ls')) || 1; const n = document.querySelector('#stage .tmed .tmn, #stage .tnode .tn, #stage .tpay b'); return n ? parseFloat(getComputedStyle(n).fontSize) * ls * sc : 0; };
+      const r = {};
+      for (const sc of [0.6, 0.45]) { await aller(sc); r['px' + sc] = nomPx(sc); r['ov' + sc] = cnt('#stage .tmed .tmn, #stage .tnode, #stage .tpay'); }
+      await aller(0.3);
+      const L = [...document.querySelectorAll('#stage .lodlab')].filter((e) => e.getBoundingClientRect().width > 0);
+      r.nL = L.length; r.pxL = L.length ? Math.min(...L.map((e) => parseFloat(getComputedStyle(e).fontSize) * 0.3)) : 0; r.ovL = cnt('#stage .lodlab');
+      return r;
+    } catch (e) { return { err: String(e.message).slice(0, 80) }; }
+  }));
   /* une fiche : s'ouvre, tient dans l'écran, se referme */
   sortie.fiche = await rejouer(() => p.evaluate(async () => {
     try { const id = Object.keys(DB.persons)[0]; openPerson(id); } catch (e) { return { err: e.message }; }
@@ -144,6 +161,12 @@ for (const ap of MATRICE) {
       if (v.st) ok(v.st.h >= v.H * 0.45, `${t} : la scène fait ≥ 45 % de la hauteur (${Math.round(v.st.h)} sur ${v.H})`);
       ok(v.sansAlt === 0, `${t} : aucune image sans attribut alt (${v.sansAlt})`);
     }
+    if (m.zoom && !m.zoom.err) {
+      const z = m.zoom;
+      ok(z['px0.6'] >= 8.5 && z['px0.45'] >= 8.5, `${tag} Arbre rétréci : le nom reste lisible à ×0,6 et ×0,45 (${(z['px0.6'] || 0).toFixed(1)} et ${(z['px0.45'] || 0).toFixed(1)} px, minimum 8,5)`);
+      ok(z['ov0.6'] === 0 && z['ov0.45'] === 0, `${tag} Arbre rétréci : deux noms ne se touchent pas à ×0,6 et ×0,45 (${z['ov0.6']} et ${z['ov0.45']} contact(s))`);
+      ok(z.nL >= 1 && z.pxL >= 10 && z.ovL === 0, `${tag} Arbre très rétréci (×0,3) : les noms de famille en grand (${z.nL} étiquette(s), ${(z.pxL || 0).toFixed(1)} px, ${z.ovL} contact(s))`);
+    } else ok(false, `${tag} Arbre rétréci : mesure impossible — ${m.zoom && m.zoom.err}`);
     ok(m.fiche && !m.fiche.err && m.fiche.ferme && m.fiche.dansEcran && m.fiche.deb <= 2, `${tag} : une fiche s'ouvre, tient dans l'écran, se referme` + (m.fiche && m.fiche.err ? ' — ' + m.fiche.err : ''));
     if (m.touch && m.fiche && m.fiche.taille) ok(m.fiche.taille >= 40, `${tag} : le ✕ de la fiche ≥ 40 px (${Math.round(m.fiche.taille)})`);
   }

@@ -1,3 +1,6 @@
+/* 22.10.2026 (pont D1, message 182) : une page (navigation) part avec la requête d'origine du navigateur (pré-chargement) ; refaire
+   fetch(req) dans le service worker perdait le cookie du domaine → « Connexion au domaine requise » à la réouverture. Repli : fetch. */
+function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.preloadResponse) return Promise.resolve(ev.preloadResponse).then(function (r) { return r || fetch(rq, opt); }, function () { return fetch(rq, opt); }); return fetch(rq, opt); }
 // iRemoteHub - Service Worker
 // Cache offline + background sync pour les commandes hors-ligne
 
@@ -18,7 +21,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener('activate', (event) => { try { if (self.registration && self.registration.navigationPreload) event.waitUntil(self.registration.navigationPreload.enable().catch(function () {})); } catch (x) { /* pas de pré-chargement */ }
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
@@ -41,13 +44,13 @@ self.addEventListener('fetch', (event) => {
   // Stratégie cache-first pour les assets statiques, network-first pour le HTML
   if (req.destination === 'document') {
     event.respondWith(
-      fetch(req).catch(() => caches.match('./index.html'))
+      __kdmcNav(event, req).catch(() => caches.match('./index.html'))
     );
     return;
   }
 
   event.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req).then((resp) => {
+    caches.match(req).then((cached) => cached || __kdmcNav(event, req).then((resp) => {
       if (resp.ok && req.method === 'GET') {
         const copy = resp.clone();
         caches.open(CACHE_VERSION).then((c) => c.put(req, copy));

@@ -1,3 +1,6 @@
+/* 22.10.2026 (pont D1, message 182) : une page (navigation) part avec la requête d'origine du navigateur (pré-chargement) ; refaire
+   fetch(req) dans le service worker perdait le cookie du domaine → « Connexion au domaine requise » à la réouverture. Repli : fetch. */
+function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.preloadResponse) return Promise.resolve(ev.preloadResponse).then(function (r) { return r || fetch(rq, opt); }, function () { return fetch(rq, opt); }); return fetch(rq, opt); }
 var CACHE_VERSION = "kdmc-social-1.0.1";
 var CACHE_FILES = ["./", "./index.html", "./manifest.json"];
 
@@ -10,7 +13,7 @@ self.addEventListener("install", function(e) {
   self.skipWaiting();
 });
 
-self.addEventListener("activate", function(e) {
+self.addEventListener("activate", function(e) { try { if (self.registration && self.registration.navigationPreload) e.waitUntil(self.registration.navigationPreload.enable().catch(function () {})); } catch (x) { /* pas de pré-chargement */ }
   e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
@@ -33,7 +36,7 @@ self.addEventListener("fetch", function(e) {
   }
   e.respondWith(
     caches.match(req).then(function(cached) {
-      return cached || fetch(req).then(function(resp) {
+      return cached || __kdmcNav(e, req).then(function(resp) {
         if (resp.status === 200) {
           var clone = resp.clone();
           caches.open(CACHE_VERSION).then(function(cache) { cache.put(req, clone); });

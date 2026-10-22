@@ -1,9 +1,12 @@
+/* 22.10.2026 (pont D1, message 182) : une page (navigation) part avec la requête d'origine du navigateur (pré-chargement) ; refaire
+   fetch(req) dans le service worker perdait le cookie du domaine → « Connexion au domaine requise » à la réouverture. Repli : fetch. */
+function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.preloadResponse) return Promise.resolve(ev.preloadResponse).then(function (r) { return r || fetch(rq, opt); }, function () { return fetch(rq, opt); }); return fetch(rq, opt); }
 /* KDMC Shops — Service Worker La Détente. MAJ auto forcée : network-first pour les
    pages (toujours la dernière version en ligne), cache-first pour les assets, fallback offline. */
 var CACHE='kdmc-la-detente-v1.53.26';
 var PRE=['./','studio.html','bibliotheque.html','/CMCteams/shops/legal/cgv.html'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(PRE).catch(function(){})}));self.skipWaiting()});
-self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==CACHE&&(k.indexOf('kdmc-la-detente-')===0||k==='kdmc-v1')}).map(function(k){return caches.delete(k)}))}));self.clients.claim()});
+self.addEventListener('activate',function(e){ try { if (self.registration && self.registration.navigationPreload) e.waitUntil(self.registration.navigationPreload.enable().catch(function () {})); } catch (x) { /* pas de pré-chargement */ }e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==CACHE&&(k.indexOf('kdmc-la-detente-')===0||k==='kdmc-v1')}).map(function(k){return caches.delete(k)}))}));self.clients.claim()});
 self.addEventListener('message',function(e){if(e.data==='skipWaiting')self.skipWaiting()});
 /* 🔔 Notifications push (alertes commande) */
 self.addEventListener('push',function(e){
@@ -33,8 +36,8 @@ self.addEventListener('fetch',function(e){
   if(req.url.indexOf('_force_upd_')>=0||req.url.indexOf('?_v=')>=0||req.url.indexOf('&_v=')>=0)return; /* MAJ forcée : laisser passer en réseau direct */
   var isNav=req.mode==='navigate'||(req.headers.get('accept')||'').indexOf('text/html')>=0;
   if(isNav){
-    e.respondWith(fetch(req).then(function(res){if(res&&res.status===200){var c=res.clone();caches.open(CACHE).then(function(ca){ca.put(req,c)})}return res}).catch(function(){return caches.match(req).then(function(m){return m||caches.match('./')})}));
+    e.respondWith(__kdmcNav(e, req).then(function(res){if(res&&res.status===200){var c=res.clone();caches.open(CACHE).then(function(ca){ca.put(req,c)})}return res}).catch(function(){return caches.match(req).then(function(m){return m||caches.match('./')})}));
   }else{
-    e.respondWith(caches.match(req).then(function(r){return r||fetch(req).then(function(res){if(res&&res.status===200){var c=res.clone();caches.open(CACHE).then(function(ca){ca.put(req,c)})}return res})}));
+    e.respondWith(caches.match(req).then(function(r){return r||__kdmcNav(e, req).then(function(res){if(res&&res.status===200){var c=res.clone();caches.open(CACHE).then(function(ca){ca.put(req,c)})}return res})}));
   }
 });

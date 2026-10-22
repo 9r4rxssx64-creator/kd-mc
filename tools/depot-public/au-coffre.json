@@ -378,6 +378,7 @@
   "tests/verify-seed-remplace-import-perime.mjs",
   "tests/verify-sw-identite.mjs",
   "tests/verify-sw-lie-fi.mjs",
+  "tests/verify-sw-navigation.mjs",
   "tests/verify-tel-invite-portail.mjs",
   "tests/verify-validation-par-mail-docs.mjs",
   "tests/verify-visiteur-ne-vide-pas.mjs",

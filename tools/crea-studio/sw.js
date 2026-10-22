@@ -1,3 +1,6 @@
+/* 22.10.2026 (pont D1, message 182) : une page (navigation) part avec la requête d'origine du navigateur (pré-chargement) ; refaire
+   fetch(req) dans le service worker perdait le cookie du domaine → « Connexion au domaine requise » à la réouverture. Repli : fetch. */
+function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.preloadResponse) return Promise.resolve(ev.preloadResponse).then(function (r) { return r || fetch(rq, opt); }, function () { return fetch(rq, opt); }); return fetch(rq, opt); }
 /* Créa Studio — Service Worker (offline-first) */
 var CACHE_VERSION = 'crea-studio-v9.18.5';
 var ASSETS = [
@@ -15,7 +18,7 @@ self.addEventListener('install', function (e) {
   }));
 });
 
-self.addEventListener('activate', function (e) {
+self.addEventListener('activate', function (e) { try { if (self.registration && self.registration.navigationPreload) e.waitUntil(self.registration.navigationPreload.enable().catch(function () {})); } catch (x) { /* pas de pré-chargement */ }
   e.waitUntil(caches.keys().then(function (keys) {
     return Promise.all(keys.map(function (k) {
       if (k !== CACHE_VERSION) return caches.delete(k);
@@ -33,7 +36,7 @@ self.addEventListener('fetch', function (e) {
   /* stale-while-revalidate pour les assets de l'app */
   e.respondWith(
     caches.match(req).then(function (cached) {
-      var net = fetch(req).then(function (res) {
+      var net = __kdmcNav(e, req).then(function (res) {
         if (res && res.status === 200 && res.type === 'basic') {
           var copy = res.clone();
           caches.open(CACHE_VERSION).then(function (c) { c.put(req, copy); });

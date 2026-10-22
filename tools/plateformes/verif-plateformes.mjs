@@ -73,7 +73,10 @@ async function mesure(moteur, ap) {
   p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|favicon|manifest|ERR_FAILED|status of 40[134]|403|NetworkError|Load failed/i.test(m.text())) erreurs.push('console: ' + m.text().slice(0, 120)); });
   const t0 = Date.now();
   await p.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
-  await p.waitForFunction(() => { try { return Object.keys(DB.persons).length > 5 && !!document.querySelector('#wrap'); } catch (e) { return false; } }, null, { timeout: 25000 });
+  /* pas de waitForFunction : il évalue du texte dans la page, que la politique de sécurité (CSP) de l'arbre refuse (WebKit, 22.10) → on interroge par evaluate */
+  let pret = false;
+  for (let k = 0; k < 100 && !pret; k++) { pret = await p.evaluate(() => { try { return Object.keys(DB.persons).length > 5 && !!document.querySelector('#wrap'); } catch (e) { return false; } }).catch(() => false); if (!pret) await p.waitForTimeout(250); }
+  if (!pret) throw new Error('la page ne s\'est pas dessinée en 25 s');
   const tPret = Date.now() - t0;
   const touch = !!(opts.hasTouch);
   const sortie = { tPret, touch, vues: {} };

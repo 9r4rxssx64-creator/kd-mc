@@ -50,6 +50,9 @@ const API_HOSTS = [
 const OFFLINE_PAGE = '<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>APEX — Hors ligne</title><style>body{margin:0;background:#08080f;color:#c9a227;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center}.box{max-width:420px}h1{font-family:Georgia,serif;font-size:48px;margin:0 0 8px;letter-spacing:4px}.s{color:#6a8aff;font-size:14px;letter-spacing:2px;margin:0 0 24px}.t{color:#fff;font-size:16px;line-height:1.5;margin:0 0 24px}.b{display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#c9a227,#e8b830);color:#000;border:none;border-radius:24px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none}.b:active{transform:scale(.96)}.i{font-size:64px;margin-bottom:12px}</style></head><body><div class="box"><div class="i">⌖</div><h1>APEX</h1><p class="s">HORS LIGNE</p><p class="t">Pas de réseau pour le moment. Tes données locales sont là, l\'app revient dès le retour de la connexion.</p><a class="b" href="./">Réessayer</a></div><script>window.addEventListener("online",function(){location.reload();});</script></body></html>';
 
 /* ================== INSTALL ================== */
+/* 22.10.2026 (pont D1, message 182) : une page (navigation) part avec la requête d'origine du navigateur (pré-chargement) ; refaire
+   fetch(req) dans le service worker perdait le cookie du domaine → « Connexion au domaine requise » à la réouverture. Repli : fetch. */
+function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.preloadResponse) return Promise.resolve(ev.preloadResponse).then(function (r) { return r || fetch(rq, opt); }, function () { return fetch(rq, opt); }); return fetch(rq, opt); }
 self.addEventListener('install', function(e){
   e.waitUntil(Promise.all([
     caches.open(STATIC_CACHE).then(function(c){
@@ -69,6 +72,7 @@ self.addEventListener('install', function(e){
 
 /* ================== ACTIVATE ================== */
 self.addEventListener('activate', function(e){
+  try { if (self.registration && self.registration.navigationPreload) e.waitUntil(self.registration.navigationPreload.enable().catch(function () {})); } catch (x) { /* pas de pré-chargement */ }
   e.waitUntil(Promise.all([
     /* Cleanup auto : supprime tous les caches qui ne portent pas la version actuelle */
     caches.keys().then(function(keys){
@@ -124,7 +128,7 @@ function cacheFirst(req){
 }
 
 /* Network-first avec timeout */
-function networkFirst(req, timeoutMs){
+function networkFirst(req, timeoutMs, ev){
   timeoutMs = timeoutMs || 5000;
   return new Promise(function(resolve, reject){
     var done = false;
@@ -137,7 +141,7 @@ function networkFirst(req, timeoutMs){
       });
     }, timeoutMs);
 
-    fetch(req).then(function(resp){
+    __kdmcNav(ev, req).then(function(resp){
       if (done) return;
       done = true;
       clearTimeout(timer);
@@ -201,7 +205,7 @@ self.addEventListener('fetch', function(e){
   /* Navigation HTML : network-first 5s + fallback offline */
   if (req.mode === 'navigate'){
     e.respondWith(
-      networkFirst(req, 5000).catch(function(){
+      networkFirst(req, 5000, e).catch(function(){
         return caches.match('apex-offline-fallback').then(function(offline){
           return offline || new Response('Offline', {status: 503});
         });

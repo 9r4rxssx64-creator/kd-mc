@@ -22,6 +22,7 @@ import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
+import { evaluerBouche } from './lib-bouche-fenetres.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const R = { ok: [], ko: [], na: [] };
@@ -324,13 +325,11 @@ if (FFMPEG) {
     /* on mesure l'ECART AU REPOS (0.30), pas la hauteur : depuis qu'elle reconnaît les
        consonnes, un son grave lui fait FERMER les lèvres (0.10) — c'est-à-dire s'éloigner
        du repos vers le BAS. Mesurer « le maximum de y » ne verrait rien de ce mouvement,
-       alors que c'est exactement le même phénomène : la bouche est pilotée par le son. */
-    const dans = (a, b) => pilotes.filter((r) => r.t - debut >= a && r.t - debut < b)
-      .map((r) => Math.abs(r.y - 0.30));
-    const max = (v) => (v.length ? Math.max(...v) : 0);
+       alors que c'est exactement le même phénomène : la bouche est pilotée par le son.
+       22.10 (pont 214) : on renvoie la SÉRIE brute ; les fenêtres « son » / « silence » sont décidées côté Node, accrochées à la FIN de la parole
+       (tests/lib-bouche-fenetres.mjs, prouvé par verify-bouche-fenetres.mjs) — l'ancienne fenêtre fixe 1350-2050 ms n'avait que 50 ms de marge et rendait ce test instable. */
     return { pilote: true, n: pilotes.length,
-      fort: max(dans(60, 1050)),        /* le son : 1,2 s de note franche */
-      calme: max(dans(1350, 2050)) };  /* puis 0,9 s de silence          */
+      serie: pilotes.map((r) => [Math.round(r.t - debut), Math.abs(r.y - 0.30)]) };
   });
   if (!mesures) { chk(false, 'bouche introuvable pour la mesure'); }
   else {
@@ -338,8 +337,9 @@ if (FFMPEG) {
       ? `la bouche est pilotée par le SON (${mesures.n} images écrites pendant qu'elle parle)`
       : "la bouche n'est pas pilotée par le son (repli CSS — moteur audio indisponible ici)");
     if (mesures.pilote) {
-      chk(mesures.fort > mesures.calme * 1.3,
-        `sa bouche BOUGE sur le son et revient au repos sur le silence (écart au repos ${mesures.fort.toFixed(2)} → ${mesures.calme.toFixed(2)})`);
+      const ev = evaluerBouche(mesures.serie);
+      chk(ev.ok,
+        `sa bouche BOUGE sur le son et revient au repos sur le silence (écart au repos ${ev.fort.toFixed(2)} → ${ev.calme.toFixed(2)}${ev.raison ? ' — ' + ev.raison : ''})`);
     }
   }
   chk(erreurs.length === 0, erreurs.length ? `ERREURS JS : ${erreurs[0]}` : 'aucune erreur JS pendant la parole');

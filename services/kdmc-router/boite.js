@@ -183,7 +183,7 @@ async function lireCmcteams(outils) {
     c.msgs.push({ moi: false, texte: apercu(m.text, 600) + (m.hasImg ? ' 📷' : ''), ts: +m.ts || 0 });
   }
   for (const [dk, arr] of Object.entries(rep && typeof rep === 'object' ? rep : {})) {
-    if (!g.has(dk)) g.set(dk, { dk, nom: dk, equipe: '', msgs: [] });
+    if (!g.has(dk)) g.set(dk, { dk, nom: nomLisibleCmc(dk), equipe: '', msgs: [] });
     for (const r of liste(arr)) if (r.text) g.get(dk).msgs.push({ moi: true, texte: apercu(r.text, 600), ts: +r.ts || 0 });
   }
   const items = [];
@@ -193,7 +193,7 @@ async function lireCmcteams(outils) {
     const nl = c.msgs.filter((m) => !m.moi && m.ts > lu).length;
     const dernierEux = [...c.msgs].reverse().find((m) => !m.moi);
     items.push({ cle: 'cmc:' + c.dk, source: 'cmcteams', app: 'cmcteams.kd-mc.com', de: c.nom + (c.equipe ? ' · ' + c.equipe : ''), ts: c.msgs.length ? c.msgs[c.msgs.length - 1].ts : 0,
-      texte: dernierEux ? dernierEux.texte : '', nonLus: nl, lu: !nl, repondre: 'direct', fil: c.msgs.slice(-LIMITES.fil) });
+      texte: dernierEux ? dernierEux.texte : (c.msgs.length ? 'Toi : ' + c.msgs[c.msgs.length - 1].texte : ''), nonLus: nl, lu: !nl, repondre: 'direct', fil: c.msgs.slice(-LIMITES.fil) });
   }
   return items.sort((a, b) => b.ts - a.ts).slice(0, LIMITES.convs);
 }
@@ -233,10 +233,21 @@ async function lireRotaplan(env, db) {
     nonLus: lues.has('demande:' + k) ? 0 : 1, lu: lues.has('demande:' + k), repondre: 'mailto',
     mailto: d.email ? 'mailto:' + encodeURIComponent(d.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent('Rotaplan — ta demande de démonstration') : '', fil: [] }));
 }
+const nomPropre = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+/* « MORTER_LUDOVIC » (clé de CMCteams : NOM_PRÉNOM) → « Ludovic Morter » ; un nom déjà lisible reste tel quel. */
+export function nomLisibleCmc(cle) {
+  const c = String(cle || '').trim();
+  if (!/^[A-ZÀ-ÖØ-Þ0-9'-]+(_[A-Za-zÀ-ÿ0-9'-]+)+$/.test(c)) return c;
+  const [nom, ...prenoms] = c.split('_');
+  const cap = (m) => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase();
+  return prenoms.map(cap).concat(cap(nom)).join(' ');
+}
 async function lireArbre(env, db) {
   if (!env.ACCOUNTS) return [];
   let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('arbre:journal')) || '[]'); } catch { j = []; }
-  j = (Array.isArray(j) ? j : []).filter((e) => e && e.ts).slice(0, 15);
+  /* Ses PROPRES modifications (Kevin 22.10, capture : « Kevin DESARZENS · modification · sa photo ») ne sont pas des messages qu'il reçoit : on ne garde que celles des autres. */
+  const parLui = (e) => { const n = nomPropre(e.par); return n.includes('kevin') && n.includes('desarzens'); };
+  j = (Array.isArray(j) ? j : []).filter((e) => e && e.ts && !parLui(e)).slice(0, 15);
   const cles = j.map((e) => 'arbre:' + e.ts + '-' + propre(e.id, 20));
   const lues = await luesD1(db, cles);
   return j.map((e, i) => ({ cle: cles[i], source: 'arbre', app: 'arbre.kd-mc.com', de: propre(e.par, 60) || 'Un membre de la famille', ts: e.ts,

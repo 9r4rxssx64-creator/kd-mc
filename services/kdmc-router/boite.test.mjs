@@ -316,6 +316,25 @@ ok(/fbToken: async/.test(W) && /mintShopsAdminIdToken\(env\)/.test(W), '9b. le r
   ok(Array.isArray(j.codes) && Array.isArray(j.inscriptionsAdmin) && typeof j.connectes === 'number' && Array.isArray(j.enLigne) && Array.isArray(j.inscriptions) && j.inscriptionsEtat === 'ok', '12d. rien d\'autre n\'a changé dans la réponse (codes, inscriptions, connectés, en ligne)');
 }
 
+/* 14. (22.10, capture de Kevin) « Tous » montrait ses PROPRES modifications de l'arbre et des conversations CMCteams sans nom lisible ni texte. */
+{
+  const { nomLisibleCmc } = await import('./boite.js');
+  ok(nomLisibleCmc('DEGIOVANNI_ROMAIN') === 'Romain Degiovanni' && nomLisibleCmc('MORTER_LUDOVIC') === 'Ludovic Morter' && nomLisibleCmc('dupont_j') === 'dupont_j' && nomLisibleCmc('Léa Martin') === 'Léa Martin', '14a. la clé « NOM_PRÉNOM » de CMCteams devient « Prénom Nom » ; un nom déjà lisible reste tel quel', [nomLisibleCmc('DEGIOVANNI_ROMAIN'), nomLisibleCmc('dupont_j')]);
+  const sauveJ = kv.get('arbre:journal'), sauveR = fbData.cmc_dep_reply;
+  kv.set('arbre:journal', JSON.stringify([
+    { ts: T - 5000, type: 'modification', id: 'k1', qui: 'Gérard DESARZENS', par: 'Kevin DESARZENS', champs: [{ c: 'Photos', avant: '3', apres: '4' }] },
+    { ts: T - 6000, type: 'modification', id: 'a1', qui: 'Jeanne Dupuis', par: 'Cousine Anne', champs: [{ c: 'naissance', avant: '1950', apres: '1951' }] }]));
+  fbData.cmc_dep_reply = Object.assign({}, fbData.cmc_dep_reply, { MORTER_LUDOVIC: [{ text: 'Ok, c\'est noté.', ts: T - 9000 }] });
+  _viderMemo();
+  const j = await lireBoite(env, outils, T);
+  const arb = j.messages.filter((x) => x.source === 'arbre');
+  ok(arb.length === 1 && /Cousine Anne/.test(arb[0].de) && !JSON.stringify(arb).includes('Kevin DESARZENS'), '14b. ses propres modifications de l\'arbre ne sont pas des messages pour lui (celles des autres restent)', arb.map((x) => x.de));
+  const mo = j.messages.find((x) => x.cle === 'cmc:MORTER_LUDOVIC');
+  ok(mo && mo.de === 'Ludovic Morter' && mo.texte === 'Toi : Ok, c\'est noté.' && mo.nonLus === 0, '14c. une conversation CMCteams où seul Kevin a écrit montre un vrai nom et « Toi : … » au lieu d\'une ligne vide', mo);
+  if (sauveJ === undefined) kv.delete('arbre:journal'); else kv.set('arbre:journal', sauveJ);
+  fbData.cmc_dep_reply = sauveR; _viderMemo();
+}
+
 /* 12h. LA SOURCE « ALERTES » LIT SES PERSONNES EN MÊME TEMPS (17.10 : mesurée en réel à 11,2 s, toutes les autres sources < 0,8 s ; 20 personnes × 4 lectures s'enchaînaient).
    Ici : D1 et KV mettent 25 ms par lecture, 16 personnes. En file ≈ 16 × 4 × 25 ms ≥ 1,6 s ; par lots de 8 ≈ 0,3 s. */
 {

@@ -61,6 +61,8 @@ for (const m of voulus) {
 }
 if (!Object.keys(lanceurs).length) { console.log('  ❌ aucun moteur disponible : rien à mesurer'); process.exit(1); }
 
+/* une page qui se recharge pendant la mesure (« Execution context was destroyed ») : on rejoue, et le nombre de navigations est contrôlé à part */
+async function rejouer(f) { for (let k = 0; k < 4; k++) { try { return await f(); } catch (e) { if (!/context was destroyed|navigation/i.test(String(e.message)) || k === 3) throw e; await new Promise((r) => setTimeout(r, 800)); } } }
 async function mesure(moteur, ap) {
   const br = lanceurs[moteur];
   const opts = ap.dev ? { ...D[ap.dev], locale: 'fr-FR' } : ap.tactile ? { viewport: ap.vp, locale: 'fr-FR', hasTouch: true, isMobile: moteur !== 'firefox', deviceScaleFactor: 3 } : { viewport: ap.vp, locale: 'fr-FR', hasTouch: false };
@@ -70,7 +72,8 @@ async function mesure(moteur, ap) {
   await ctx.addInitScript((a) => { localStorage.setItem('arbre_trust', '1'); localStorage.setItem('arbre_codehash', 'f'.repeat(64)); localStorage.setItem('arbre_upd_ts', String(Date.now())); localStorage.setItem('arbre_v2_text', a); }, DB);
   const p = await ctx.newPage(); const erreurs = [];
   p.on('pageerror', (e) => erreurs.push('js: ' + String(e.message).slice(0, 120)));
-  p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|favicon|manifest|ERR_FAILED|status of 40[134]|403|NetworkError|Load failed/i.test(m.text())) erreurs.push('console: ' + m.text().slice(0, 120)); });
+  p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|favicon|manifest|ERR_FAILED|status of 40[134]|403|NetworkError|Load failed|Cross-Origin Request Blocked|CORS request did not succeed|Fetch API cannot load|due to access control/i.test(m.text())) erreurs.push('console: ' + m.text().slice(0, 120)); });
+  let navs = 0; p.on('framenavigated', (f) => { if (f === p.mainFrame()) navs++; });
   const t0 = Date.now();
   await p.goto(base + '/index.html', { waitUntil: 'domcontentloaded' });
   /* pas de waitForFunction : il évalue du texte dans la page, que la politique de sécurité (CSP) de l'arbre refuse (WebKit, 22.10) → on interroge par evaluate */
@@ -83,19 +86,19 @@ async function mesure(moteur, ap) {
   for (const vue of ['proche', 'lignee', 'tree']) {
     await p.evaluate((v) => { try { if (v === 'tree') VIEWSTYLE = 'arbre'; else if (v === 'lignee') VIEWSTYLE = 'lignee'; } catch (e) { /* page pas prête */ } const b = document.querySelector('.tab[data-view="' + (v === 'proche' ? 'proche' : 'tree') + '"]'); if (b) b.click(); }, vue);
     await p.waitForTimeout(vue === 'proche' ? 700 : 1400);
-    sortie.vues[vue] = await p.evaluate(() => {
+    sortie.vues[vue] = await rejouer(() => p.evaluate(() => {
       const R = (e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
       const vis = (e) => { const s = getComputedStyle(e), r = e.getBoundingClientRect(); return s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0 && r.height > 0; };
       const ov = (a, b) => a.x < b.r - 1 && b.x < a.r - 1 && a.y < b.b - 1 && b.y < a.b - 1;
       const W = innerWidth, H = innerHeight;
       const fixes = [['onglets', '#tabs'], ['zoom', '.zoomBtns'], ['plus', '#fab'], ['mini', '.minimap'], ['version', '#ver']].map(([nom, sel]) => { const e = document.querySelector(sel); return e && vis(e) ? { nom, ...R(e) } : null; }).filter(Boolean);
       const dehors = fixes.filter((f) => f.x < -1 || f.y < -1 || f.r > W + 1 || f.b > H + 1).map((f) => f.nom);
-      const chev = []; for (let i = 0; i < fixes.length; i++) for (let j = i + 1; j < fixes.length; j++) if (ov(fixes[i], fixes[j])) chev.push(fixes[i].nom + '×' + fixes[j].nom);
+      const chev = []; for (let i = 0; i < fixes.length; i++) for (let j = i + 1; j < fixes.length; j++) if (ov(fixes[i], fixes[j])) chev.push(fixes[i].nom + '×' + fixes[j].nom + ' [' + [fixes[i], fixes[j]].map((f) => [f.x, f.y, f.r, f.b].map(Math.round).join(',')).join(' | ') + ']');
       const bt = [...document.querySelectorAll('.zoomBtns button, #tabs .tab')].filter(vis).map(R);
       const st = document.getElementById('stageWrap') ? R(document.getElementById('stageWrap')) : null;
       const sansAlt = [...document.querySelectorAll('img')].filter((i) => !i.hasAttribute('alt') && !i.closest('.rig-piece') && !/rig-piece/.test(i.className)).length;
       return { W, H, debordeLargeur: document.documentElement.scrollWidth - W, dehors, chev, minBtn: bt.length ? Math.min(...bt.map((b) => Math.min(b.w, b.h))) : 99, st, sansAlt, noeuds: document.querySelectorAll('#stage .tnode, #stage .tmed, #wrap .pcard, #wrap [data-open]').length };
-    });
+    }));
   }
   /* une fiche : s'ouvre, tient dans l'écran, se referme */
   sortie.fiche = await p.evaluate(async () => {
@@ -109,7 +112,7 @@ async function mesure(moteur, ap) {
     await new Promise((r2) => setTimeout(r2, 300));
     return { ferme: !document.querySelector('.ov'), dansEcran, taille: r ? Math.min(r.width, r.height) : 0, deb };
   });
-  sortie.erreurs = erreurs;
+  sortie.erreurs = erreurs; sortie.navs = navs;
   await ctx.close();
   return sortie;
 }
@@ -126,6 +129,7 @@ for (const ap of MATRICE) {
     const tag = `${ap.nom}/${moteur}`;
     if (process.env.GITHUB_ACTIONS) console.log('::notice title=plateformes-etape::' + tag + ' mesuré en ' + Math.round((Date.now() - t0) / 1000) + ' s');
     ok(m.erreurs.length === 0, `${tag} : 0 erreur JavaScript` + (m.erreurs.length ? ' — ' + m.erreurs.slice(0, 2).join(' | ') : ''));
+    ok(m.navs <= 2, `${tag} : la page ne se recharge pas toute seule (${m.navs} navigation(s))`);
     ok(m.tPret < 6000, `${tag} : premier dessin en ${m.tPret} ms (< 6 s)`);
     for (const [vue, v] of Object.entries(m.vues)) {
       const t = `${tag} ${vue === 'tree' ? 'Arbre' : vue === 'lignee' ? 'Lignée' : 'Famille'}`;

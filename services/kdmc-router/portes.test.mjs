@@ -37,11 +37,17 @@ const CHEMINS_ADMIN = [
   'https://shops.kd-mc.com/CMCteams/tools/poolrobot/index.html', 'https://kd-mc.com/CMCteams/tools/pool%72obot/',
   'https://kd-mc.com/CMCteams/tools/POOLROBOT/', 'https://kd-mc.com/CMCteams//tools/poolrobot/', 'https://kd-mc.com/CMCteams/tools/cuisine/%2e%2e/poolrobot/',
   'https://autorisations.kd-mc.com/', 'https://kd-mc.com/CMCteams/tools/approvals/', 'https://cmcteams.kd-mc.com/tools/approvals/app.js',
+  'https://staging.kd-mc.com/', 'https://kd-mc.com/CMCteams/staging/', 'https://kd-mc.com/CMCteams/STAGING/index.html',
 ];
 for (const u of CHEMINS_ADMIN) { const r = await va(u); ok(!r.servi, 'SANS code admin, ' + u + ' ne sert PAS l\'app privée  [' + r.st + ']'); }
 const grant = signe('__kdmc_admin__', 1);
-for (const u of ['https://beatbot.kd-mc.com/', 'https://autorisations.kd-mc.com/']) {
+for (const u of ['https://beatbot.kd-mc.com/', 'https://autorisations.kd-mc.com/', 'https://staging.kd-mc.com/']) {
   const r = await va(u, { 'x-kdmc-admin': grant }); ok(r.servi, 'AVEC le code admin, ' + u + ' s\'ouvre');
+}
+/* staging.kd-mc.com (22.10) : environnement de TEST — jamais indexé, porte fermée ou ouverte. */
+for (const extra of [{}, { 'x-kdmc-admin': grant }]) {
+  const r = await mod.fetch(new Request('https://staging.kd-mc.com/', { headers: Object.assign({}, NAV, extra) }), env, { waitUntil() {} });
+  ok(/noindex/.test(r.headers.get('x-robots-tag') || ''), 'staging.kd-mc.com porte x-robots-tag noindex (' + (extra['x-kdmc-admin'] ? 'admin' : 'anonyme') + ')');
 }
 /* Depuis le 27.09 nuit (jamais-cmcteams.test.mjs) : une PAGE d'app ouverte sous kd-mc.com part vers
    sa belle adresse — où la même porte s'applique. Même avec le code admin, rien n'est servi ICI. */
@@ -78,6 +84,8 @@ const anne = signe('anne-martin', 0);
 for (const u of ['https://osint.kd-mc.com/', 'https://kd-mc.com/cujina/', 'https://tor.kd-mc.com/']) {
   const r = await va(u, { cookie: 'kdmc_sso=' + anne }); ok(r.servi, 'personne CONNUE (fiche remplie) → ' + u + ' s\'ouvre');
 }
+/* staging (22.10) : une personne CONNUE du domaine mais pas admin n'entre PAS dans l'environnement de test */
+{ const r = await va('https://staging.kd-mc.com/', { cookie: 'kdmc_sso=' + anne }); ok(!r.servi, 'personne connue NON admin → staging.kd-mc.com reste fermé  [' + r.st + ']'); }
 { const r = await va('https://osint.kd-mc.com/', { authorization: 'Bearer ' + anne }); ok(r.servi, 'reconnue aussi par laissez-passer (app iPhone installée)'); }
 /* session révoquée (« déconnecter mes autres appareils ») → retour à la fiche */
 kv.set('acc:paul-roche', JSON.stringify({ uid: 'paul-roche', name: 'Paul Roche', revoked_at: Date.now() }));

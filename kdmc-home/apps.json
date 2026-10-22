@@ -61,6 +61,10 @@
       "name": "Autorisations",
       "icon": "🆔"
     },
+    "staging.kd-mc.com": {
+      "name": "Staging",
+      "icon": "🧪"
+    },
     "arbre.kd-mc.com": {
       "name": "Arbre",
       "icon": "🌳"

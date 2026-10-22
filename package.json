@@ -374,6 +374,7 @@
     "test:vente-essais": "node --test services/kdmc-vente/essais.test.mjs",
     "test:whoami-cause-refus": "node services/kdmc-router/whoami-cause-refus.test.mjs",
     "verif:arbre-plateformes": "node tools/plateformes/verif-plateformes.mjs",
+    "verif:lingua-plateformes": "node tools/plateformes/verif-lingua-plateformes.mjs",
     "test:tout-tester-partout": "node tests/verify-tout-tester-partout.mjs",
     "test:arbre-recherches-regle": "node tests/verify-arbre-recherches-regle.mjs"
   },

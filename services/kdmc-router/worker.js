@@ -154,6 +154,7 @@ const ROUTES = {
   'kit.kd-mc.com': '/CMCteams/shops/kit-ia', // Kit IA de l'indépendant — produit numérique neuf (Kevin 2026-09-16)
   'dossiers.kd-mc.com': '/CMCteams/dossiers', // Archive Epstein : INDEX des sources officielles, aucun document hébergé (Kevin 2026-09-18)
   'croupier.kd-mc.com': '/CMCteams/shops/croupier', // Devenir croupier — guide de métier (Kevin 2026-09-15) // Rotaplan — planning des équipes en rotation, offre B2B (Kevin 2026-09-15)
+  'staging.kd-mc.com': '/CMCteams/staging', // Environnement de TEST (Kevin 22.10 « oui staging.kd-mc.com ») — admin seul, noindex, données séparées
   'shops.kd-mc.com': '/CMCteams/shops',  // « A Cüjina de Mùnegu » — adresse au nom monégasque correct/sourcé (Kevin 2026-08-13)
 };
 
@@ -217,6 +218,7 @@ const APPS = {
   'kit.kd-mc.com': 'kit',
   'dossiers.kd-mc.com': 'dossiers',
   'tor.kd-mc.com': 'tor',
+  'staging.kd-mc.com': 'staging',
   'rotaplan.kd-mc.com': 'rotaplan',
   'croupier.kd-mc.com': 'croupier',
   'javis.kd-mc.com': 'javis',
@@ -1151,7 +1153,13 @@ export default {
       return durcirReponse(new Response(null, { status: 301, headers: { location: u.toString() } }));
     }
     try { await chargerFermees(env); } catch { /* jamais bloquant : sans la liste, rien n'est fermé en général */ }
-    return durcirReponse(await ROUTEUR.fetch(request, env, ctx));
+    const rep = durcirReponse(await ROUTEUR.fetch(request, env, ctx));
+    /* staging.kd-mc.com (22.10) : environnement de TEST — jamais indexé, quelle que soit la réponse. */
+    if (/^staging\.kd-mc\.com$/i.test(new URL(request.url).hostname) && rep && !rep.webSocket && rep.status !== 101) {
+      const h = new Headers(rep.headers); h.set('x-robots-tag', 'noindex, nofollow, noarchive');
+      return new Response(rep.body, { status: rep.status, statusText: rep.statusText, headers: h });
+    }
+    return rep;
   },
   scheduled(event, env, ctx) { return ROUTEUR.scheduled(event, envAvecSecours(env, journalSecours(env)), ctx); },
 };
@@ -1837,6 +1845,7 @@ async function voixGoogle(env, texte, voix, langue, cleCache, cors, diag) {
 const PORTES = [
   { dossier: '/CMCteams/tools/poolrobot', niveau: 'admin', verrou: () => beatbotLock() },
   { dossier: '/CMCteams/tools/approvals', niveau: 'admin', verrou: () => approvalsLock() },
+  { dossier: '/CMCteams/staging', niveau: 'admin', verrou: () => stagingLock() },
   { dossier: '/CMCteams/tools/cuisine', niveau: 'fiche', app: 'cuisine.kd-mc.com', nom: 'A Cüjina de Mùnegu' },
   { dossier: '/CMCteams/kdmc-home/worldmonitor', niveau: 'fiche', app: 'worldmonitor.kd-mc.com', nom: 'World Monitor' },
   { dossier: '/CMCteams/kdmc-home/osint', niveau: 'fiche', app: 'osint.kd-mc.com', nom: 'OSINT' },
@@ -6389,6 +6398,10 @@ function verrouAdminPage(o) {
 function beatbotLock() {
   return verrouAdminPage({ titre: 'PoolPilot — privé', theme: '#08131f', fond: 'linear-gradient(180deg,#08131f,#050c14)', texte: '#e8f1fa', doux: '#93b0c8', champ: '#0d1c2c', bord: '#1f3d5a',
     bouton: 'linear-gradient(135deg,#39c2ff,#0e88c9)', surBouton: '#052034', lien: '#39c2ff', alerte: '#f2b632', emoji: '🔒🌊', h1: 'PoolPilot — espace privé' });
+}
+function stagingLock() {
+  return verrouAdminPage({ titre: 'Staging — environnement de test', theme: '#0b1020', fond: 'linear-gradient(180deg,#0b1020,#05070f)', texte: '#eef1f8', doux: '#9aa4bd', champ: '#0b1226', bord: '#26304d',
+    bouton: 'linear-gradient(135deg,#e8c766,#c9a94a)', surBouton: '#0b1020', lien: '#e8c766', alerte: '#e0a83a', emoji: '🧪🆔', h1: 'Staging — réservé à l\'admin' });
 }
 function approvalsLock() {
   return verrouAdminPage({ titre: 'Coffre d\'autorisations — privé', theme: '#0b0f0a', fond: 'linear-gradient(180deg,#0b0f0a,#05070a)', texte: '#f2efe0', doux: '#a9b39a', champ: '#0b1108', bord: '#2a331f',

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'">
+<title>Staging — environnement de test</title>
+<style>
+:root{--fond:#0b1020;--texte:#eef1f8;--doux:#9aa4bd;--or:#e8c766;--carte:#141b30}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--fond);color:var(--texte);font:16px/1.5 -apple-system,system-ui,sans-serif;padding:24px 16px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:640px;margin:0 auto}
+h1{font-size:1.5em;margin:.2em 0}
+.carte{background:var(--carte);border:1px solid #26304d;border-radius:14px;padding:16px;margin:14px 0}
+.bandeau{background:#3a2a05;color:var(--or);border-radius:10px;padding:10px 12px;font-weight:700}
+li{margin:6px 0}
+.badge{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));font-size:12px;color:var(--doux);background:#0008;border-radius:8px;padding:4px 8px}
+</style>
+</head>
+<body>
+<main>
+<p class="bandeau">🧪 ENVIRONNEMENT DE TEST — rien ici ne touche le vrai domaine</p>
+<h1>staging.kd-mc.com</h1>
+<div class="carte">
+<p>Cette adresse sert aux essais : comptes jetables, achats de test, parcours complets. Elle est réservée à l'admin et invisible pour les moteurs de recherche.</p>
+<ul>
+<li>Les données de test sont séparées de la production.</li>
+<li>Tout ce qui est créé ici est effacé après chaque essai.</li>
+<li>Les vraies apps restent sur leurs adresses habituelles.</li>
+</ul>
+</div>
+</main>
+<div class="badge version-badge" id="ver" data-version="v0.1.0">v0.1.0</div>
+</body>
+</html>

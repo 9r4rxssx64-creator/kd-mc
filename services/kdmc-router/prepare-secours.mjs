@@ -65,6 +65,7 @@ const APPS = [
   { chemin: 'javis', quoi: 'javis' },  // l'app installable de Bee (16.09)
   { chemin: 'tools/tor', quoi: 'tor' },  // 27e adresse, ajoutee sur main le 15.09 : sans elle, GitHub eteint = 404
   { chemin: 'tools/approvals', quoi: 'autorisations' },
+  { chemin: 'staging', quoi: 'staging (environnement de test, admin seul)' },  // 22.10
   { chemin: 'lingua', quoi: 'lingua' },
   { chemin: 'shops/dashboard', quoi: 'dashboard' },
   { chemin: 'shops/sourcing', quoi: 'sourcing' },

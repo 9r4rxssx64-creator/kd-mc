@@ -1,0 +1,39 @@
+name: Lingua — TOUTES LES PLATEFORMES (Chromium + WebKit/Safari + Firefox, compte local fictif)
+
+# Kevin 22.10.2026 : « teste toujours tout sur l'ordinateur, iPhone, Android, toutes les plateformes… aucun bug visuel, fonctionnel, de fluidité ». WebKit = le moteur de Safari
+# (iPhone / iPad), absent des sessions : ce robot le fournit. AU DÉPÔT PUBLIC (minutes gratuites et illimitées, 0 minute du coffre). Compte LOCAL fictif seulement :
+# le vrai code de lingua/ servi tel quel, aucune connexion, aucun secret, aucune donnée de Kevin. À la main seulement, jamais de cron.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lingua-plateformes
+  cancel-in-progress: false
+
+jobs:
+  plateformes:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium, WebKit et Firefox
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium webkit firefox
+
+      - name: La matrice d'appareils (iPhone, Android, tablettes, portables, grand écran)
+        timeout-minutes: 14   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles
+        env:
+          ENGINES: chromium,webkit,firefox
+          EXIGE_PLAYWRIGHT: "1"
+        run: node tools/plateformes/verif-lingua-plateformes.mjs

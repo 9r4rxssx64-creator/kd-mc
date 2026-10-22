@@ -90,6 +90,7 @@ const SITES = [
   'tor.kd-mc.com',        /* « Tor en clair » — routée le 15.09 sans être surveillée */
   'dossiers.kd-mc.com',   /* routée sans être surveillée — une adresse hors sonde tombe SANS que personne le sache (22.09) */
   'autorisations.kd-mc.com',
+  'staging.kd-mc.com',    /* environnement de test (22.10), admin seul */
   'arbre.kd-mc.com',
   'lingua.kd-mc.com',
   'studio.kd-mc.com',
@@ -128,7 +129,7 @@ const WORKERS = [
 /* Ces adresses exigent une session admin : un 401/403 est la BONNE réponse,
    pas une panne. Les confondre produirait une alerte permanente que plus
    personne ne lirait — c'est comme ça qu'on cesse de lire les alertes. */
-const ADMIN_GATED = new Set(['autorisations.kd-mc.com', 'beatbot.kd-mc.com']);
+const ADMIN_GATED = new Set(['autorisations.kd-mc.com', 'beatbot.kd-mc.com', 'staging.kd-mc.com']);
 
 const TIMEOUT_MS = 12000;
 const STATE_URL = 'https://kdmc-uptime.internal/state/v1';

@@ -1,18 +1,18 @@
 {
  "_doc": "Généré par tools/admin/apps-versions.mjs — relevé dans le dépôt, pas en direct.",
- "genere": "2026-10-17",
+ "genere": "2026-10-22",
  "apps": {
   "kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.71"
+   "version": "v1.0.78"
   },
   "www.kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.71"
+   "version": "v1.0.78"
   },
   "cmcteams.kd-mc.com": {
    "page": "index.html",
-   "version": "v9.979"
+   "version": "v9.980"
   },
   "apex-ai.kd-mc.com": {
    "page": "apex-ai-v13/index.html",
@@ -20,7 +20,7 @@
   },
   "apex-chat.kd-mc.com": {
    "page": "messaging-app/index.html",
-   "version": "v1.1.318"
+   "version": "v1.1.343"
   },
   "la-detente.kd-mc.com": {
    "page": "la-detente/index.html",
@@ -32,7 +32,7 @@
   },
   "dashboard.kd-mc.com": {
    "page": "shops/dashboard/index.html",
-   "version": "v2.0.6"
+   "version": "v2.0.7"
   },
   "sourcing.kd-mc.com": {
    "page": "shops/sourcing/index.html",
@@ -44,11 +44,11 @@
   },
   "departs.kd-mc.com": {
    "page": "tools/departs/index.html",
-   "version": "v1.105"
+   "version": "v1.108"
   },
   "cmcteams-light.kd-mc.com": {
    "page": "tools/departs/index.html",
-   "version": "v1.105"
+   "version": "v1.108"
   },
   "bot.kd-mc.com": {
    "page": "tools/crypto-bot-dashboard/index.html",
@@ -68,11 +68,11 @@
   },
   "lingua.kd-mc.com": {
    "page": "lingua/index.html",
-   "version": "v2.142.2"
+   "version": "v2.142.7"
   },
   "studio.kd-mc.com": {
    "page": "tools/crea-studio/index.html",
-   "version": "v9.18.4"
+   "version": "v9.18.6"
   },
   "cuisine.kd-mc.com": {
    "page": "tools/cuisine/index.html",
@@ -125,6 +125,10 @@
   "croupier.kd-mc.com": {
    "page": "shops/croupier/index.html",
    "version": null
+  },
+  "staging.kd-mc.com": {
+   "page": "staging/index.html",
+   "version": "v0.1.0"
   },
   "shops.kd-mc.com": {
    "page": "shops/index.html",

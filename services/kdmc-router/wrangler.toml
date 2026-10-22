@@ -24,6 +24,7 @@ routes = [
   { pattern = "departs.kd-mc.com", custom_domain = true },
   { pattern = "cmcteams-light.kd-mc.com", custom_domain = true },
   { pattern = "tor.kd-mc.com", custom_domain = true },
+  { pattern = "staging.kd-mc.com", custom_domain = true },
   { pattern = "bot.kd-mc.com", custom_domain = true },
   { pattern = "beatbot.kd-mc.com", custom_domain = true },
   { pattern = "autorisations.kd-mc.com", custom_domain = true },

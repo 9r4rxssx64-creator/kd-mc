@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Portail v1.0.78 + staging v0.1.0 (2026-10-22 — environnement de test)
+- staging.kd-mc.com : page de test réservée à l'admin (code / Face ID), jamais indexée ; tuile « Staging · Privé » au portail.
+
 ## Apex Chat v1.1.343 (2026-10-22 — une clé par appareil : un message privé se lit sur TOUS les appareils)
 
 - Kevin : « Fais aussi une clef par appareil pour tous ». Avant : une seule clé publique par compte (la dernière publiée gagne) → un message écrit pour l'iPhone était illisible sur le PC (« impossible à lire sur cet appareil »).

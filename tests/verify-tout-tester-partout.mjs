@@ -13,7 +13,7 @@ t(/iPhone 14 Pro paysage 844x390/.test(o) && /Pixel 7/.test(o) && /iPad/.test(o)
 t(/'proche', 'lignee', 'tree'/.test(o) && /chev/.test(o) && /sansAlt/.test(o) && /tPret < 6000/.test(o) && /pageerror/.test(o), 'trois vues, chevauchement, alt, fluidité, erreurs JavaScript');
 t(/webkit/.test(o) && /firefox/.test(o) && /absent ici/.test(o), 'WebKit et Firefox prévus, un moteur absent est DIT');
 const w = lire('.github/workflows/arbre-plateformes.yml');
-t(/workflow_dispatch/.test(w) && !/schedule:/.test(w) && /chromium webkit firefox/.test(w) && /KDMC_RUNNER/.test(w) && /ENGINES: chromium,webkit,firefox/.test(w), 'robot gratuit WebKit + Firefox : à la main, jamais de cron, interrupteur Lenovo');
+t(/workflow_dispatch/.test(w) && !/schedule:/.test(w) && /moteur: \[chromium, webkit, firefox\]/.test(w) && /KDMC_RUNNER/.test(w) && /ENGINES: \$\{\{ matrix\.moteur \}\}/.test(w), 'robot gratuit WebKit + Firefox : à la main, jamais de cron, interrupteur Lenovo');
 const pk = lire('package.json');
 t(/"verif:arbre-plateformes"/.test(pk) && /npm run test:tout-tester-partout/.test(pk), 'les scripts existent et la garde est dans test:ci');
 console.log(`\n${ko ? '❌' : '✅'} ${ko ? ko + ' échec(s)' : 'tout tester partout : règle, matrice, robot gratuit câblés'}`); process.exit(ko ? 1 : 0);

@@ -16,8 +16,13 @@ concurrency:
 
 jobs:
   plateformes:
+    # un travail PAR MOTEUR, en parallèle : la matrice complète sur 3 moteurs dépassait 14 min d'un seul bloc (22.10)
+    strategy:
+      fail-fast: false
+      matrix:
+        moteur: [chromium, webkit, firefox]
     runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -29,15 +34,15 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Installer Chromium, WebKit et Firefox
+      - name: Installer le moteur ${{ matrix.moteur }}
         # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
         run: |
           npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
-          ./node_modules/.bin/playwright install --with-deps chromium webkit firefox
+          ./node_modules/.bin/playwright install --with-deps ${{ matrix.moteur }}
 
       - name: La matrice d'appareils (iPhone, Android, tablettes, portables, grand écran)
-        timeout-minutes: 14   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles
+        timeout-minutes: 20   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles
         env:
-          ENGINES: chromium,webkit,firefox
+          ENGINES: ${{ matrix.moteur }}
           EXIGE_PLAYWRIGHT: "1"
         run: node tools/plateformes/verif-plateformes.mjs

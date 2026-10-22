@@ -20,6 +20,12 @@ ok(sw.st === 200 && /CONTENU/.test(sw.t), '1a. sw.js servi sans session');
 ok(handlers.st === 200 && /CONTENU .*\/lib\/sw-handlers\.js/.test(handlers.t), '1b. lib/sw-handlers.js (importé par le worker) servi sans session');
 ok(crypto.st === 401 && visio.st === 401, '2. crypto.js et lib/visio-mesh.js restent fermés sans session (401)');
 ok(page.st === 200 && !/CONTENU/.test(page.t), '3. la page de l\'app montre la porte, pas le contenu');
+/* 22.10 (tâche 20) : le manifeste à empreinte d'Apex AI s'installe sans session ; un autre JSON de l'app reste fermé */
+const demandeAI = async (chemin) => { const r = await mod.fetch(new Request('https://apex-ai.kd-mc.com' + chemin, { headers: { 'user-agent': UA, 'sec-fetch-dest': 'manifest' } }), env, { waitUntil() {} }); return { st: r.status, t: await r.text() }; };
+const manAI = await demandeAI('/assets/json/manifest-Dnqu29nu.json');
+const autreAI = await demandeAI('/assets/json/donnees-Dnqu29nu.json');
+ok(manAI.st === 200 && /CONTENU/.test(manAI.t), '4a. Apex AI : manifest-<empreinte>.json servi sans session (installation iPhone)');
+ok(autreAI.st === 401, '4b. Apex AI : un autre JSON de l\'app reste fermé sans session (401)');
 console.log('SABOTAGE');
 const src = (await import('node:fs')).readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/lib\\\/sw-handlers\\\.js\|robots/.test(src), 'S1. la règle « lib/sw-handlers.js » est bien dans libreSansFiche');

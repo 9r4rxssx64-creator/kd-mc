@@ -128,6 +128,12 @@ await page.addInitScript(() => {
   try { const sp = speechSynthesis.speak.bind(speechSynthesis); speechSynthesis.speak = (u) => { try { window.__entendus.push(String(u.text || '')); } catch {} return sp(u); }; } catch {}
 });
 const erreurs = [], echecs = [];
+/* ce que l'IA a VRAIMENT répondu (statut + raison), vu du navigateur — sert aussi en --jetable, où la garde d'écriture est coupée et ne compte plus */
+const reponsesIA = [];
+page.on('response', async (r) => { try { const u = new URL(r.url()); if (u.pathname !== '/__lingua/ai' || r.request().method() !== 'POST') return;
+  let mode = ''; try { mode = JSON.parse(r.request().postData() || '{}').mode || 'coach'; } catch {}
+  let corps = {}; try { corps = await r.json(); } catch {}
+  reponsesIA.push({ mode, statut: r.status(), ok: corps.ok === true, raison: String(corps.reason || '').slice(0, 40) }); } catch {} });
 page.on('pageerror', (e) => erreurs.push(String(e.message).slice(0, 160)));
 page.on('response', (r) => { try { if (r.status() >= 500 && notreDomaine(new URL(r.url()))) echecs.push(r.status() + ' ' + new URL(r.url()).pathname); } catch {} });
 const attends = (ms) => page.waitForTimeout(ms);
@@ -308,18 +314,20 @@ try {
       await page.waitForFunction(() => ((document.querySelector('.disc-sub') || {}).textContent || '').replace(/[.…\s]/g, '').length > 5, null, { timeout: 12000 }).catch(() => {});
       await capture(page, 'appel-en-cours');
       const sous = await page.evaluate(() => (document.querySelector('.disc-sub') || {}).textContent || '').catch(() => '');
-      chk(iaPassees.filter((x) => x === 'appel').length >= 2 && sous.trim().length > 5, `appel : Bee répond pour de vrai (${iaPassees.filter((x) => x === 'appel').length} réponses de l'IA, ${repliques} répliques écrites)`);
+      const iaOk = reponsesIA.filter((x) => x.mode === 'appel' && x.ok).length;
+      chk(iaOk >= 2 && sous.trim().length > 5, `appel : Bee répond pour de vrai (${iaOk} réponses de l'IA, ${repliques} répliques écrites)`,
+        'appels IA vus : ' + JSON.stringify(reponsesIA.slice(0, 6)));
       await clic('.ap-raccroche');
       await page.waitForFunction(() => /Ton bilan|Bilan indisponible|Aucune faute/.test((document.querySelector('.ap-bilan') || {}).innerText || ''), null, { timeout: 30000 }).catch(() => {});
       const bil = await page.evaluate(() => { const b = document.querySelector('.ap-bilan'); return b ? { t: /Ton bilan|Aucune faute/.test(b.innerText), corr: b.querySelectorAll('.ap-corr').length } : null; }).catch(() => null);
-      chk(bil && bil.t, `bilan de fin d'appel affiché (${bil ? bil.corr : 0} correction(s))`);
+      chk(bil && bil.t, `bilan de fin d'appel affiché (${bil ? bil.corr : 0} correction(s))`, 'bilans IA vus : ' + JSON.stringify(reponsesIA.filter((x) => x.mode === 'appel-bilan').slice(0, 3)));
       await capture(page, 'appel-bilan');
       await clic('.ap-fin .btn-main'); await attends(600);
     } else gris('bouton « Appeler maintenant » introuvable dans les réglages d\'appel');
   } else ko('carte « Appeler Bee » absente');
 
   /* 9. le coach : non testé exprès */
-  gris('coach non testé : une question au coach s\'écrit dans ton fil d\'activité (lecture seule oblige)');
+  if (!JETABLE) gris('coach : seul l\'écran est ouvert avec ton compte — une question au coach s\'écrit dans ton fil d\'activité (lecture seule oblige) ; la question posée est testée sur le compte jetable (--jetable)');
 
   /* 9b. compte jetable : coach, réouvertures (service worker), hors-ligne, largeurs 375 / 390 px */
   if (JETABLE && !RAPIDE) {
@@ -327,6 +335,20 @@ try {
     const coach = await page.evaluate(() => ({ champ: !!document.querySelector('.coach-input, .screen.coach input, .screen.coach textarea'), t: (document.body.innerText || '').length })).catch(() => ({}));
     chk(coach.t > 60, `coach : l'onglet s'ouvre sur un vrai écran (champ de question ${coach.champ ? 'présent' : 'absent'})`);
     await capture(page, 'coach');
+    /* une vraie question au coach (le compte est jetable : son fil d'activité part avec lui) */
+    if (coach.champ) {
+      await page.waitForSelector('.coach-input', { timeout: 5000 }).catch(() => {});
+      await page.fill('.coach-input', 'How do I say thank you very much?').catch(() => {});
+      const avant = reponsesIA.length;
+      const attendue = page.waitForResponse((r) => new URL(r.url()).pathname === '/__lingua/ai', { timeout: 30000 }).catch(() => null);
+      await page.press('.coach-input', 'Enter').catch(() => {});
+      await attendue; await attends(1500);
+      const etat = await page.evaluate(() => ({ user: document.querySelectorAll('.coach-msg.user, .coach-msg.me').length, msgs: document.querySelectorAll('.coach-msg').length,
+        typing: !!document.querySelector('.typing'), enfant: /enfant/i.test(localStorage.getItem('lingua_g_accounts') || '') && /"enfant":true/.test(localStorage.getItem('lingua_g_accounts') || ''), champ: ((document.querySelector('.coach-input') || {}).value || '') })).catch(() => ({}));
+      const cOk = reponsesIA.slice(avant).filter((x) => x.ok).length;
+      chk(cOk >= 1, `coach : une vraie question reçoit une vraie réponse de l'IA (${cOk})`, 'appels IA : ' + JSON.stringify(reponsesIA.slice(avant, avant + 3)) + ' · écran : ' + JSON.stringify(etat));
+      await capture(page, 'coach-reponse');
+    }
     await onglet('Accueil'); await attends(600);
     const ver0 = await page.evaluate(() => window.LINGUA_VER || '').catch(() => '');
     let reouv = 0, versions = new Set(), muets = [];

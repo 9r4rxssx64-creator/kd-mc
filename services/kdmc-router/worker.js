@@ -1882,8 +1882,11 @@ function porteDe(cheminCMC) {
 /* 20.10.2026 (mesuré : Apex Chat n'avait AUCUN service worker sur l'iPhone de Kevin — « SW actif : Non », aucun cache, push en erreur) : le SW est un MODULE qui importe
    `lib/sw-handlers.js`, et ce fichier recevait 401 (« Connexion au domaine requise ») : le navigateur ne joint pas la session du domaine à l'import d'un worker.
    Le SW ne démarrait donc jamais. Le fichier est du code public, sans aucune donnée : il reste ouvert, comme sw.js lui-même. */
+/* 22.10.2026 (audit Apex AI, tâche 20 — mesuré : apex-ai.kd-mc.com/assets/json/manifest-Dnqu29nu.json → 401) : Apex AI (Vite) déclare son
+   manifeste sous un nom à EMPREINTE ; seul « manifest.json » exact passait → l'iPhone n'avait ni nom ni icône à l'installation.
+   On accepte « manifest-<lettres/chiffres>.json » : toujours des métadonnées d'installation, aucun contenu. */
 function libreSansFiche(cheminCMC) {
-  return /\/(manifest\.json|[^/]*\.webmanifest|sw\.js|lib\/sw-handlers\.js|robots\.txt|(apple-touch-icon|favicon|icon)[^/]*\.(png|svg|ico))$/.test(cheminNormal(cheminCMC));
+  return /\/(manifest(-[A-Za-z0-9_]+)?\.json|[^/]*\.webmanifest|sw\.js|lib\/sw-handlers\.js|robots\.txt|(apple-touch-icon|favicon|icon)[^/]*\.(png|svg|ico))$/.test(cheminNormal(cheminCMC));
 }
 /* 🔒 AUCUNE CONSULTATION SANS COMPTE, NULLE PART (Kevin 3.10.2026 : « Aucune consultation sans compte nulle part »).
    Avant, 9 adresses sur 31 demandaient la fiche (PORTES) ; les 22 autres (boutiques, Lingua, Apex, arbre…) s'ouvraient à

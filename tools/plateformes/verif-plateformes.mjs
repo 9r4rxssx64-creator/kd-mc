@@ -120,8 +120,11 @@ for (const ap of MATRICE) {
   for (const moteur of ap.moteurs) {
     if (!lanceurs[moteur]) continue;
     console.log(`\n== ${ap.nom} — ${moteur} ==`);
-    let m; try { m = await mesure(moteur, ap); } catch (e) { ok(false, `${ap.nom}/${moteur} : la page ne s'est pas ouverte — ${String(e.message).split('\n')[0].slice(0, 100)}`); continue; }
+    const t0 = Date.now(); let m;
+    /* limite de 100 s par appareil et par moteur : un moteur qui se fige est signalé, il ne bloque plus tout le robot (22.10) */
+    try { m = await Promise.race([mesure(moteur, ap), new Promise((_, rej) => setTimeout(() => rej(new Error('plus de 100 s : moteur figé')), 100000))]); } catch (e) { ok(false, `${ap.nom}/${moteur} : la page ne s'est pas ouverte — ${String(e.message).split('\n')[0].slice(0, 100)}`); continue; }
     const tag = `${ap.nom}/${moteur}`;
+    if (process.env.GITHUB_ACTIONS) console.log('::notice title=plateformes-etape::' + tag + ' mesuré en ' + Math.round((Date.now() - t0) / 1000) + ' s');
     ok(m.erreurs.length === 0, `${tag} : 0 erreur JavaScript` + (m.erreurs.length ? ' — ' + m.erreurs.slice(0, 2).join(' | ') : ''));
     ok(m.tPret < 6000, `${tag} : premier dessin en ${m.tPret} ms (< 6 s)`);
     for (const [vue, v] of Object.entries(m.vues)) {

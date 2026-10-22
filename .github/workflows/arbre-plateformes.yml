@@ -36,6 +36,7 @@ jobs:
           ./node_modules/.bin/playwright install --with-deps chromium webkit firefox
 
       - name: La matrice d'appareils (iPhone, Android, tablettes, portables, grand écran)
+        timeout-minutes: 14   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles
         env:
           ENGINES: chromium,webkit,firefox
           EXIGE_PLAYWRIGHT: "1"

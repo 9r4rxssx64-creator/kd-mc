@@ -45,6 +45,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Trouvé en vrai navigateur : à la RÉOUVERTURE (session gardée), l'appareil ne publiait jamais sa clé → corrigé.
 - Preuves : vitest 2267 verts, couverture 100 % `crypto-core` ; vrai Chromium 3 appareils `runtime-cle-par-appareil.mjs` 8/8 (1/8 avec la 1.1.342). Leçon 722. Limites : anciens messages restent illisibles ; médias et groupes = phase 2.
 
+## Light v1.110 (2026-10-22 — les boutons de la light se touchent au doigt)
+- « Équipe miroir → / Aller à mon équipe → », la pastille de version et la ligne de diagnostic font maintenant au moins 44 px de haut (mesuré au robot « formats » : 124×27, 58×24 et 25 px avant).
+
 ## Light v1.109 (2026-10-22 — la sortie « ← Portail » est celle de l'app)
 - Audit réel (robot `verif-live-formats`, 5 largeurs) : la pastille « ← Portail » du routeur recouvrait le titre de la light (96×44 px en haut à gauche, 4 éléments, à 375, 390, 412, 768 et 1200 px). La light a maintenant son propre lien « ← Portail » dans son en-tête (44 px) : le routeur ne pose plus sa pastille.
 - Routeur : la pastille se retire aussi quand l'app dessine son lien après 5 s (jusqu'à 30 s) — CMCteams sur un iPhone lent la gardait par-dessus la bannière du pit boss.

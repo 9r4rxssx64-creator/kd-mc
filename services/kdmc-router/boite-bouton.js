@@ -54,8 +54,10 @@ export function bouton() {
           lineHeight: '1', fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif', textDecoration: 'none', cursor: 'pointer', zIndex: '2147483000', boxShadow: '0 4px 18px rgba(0,0,0,.45)' });
         pr.href = 'https://kd-mc.com/'; pr.setAttribute('aria-label', 'Retour au portail kd-mc.com'); pr.title = 'Retour au portail kd-mc.com'; pr.setAttribute('data-kdmc-pastille', '1');
         (document.body || document.documentElement).appendChild(pr);
-        /* une app qui dessine son propre retour APRÈS le chargement (application monopage) : on s'efface, jamais deux sorties côte à côte */
-        [1500, 5000].forEach(function (ms) { setTimeout(function () { try { if (pr && pr.parentNode && dejaLa()) { pr.parentNode.removeChild(pr); pr = null; } } catch (e) { /* */ } }, ms); });
+        /* une app qui dessine son propre retour APRÈS le chargement (application monopage) : on s'efface, jamais deux sorties côte à côte.
+           22.10 (capture de Kevin : la pastille restait sur CMCteams, par-dessus la bannière du pit boss) : CMCteams ouvre son accueil après la lecture du
+           planning, plus de 5 s sur un iPhone lent → on revérifie jusqu'à 30 s, pas seulement à 1,5 s et 5 s */
+        [1500, 3000, 5000, 8000, 12000, 20000, 30000].forEach(function (ms) { setTimeout(function () { try { if (pr && pr.parentNode && dejaLa()) { pr.parentNode.removeChild(pr); pr = null; } } catch (e) { /* */ } }, ms); });
       } catch (e) { /* une pastille de retour ne doit JAMAIS casser une page */ }
     };
     retourDomaine();

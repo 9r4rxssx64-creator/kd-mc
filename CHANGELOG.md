@@ -39,6 +39,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Trouvé en vrai navigateur : à la RÉOUVERTURE (session gardée), l'appareil ne publiait jamais sa clé → corrigé.
 - Preuves : vitest 2267 verts, couverture 100 % `crypto-core` ; vrai Chromium 3 appareils `runtime-cle-par-appareil.mjs` 8/8 (1/8 avec la 1.1.342). Leçon 722. Limites : anciens messages restent illisibles ; médias et groupes = phase 2.
 
+## Light v1.109 (2026-10-22 — la sortie « ← Portail » est celle de l'app)
+- Audit réel (robot `verif-live-formats`, 5 largeurs) : la pastille « ← Portail » du routeur recouvrait le titre de la light (96×44 px en haut à gauche, 4 éléments, à 375, 390, 412, 768 et 1200 px). La light a maintenant son propre lien « ← Portail » dans son en-tête (44 px) : le routeur ne pose plus sa pastille.
+- Routeur : la pastille se retire aussi quand l'app dessine son lien après 5 s (jusqu'à 30 s) — CMCteams sur un iPhone lent la gardait par-dessus la bannière du pit boss.
+
 ## Light v1.108 + Crea Studio v9.18.6 + seed CMCteams v9.980 (2026-10-22 — rouges de test:ci réparés)
 - Light v1.108 : le portillon ne remet plus le curseur sur « Prénom » 0,2 s après l'ouverture quand on tape déjà ailleurs (le nom finissait dans le prénom) ; test:matricule-fiche 6/6 au lieu d'environ 1 échec sur 3 (il servait aussi à la light le version.txt de CMCteams → rechargements).
 - Light v1.108 : « Horaires aménagés » (juillet, août, septembre 2026) ne disparaît plus quand Firebase répond — tableau spécial du PDF que le live ne reconstruit pas, gardé comme les cadres (v1.90). Prouvé dans un vrai navigateur : test rouge sans la correction, vert avec.

@@ -104,6 +104,11 @@ try {
     await A.page.waitForSelector('a[data-kdmc-pastille="1"]', { timeout: 2000 }).catch(() => {});
     const avant = await compte(A.page); await A.page.waitForTimeout(2200);
     ok(avant === 1 && await compte(A.page) === 0, '2g. une app qui dessine son retour après coup : la pastille s\'efface (jamais deux sorties)', { avant, apres: await compte(A.page) }); await A.ctx.close(); }
+  /* 2h. (22.10, capture de Kevin) une app LENTE qui dessine son retour après 7 s (CMCteams sur un iPhone, planning à lire) : la pastille s'efface aussi, pas seulement avant 5 s */
+  { const A = await ouvrir(browser, 'cmcteams.kd-mc.com', { '/': PAGE('<div id="app">Chargement…</div><script>setTimeout(function(){var a=document.createElement("a");a.href="https://kd-mc.com/";a.textContent="← Portail KDMC";document.getElementById("app").appendChild(a);},7000);</script>') }, { mesTout: true });
+    await A.page.waitForSelector('a[data-kdmc-pastille="1"]', { timeout: 2000 }).catch(() => {});
+    const avant = await compte(A.page); await A.page.waitForTimeout(9500);
+    ok(avant === 1 && await compte(A.page) === 0, '2h. une app lente qui dessine son retour après 7 s : la pastille s\'efface aussi (avant : elle restait par-dessus l\'app)', { avant, apres: await compte(A.page) }); await A.ctx.close(); }
 
   /* 4. la porte des conditions */
   const CGU = { ok: true, connecte: true, nom: 'Léa Martin', admin: false, messages: [], cgu: { requise: true, version: 3, texte: 'Conditions du domaine.', points: ['Point un', 'Point deux'] } };

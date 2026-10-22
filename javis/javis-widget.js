@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.21';
+  var JAVIS_VER = 'v1.22';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -2078,6 +2078,14 @@
     /* OUVRIR AU DOIGT (Kevin 16.10 : « quand je le touche il bouge mais c'est tout ») : Bee saute dès que le doigt se pose ; sur iPhone le « clic »
        qui suit peut se perdre. On ouvre donc AUSSI quand le doigt se lève (bouge < 12 px, < 1 s) ; le clic qui suit ne referme pas (dédoublonné). */
     var lanceur0 = wrap.querySelector('#javis-launcher'), _dep = null, _ouvertDoigt = 0;
+    /* 22.10 (mesuré, Galaxy S9+ paysage 658×320) : la fenêtre s'ouvre sous le doigt, et le « clic » que le navigateur fabrique ENSUITE tombe sur ce qui est
+       alors sous le doigt — la pastille de version (↻) : mise à jour forcée, la page se recharge, Bee « s'ouvre et se referme ». Pendant 0,7 s après
+       une ouverture au doigt, aucun clic ne passe dans la fenêtre (captured : avant tous les boutons). */
+    var _ptDoigt = null;
+    panel.addEventListener('click', function (e) {
+      /* seulement le clic FABRIQUÉ par ce même geste (même endroit, < 0,7 s) : un autre bouton touché tout de suite après doit marcher */
+      if (_ptDoigt && Date.now() - _ouvertDoigt < 700 && Math.hypot(e.clientX - _ptDoigt.x, e.clientY - _ptDoigt.y) < 30) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
     function basculer(par) {
       /* dans l'app, le panneau est toujours là : toucher Bee ne doit pas ouvrir le clavier */
       if (APP_MODE) return;
@@ -2100,7 +2108,7 @@
     lanceur0.addEventListener('pointerup', function (e) {
       var d = _dep; _dep = null;
       if (!d || e.pointerType === 'mouse') return;      /* la souris a un vrai clic : rien à doubler */
-      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 12 && Date.now() - d.t < 1000) basculer('doigt');
+      if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < 12 && Date.now() - d.t < 1000) { _ptDoigt = { x: e.clientX, y: e.clientY }; basculer('doigt'); }
     }, { passive: true });
     lanceur0.addEventListener('click', function () { basculer('clic'); });
     wrap.querySelector('#javis-close').addEventListener('click', function () {

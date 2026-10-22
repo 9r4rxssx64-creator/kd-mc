@@ -379,6 +379,7 @@
     "verif:arbre-plateformes": "node tools/plateformes/verif-plateformes.mjs",
     "verif:lingua-plateformes": "node tools/plateformes/verif-lingua-plateformes.mjs",
     "test:tout-tester-partout": "node tests/verify-tout-tester-partout.mjs",
+    "verif:bee-plateformes": "node tools/plateformes/verif-plateformes-bee.mjs",
     "test:arbre-recherches-regle": "node tests/verify-arbre-recherches-regle.mjs"
   },
   "repository": {

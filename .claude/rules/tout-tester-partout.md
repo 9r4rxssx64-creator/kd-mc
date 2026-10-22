@@ -6,3 +6,4 @@
 - Un contrôle qui sort vert du premier coup n'est pas une preuve : le lancer contre une ancienne version (`ARBRE_DIR=<ancien arbre>`) — il doit devenir rouge (22.10 : le premier jet ne voyait ni la vue Arbre ni l'iPhone de Kevin 844×390).
 - Moteurs : jamais passer sous silence un moteur absent (le contrôle le dit) ; iPhone = WebKit, Android = Chromium, Firefox à part.
 - Garde : `npm run test:tout-tester-partout` (dans test:ci).
+- Bee (22.10) : `npm run verif:bee-plateformes` (même modèle, deux surfaces : l'app Bee et Bee posée sur une autre app) ; robot gratuit `bee-plateformes.yml` ; garde `npm run test:bee-plateformes`. Toute modification du widget de Bee (`tools/javis/javis-widget.js`) relance au moins ce contrôle.

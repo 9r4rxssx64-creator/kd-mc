@@ -1006,7 +1006,7 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tout-tester-partout-tout-le-temps-ordinateur-iphone-android-toutes-les-plateformes-et-ne-plus-jamais-écrire-non-testé-ce-que-je-ne-peux-pas-faire-le-lenovo-ou-un-robot-gratuit-le-fait-kevin-2026-10-22-absolue-toutes-les-branches)
 
 ### 🔎 RÈGLE ABSOLUE — ARBRE : CHERCHER PHOTOS, PRESSE, GUERRE ET DOCUMENTS POUR TOUT LE MONDE, PARTOUT, ET REPARTIR SUR TOUTE NOUVELLE FAMILLE À CHAQUE NOUVEAU NOM (Kevin 2026-10-22, ABSOLUE, TOUTES LES BRANCHES)
-**« Je ne vois pas de photos à part celles que j'ajoute moi. Il faudrait en récupérer un maximum pour tout le monde. Peu importe la source, tant qu'elle est vraie et qu'on reconnaît la personne […]
+**Bee v1.22 (22.10.2026, javis-bee)** — Ce que Bee sait faire n'a pas changé ; ce qui change : posée sur une autre app, sur un téléphone en paysage (Galaxy S9+ mesuré), toucher Bee l'ouvre et la […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-chercher-photos-presse-guerre-et-documents-pour-tout-le-monde-partout-et-repartir-sur-toute-nouvelle-famille-à-chaque-nouveau-nom-kevin-2026-10-22-absolue-toutes-les-branches)
 
 ---

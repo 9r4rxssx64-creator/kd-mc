@@ -117,6 +117,8 @@ async function mesure2(moteur, ap, navLog) {
       for (const sc of [0.6, 0.45]) { await aller(sc); r['px' + sc] = nomPx(sc); r['ov' + sc] = cnt('#stage .tmed .tmn, #stage .tnode, #stage .tpay'); }
       await aller(0.3);
       const L = [...document.querySelectorAll('#stage .lodlab')].filter((e) => e.getBoundingClientRect().width > 0);
+      const rt = document.querySelector('#stage .tmed.root .tmn'); r.rootPx = rt ? parseFloat(getComputedStyle(rt).fontSize) * (parseFloat(getComputedStyle(document.querySelector('#stage')).getPropertyValue('--lsr')) || 1) * 0.3 : -1;
+      r.annees = (typeof _anDe === 'function') && _anDe('19.10.1879 ?') === 1879 && _anDe('~1827') === 1827 && _anDe('') === 0 && !L.some((e) => /(^|[ ·])\d{1,3}–/.test(e.textContent));
       r.nL = L.length; r.pxL = L.length ? Math.min(...L.map((e) => parseFloat(getComputedStyle(e).fontSize) * 0.3)) : 0; r.ovL = cnt('#stage .lodlab');
       return r;
     } catch (e) { return { err: String(e.message).slice(0, 80) }; }
@@ -166,6 +168,8 @@ for (const ap of MATRICE) {
       const z = m.zoom;
       ok(z['px0.6'] >= 8.5 && z['px0.45'] >= 8.5, `${tag} Arbre rétréci : le nom reste lisible à ×0,6 et ×0,45 (${(z['px0.6'] || 0).toFixed(1)} et ${(z['px0.45'] || 0).toFixed(1)} px, minimum 8,5)`);
       ok(z['ov0.6'] === 0 && z['ov0.45'] === 0, `${tag} Arbre rétréci : deux noms ne se touchent pas à ×0,6 et ×0,45 (${z['ov0.6']} et ${z['ov0.45']} contact(s))`);
+      ok(z.rootPx < 0 || z.rootPx >= 9, `${tag} Arbre très rétréci (×0,3) : le nom de « moi » reste lisible (${(z.rootPx || 0).toFixed(1)} px, minimum 9)`);
+      ok(z.annees === true, `${tag} Arbre très rétréci : les années d'une famille sont complètes (« 19.10.1879 ? » = 1879, jamais « 79 »)`);
       ok(z.nL >= 1 && z.pxL >= 10 && z.ovL === 0, `${tag} Arbre très rétréci (×0,3) : les noms de famille en grand (${z.nL} étiquette(s), ${(z.pxL || 0).toFixed(1)} px, ${z.ovL} contact(s))`);
     } else ok(false, `${tag} Arbre rétréci : mesure impossible — ${m.zoom && m.zoom.err}`);
     ok(m.fiche && !m.fiche.err && m.fiche.ferme && m.fiche.dansEcran && m.fiche.deb <= 2, `${tag} : une fiche s'ouvre, tient dans l'écran, se referme` + (m.fiche && m.fiche.err ? ' — ' + m.fiche.err : ''));

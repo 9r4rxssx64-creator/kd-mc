@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.339 (2026-10-22 — le Face ID pour réunir les comptes de Kevin se fait DANS l'app, avec un vrai bouton)
+
+- MESURÉ : Kevin a la v1.1.338, rouvre l'app : aucun Face ID demandé, ses 3 comptes restent séparés (base relue). L'aller-retour par le portail ne montrait rien dans l'app installée.
+- Si le domaine ne rend pas le vrai compte, une fenêtre « 🔐 Réunir tes comptes » avec un bouton Face ID s'ouvre ; le bouton lance le passkey du domaine dans l'app, range le pass prouvé et rattache aussitôt (message « ✅ Tes comptes Apex Chat sont réunis »). Test `ralliement-kevin.test.js` (11, rouge sans la correction). Leçon 714.
+
+
 ## Apex Chat v1.1.338 (2026-10-22 — la fusion des comptes de Kevin marche aussi depuis l'app installée)
 
 - MESURÉ : après son Face ID dans Safari, les 3 comptes Apex Chat de Kevin restaient séparés (conversations de Laurence et Rémi invisibles sur son iPhone). L'app installée a ses propres cookies : le Face ID de Safari ne l'atteint pas, et la page présentait un vieux pass non prouvé.

@@ -13,7 +13,7 @@ function monter(user, reponseSso) {
   const sso = vi.fn(async () => reponseSso);
   const toasts = [];
   // eslint-disable-next-line no-new-func
-  new Function('K', '_authSsoFromKdmc', 'toast', '_safeCatch', extractDef(html, 'K._ralliementKevin = async function(){'))(K, sso, (m) => toasts.push(m), () => {});
+  new Function('K', '_authSsoFromKdmc', 'toast', '_safeCatch', [extractDef(html, 'K._ralliementAppliquer = async function(r){'), extractDef(html, 'K._ralliementFaceId = async function(){'), extractDef(html, 'K._ralliementKevin = async function(){')].join('\n'))(K, sso, (m) => toasts.push(m), () => {});
   return { K, sso, toasts };
 }
 
@@ -43,41 +43,61 @@ describe('ralliement du compte Kevin en double', () => {
       expect(await K._ralliementKevin()).toBe(false); expect(K.login).not.toHaveBeenCalled();
     }
   });
-  it("app installée (cookies isolés, Face ID de Safari invisible) : pass du domaine relu d'abord, puis UN aller-retour Face ID par le portail, une fois par 6 h", async () => {
-    vi.useFakeTimers();
-    try {
-      localStorage.removeItem('kdmc_ralliement_bounce_ts');
-      const ordre = [];
-      const { K, sso, toasts } = monter(DOUBLON, null);
-      K._domainePass = vi.fn(async () => { ordre.push('pass'); return null; });
-      K._kdmcBounceToLogin = vi.fn(() => { ordre.push('aller-retour'); return true; });
-      sso.mockImplementation(async () => { ordre.push('sso'); return null; });
-      expect(await K._ralliementKevin()).toBe(false);
-      expect(K._kdmcBounceToLogin).not.toHaveBeenCalled();           // pas avant le petit délai (le message se lit)
-      await vi.advanceTimersByTimeAsync(1600);
-      expect(ordre).toEqual(['pass', 'sso', 'aller-retour']);       // le pass du domaine est relu AVANT le contrôle
-      expect(K._kdmcBounceToLogin).toHaveBeenCalledWith(true);
-      expect(toasts.join()).toMatch(/Face ID/);
-      // une 2e ouverture dans les 6 h : pas de nouvel aller-retour
-      const b = monter(DOUBLON, null); b.K._domainePass = async () => null; b.K._kdmcBounceToLogin = vi.fn(() => true);
-      await b.K._ralliementKevin(); await vi.advanceTimersByTimeAsync(1600);
-      expect(b.K._kdmcBounceToLogin).not.toHaveBeenCalled();
-    } finally { vi.useRealTimers(); localStorage.removeItem('kdmc_ralliement_bounce_ts'); }
+  it("app installée : le pass du domaine est relu d'abord, puis une fenêtre propose Face ID (jamais d'aller-retour caché)", async () => {
+    const ordre = [];
+    const { K, sso } = monter(DOUBLON, null);
+    K._domainePass = vi.fn(async () => { ordre.push('pass'); return null; });
+    K._showModal = vi.fn((titre, corps) => { ordre.push('fenetre'); K._corps = corps; });
+    sso.mockImplementation(async () => { ordre.push('sso'); return null; });
+    expect(await K._ralliementKevin()).toBe(false);
+    expect(ordre).toEqual(['pass', 'sso', 'fenetre']);
+    expect(K._corps).toMatch(/K\._ralliementFaceId\(\)/);            // le bouton lance le Face ID (geste de la personne)
+    expect(K._corps).toMatch(/Face ID/);
+    await K._ralliementKevin();                                       // une seule fois par chargement
+    expect(K._showModal).toHaveBeenCalledTimes(1);
   });
-  it("au retour du portail (?_ssob=1) ou si le rattachement réussit : aucun nouvel aller-retour (jamais de boucle)", async () => {
-    vi.useFakeTimers();
-    try {
-      localStorage.removeItem('kdmc_ralliement_bounce_ts');
-      const ancien = location.search;
-      history.replaceState(null, '', '/?_ssob=1');
-      const a = monter(DOUBLON, null); a.K._domainePass = async () => null; a.K._kdmcBounceToLogin = vi.fn(() => true);
-      await a.K._ralliementKevin(); await vi.advanceTimersByTimeAsync(1600);
-      expect(a.K._kdmcBounceToLogin).not.toHaveBeenCalled();
-      history.replaceState(null, '', '/' + ancien);
-      const b = monter(DOUBLON, { token: 'T2', user: { id: 'kdmc_admin' } }); b.K._domainePass = async () => null; b.K._kdmcBounceToLogin = vi.fn(() => true);
-      expect(await b.K._ralliementKevin()).toBe(true); await vi.advanceTimersByTimeAsync(1600);
-      expect(b.K._kdmcBounceToLogin).not.toHaveBeenCalled();
-    } finally { vi.useRealTimers(); localStorage.removeItem('kdmc_ralliement_bounce_ts'); history.replaceState(null, '', '/'); }
+  it('rattachement réussi sans Face ID à refaire : aucune fenêtre', async () => {
+    const { K } = monter(DOUBLON, { token: 'T2', user: { id: 'kdmc_admin' } });
+    K._showModal = vi.fn(); K._closeModal = vi.fn();
+    expect(await K._ralliementKevin()).toBe(true);
+    expect(K._showModal).not.toHaveBeenCalled();
+  });
+  describe('Face ID dans l\'app (bouton de la fenêtre)', () => {
+    const b64u = (txt) => Buffer.from(txt).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    function lancer({ options = { ok: true, challenge: b64u('defi'), rpId: 'kd-mc.com' }, verify = { ok: true, token: 'PASS-PROUVE' }, sso = { token: 'T2', user: { id: 'kdmc_admin' } }, cred = 'ok' } = {}) {
+      const appels = [];
+      globalThis.fetch = vi.fn(async (url, init) => { appels.push({ url, init }); return { json: async () => (String(url).endsWith('/options') ? options : verify) }; });
+      Object.defineProperty(globalThis.window, 'PublicKeyCredential', { value: function () {}, configurable: true });
+      Object.defineProperty(globalThis.navigator, 'credentials', { value: { get: vi.fn(async () => {
+        if (cred === 'annule') throw new Error('NotAllowedError');
+        return { id: 'CID', response: { userHandle: new TextEncoder().encode('kdmc_admin'), clientDataJSON: new Uint8Array([1]), authenticatorData: new Uint8Array([2]), signature: new Uint8Array([3]) } };
+      }) }, configurable: true });
+      localStorage.removeItem('kdmc_sso_token');
+      const m = monter(DOUBLON, sso); m.K._closeModal = vi.fn();
+      return { ...m, appels };
+    }
+    it('Face ID reconnu → le pass prouvé est gardé, le rattachement se fait, la fenêtre se ferme', async () => {
+      const { K, sso, toasts, appels } = lancer();
+      expect(await K._ralliementFaceId()).toBe(true);
+      expect(appels.map((a) => String(a.url))).toEqual(['/__sso/webauthn/auth/options', '/__sso/webauthn/auth/verify']);
+      expect(appels.every((a) => a.init.credentials === 'include')).toBe(true);
+      expect(localStorage.getItem('kdmc_sso_token')).toBe('PASS-PROUVE');
+      expect(sso).toHaveBeenCalledTimes(1);
+      expect(K.login).toHaveBeenCalledWith({ id: 'kdmc_admin' }, 'T2');
+      expect(K._closeModal).toHaveBeenCalled(); expect(toasts.join()).toMatch(/réunis/);
+    });
+    it('Face ID annulé, refusé ou domaine muet → rien ne change, message clair, jamais de connexion', async () => {
+      for (const cas of [{ cred: 'annule' }, { verify: { ok: false, reason: 'signature' } }, { options: { ok: false, reason: 'panne' } }]) {
+        const { K, toasts } = lancer(cas);
+        expect(await K._ralliementFaceId()).toBe(false);
+        expect(K.login).not.toHaveBeenCalled(); expect(toasts.length).toBeGreaterThan(0);
+      }
+    });
+    it('Face ID reconnu mais le serveur ne rend pas le vrai compte → on le dit, sans se déconnecter', async () => {
+      const { K, toasts } = lancer({ sso: { token: 'T', user: { id: 'kdmc_kdmc_admin' } } });
+      expect(await K._ralliementFaceId()).toBe(false);
+      expect(K.login).not.toHaveBeenCalled(); expect(toasts.join()).toMatch(/rattachement/);
+    });
   });
   it('lancé 3 s après chaque connexion', () => {
     expect(html).toMatch(/K\._postLogin = function\(\)\{\n  if\(!K\.user\) return;\n  setTimeout\(\(\) => \{ try \{ K\._ralliementKevin && K\._ralliementKevin\(\); \} catch\(_\) \{\} \}, 3000\);/);

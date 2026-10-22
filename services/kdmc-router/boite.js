@@ -21,6 +21,7 @@
 import { ADMIN, LIMITES as LIM_CERCLE, texteOk, schema as schemaCercle } from './cercle.js';
 import * as activite from './activite.js';
 import { BOUTON_JS } from './boite-bouton.js';
+import { pousserA } from './installer.js';   // 🔔 la réponse de l'admin arrive sur le téléphone, même app fermée
 import { ficheOubliee } from './acc-memo.js';
 
 export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 5000, memoKvMs: 60000 };
@@ -585,6 +586,7 @@ async function repondre(env, outils, cle, texte, now) {
     if (!(await un(db, 'SELECT 1 AS o FROM messages WHERE de = ? AND a = ?', id, ADMIN))) return { ok: false, reason: 'conversation_introuvable' };
     if (await un(db, 'SELECT 1 AS o FROM blocages WHERE qui = ? AND bloque = ?', id, ADMIN)) return { ok: false, reason: 'bloque' };
     await faire(db, 'INSERT INTO messages (de, a, type, corps, cadeau, cree) VALUES (?, ?, ?, ?, ?, ?)', ADMIN, id, 'texte', ck.texte, null, now);
+    try { await pousserA(env, id, { title: '💬 Message de l\'administrateur', body: apercu(ck.texte, 110), url: 'https://lingua.kd-mc.com/', tag: 'boite-reponse' }); } catch { /* jamais bloquant */ }
   } else if (t === 'cmc') {
     const rid = 'r_' + now + '_' + Math.random().toString(36).slice(2, 6);
     const cur = liste(await fb(outils, 'cmc_dep_reply/' + id).catch(() => null));
@@ -593,6 +595,8 @@ async function repondre(env, outils, cle, texte, now) {
   } else if (t === 'depot') {
     const r = await faire(db, 'UPDATE boite SET reponse = ?, repondu = ? WHERE id = ?', texte, now, +id || 0);
     if (!r || !r.meta || r.meta.changes !== 1) return { ok: false, reason: 'message_introuvable' };
+    /* 22.10 : la personne est prévenue sur son téléphone (tous ses appareils abonnés), jamais bloquant */
+    try { const dest = await un(db, 'SELECT uid FROM boite WHERE id = ?', +id || 0); if (dest && dest.uid) await pousserA(env, dest.uid, { title: "📬 Réponse de l'administrateur", body: apercu(texte, 110), url: 'https://kd-mc.com/#messages', tag: 'boite-reponse' }); } catch { /* une notification ne casse jamais une réponse */ }
   } else if (t === 'demande') return { ok: false, reason: 'reponse_par_email' };
   else return { ok: false, reason: 'pas_de_reponse_directe' };
   await marquerLu(env, outils, cle, now);

@@ -27,6 +27,7 @@ import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availab
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
+import { handleInstaller, handlePush, INSTALLER_TAG, ajouterPushAuSW } from './installer.js';   // 📲 installer l'app + 🔔 notifications, sur chaque app
 import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // Bee voit le domaine : pages, liens, documentation, ses pouvoirs (lecture, Kevin seul)
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';
 import { reponseDirecte } from './bee-direct.js';   // météo, heure, date, calcul, conversion SANS IA quand la demande est nette (Kevin 17.10)
@@ -645,6 +646,9 @@ const ROUTEUR = {
     if (url.pathname.startsWith('/__cercle/')) return handleCercle(request, url, env, outilsCercle(env));
     /* LA BOÎTE UNIQUE DE L'ADMIN (Kevin 3.10) : tous les messages de toutes les apps, réponse directe — D1, jamais le KV en écriture. */
     if (url.pathname.startsWith('/__boite/')) return handleBoite(request, url, env, outilsBoite(env));
+    /* 📲 L'INSTALLATION ET LES NOTIFICATIONS DE TOUTES LES APPS (Kevin 22.10.2026) : ressources publiques (la page de connexion aussi doit pouvoir proposer l'installation) + API des abonnements (compte requis). */
+    if (url.pathname.startsWith('/__installer/')) return handleInstaller(request, url);
+    if (url.pathname.startsWith('/__push/')) return handlePush(request, url, env, outilsCercle(env));
     // Demande de démonstration Rotaplan (formulaire SANS script : champs obligatoires imposés par le
     // navigateur, REVÉRIFIÉS ici). Kevin 27.09 « renseignements obligatoires partout pour les nouveaux ».
     if (url.pathname === '/__demande') {
@@ -924,6 +928,12 @@ const ROUTEUR = {
        `max-age=0, must-revalidate` → chaque ouverture de page redemande CHAQUE fichier au Worker : une requête du plafond
        gratuit (100 000/jour, la coupure du 27.09) par fichier, et un aller-retour de plus pour la personne. Voir politiqueCache. */
     { const cc = politiqueCache(request.method, res.status, p, url.search, outHeaders.get('content-type'), outHeaders.get('cache-control')); if (cc) outHeaders.set('cache-control', cc); }
+    /* 🔔 LES NOTIFICATIONS DE CHAQUE APP : le navigateur annonce « Service-Worker: script » quand il récupère le fichier d'un service worker. On y ajoute le gestionnaire « push »
+       (s'il n'en a pas déjà un) : aucune app n'a un fichier à modifier, aucune ne reçoit deux notifications. Jamais sur une réponse qui n'est pas du JavaScript. */
+    if (request.method === 'GET' && res.status === 200 && request.headers.get('service-worker') === 'script' && /javascript/i.test(outHeaders.get('content-type') || '')) {
+      try { const txt = await res.text(); outHeaders.delete('content-length'); outHeaders.delete('etag'); outHeaders.set('cache-control', 'no-cache');
+        return new Response(ajouterPushAuSW(txt, host), { status: 200, statusText: res.statusText, headers: outHeaders }); } catch { /* le fichier d'origine passe tel quel */ }
+    }
     /* ✉️ LE BOUTON « ÉCRIRE À L'ADMIN » sur toute page HTML de toute app (Kevin 3.10 : « toutes les apps du domaine doivent pouvoir contacter l'admin
        depuis leur compte »). Posé ICI, dans la couche partagée : la prochaine adresse l'a sans qu'on y pense. */
     if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '') && host !== 'admin.kd-mc.com') {
@@ -1069,7 +1079,7 @@ export async function injecterBouton(res, extra, opts) {
     const cspEntete = nonce && cspOrig ? cspPourBee(cspOrig, nonce) : cspOrig;
     const h = new Headers(res.headers); h.delete('content-length');
     if (nonce && cspEntete !== cspOrig) { h.set('content-security-policy', cspEntete); h.set('cache-control', 'no-store'); h.delete('etag'); }   // une page personnalisée par réponse ne se met pas en cache
-    const ajout = BOUTON_TAG + (extra || '');
+    const ajout = BOUTON_TAG + INSTALLER_TAG + (extra || '');
     const avecNonce = (tag) => (nonce ? tag.replace('<script ', '<script nonce="' + nonce + '" ') : tag);
     let ajoutBee = (extra || '') ? avecNonce(extra) : '';
     if (typeof HTMLRewriter !== 'undefined') {

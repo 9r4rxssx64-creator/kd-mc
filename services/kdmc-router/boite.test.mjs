@@ -70,8 +70,15 @@ const zoe = b.messages.find((x) => x.cle === 'lingua:zoe-petit');
 ok(b.ok && zoe && zoe.nonLus === 2 && zoe.de === 'Zoé Petit' && zoe.fil.length === 2 && zoe.repondre === 'direct', '2a. Lingua : Zoé a 2 messages non lus, avec son fil, réponse directe possible', zoe);
 ok(!b.messages.some((x) => x.cle === 'lingua:systeme'), '2b. les messages « système » ne sont pas des messages à lire');
 ok(b.connectes === 2, '2c. « connectés » repris (sans l\'admin)', b.connectes);
+/* 22.10 : la réponse de l'admin prévient la personne sur son téléphone (appareil abonné de Zoé) — jamais bloquant */
+db._s.exec("CREATE TABLE IF NOT EXISTS push_domaine (id TEXT PRIMARY KEY, uid TEXT NOT NULL, sub TEXT NOT NULL, app TEXT, installee INTEGER DEFAULT 0, ua TEXT, cree INTEGER, vu INTEGER, echecs INTEGER DEFAULT 0, test_at INTEGER DEFAULT 0)");
+db._s.prepare('INSERT INTO push_domaine (id, uid, sub, cree, vu) VALUES (?, ?, ?, ?, ?)').run('p1', 'zoe-petit', JSON.stringify({ endpoint: 'https://web.push.apple.com/Z', keys: { p256dh: 'a', auth: 'b' } }), T, T);
+env.KDMC_PUSH_URL = 'https://push.test'; env.KDMC_PUSH_TOKEN = 'jeton'; const _fetchAvant = globalThis.fetch; const _pushes = [];
+globalThis.fetch = async (u, init) => { if (String(u).endsWith('/web-push')) { _pushes.push(JSON.parse(init.body)); return new Response('{}', { status: 201 }); } return _fetchAvant(u, init); };
 let r = await appel('kev', '/admin/repondre', { cle: 'lingua:zoe-petit', texte: 'Je regarde ça tout de suite 👍' });
 const rep = db._s.prepare('SELECT * FROM messages WHERE de = ? AND a = ?').get(ADMIN, 'zoe-petit');
+globalThis.fetch = _fetchAvant;
+ok(_pushes.length === 1 && _pushes[0].subscription.endpoint === 'https://web.push.apple.com/Z' && /Je regarde/.test(_pushes[0].payload.body), "2d-bis. la réponse de l'admin part aussi en NOTIFICATION sur le téléphone de Zoé (et à elle seule)", _pushes);
 ok(r.ok && rep && rep.corps === 'Je regarde ça tout de suite 👍' && rep.type === 'texte', '2d. la réponse arrive dans le cercle de Zoé, signée « admin » (de = kdmc_admin)', [r, rep]);
 b = await boite();
 const zoe2 = b.messages.find((x) => x.cle === 'lingua:zoe-petit');

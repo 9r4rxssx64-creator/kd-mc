@@ -122,6 +122,16 @@ async function adminRefus(request, env) {
   return J({ ok: false, reason: 'need_admin_code' }, 403);
 }
 
+/* En-têtes de sécurité des pages HTML (audit du domaine 22.10, point 4) : la page de réglages ne peut être ni
+   mise en cadre ni charger autre chose que son propre script en ligne et son propre domaine. */
+const EN_TETES_PAGE = {
+  'content-type': 'text/html; charset=utf-8',
+  'content-security-policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+  'x-frame-options': 'DENY',
+  'x-content-type-options': 'nosniff',
+  'referrer-policy': 'no-referrer',
+  'permissions-policy': 'camera=(), microphone=(), geolocation=()'
+};
 function J(o, status) { return new Response(JSON.stringify(o), { status: status || 200, headers: { 'content-type': 'application/json' } }); }
 
 /* ---------- Graph ---------- */
@@ -276,7 +286,7 @@ export default {
     const p = url.pathname;
     try {
       if (p === '/health') return J({ ok: true, worker: 'kdmc-outlook', connected: !!(env && env.ACCOUNTS && await env.ACCOUNTS.get('out:rt')) });
-      if (p === '/' || p === '/setup') return new Response(setupPage(), { headers: { 'content-type': 'text/html; charset=utf-8' } });
+      if (p === '/' || p === '/setup') return new Response(setupPage(), { headers: EN_TETES_PAGE });
 
       if (p === '/config' && request.method === 'POST') {
         { const refus = await adminRefus(request, env); if (refus) return refus; }
@@ -316,7 +326,7 @@ export default {
         await env.ACCOUNTS.delete('out:since');
         const bg = syncOnce(env, {}).catch(() => {});
         if (ctx && ctx.waitUntil) ctx.waitUntil(bg); else { try { await bg; } catch { /* */ } }
-        return new Response('<!doctype html><meta charset="utf-8"><body style="font:17px -apple-system;background:#0d130c;color:#eaf3e2;padding:24px;text-align:center"><h2>✅ Outlook connecté</h2><p>Tes factures sont en cours de récupération.<br>Ouvre l\'app Finances → <b>➕ Ajouter</b> → <b>📥 Récupérer mes factures</b>.</p><p style="color:#9fb59a">Tu peux fermer cette page.</p></body>', { headers: { 'content-type': 'text/html; charset=utf-8' } });
+        return new Response('<!doctype html><meta charset="utf-8"><body style="font:17px -apple-system;background:#0d130c;color:#eaf3e2;padding:24px;text-align:center"><h2>✅ Outlook connecté</h2><p>Tes factures sont en cours de récupération.<br>Ouvre l\'app Finances → <b>➕ Ajouter</b> → <b>📥 Récupérer mes factures</b>.</p><p style="color:#9fb59a">Tu peux fermer cette page.</p></body>', { headers: EN_TETES_PAGE });
       }
 
       if (p === '/sync' && request.method === 'POST') {
@@ -331,7 +341,7 @@ export default {
         return J({ ok: true });
       }
 
-      return new Response('kdmc-outlook', { status: 200 });
+      return J({ ok: false, reason: 'introuvable' }, 404);
     } catch (e) {
       return J({ ok: false, reason: String(e && e.message || e) }, 500);
     }

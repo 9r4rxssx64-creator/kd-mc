@@ -169,3 +169,23 @@ test('secours : githubHorsService = au moins 2 startup_failure parmi les robots 
 test('secours : jamais le dépôt PUBLIC (un runner y exécuterait le code de n\'importe quelle pull request sur le PC de Kevin)', () => {
   assert.deepEqual(SECOURS_DEPOTS, ['9r4rxssx64-creator/CMCteams']);
 });
+
+/* Audit du domaine 22.10, point 4 : une adresse inconnue répond 404 (plus « 200 » partout) et la page de réglages porte ses en-têtes de sécurité. */
+import outlook from './worker.js';
+import mail from '../kdmc-mail/worker.js';
+test('kdmc-outlook : adresse inconnue = 404, /health et /setup inchangés, page protégée', async () => {
+  const env = { ACCOUNTS: { get: async () => null } };
+  const r1 = await outlook.fetch(new Request('https://x.test/.env'), env, {});
+  assert.equal(r1.status, 404);
+  assert.equal((await r1.json()).ok, false);
+  assert.equal((await outlook.fetch(new Request('https://x.test/health'), env, {})).status, 200);
+  const p = await outlook.fetch(new Request('https://x.test/setup'), env, {});
+  assert.equal(p.status, 200);
+  assert.match(p.headers.get('content-security-policy'), /frame-ancestors 'none'/);
+  assert.equal(p.headers.get('x-frame-options'), 'DENY');
+  assert.equal(p.headers.get('x-content-type-options'), 'nosniff');
+});
+test('kdmc-mail : adresse inconnue = 404, /health = 200', async () => {
+  assert.equal((await mail.fetch(new Request('https://x.test/.env'))).status, 404);
+  assert.equal((await mail.fetch(new Request('https://x.test/health'))).status, 200);
+});

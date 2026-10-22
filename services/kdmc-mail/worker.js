@@ -204,7 +204,7 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.pathname === '/health') return new Response(JSON.stringify({ ok: true, worker: 'kdmc-mail' }), { headers: { 'content-type': 'application/json' } });
-    return new Response('kdmc-mail', { status: 200 });
+    return new Response(JSON.stringify({ ok: false, reason: 'introuvable' }), { status: 404, headers: { 'content-type': 'application/json' } });
   }
 };
 

@@ -27,9 +27,15 @@ jobs:
 
       - name: Installer Chromium, WebKit et Firefox
         # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        # 22.10 : le téléchargement des paquets système s'est figé 20 min (run 39797477531) : limite de 7 min par essai, 2 essais.
+        timeout-minutes: 16
         run: |
           npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
-          ./node_modules/.bin/playwright install --with-deps chromium webkit firefox
+          for essai in 1 2; do
+            timeout 420 ./node_modules/.bin/playwright install --with-deps chromium webkit firefox && exit 0
+            echo "::warning title=lingua-plateformes::installation des navigateurs : essai $essai trop long ou en échec"
+          done
+          exit 1
 
       - name: La matrice d'appareils (iPhone, Android, tablettes, portables, grand écran)
         timeout-minutes: 14   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles

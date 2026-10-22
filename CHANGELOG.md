@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.341 (2026-10-22 — la réunion des comptes de Kevin part AUSSI quand l'app se rouvre)
+
+- MESURÉ : en v1.1.340, Kevin rouvre l'app : toujours une seule conversation « Kevin DESARZENS ». Le chemin de réouverture (session gardée) ne lançait jamais la réunion : seule une connexion complète le faisait.
+- La reprise de session la lance 3 s après l'ouverture. Preuve en vrai Chromium `tests/runtime-ralliement-reprise.mjs` (5/5, 1/5 sans la correction), script `npm run test:ralliement-navigateur`. Leçon 716.
+
+
 ## Apex Chat v1.1.340 (2026-10-22 — la page adopte le compte réuni de Kevin : Rémi et Laurence reviennent)
 
 - MESURÉ (captures de Kevin) : après la fusion en base, une seule conversation « Kevin DESARZENS » + « Correspondant introuvable ». La page gardait l'ancien identifiant et prenait le vrai compte pour l'autre personne.

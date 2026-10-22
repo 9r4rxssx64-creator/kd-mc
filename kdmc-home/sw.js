@@ -15,6 +15,9 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(caches.keys().then(function (ks) {
     return Promise.all(ks.map(function (k) { return k === CACHE_VERSION ? null : caches.delete(k); }));
+  }).then(function () {
+    /* Pré-chargement de navigation (pont 22.10) : la requête de la page part du navigateur avec le cookie du domaine ; fetch(req) dans le SW pouvait le perdre */
+    return self.registration && self.registration.navigationPreload ? self.registration.navigationPreload.enable().catch(function () {}) : null;
   }).then(function () { return self.clients.claim(); }));
 });
 self.addEventListener('fetch', function (e) {
@@ -24,7 +27,7 @@ self.addEventListener('fetch', function (e) {
   if (url.pathname.indexOf('/__') === 0 || url.pathname.indexOf('/__sso/') >= 0) return; /* SW-IDENTITE : /__sso, /__demande… = réponses du domaine, jamais en cache */
   if (req.url.indexOf('_force_upd_') >= 0 || req.url.indexOf('?_v=') >= 0 || req.url.indexOf('&_v=') >= 0) return; /* MAJ forcée : réseau direct */
   var reseau = function () {
-    return fetch(req).then(function (res) {
+    return (req.mode === 'navigate' && e.preloadResponse ? e.preloadResponse.then(function (r) { return r || fetch(req); }, function () { return fetch(req); }) : fetch(req)).then(function (res) {
       if (res && res.status === 200 && url.origin === location.origin) {
         var copy = res.clone();
         caches.open(CACHE_VERSION).then(function (c) { c.put(req, copy); });

@@ -17,6 +17,7 @@ function serveur(js) {
     if (q.url === '/__push/test') return json({ ok: true, envoyes: 1 });
     if (q.url === '/avec-manifeste') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><head><link rel="manifest" href="/mon.json"><link rel="apple-touch-icon" href="/i.png"></head><body><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
     if (q.url === '/entete') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body style="margin:0"><button id="deco" style="position:fixed;top:5px;right:5px;width:44px;height:44px;z-index:99">✕</button><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
+    if (q.url === '/__sso/whoami') return json(q.headers.cookie && /anonyme/.test(q.headers.cookie) ? { ok: false } : { ok: true, uid: 'nouvelle-personne' });
     if (q.url === '/cadre') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body><iframe src="/"></iframe></body></html>'); }
     r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); r.end('<html><head><title>App</title></head><body><p>Bonjour</p><script src="/__installer/installer.js"></script></body></html>');
   });
@@ -53,6 +54,20 @@ async function suite(js, etiquette) {
     const r = await p.evaluate(() => { const a = document.querySelector('[data-kdmc-installer="pastille"]').getBoundingClientRect(), b = document.getElementById('deco').getBoundingClientRect(); return { chev: !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom), vue: a.width >= 44 && a.height >= 44 && a.left >= 0 && a.top >= 0 && a.right <= innerWidth && a.bottom <= innerHeight }; });
     rec(!r.chev && r.vue, etiquette + " A'. la pastille ne couvre pas le bouton « ✕ » de l'en-tête et reste à l'écran", JSON.stringify(r));
     await ctx.close();
+  });
+  /* A'' — à l'inscription : une personne connectée voit « Installer » d'elle-même, UNE seule fois par appareil */
+  await essai(js, async (nav, base) => {
+    const ctx = await nav.newContext({ userAgent: UA_ANDROID, viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true }); const p = await ctx.newPage();
+    await p.goto(base + '/'); await p.waitForTimeout(5200);
+    rec((await texte(p)).length > 20, etiquette + " A''1. connectée et pas installée : la feuille s'ouvre toute seule");
+    await p.goto(base + '/'); await p.waitForTimeout(5200);
+    rec((await texte(p)) === '', etiquette + " A''2. à la visite suivante : plus d'ouverture automatique (une seule fois)");
+    await ctx.close();
+    const ctx2 = await nav.newContext({ userAgent: UA_ANDROID, viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true }); const p2 = await ctx2.newPage();
+    await ctx2.addCookies([{ name: 'anonyme', value: '1', url: base }]);
+    await p2.goto(base + '/'); await p2.waitForTimeout(5200);
+    rec((await texte(p2)) === '', etiquette + " A''3. visiteur non connecté : rien ne s'ouvre");
+    await ctx2.close();
   });
   /* B — iPhone Safari : le guide */
   await essai(js, async (nav, base) => {

@@ -183,10 +183,32 @@ export const INSTALLER_JS = String.raw`(function () {
       }
       feuille.insertBefore(g, feuille.children[1]);
     }
+    /* 22.10 (Kevin : « le mieux, c'est de le proposer à l'inscription, à tous les comptes ») : dès qu'une personne est connectée (nouveau compte ou première connexion sur cet appareil)
+       et que l'app n'est pas installée, la feuille « 📲 Installer » s'ouvre d'elle-même, UNE fois par compte et par appareil. Compte pas encore créé : on surveille quelques minutes. */
+    function proposerALInscription() {
+      if (INSTALLEE || installeeMaintenant) return;
+      var essais = 0;
+      function verifier() {
+        if (INSTALLEE || installeeMaintenant || feuille) return;
+        essais++;
+        try {
+          fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+            if (j && j.ok && j.uid) {
+              var cle = 'kdmc_inst_inscr_' + String(j.uid).slice(0, 40);
+              if (lire(cle)) return;
+              ecrire(cle, String(Date.now()));
+              setTimeout(function () { if (!feuille && !(INSTALLEE || installeeMaintenant)) ouvrir(); }, 1500);
+            } else if (essais < 24) setTimeout(verifier, 10000);
+          }).catch(function () { /* silencieux */ });
+        } catch (e) { /* silencieux */ }
+      }
+      setTimeout(verifier, 2500);
+    }
     /* 6. Démarrage : préparer, puis montrer la pastille ; première ouverture de l'app INSTALLÉE : proposer les notifications (une fois par jour) */
     function demarrer() {
       preparer();
       majPastille();
+      proposerALInscription();
       if (INSTALLEE && PUSH_OK && etatNotifs() === 'default') {
         var dernier = +lire('kdmc_notifs_propose') || 0;
         if (Date.now() - dernier > 86400000) { ecrire('kdmc_notifs_propose', String(Date.now())); setTimeout(ouvrir, 1200); }

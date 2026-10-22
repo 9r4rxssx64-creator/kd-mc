@@ -24,6 +24,7 @@
  */
 import { chromium, devices } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { passPortail, ADMIN } from './session-kevin.mjs';
 import { marquerSonde } from './marquer-sonde.mjs';
@@ -34,6 +35,10 @@ const BASE = (args.find((a) => !a.startsWith('--')) || 'https://lingua.kd-mc.com
 const PORTAIL = opt('portail', 'https://kd-mc.com').replace(/\/+$/, '');
 const CAP = opt('captures', '/tmp/lingua-comme-kevin');
 const SANS_GARDE = args.includes('--sans-garde');
+/* --jetable (Kevin 22.10.2026 : « tu peux créer des comptes, si tu effaces tout après »): au lieu du compte de Kevin, un compte de test NON-ADMIN
+   créé pour l'occasion (prénom « Testfinal », nom « Lingua<lettres> », code tiré au hasard, jamais écrit), testé en vrai SANS garde d'écriture
+   (c'est le sien), puis SUPPRIMÉ à la fin — fiche, code, nom réservé, présence — et la disparition est vérifiée. */
+const JETABLE = args.includes('--jetable');
 const RAPIDE = args.includes('--rapide');   /* tests locaux : saute la leçon et l'appel (le compteur d'écritures n'en a pas besoin) */
 /* TESTS LOCAUX : tout *.kd-mc.com est servi par une copie locale (routeur réel) — refusé hors de localhost. */
 const REDIR = opt('rediriger', '').replace(/\/+$/, '');
@@ -54,13 +59,33 @@ const capture = async (page, nom) => { nCap++; await page.screenshot({ path: joi
 
 /* ─── la session de Kevin ─── */
 dire(`\n=== LINGUA COMME KEVIN — ${BASE} ===`);
-const pp = await passPortail(PORTAIL).catch((e) => ({ ok: false, note: String((e && e.message) || e) }));
-if (!pp.ok) { ko('session de Kevin : ' + (pp.note || 'refusée') + (pp.statut ? ' (HTTP ' + pp.statut + ')' : '')); fin(); }
+let pp = await passPortail(PORTAIL).catch((e) => ({ ok: false, note: String((e && e.message) || e) }));
+if (!pp.ok) { ko('session de Kevin : ' + (pp.note || 'refusée') + (pp.statut ? ' (HTTP ' + pp.statut + ')' : '')); await fin(); }
 ok('session de Kevin ouverte pour de vrai (code admin → /__admin/login)' + (pp.adminProuve ? ', admin PROUVÉ' : ', admin non prouvé'));
+
+/* ─── le compte jetable (seulement avec --jetable) ─── */
+let jetable = null;   /* { uid, nom, jetonAdmin } */
+const HA = { 'content-type': 'application/json', origin: PORTAIL, 'x-kdmc-sonde': 'lingua-jetable' };
+if (JETABLE) {
+  const lettres = (n) => Array.from(randomBytes(n), (b) => 'abcdefghjkmnpqrstuvwxyz'[b % 23]).join('');
+  const prenom = 'Testfinal', nom = 'Lingua' + lettres(6), code = randomBytes(12).toString('hex');
+  const adm = { ...HA, 'x-kdmc-sso': pp.jeton };
+  const rc = await fetch(PORTAIL + '/__admin/compte-invite', { method: 'POST', headers: adm, body: JSON.stringify({ prenom, nom, code, telephone: '+33 6 00 00 00 00' }) }).catch(() => null);
+  const jc = rc ? await rc.json().catch(() => ({})) : {};
+  if (!jc.ok) { ko('compte jetable : création refusée (' + (jc.reason || (rc && rc.status) || 'réseau') + ')'); await fin(); }
+  jetable = { uid: jc.uid, nom: jc.name, jetonAdmin: pp.jeton };
+  ok('compte jetable NON-ADMIN créé (' + jetable.uid.replace(/-.*/, '-…') + ')');
+  const rl = await fetch(PORTAIL + '/__sso/login', { method: 'POST', headers: HA, body: JSON.stringify({ name: jc.name, code }) }).catch(() => null);
+  const jl = rl ? await rl.json().catch(() => ({})) : {};
+  if (!jl.ok || !jl.token) { ko('compte jetable : connexion refusée (' + (jl.reason || (rl && rl.status) || 'réseau') + ')'); await fin(); }
+  chk(jl.admin === false, 'le compte jetable n\'est PAS administrateur (session ordinaire)');
+  await fetch(PORTAIL + '/__sso/cgu', { method: 'POST', headers: { ...HA, 'x-kdmc-sso': jl.token }, body: '{}' }).catch(() => null);
+  pp = { ok: true, jeton: jl.token };
+}
 
 const domaineCookie = /kd-mc\.com$/.test(hoteBase) ? '.kd-mc.com' : hoteBase;
 const nav = await chromium.launch();
-const ctx = await nav.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', serviceWorkers: 'block' });
+const ctx = await nav.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', serviceWorkers: JETABLE ? 'allow' : 'block' });
 /* comme l'iPhone de Kevin : Lingua ouverte depuis l'écran d'accueil (mode « installé ») — c'est là que la bulle de version se
    posait sur les onglets (photo du 17.10). */
 await ctx.addInitScript(() => { try { Object.defineProperty(navigator, 'standalone', { get: () => true }); } catch (e) { /* */ } });
@@ -76,7 +101,7 @@ if (REDIR) await ctx.route((u) => u.hostname === 'kd-mc.com' || u.hostname.endsW
 /* ─── la garde « son compte ne bouge pas » (enregistrée EN DERNIER : Playwright essaie la dernière route d'abord) ─── */
 const bloquees = [], iaPassees = [];
 const notreDomaine = (u) => u.hostname === hoteBase || u.hostname === 'kd-mc.com' || u.hostname.endsWith('.kd-mc.com') || u.hostname === new URL(PORTAIL).hostname;
-if (!SANS_GARDE) await ctx.route((u) => notreDomaine(u), async (route, req) => {
+if (!SANS_GARDE && !JETABLE) await ctx.route((u) => notreDomaine(u), async (route, req) => {
   const m = req.method(); const u = new URL(req.url());
   if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return route.fallback();
   if (u.pathname === '/__lingua/ai') {
@@ -125,7 +150,7 @@ try {
     let acc = []; let cur = ''; try { acc = JSON.parse(localStorage.getItem('lingua_g_accounts') || '[]'); cur = JSON.parse(localStorage.getItem('lingua_g_current') || '""'); } catch {}
     const a = acc.find((x) => x.id === cur) || {};
     return { ecranComptes: !!document.querySelector('.acc-card.add'), cestLui: new RegExp(prenom, 'i').test(String(a.name || '')), comptes: acc.length };
-  }, ADMIN.nom.split(' ')[0]).catch(() => ({}));
+  }, (jetable ? 'Testfinal' : ADMIN.nom.split(' ')[0])).catch(() => ({}));
   chk(!compte.ecranComptes && compte.cestLui, 'Lingua s\'ouvre directement sur TON compte (pas d\'écran « choisir un compte »)', JSON.stringify(compte));
   await fermerModales();
   /* pas encore de langue sur ce compte → l'écran « Choisis une langue » : on prend l'anglais, dans CE navigateur seulement */
@@ -138,7 +163,8 @@ try {
     chk(tr0 && pr0 && rv0, `sans langue choisie, les onglets du bas réagissent (Traduire ${tr0 ? 'ouvert' : 'MUET'}, Profil ${pr0 ? 'ouvert' : 'MUET'}, Réviser ${rv0 ? 'dit « choisis d’abord une langue »' : 'MUET'})`);
     await onglet('Accueil'); await attends(700);
     const n = await page.evaluate(() => { const c = [...document.querySelectorAll('.course-card')].find((x) => /Anglais/.test(x.textContent || '')); if (!c) return 0; c.click(); return 1; }).catch(() => 0);
-    gris(`ton compte n'avait aucune langue en cours : la sonde a choisi l'anglais (${choix} langues proposées) — dans ce navigateur seulement, rien d'écrit`);
+    gris(JETABLE ? `compte jetable sans langue : la sonde choisit l'anglais (${choix} langues proposées) — compte effacé à la fin`
+      : `ton compte n'avait aucune langue en cours : la sonde a choisi l'anglais (${choix} langues proposées) — dans ce navigateur seulement, rien d'écrit`);
     await attends(1500); await fermerModales();
     void n;
   } else {
@@ -294,6 +320,39 @@ try {
 
   /* 9. le coach : non testé exprès */
   gris('coach non testé : une question au coach s\'écrit dans ton fil d\'activité (lecture seule oblige)');
+
+  /* 9b. compte jetable : coach, réouvertures (service worker), hors-ligne, largeurs 375 / 390 px */
+  if (JETABLE && !RAPIDE) {
+    await fermerModales(); await onglet('Coach'); await attends(1200);
+    const coach = await page.evaluate(() => ({ champ: !!document.querySelector('.coach-input, .screen.coach input, .screen.coach textarea'), t: (document.body.innerText || '').length })).catch(() => ({}));
+    chk(coach.t > 60, `coach : l'onglet s'ouvre sur un vrai écran (champ de question ${coach.champ ? 'présent' : 'absent'})`);
+    await capture(page, 'coach');
+    await onglet('Accueil'); await attends(600);
+    const ver0 = await page.evaluate(() => window.LINGUA_VER || '').catch(() => '');
+    let reouv = 0, versions = new Set(), muets = [];
+    for (let i = 1; i <= 3; i++) {
+      await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {}); await attends(3500);
+      const etat = await page.evaluate(() => ({ barre: document.querySelectorAll('.tabbar .tab').length, ver: window.LINGUA_VER || '', blanc: (document.body.innerText || '').trim().length < 30 })).catch(() => ({}));
+      if (etat.barre >= 6 && !etat.blanc) reouv++; versions.add(etat.ver);
+      for (const n of ['Traduire', 'Ligue', 'Profil', 'Accueil']) { const a = await onglet(n); await attends(500); if (!a || !(await actif()).includes(n)) muets.push(n + '@' + i); }
+    }
+    chk(reouv === 3 && versions.size === 1 && (!ver0 || versions.has(ver0)), `réouverture ×3 en compte ordinaire : ${reouv}/3 écrans complets, version stable (${[...versions].join(',')})`);
+    chk(muets.length === 0, `onglets au toucher après chaque réouverture : ${muets.length ? 'MUETS ' + muets.join(', ') : 'tous répondent'}`);
+    const sw = await page.evaluate(async () => { try { const r = await navigator.serviceWorker.getRegistration(); return !!(r && (r.active || r.waiting)); } catch { return false; } }).catch(() => false);
+    chk(sw, 'service worker actif sur ce compte ordinaire');
+    await ctx.setOffline(true);
+    await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {}); await attends(2500);
+    const hors = await page.evaluate(() => ({ barre: document.querySelectorAll('.tabbar .tab').length, txt: (document.body.innerText || '').trim().length })).catch(() => ({ barre: 0, txt: 0 }));
+    chk(hors.barre >= 6 && hors.txt > 30, `hors-ligne : l'app s'ouvre quand même (${hors.barre} onglets)`);
+    await ctx.setOffline(false);
+    for (const w of [375, 390]) {
+      await page.setViewportSize({ width: w, height: 800 }); await page.goto(BASE + '/', { waitUntil: 'domcontentloaded', timeout: 45000 }).catch(() => {}); await attends(2500);
+      const m = await page.evaluate(() => { const b = document.querySelector('.tabbar'); const r = b ? b.getBoundingClientRect() : null;
+        return { debord: document.documentElement.scrollWidth > window.innerWidth + 1, barre: !!r && r.right <= window.innerWidth + 1 && r.left >= -1 }; }).catch(() => ({}));
+      chk(m.barre && !m.debord, `mise en page ${w} px : barre entière, pas de défilement latéral`);
+    }
+    await capture(page, 'largeurs');
+  }
 } catch (e) {
   ko('la sonde s\'est arrêtée : ' + String((e && e.message) || e).slice(0, 160));
   await capture(page, 'arret');
@@ -302,14 +361,26 @@ try {
 /* 10. bilan de la garde */
 chk(erreurs.length === 0, `erreurs JavaScript : ${erreurs.length}`, erreurs.slice(0, 3).join(' | '));
 chk(echecs.length === 0, `réponses 5xx du domaine : ${echecs.length}`, echecs.slice(0, 3).join(' | '));
-if (!SANS_GARDE) {
+if (!SANS_GARDE && !JETABLE) {
   ok(`ton compte n'a pas bougé : ${bloquees.length} écriture(s) coupée(s) avant le domaine (${[...new Set(bloquees.map((b) => b.replace(/^POST [^/]+/, 'POST ')))].slice(0, 6).join(', ')})`);
   dire(`   · appels à l'IA de Bee passés (ne s'écrivent nulle part) : ${iaPassees.length}`);
 }
 await nav.close();
-fin();
+await fin();
 
-function fin() {
+/* nettoyage du compte jetable : on EFFACE, puis on vérifie qu'il ne reste rien (fiche absente du registre) */
+async function nettoyer() {
+  if (!jetable) return;
+  const adm = { ...HA, 'x-kdmc-sso': jetable.jetonAdmin };
+  const r = await fetch(PORTAIL + '/__admin/compte-supprimer', { method: 'POST', headers: adm, body: JSON.stringify({ uid: jetable.uid, confirmer: true }) }).catch(() => null);
+  const j = r ? await r.json().catch(() => ({})) : {};
+  const liste = (await (await fetch(PORTAIL + '/__admin/accounts?limit=500', { headers: adm }).catch(() => null))?.json().catch(() => ({})))?.accounts || [];
+  const reste = liste.filter((a) => a.uid === jetable.uid).length;
+  chk(j.ok === true && reste === 0, `compte jetable EFFACÉ, plus aucune fiche au registre (${liste.length} fiches restantes)`, JSON.stringify({ ok: j.ok, reason: j.reason, reste }));
+  jetable = null;
+}
+async function fin() {
+  await nettoyer();
   const ligne = `=== LINGUA COMME KEVIN ${R.ko.length ? 'ÉCHEC' : 'OK'} — ${R.ok.length} ✅ · ${R.ko.length} ❌ · ${R.gris.length} ⚠ ===`;
   dire('\n' + ligne);
   writeFileSync(join(CAP, 'RAPPORT.md'), ['# Lingua comme Kevin', '', ...R.ok.map((x) => '- ✅ ' + x), ...R.ko.map((x) => '- ❌ ' + x), ...R.gris.map((x) => '- ⚠ ' + x), '', ligne, ''].join('\n'));

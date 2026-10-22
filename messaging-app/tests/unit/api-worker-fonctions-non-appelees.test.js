@@ -943,6 +943,7 @@ describe('rappels `.catch` des nettoyages D1 (handleTestCleanup, heal, cleanup*)
       ['DELETE FROM messages WHERE sender_id=?', { run: boom('m') }],
       ['DELETE FROM conversation_members WHERE user_id=?', { run: boom('cm') }],
       ['DELETE FROM contacts WHERE user_id=? OR contact_id=?', { run: boom('ct') }],
+      ['DELETE FROM user_devices WHERE user_id=?', { run: boom('ud') }],   // v1.1.345 : appareils effacés avec le compte
       ['DELETE FROM users WHERE id=?', { run: boom('u') }],
       ['SELECT COUNT(*) AS n FROM conversation_members WHERE conv_id=?', { first: (args) => { if (args[0] === 'cA') throw new Error('count'); return { n: 0 }; } }],
       ['DELETE FROM messages WHERE conv_id=?', { run: boom('mc') }],

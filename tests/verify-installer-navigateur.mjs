@@ -16,6 +16,7 @@ function serveur(js) {
     if (q.url === '/__push/abonner') return json({ ok: true, actif: true });
     if (q.url === '/__push/test') return json({ ok: true, envoyes: 1 });
     if (q.url === '/avec-manifeste') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><head><link rel="manifest" href="/mon.json"><link rel="apple-touch-icon" href="/i.png"></head><body><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
+    if (q.url === '/entete') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body style="margin:0"><button id="deco" style="position:fixed;top:5px;right:5px;width:44px;height:44px;z-index:99">✕</button><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
     if (q.url === '/cadre') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body><iframe src="/"></iframe></body></html>'); }
     r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); r.end('<html><head><title>App</title></head><body><p>Bonjour</p><script src="/__installer/installer.js"></script></body></html>');
   });
@@ -43,6 +44,14 @@ async function suite(js, etiquette) {
     await p.click('button:has-text("Installer sur")'); await p.waitForTimeout(250);
     rec((await p.evaluate(() => window.__prompts)) === 1, etiquette + " A4. le toucher déclenche la VRAIE fenêtre d'installation du navigateur (prompt appelé 1 fois)");
     rec(/Installée/.test(await texte(p)), etiquette + ' A5. après acceptation : « ✅ Installée »');
+    await ctx.close();
+  });
+  /* A' — la pastille ne couvre JAMAIS un bouton de la page (Lenovo 22.10 : « ✕ Déconnexion » de CMCteams) */
+  await essai(js, async (nav, base) => {
+    const ctx = await nav.newContext({ userAgent: UA_ANDROID, viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true }); const p = await ctx.newPage();
+    await p.goto(base + '/entete'); await p.waitForTimeout(600);
+    const r = await p.evaluate(() => { const a = document.querySelector('[data-kdmc-installer="pastille"]').getBoundingClientRect(), b = document.getElementById('deco').getBoundingClientRect(); return { chev: !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom), vue: a.width >= 44 && a.height >= 44 && a.left >= 0 && a.top >= 0 && a.right <= innerWidth && a.bottom <= innerHeight }; });
+    rec(!r.chev && r.vue, etiquette + " A'. la pastille ne couvre pas le bouton « ✕ » de l'en-tête et reste à l'écran", JSON.stringify(r));
     await ctx.close();
   });
   /* B — iPhone Safari : le guide */

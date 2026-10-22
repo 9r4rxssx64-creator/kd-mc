@@ -91,8 +91,28 @@ export const INSTALLER_JS = String.raw`(function () {
         pastille = el('button', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;z-index:2147482000;min-width:44px;min-height:44px;border-radius:22px;border:1px solid ' + OR + ';background:' + NOIR + ';color:' + OR + ';font:700 18px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.45);cursor:pointer;padding:0 12px', '📲');
         pastille.type = 'button'; pastille.setAttribute('aria-label', "Installer l'application et activer les notifications"); pastille.setAttribute('data-kdmc-installer', 'pastille');
         pastille.onclick = ouvrir; document.body.appendChild(pastille);
+        placer(); setTimeout(placer, 1500); setTimeout(placer, 5000);
       }
     }
+    /* 22.10 (Lenovo, pont 383) : sur CMCteams la pastille couvrait « ✕ Déconnexion ». Elle choisit un coin où elle ne couvre RIEN de cliquable. */
+    var COINS = ['top:calc(env(safe-area-inset-top,0px) + 8px);right:8px', 'bottom:calc(env(safe-area-inset-bottom,0px) + 84px);left:8px', 'bottom:calc(env(safe-area-inset-bottom,0px) + 84px);right:8px', 'top:50%;left:8px', 'top:50%;right:8px', 'top:calc(env(safe-area-inset-top,0px) + 8px);left:8px'];
+    function cliquable(n) { var k = 0; while (n && n.nodeType === 1 && k++ < 6) { var t = n.tagName; if (t === 'BUTTON' || t === 'A' || t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA' || n.getAttribute('role') === 'button' || n.onclick) return true; try { if (getComputedStyle(n).cursor === 'pointer') return true; } catch (e) { /* */ } n = n.parentNode; } return false; }
+    function couvre() {
+      if (!pastille || !document.elementsFromPoint) return false;
+      var r = pastille.getBoundingClientRect(), pts = [[.15, .15], [.85, .15], [.5, .5], [.15, .85], [.85, .85]];
+      for (var i = 0; i < pts.length; i++) {
+        var x = r.left + r.width * pts[i][0], y = r.top + r.height * pts[i][1], l = document.elementsFromPoint(x, y);
+        for (var j = 0; j < l.length; j++) { if (l[j] === pastille || l[j].getAttribute('data-kdmc-installer') || l[j] === document.body || l[j] === document.documentElement) continue; if (cliquable(l[j])) return true; break; }
+      }
+      return false;
+    }
+    function placer() {
+      if (!pastille || feuille) return;
+      var base = 'position:fixed;z-index:2147482000;min-width:44px;min-height:44px;border-radius:22px;border:1px solid ' + OR + ';background:' + NOIR + ';color:' + OR + ';font:700 18px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.45);cursor:pointer;padding:0 12px;';
+      for (var i = 0; i < COINS.length; i++) { pastille.style.cssText = base + COINS[i]; if (!couvre()) return; }
+      pastille.style.cssText = base + COINS[0];
+    }
+    window.addEventListener('resize', function () { placer(); });
     function ligne(titre, aide, bouton, onclick, fait) {
       var l = el('div', 'background:#16210f;border:1px solid #2a3a22;border-radius:14px;padding:14px;margin:0 0 12px');
       l.appendChild(el('div', 'font:700 16px/1.3 -apple-system,sans-serif;color:' + TEXTE + ';margin:0 0 4px', titre));

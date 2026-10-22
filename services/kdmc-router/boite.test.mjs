@@ -335,5 +335,21 @@ ok(/fbToken: async/.test(W) && /mintShopsAdminIdToken\(env\)/.test(W), '9b. le r
   kv.set('aud:log', sauve); uids.forEach((u) => kv.delete('acc:' + u)); _viderMemo();
 }
 
+/* 12j. SEULES LES 20 CARTES LES PLUS RÉCENTES SONT LUES (17.10 : 80 alertes → jusqu'à 100 personnes lues pour n'en rendre que 20). 60 personnes en alerte : au plus 30 fiches lues,
+   et les 20 cartes rendues sont bien les 20 alertes les plus récentes, dans l'ordre. */
+{
+  const lues = []; const envC = { CERCLE_DB: db, ACCOUNTS: { get: async (k) => { if (k.startsWith('acc:')) lues.push(k); return kv.has(k) ? kv.get(k) : null; }, put: env.ACCOUNTS.put } };
+  const sauve = kv.get('aud:log');
+  const uids = Array.from({ length: 60 }, (_, i) => 'compte-recent-' + String(i).padStart(2, '0'));
+  kv.set('aud:log', JSON.stringify(uids.map((u, i) => ({ ts: T - 1000 - i * 40 * 6e4, ev: 'new_device', uid: u, name: 'Compte Recent ' + i, detail: 'iPhone · Nice', asn: '1', isp: 'X' }))));
+  _viderMemo();
+  const j = await lireBoite(envC, outils, T);
+  const cartes = j.messages.filter((x) => x.source === 'alertes' && /^perso:u:compte-recent-/.test(x.cle));
+  const attendu = uids.slice(0, 20).map((u) => 'perso:u:' + u);
+  ok(lues.length <= 30, '12j. 60 personnes en alerte : au plus 30 fiches lues (et non 60)', lues.length);
+  ok(JSON.stringify(cartes.map((x) => x.cle)) === JSON.stringify(attendu), '12k. et les 20 cartes rendues sont les 20 plus récentes, dans l\'ordre', cartes.map((x) => x.cle).slice(0, 4));
+  kv.set('aud:log', sauve); _viderMemo();
+}
+
 console.log(`\n${pass} OK · ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

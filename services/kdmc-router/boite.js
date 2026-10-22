@@ -354,7 +354,7 @@ async function lirePersonnes(env, db, now, outils) {
   }
   /* les deux lectures (comptes actifs, travail dans CMCteams) partent ENSEMBLE : mesuré le 17.10, la source « alertes » prenait 11 s parce que tout s'enchaînait */
   const [actifs, travail] = await Promise.all([activite.actives(db, now - 3 * 864e5, 20).catch(() => []), outils ? lireTravailCmc(outils, now).catch(() => []) : []]);
-  for (const a of actifs) dossier('u:' + a.uid, a.uid, a.nom);
+  for (const a of actifs) dossier('u:' + a.uid, a.uid, a.nom).dernier = a.dernier || 0;
   /* le travail dans CMCteams : une carte par NOM (les identifiants de CMCteams ne sont pas ceux du domaine) */
   for (const t of travail) { const p = dossier('n:' + t.nom.toLowerCase().slice(0, 40), '', t.nom); p.evts.push({ ts: t.ts, texte: t.texte, app: t.app }); }
   /* UNE SEULE CARTE PAR PERSONNE, même quand une alerte ne porte que le NOM (8.10, capture de Kevin : « Andrea CASELLA » en alerte
@@ -368,11 +368,16 @@ async function lirePersonnes(env, db, now, outils) {
     if (!cible) continue;
     cible.evts.push(...p.evts); cible.alertes.push(...p.alertes); P.delete(id);
   }
-  const ids = [...P.keys()].map((id) => 'perso:' + id);
+  /* Seules les 20 cartes les plus récentes sont rendues : inutile de lire la fiche et le fil de 100 personnes pour n'en garder que 20.
+     On garde les 30 dont le dernier signe de vie CONNU (alerte, activité, travail dans CMCteams) est le plus récent (10 de marge pour l'activité
+     encore non lue). Même résultat qu'avant, 3 fois moins de lectures. */
+  const recence = (p) => p.evts.reduce((m, e) => Math.max(m, e.ts || 0), p.dernier || 0);
+  const retenus = [...P.values()].sort((a, b) => recence(b) - recence(a)).slice(0, 30);
+  const ids = retenus.map((p) => 'perso:' + p.id);
   const marq = new Map();
   if (ids.length) for (const r of await tous(db, `SELECT cle, ts FROM boite_lu WHERE cle IN (${ids.map(() => '?').join(',')})`, ...ids)) marq.set(r.cle, r.ts);
   /* UNE LECTURE PAR PERSONNE, TOUTES EN MÊME TEMPS (par lots de 8) : avant, 20 personnes × 4 lectures s'enchaînaient (≈ 11 s mesurées) */
-  const out = (await parLots([...P.values()], 8, (p) => cartePersonne(env, db, now, marq, p))).filter(Boolean);
+  const out = (await parLots(retenus, 8, (p) => cartePersonne(env, db, now, marq, p))).filter(Boolean);
   return out.sort((a, b) => b.ts - a.ts).slice(0, 20);
 }
 /* « laurence-saint-polit » → « Laurence Saint-Polit (compte laurence-saint-polit) » : lisible, et le compte reste nommé tel quel. */

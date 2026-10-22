@@ -322,7 +322,7 @@ class VaultDeepRecovery {
       if (detected && detected.category !== 'forbidden') {
         /* Migrate vers la bonne storageKey */
         try {
-          const setRes = await vault.setKey(detected.storageKey, plaintext);
+          const setRes = await vault.setKey(detected.storageKey, plaintext, { origine: 'restauration' });
           if (setRes.ok) {
             /* Backup ancien + retire */
             try {
@@ -481,7 +481,7 @@ class VaultDeepRecovery {
       }
 
       /* 3. Set sur la bonne cible (triple persistence via vault) */
-      const setResult = await vault.setKey(detected.storageKey, plaintext);
+      const setResult = await vault.setKey(detected.storageKey, plaintext, { origine: 'restauration' });
       if (!setResult.ok) {
         moved.push({ from: currentKey, to: detected.storageKey, ok: false, reason: 'setKey_failed' });
         continue;
@@ -551,7 +551,7 @@ class VaultDeepRecovery {
 
       /* Trouvé valid → wire via vault.setKey (chiffré + triple persisté) */
       try {
-        const r = await vault.setKey('ax_kevin_whatsapp_phone', normalized);
+        const r = await vault.setKey('ax_kevin_whatsapp_phone', normalized, { origine: 'restauration' });
         if (r.ok) {
           logger.info(
             'vault-deep-recovery',

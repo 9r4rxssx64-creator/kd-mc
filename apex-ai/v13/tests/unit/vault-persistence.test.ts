@@ -193,7 +193,7 @@ describe('Vault persistence (fix Kevin "clés pas en mémoire")', () => {
       const setKeySpy = vi.spyOn(vault, 'setKey');
       const result = await vault.autoStore('sk-ant-api03-' + 'X'.repeat(50));
       expect(result.ok).toBe(true);
-      expect(setKeySpy).toHaveBeenCalledWith('ax_anthropic_key', expect.any(String));
+      expect(setKeySpy).toHaveBeenCalledWith('ax_anthropic_key', expect.any(String), { origine: 'saisie' });
       setKeySpy.mockRestore();
     });
 

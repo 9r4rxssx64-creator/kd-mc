@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex AI v13.4.383 (2026-10-22 — le jeton GitHub ne s'affiche plus en QR à chaque ouverture)
+- Avant : à chaque chargement, le coffre qui se recharge tout seul réenregistrait le jeton GitHub → un QR du jeton EN CLAIR s'ouvrait (1,5 s après), le trousseau iCloud redemandait « Sauvegarder ? » et une sauvegarde Gist partait (et échouait). Maintenant `setKey(…, { origine })` : une restauration (Firebase, Gist, trousseau, récupération, import) n'ouvre ni QR, ni trousseau, ni Gist ; le QR ne s'ouvre que quand Kevin colle lui-même le jeton.
+- Sauvegarde Gist : la vraie cause est écrite (« jeton GitHub refusé », « sans le droit gist », « réseau injoignable »…, jamais le jeton) ; un refus de la liste ne crée plus un 2ᵉ gist ; CHAQUE jeton du coffre est essayé (un ancien jeton sans le droit « gist » passait avant le nouveau : GitHub disait « Never used », pont 249).
+- « telemetry pushIncoming persist failed » (mémoire pleine) : file locale limitée à 50 entrées réduites ; si la mémoire refuse encore, 10 entrées, puis la file est vidée (Firebase a la copie). Tâches 22 et 4 du pont.
+- Preuves : `tests/unit/coffre-jeton-recharge.test.ts` 9/9 ; contre l'ancien code 6 rouges sur 8 (et 3 pour le seul fichier Gist). Leçon 739.
+
 ## Apex AI v13.4.382 (2026-10-22 — fausses alertes en moins, notifications réglées toutes seules)
 - Sentinelle « Bot 2026 (Vercel) » retirée : le projet n'existe plus sur Vercel (DEPLOYMENT_NOT_FOUND, liste des projets lue) ; le bot tourne dans `kdmc-agent-monaco` (200).
 - Pinecone sans clé = « non utilisé » (la mémoire passe par le worker Cloudflare `kdmc-rag`), plus une alerte.

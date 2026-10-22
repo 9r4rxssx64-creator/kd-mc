@@ -518,7 +518,7 @@ class Vault {
     /* Re-encrypt + write triple persistence via setKey (qui réencrypte avec
      * encryptAuto = passphrase user OR device-bound courante = stable now). */
     try {
-      await this.setKey(foundKey, plaintext);
+      await this.setKey(foundKey, plaintext, { origine: 'restauration' });
       logger.info('vault', `🔄 auto re-encrypted ${foundKey} with current passphrase (history recovery flow)`);
       this.audit('reencrypt_after_recovery', { target: foundKey });
     } catch (err: unknown) {
@@ -597,7 +597,7 @@ class Vault {
       return { ok: false, reason: 'Valeur vide' };
     }
     try {
-      const setResult = await this.setKey(storageKey, plaintext.trim());
+      const setResult = await this.setKey(storageKey, plaintext.trim(), { origine: 'saisie' });
       if (!setResult.ok) {
         return { ok: false, reason: 'setKey échoué' };
       }
@@ -684,7 +684,14 @@ class Vault {
    * Fix v13.0.20+ Kevin "Apex oublie les clés entre sessions".
    * Garantit que la clé survit à : clear cache, réinstallation PWA, switch device.
    */
-  async setKey(storageKey: string, plaintext: string): Promise<{ ok: boolean; persisted: { local: boolean; idb: boolean; firebase: boolean } }> {
+  /**
+   * v13.4.383 (pont tâche 22, 22.10.2026) : `opts.origine` dit QUI écrit la clé.
+   *   - 'saisie'      : Kevin vient de coller / taper la clé → seul cas qui ouvre le QR du PAT GitHub.
+   *   - 'restauration': la clé revient d'une copie (Firebase, Gist, trousseau, récupération…) au chargement
+   *                     → ni QR, ni push Gist (avant : QR du PAT en clair + push Gist à CHAQUE chargement).
+   *   - absent        : écriture ordinaire (réglage d'une intégration) → push Gist, jamais de QR.
+   */
+  async setKey(storageKey: string, plaintext: string, opts: { origine?: 'saisie' | 'restauration' } = {}): Promise<{ ok: boolean; persisted: { local: boolean; idb: boolean; firebase: boolean } }> {
     const persisted = { local: false, idb: false, firebase: false };
     if (!plaintext) {
       try {
@@ -844,15 +851,17 @@ class Vault {
     const isGithubKey = storageKey === 'ax_github_token'
       || storageKey === 'ax_github_pat_classic'
       || storageKey === 'ax_github_pat_finegrained';
-    if (!isGithubKey || persisted.local) {
+    const restauration = opts.origine === 'restauration';
+    if (!restauration && (!isGithubKey || persisted.local)) {
       /* Skip push si on est en train de stocker le PAT GitHub lui-même
        * (sinon recursion), sauf si PAT vient d'être stocké → on peut maintenant pusher */
       void (async () => {
         try {
           const { apexGithubGistBackup } = await import('./apex-github-gist-backup.js');
-          await apexGithubGistBackup.pushBackup();
+          const r = await apexGithubGistBackup.pushBackup();
+          if (!r.ok && r.error !== 'throttled') logger.warn('vault', `sauvegarde Gist non faite : ${r.error ?? 'inconnu'}`);
         } catch (err: unknown) {
-          logger.debug('vault', 'gist push setKey background failed (throttle?)', { err });
+          logger.warn('vault', 'sauvegarde Gist : erreur', { msg: err instanceof Error ? err.message : String(err) });
         }
       })();
     }
@@ -866,7 +875,8 @@ class Vault {
     const isGithubPatKey = storageKey === 'ax_github_token'
       || storageKey === 'ax_github_pat_classic'
       || storageKey === 'ax_github_pat_finegrained';
-    if (isGithubPatKey && plaintext && persisted.local) {
+    /* v13.4.383 : une restauration ne redemande pas « Sauvegarder dans le Trousseau ? » à chaque chargement. */
+    if (isGithubPatKey && plaintext && persisted.local && !restauration) {
       void (async () => {
         try {
           const { apexIcloudKeychain } = await import('./apex-icloud-keychain.js');
@@ -880,24 +890,28 @@ class Vault {
           logger.debug('vault', 'icloud-keychain save failed (non-bloquant)', { err });
         }
       })();
-      /* v13.4.114 (Kevin "Que je puisse télécharger le qr code") :
-       * Auto-trigger modal QR code backup pour PAT GitHub.
-       * Kevin peut télécharger PNG ou partager dans Photos iCloud (Web Share API).
-       * Photos iCloud survit reinstall PWA + sync cross-device. */
-      void (async () => {
-        try {
-          await new Promise((r) => setTimeout(r, 1500)); /* Laisse le toast "PAT stocké" s'afficher d'abord */
-          const { apexQrBackup } = await import('./apex-qr-backup.js');
-          await apexQrBackup.showQrBackupModal({
-            text: plaintext,
-            title: '🔐 Sauvegarde PAT GitHub dans Photos iCloud',
-            description: 'Apex génère un QR code de ton PAT GitHub. Sauvegarde-le dans Photos iCloud — au prochain reinstall PWA, Apex pourra le scanner pour tout restaurer en 1 clic. Photos iCloud survit reinstall + sync cross-device Apple ID.',
-            filename: 'apex-pat-github.png',
-          });
-        } catch (err: unknown) {
-          logger.debug('vault', 'QR backup modal failed (non-bloquant)', { err });
-        }
-      })();
+      /* v13.4.383 : le QR (PAT en clair à l'écran) ne s'ouvre QUE sur une saisie de Kevin,
+       * jamais quand le coffre se recharge tout seul. */
+      if (opts.origine === 'saisie') {
+        /* v13.4.114 (Kevin "Que je puisse télécharger le qr code") :
+         * Auto-trigger modal QR code backup pour PAT GitHub.
+         * Kevin peut télécharger PNG ou partager dans Photos iCloud (Web Share API).
+         * Photos iCloud survit reinstall PWA + sync cross-device. */
+        void (async () => {
+          try {
+            await new Promise((r) => setTimeout(r, 1500)); /* Laisse le toast "PAT stocké" s'afficher d'abord */
+            const { apexQrBackup } = await import('./apex-qr-backup.js');
+            await apexQrBackup.showQrBackupModal({
+              text: plaintext,
+              title: '🔐 Sauvegarde PAT GitHub dans Photos iCloud',
+              description: 'Apex génère un QR code de ton PAT GitHub. Sauvegarde-le dans Photos iCloud — au prochain reinstall PWA, Apex pourra le scanner pour tout restaurer en 1 clic. Photos iCloud survit reinstall + sync cross-device Apple ID.',
+              filename: 'apex-pat-github.png',
+            });
+          } catch (err: unknown) {
+            logger.debug('vault', 'QR backup modal failed (non-bloquant)', { err });
+          }
+        })();
+      }
     }
     return { ok: persisted.local || persisted.idb || persisted.firebase, persisted };
   }
@@ -1277,7 +1291,7 @@ class Vault {
      *   3. IDB shadow (writeKeyToIdb — résiste clear cache Safari)
      *   4. Firebase backup (cross-device + survive réinstall PWA)
      * + VERIFY post-write avec retry x3 (Kevin règle triple persistence v9.519). */
-    const setResult = await this.setKey(detected.storageKey, trimmed);
+    const setResult = await this.setKey(detected.storageKey, trimmed, { origine: 'saisie' });
     if (!setResult.ok) {
       logger.error('vault', 'autoStore setKey returned ok:false', { storageKey: detected.storageKey, persisted: setResult.persisted });
       return { ok: false, reason: 'Chiffrement ou stockage échoué (triple persistence failed)' };
@@ -1299,7 +1313,7 @@ class Vault {
           expectedLen: trimmed.length,
         });
         /* Re-essai setKey */
-        await this.setKey(detected.storageKey, trimmed);
+        await this.setKey(detected.storageKey, trimmed, { origine: 'restauration' });
       } catch (err: unknown) {
         logger.warn('vault', `autoStore VERIFY error attempt ${attempt + 1}/3`, { err });
       }

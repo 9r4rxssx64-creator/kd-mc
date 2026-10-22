@@ -452,7 +452,7 @@ class AutoRestoreCredentials {
     }
 
     /* Pour alias / pattern_match : on a un plaintext → setKey re-chiffre avec passphrase courante */
-    const result = await vault.setKey(entry.storage_key, plaintext);
+    const result = await vault.setKey(entry.storage_key, plaintext, { origine: 'restauration' });
     if (!result.ok) return { ok: false, reason: 'setKey failed' };
     return { ok: true };
   }

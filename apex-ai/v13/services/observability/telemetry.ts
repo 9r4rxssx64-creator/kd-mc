@@ -66,6 +66,35 @@ const AUTOFIX_WHITELIST: Record<string, () => boolean | Promise<boolean>> = {
   },
 };
 
+/* v13.4.383 (pont tâche 22) : « pushIncoming persist failed » = mémoire du navigateur pleine.
+ * 50 entrées au plus, chaque entrée réduite (texte ≤ 500, détails ≤ 2 000 caractères) ;
+ * si la mémoire refuse encore → on garde les 10 dernières, sinon on vide la file (Firebase a déjà la copie). */
+export const TELEMETRIE_MAX = 50;
+function compacter(e: TelemetryEntry): TelemetryEntry {
+  let details = e.details;
+  try {
+    const d = JSON.stringify(e.details ?? {});
+    if (d.length > 2000) details = { tronque: true, extrait: d.slice(0, 2000) };
+  } catch { details = { tronque: true }; }
+  return { ...e, msg: String(e.msg ?? '').slice(0, 500), details };
+}
+export function persisterTelemetrie(full: TelemetryEntry): void {
+  let buf: TelemetryEntry[] = [];
+  try {
+    const lu = JSON.parse(localStorage.getItem('ax_telemetry_in') ?? '[]') as unknown;
+    if (Array.isArray(lu)) buf = lu as TelemetryEntry[];
+  } catch { buf = []; }
+  buf.push(compacter(full));
+  for (const garder of [TELEMETRIE_MAX, 10]) {
+    try {
+      localStorage.setItem('ax_telemetry_in', JSON.stringify(buf.slice(-garder)));
+      return;
+    } catch { /* plein : on réessaie plus court */ }
+  }
+  try { localStorage.removeItem('ax_telemetry_in'); } catch { /* ignore */ }
+  logger.warn('telemetry', 'file locale vidée : mémoire du navigateur pleine (copie gardée dans Firebase)');
+}
+
 class Telemetry {
   pushIncoming(entry: Omit<TelemetryEntry, 'id' | 'processed' | 'ts'>): void {
     const full: TelemetryEntry = {
@@ -74,14 +103,7 @@ class Telemetry {
       ts: Date.now(),
       processed: false,
     };
-    try {
-      const buf = JSON.parse(localStorage.getItem('ax_telemetry_in') ?? '[]') as TelemetryEntry[];
-      buf.push(full);
-      const trimmed = buf.length > 200 ? buf.slice(-200) : buf;
-      localStorage.setItem('ax_telemetry_in', JSON.stringify(trimmed));
-    } catch (err: unknown) {
-      logger.warn('telemetry', 'pushIncoming persist failed', { err });
-    }
+    persisterTelemetrie(full);
     void firebase.write('ax_telemetry_in', full);
   }
 

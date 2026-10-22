@@ -151,7 +151,7 @@ async function bootRestore(): Promise<{ pat_restored: boolean; vault_restored?: 
     }
     /* Store PAT dans vault localement */
     const { vault } = await import('./vault.js');
-    await vault.setKey('ax_github_token', result.pat);
+    await vault.setKey('ax_github_token', result.pat, { origine: 'restauration' });
     /* Trigger Gist pull pour restore vault complet */
     let restored = 0;
     try {

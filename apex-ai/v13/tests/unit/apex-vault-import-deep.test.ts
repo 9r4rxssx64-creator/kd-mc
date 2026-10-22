@@ -54,7 +54,7 @@ describe('apex-vault-import — format entries[] snake_case', () => {
     expect(r.restored).toBe(1);
     expect(r.failed).toBe(0);
     expect(r.ok).toBe(true);
-    expect(vault.setKey).toHaveBeenCalledWith('ax_test', 'plain-abc123');
+    expect(vault.setKey).toHaveBeenCalledWith('ax_test', 'plain-abc123', { origine: 'restauration' });
   });
 
   it('restore une entry plain (no AXENC1: prefix)', async () => {
@@ -63,7 +63,7 @@ describe('apex-vault-import — format entries[] snake_case', () => {
     });
     const r = await apexVaultImport.importFromJson(json);
     expect(r.restored).toBe(1);
-    expect(vault.setKey).toHaveBeenCalledWith('ax_plain', 'mySecret');
+    expect(vault.setKey).toHaveBeenCalledWith('ax_plain', 'mySecret', { origine: 'restauration' });
   });
 
   it('skip entry sans storage_key', async () => {

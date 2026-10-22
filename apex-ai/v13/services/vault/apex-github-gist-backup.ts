@@ -50,6 +50,28 @@ interface VaultBackupContent {
   count: number;
 }
 
+
+const GITHUB_CLES = [
+  'ax_github_pat_classic',
+  'ax_github_pat_finegrained',
+  'ax_github_token',
+  'ax_github_token_classic',
+  'ax_github_token_fine',
+  'ax_github_pat',
+];
+const GH_PAT = /^(ghp_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82,})$/;
+
+/** v13.4.383 (pont tâche 22) : la VRAIE cause d'un refus GitHub, lisible, sans jamais le jeton. */
+export function causeGithub(status: number): string {
+  if (status === 401) return 'jeton GitHub refusé (expiré ou révoqué)';
+  if (status === 403) return 'jeton GitHub sans le droit « gist » ou limite atteinte';
+  if (status === 404) return 'jeton GitHub sans accès aux gists (droit « gist » manquant)';
+  if (status === 422) return 'contenu refusé par GitHub';
+  if (status >= 500) return 'GitHub indisponible';
+  if (status === 0) return 'réseau injoignable';
+  return `réponse GitHub inattendue (HTTP ${status})`;
+}
+
 class ApexGithubGistBackup {
   private throttleLastPush = 0;
   private readonly THROTTLE_MS = 30_000; /* min 30s entre 2 pushes */
@@ -70,8 +92,10 @@ class ApexGithubGistBackup {
     if (!opts.force && now - this.throttleLastPush < this.THROTTLE_MS) {
       return { ok: false, error: 'throttled' };
     }
-    const token = await this.readGithubToken();
-    if (!token) return { ok: false, error: 'github_token_missing' };
+    /* v13.4.383 (pont 249) : le jeton neuf était « Never used » chez GitHub — un ancien jeton (sans le droit gist)
+     * passait avant lui. On essaie maintenant CHAQUE jeton du coffre, et on dit lequel (son nom, jamais sa valeur). */
+    const jetons = await this.readGithubTokens();
+    if (jetons.length === 0) return { ok: false, error: 'github_token_missing' };
 
     /* 1. Collecter toutes les clés du vault local en JSON plaintext */
     const vaultPlaintext = await this.collectVaultPlaintext();
@@ -100,20 +124,28 @@ class ApexGithubGistBackup {
     const contentJSON = JSON.stringify(content);
     const description = `${GIST_DESCRIPTION_PREFIX}-${uid}`;
 
-    /* 4. Find existing gist → update, sinon create */
-    const existingGist = await this.findExistingGist(token, description);
-    try {
-      const gistId = existingGist ? await this.updateGist(token, existingGist.id, contentJSON)
-                                  : await this.createGist(token, description, contentJSON);
-      this.throttleLastPush = now;
-      this.persistGistId(gistId);
-      logger.info('gist-backup', `pushed ${vaultPlaintext.count} keys to gist ${gistId.slice(0, 8)}…`);
-      return { ok: true, gist_id: gistId, bytes: contentJSON.length };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.error('gist-backup', 'push failed', { msg });
-      return { ok: false, error: `gist_api_${msg.slice(0, 60)}` };
+    /* 4. Find existing gist → update, sinon create — jeton par jeton */
+    const causes: string[] = [];
+    for (const { cle, jeton: token } of jetons) {
+      const existingGist = await this.findExistingGist(token, description);
+      if (!existingGist && this.erreurListe !== 0) {
+        causes.push(`${cle} : ${causeGithub(Math.max(0, this.erreurListe))}`);
+        continue;
+      }
+      try {
+        const gistId = existingGist ? await this.updateGist(token, existingGist.id, contentJSON)
+                                    : await this.createGist(token, description, contentJSON);
+        this.throttleLastPush = now;
+        this.persistGistId(gistId);
+        logger.info('gist-backup', `pushed ${vaultPlaintext.count} keys to gist ${gistId.slice(0, 8)}… (jeton ${cle})`);
+        return { ok: true, gist_id: gistId, bytes: contentJSON.length };
+      } catch (err: unknown) {
+        causes.push(`${cle} : ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
+    const resume = causes.join(' · ').slice(0, 300);
+    logger.error('gist-backup', `sauvegarde impossible : ${resume}`);
+    return { ok: false, error: `gist_refus: ${resume}` };
   }
 
   /**
@@ -167,7 +199,7 @@ class ApexGithubGistBackup {
     let restored = 0;
     for (const { storageKey, plaintext } of payload.keys) {
       try {
-        const r = await vault.setKey(storageKey, plaintext);
+        const r = await vault.setKey(storageKey, plaintext, { origine: 'restauration' });
         if (r.ok) restored++;
       } catch (err: unknown) {
         logger.warn('gist-backup', `restore failed for ${storageKey}`, { err });
@@ -198,6 +230,30 @@ class ApexGithubGistBackup {
   }
 
   /* ===================== Internals ===================== */
+
+  /** Tous les jetons GitHub lisibles du coffre, sans doublon, dans l'ordre de préférence. */
+  private async readGithubTokens(): Promise<Array<{ cle: string; jeton: string }>> {
+    const out: Array<{ cle: string; jeton: string }> = [];
+    const vus = new Set<string>();
+    const ajouter = (cle: string, v: string) => {
+      const j = v.trim();
+      if (j.length > 10 && !vus.has(j)) { vus.add(j); out.push({ cle, jeton: j }); }
+    };
+    for (const k of GITHUB_CLES) {
+      try { ajouter(k, (await vault.readKey(k)) || ''); } catch { /* suivante */ }
+    }
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('ax_') || GITHUB_CLES.includes(k)) continue;
+        try {
+          const v = (await vault.readKey(k)) || '';
+          if (GH_PAT.test(v.trim())) ajouter(k, v);
+        } catch { /* skip key */ }
+      }
+    } catch { /* localStorage indisponible */ }
+    return out;
+  }
 
   private async readGithubToken(): Promise<string> {
     /* v13.4.106 — Kevin colle un PAT classic (ghp_...) qui est stocké sous
@@ -286,7 +342,11 @@ class ApexGithubGistBackup {
     return { count: keys.length, keys };
   }
 
+  /** Dernier échec de la liste des gists (HTTP, -1 = réseau, 0 = aucun) : sans lui, un 401 créait un 2ᵉ gist (et échouait). */
+  private erreurListe = 0;
+
   private async findExistingGist(token: string, description: string): Promise<GistApiResponse | null> {
+    this.erreurListe = 0;
     /* List Gists privés user. Pagination 30/page. Max 3 pages = 90 récents. */
     for (let page = 1; page <= 3; page++) {
       try {
@@ -299,7 +359,8 @@ class ApexGithubGistBackup {
           signal: AbortSignal.timeout(10_000),
         });
         if (!resp.ok) {
-          logger.warn('gist-backup', `list gists page ${page} HTTP ${resp.status}`);
+          this.erreurListe = resp.status;
+          logger.warn('gist-backup', `liste des gists HTTP ${resp.status} : ${causeGithub(resp.status)}`);
           return null;
         }
         const list = await resp.json() as GistApiResponse[];
@@ -318,7 +379,8 @@ class ApexGithubGistBackup {
         }
         if (list.length < 30) break; /* pas de page suivante */
       } catch (err: unknown) {
-        logger.warn('gist-backup', `findExisting page ${page} failed`, { err });
+        this.erreurListe = -1;
+        logger.warn('gist-backup', `liste des gists : ${causeGithub(0)}`, { msg: err instanceof Error ? err.message : String(err) });
         return null;
       }
     }
@@ -344,7 +406,7 @@ class ApexGithubGistBackup {
       signal: AbortSignal.timeout(15_000),
     });
     if (!resp.ok) {
-      throw new Error(`create HTTP ${resp.status}`);
+      throw new Error(`create HTTP ${resp.status} : ${causeGithub(resp.status)}`);
     }
     const data = await resp.json() as GistApiResponse;
     return data.id;
@@ -367,7 +429,7 @@ class ApexGithubGistBackup {
       signal: AbortSignal.timeout(15_000),
     });
     if (!resp.ok) {
-      throw new Error(`update HTTP ${resp.status}`);
+      throw new Error(`update HTTP ${resp.status} : ${causeGithub(resp.status)}`);
     }
     return gistId;
   }

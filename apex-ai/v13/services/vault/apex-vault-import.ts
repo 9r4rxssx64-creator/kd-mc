@@ -113,7 +113,7 @@ async function importFromJson(jsonText: string): Promise<{
       plaintext = encrypted;
     }
     try {
-      const r = await vault.setKey(storageKey, plaintext);
+      const r = await vault.setKey(storageKey, plaintext, { origine: 'restauration' });
       if (r.ok) restored++;
       else failed++;
     } catch (err: unknown) {
@@ -135,7 +135,7 @@ async function importFromJson(jsonText: string): Promise<{
           decryptFailed++;
           continue;
         }
-        const r = await vault.setKey(storageKey, plaintext);
+        const r = await vault.setKey(storageKey, plaintext, { origine: 'restauration' });
         if (r.ok) restored++;
         else failed++;
       } catch (err: unknown) {

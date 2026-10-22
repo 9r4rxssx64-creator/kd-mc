@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 228 règles — le texte de Kevin, une par une
+## 📜 Les 229 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1000,6 +1000,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 2026-10-21 — « Un seul compte possible par personne » (règle absolue de Kevin)
 - **Déclencheur** : Rémi écrivait à l'ancien compte `kdmc_admin` pendant que Kevin lisait `kdmc_kdmc_admin` ; deux « Kevin » dans la liste de Rémy ; 3 comptes de test « Parcours Robot » toujours […]
 ↳ [récit](CLAUDE-HISTOIRE.md#2026-10-21-un-seul-compte-possible-par-personne-règle-absolue-de-kevin)
+
+### 🧪 RÈGLE ABSOLUE — TOUT TESTER, PARTOUT, TOUT LE TEMPS (ordinateur, iPhone, Android, toutes les plateformes), ET NE PLUS JAMAIS ÉCRIRE « NON TESTÉ » : CE QUE JE NE PEUX PAS FAIRE, LE LENOVO OU UN ROBOT GRATUIT LE FAIT (Kevin 2026-10-22, ABSOLUE, TOUTES LES BRANCHES)
+**« Il faut que tu fasses absolument toutes les vérifications tout le temps, à chaque travail demandé, à chaque audit… et tu testes toujours tout sur l'ordinateur, iPhone, Android, toutes les […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tout-tester-partout-tout-le-temps-ordinateur-iphone-android-toutes-les-plateformes-et-ne-plus-jamais-écrire-non-testé-ce-que-je-ne-peux-pas-faire-le-lenovo-ou-un-robot-gratuit-le-fait-kevin-2026-10-22-absolue-toutes-les-branches)
 
 ---
 

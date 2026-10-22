@@ -95,3 +95,24 @@ describe('E2EM1 — un message privé lisible sur CHAQUE appareil, et seulement 
     expect(x).not.toBe(y);
   });
 });
+
+describe('v1.1.345 — groupes : appareil signataire et appareil demandeur', () => {
+  it('le message de groupe porte l\'appareil signataire (sd) seulement s\'il est signé et bien formé ; la lecture refuse un sd invalide', async () => {
+    const sk = C.newGroupSenderKey(); const key = await C.importGroupSenderKey(sk.raw);
+    const sig = await C.generateSigningKeys();
+    const ctx = { conv: 'g', from: 'kevin', epoch: 1, kid: sk.kid, kind: 'm', mid: 'm1' };
+    const signe = C.parseGroupWire(await C.groupEncrypt(key, 'x', { ...ctx, sd: 'dev-kevin-pc-0002' }, sig.privateKey)).body;
+    expect(signe.sd).toBe('dev-kevin-pc-0002');
+    expect(await C.groupVerifyMsg(sig.publicKey, signe, { conv: 'g', from: 'kevin', ctxId: 'm1' })).toBe(true);
+    expect(C.parseGroupWire(await C.groupEncrypt(key, 'x', { ...ctx, sd: 'dev-kevin-pc-0002' })).body.sd).toBeUndefined();          // non signé : pas de sd
+    expect(C.parseGroupWire(await C.groupEncrypt(key, 'x', { ...ctx, sd: 'x' }, sig.privateKey)).body.sd).toBeUndefined();            // forme invalide : ignoré
+    const faux = 'E2EG1:' + Buffer.from(JSON.stringify({ ...signe, sd: 'pas bon !' })).toString('base64');
+    expect(C.parseGroupWire(faux).body).toBe(null);
+  });
+  it('la demande de clé porte l\'appareil demandeur (d) s\'il est bien formé', () => {
+    const lire = (w) => JSON.parse(Buffer.from(w.slice(C.GROUP_REQ_TAG.length), 'base64').toString());
+    expect(lire(C.buildGroupKeyRequest({ from: 'kevin', sender: 'kevin', epoch: 1, kid: 'k', d: 'dev-kevin-pc-0002' })).d).toBe('dev-kevin-pc-0002');
+    expect(lire(C.buildGroupKeyRequest({ from: 'kevin', sender: 'kevin', epoch: 1, kid: 'k', d: '!' })).d).toBeUndefined();
+    expect(lire(C.buildGroupKeyRequest({ from: 'kevin', sender: 'kevin', epoch: 1, kid: 'k' })).d).toBeUndefined();
+  });
+});

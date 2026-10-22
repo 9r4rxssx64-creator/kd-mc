@@ -517,7 +517,7 @@ export async function unwrapGroupSenderKey(wrapKey, entry, aadParts) {
 // refusé pour une édition (règle appliquée par l'appelant, cf. groupBoundId).
 // signer (optionnel, v1.1.297) : clé privée ECDSA de l'appareil → signature `sg` du corps lié
 // (cf. groupMsgSigParts) : l'émetteur est AUTHENTIFIÉ, pas seulement « détenteur de la clé ».
-export async function groupEncrypt(senderKey, plaintext, { conv, from, epoch, kid, kind, mid }, signer) {
+export async function groupEncrypt(senderKey, plaintext, { conv, from, epoch, kid, kind, mid, sd }, signer) {
   const iv = randomBytes(12); // IV FRAIS à chaque message (AES-GCM : jamais deux fois le même)
   const bound = kind === 'm' || kind === 'e';
   if (bound && (typeof mid !== 'string' || !mid)) throw new Error('identifiant de message requis');
@@ -529,6 +529,9 @@ export async function groupEncrypt(senderKey, plaintext, { conv, from, epoch, ki
   const body = { v: 1, epoch, kid, iv: bufToB64(iv), ct: bufToB64(ct) };
   if (bound) { body.b = 2; body.k = kind; if (kind === 'm') body.mid = mid; }
   if (signer) body.sg = await groupSign(signer, groupMsgSigParts(body, { conv, from, ctxId: mid }));
+  // v1.1.345 : appareil signataire (une clé de signature par appareil). Il ne fait que CHOISIR la clé de
+  // vérification parmi les appareils déclarés de l'émetteur : un `sd` falsifié mène à un refus, jamais à un faux.
+  if (signer && typeof sd === 'string' && _MDEV_ID.test(sd)) body.sd = sd;
   return GROUP_MSG_TAG + _jsonToB64(body);
 }
 
@@ -630,7 +633,7 @@ export function parseGroupWire(raw) {
   try {
     const o = _b64ToJson(raw.slice(tag.length));
     if (o && typeof o === 'object' && o.v === 1 && Number.isInteger(o.epoch) && typeof o.kid === 'string' &&
-        (o.sg === undefined || typeof o.sg === 'string') &&
+        (o.sg === undefined || typeof o.sg === 'string') && (o.sd === undefined || (typeof o.sd === 'string' && _MDEV_ID.test(o.sd))) &&
         (o.b === undefined || (o.b === 2 && (o.k === 'e' || (o.k === 'm' && typeof o.mid === 'string' && o.mid !== ''))))) body = o;
   } catch { body = null; }
   return { kind, body };
@@ -650,8 +653,11 @@ export function buildGroupKeyMessages({ from, epoch, kid }, entries, maxLen = GR
   return out;
 }
 
-export function buildGroupKeyRequest({ from, sender, epoch, kid }) {
-  return GROUP_REQ_TAG + _jsonToB64({ v: 1, from, sender, epoch, kid });
+export function buildGroupKeyRequest({ from, sender, epoch, kid, d }) {
+  // v1.1.345 : `d` = appareil qui demande (un autre appareil du même compte peut demander ma clé d'envoi).
+  const o = { v: 1, from, sender, epoch, kid };
+  if (typeof d === 'string' && _MDEV_ID.test(d)) o.d = d;
+  return GROUP_REQ_TAG + _jsonToB64(o);
 }
 
 // Décision PURE : le groupe peut-il être chiffré de bout en bout pour ce message ?

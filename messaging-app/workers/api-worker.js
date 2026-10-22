@@ -112,7 +112,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.344';
+export const API_VERSION = '1.1.345';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1405,6 +1405,7 @@ export async function handleTestCleanup(request, env) {
       await DB.prepare('DELETE FROM messages WHERE sender_id=?').bind(id).run().catch(() => {});
       await DB.prepare('DELETE FROM conversation_members WHERE user_id=?').bind(id).run().catch(() => {});
       await DB.prepare('DELETE FROM contacts WHERE user_id=? OR contact_id=?').bind(id, id).run().catch(() => {});
+      await DB.prepare('DELETE FROM user_devices WHERE user_id=?').bind(id).run().catch(() => {});   // v1.1.345 : ses appareils aussi
       await DB.prepare('DELETE FROM users WHERE id=?').bind(id).run().catch(() => {});
       // purge les conversations devenues vides
       for (const c of convs) {
@@ -1802,6 +1803,7 @@ export async function handleExportMe(request, env) {
     // Lot B (A6-01 / A6-06) : historique de position (30 derniers jours) et résumés IA gardés en cache (7 jours).
     out.activity = await q('SELECT ts, action, lat, lng, geo_label, user_agent FROM user_activity WHERE user_id=? ORDER BY ts', uid);
     out.ai_summaries = await q('SELECT text, provider, ts FROM ai_summary_cache WHERE user_id=? ORDER BY ts', uid);
+    out.devices = await q('SELECT device_id, label, created_at, last_seen, revoked_at FROM user_devices WHERE user_id=? ORDER BY created_at', uid);   // v1.1.345
   } catch (e) { return err('Export impossible pour le moment', 500, 'export_failed', e); }
   try { await auditLog(env, uid, 'rgpd_export', 'user', uid, {}, null, request.headers.get('user-agent') || ''); } catch (_) {}
   return new Response(JSON.stringify(out, null, 2), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="apex-chat-mes-donnees-${new Date().toISOString().slice(0, 10)}.json"` } });
@@ -1838,6 +1840,7 @@ export async function handleDeleteMe(request, env) {
     await run('conversation_members', 'DELETE FROM conversation_members WHERE user_id=?', uid);
     await run('contacts', 'DELETE FROM contacts WHERE user_id=? OR contact_id=?', uid, uid);
     await run('push_subscriptions', 'DELETE FROM push_subscriptions WHERE user_id=?', uid);
+    await run('user_devices', 'DELETE FROM user_devices WHERE user_id=?', uid);   // v1.1.345 : clés de ses appareils
     await run('connections', 'DELETE FROM connections WHERE user_id=?', uid);
     await run('user_activity', 'DELETE FROM user_activity WHERE user_id=?', uid);
     await run('ai_summary_cache', 'DELETE FROM ai_summary_cache WHERE user_id=?', uid);   // Lot B (A6-06)
@@ -2481,17 +2484,23 @@ export async function handleRegisterDevice(request, env) {
   }
   const caps = (typeof body.crypto_caps === 'string' && body.crypto_caps.length <= 200 && /^[a-z0-9,]+$/.test(body.crypto_caps)) ? body.crypto_caps : null;
   const label = String(body.label || '').replace(/[<>&"'\u0000-\u001f]/g, '').trim().slice(0, 60) || null;
+  // v1.1.345 : clé publique de SIGNATURE de cet appareil (groupes). Facultative ; si présente, forme stricte.
+  const sig = body.signing_key_pub;
+  if (sig !== undefined && sig !== null && (typeof sig !== 'string' || sig.length > 300 || !/^GSIG1:[A-Za-z0-9+/=_-]+$/.test(sig))) {
+    return err('signing_key_pub invalide', 400, 'bad_signing_key');
+  }
   const DB = env.APEX_CHAT_DB;
   const now = Date.now();
   const deja = await DB.prepare('SELECT revoked_at FROM user_devices WHERE user_id=? AND device_id=?').bind(auth.sub, deviceId).first();
   // Un appareil RETIRÉ ne revient jamais tout seul (vol, perte) : il doit se présenter sous un nouvel identifiant.
   if (deja && deja.revoked_at) return err('Appareil retiré', 403, 'device_revoked');
   await DB.prepare(
-    `INSERT INTO user_devices (user_id, device_id, identity_key_pub, crypto_caps, label, created_at, last_seen)
-     VALUES (?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO user_devices (user_id, device_id, identity_key_pub, crypto_caps, label, created_at, last_seen, signing_key_pub)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(user_id, device_id) DO UPDATE SET identity_key_pub=excluded.identity_key_pub,
-       crypto_caps=excluded.crypto_caps, label=COALESCE(excluded.label, user_devices.label), last_seen=excluded.last_seen`
-  ).bind(auth.sub, deviceId, idk, caps, label, now, now).run();
+       crypto_caps=excluded.crypto_caps, label=COALESCE(excluded.label, user_devices.label), last_seen=excluded.last_seen,
+       signing_key_pub=COALESCE(excluded.signing_key_pub, user_devices.signing_key_pub)`
+  ).bind(auth.sub, deviceId, idk, caps, label, now, now, sig || null).run();
   // Plafond : au-delà de DEVICES_MAX appareils actifs, les moins récemment vus sont retirés.
   const actifs = (await DB.prepare(
     'SELECT device_id FROM user_devices WHERE user_id=? AND revoked_at IS NULL ORDER BY last_seen DESC'
@@ -2509,12 +2518,12 @@ export async function handleListDevices(userId, request, env) {
   let target = userId;
   try { target = await _canonicalId(DB, userId); } catch (_) { target = userId; }
   const rows = (await DB.prepare(
-    `SELECT device_id, identity_key_pub, crypto_caps, label, created_at, last_seen FROM user_devices
+    `SELECT device_id, identity_key_pub, signing_key_pub, crypto_caps, label, created_at, last_seen FROM user_devices
       WHERE user_id=? AND revoked_at IS NULL AND last_seen > ? ORDER BY last_seen DESC LIMIT ?`
   ).bind(target, Date.now() - DEVICE_ACTIF_MS, DEVICES_MAX).all()).results || [];
   const moi = target === auth.sub;
   // Le nom d'un appareil (« iPhone », « PC Windows ») ne regarde que son propriétaire.
-  const devices = rows.map((r) => (moi ? r : { device_id: r.device_id, identity_key_pub: r.identity_key_pub, crypto_caps: r.crypto_caps, last_seen: r.last_seen }));
+  const devices = rows.map((r) => (moi ? r : { device_id: r.device_id, identity_key_pub: r.identity_key_pub, signing_key_pub: r.signing_key_pub, crypto_caps: r.crypto_caps, last_seen: r.last_seen }));
   return json({ ok: true, user_id: target, devices });
 }
 

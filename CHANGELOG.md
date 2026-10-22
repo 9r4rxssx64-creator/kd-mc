@@ -4,6 +4,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.345 (2026-10-22 — groupes : chaque appareil de chaque membre lit et signe)
+
+- Avant : la clé d'envoi d'un groupe était emballée pour UNE clé par membre (la dernière publiée) → le PC de Kevin ne recevait pas la clé (« 🔒 clé de groupe pas encore reçue »), et une seule clé de signature par compte → les messages de son autre appareil arrivaient « ⚠️ message non authentifié ».
+- Maintenant : la clé d'envoi est aussi emballée pour chaque appareil déclaré de chaque membre ET pour mes autres appareils (l'entrée d'avant reste en premier pour les anciennes versions) ; chaque appareil déclare sa clé de signature (migration 0028 `signing_key_pub`) ; un message porte l'appareil signataire (`sd`), vérifié avec la clé de CET appareil ; un appareil peut redemander ma clé à mes autres appareils ; une nouvelle clé de membre qui est celle d'un appareil déclaré ne met plus le membre « en attente ».
+- Trouvé en relisant la base en ligne : les comptes effacés du robot de tests laissaient leurs appareils (3 lignes orphelines, effacées). Désormais « supprimer mon compte » et le nettoyage du robot effacent aussi les appareils ; l'export RGPD les liste.
+- Preuves : vitest 2279 verts (couverture crypto 100 %) ; vrai Chromium 3 appareils `runtime-groupe-appareils.mjs` 10/10 (avec la 1.1.344 : 5/10). Leçon 725.
+
 ## Apex Chat v1.1.344 (2026-10-22 — photos et vocaux lisibles sur chaque appareil ; écran « Mes appareils »)
 
 - Photos, vidéos, fichiers et vocaux d'un message privé : quand le contact a déclaré ses appareils, le fichier a SA clé, transportée dans le message chiffré pour chaque appareil (avant : clé de session 1:1 → illisible sur les autres appareils). Contact encore en ancienne version : chemin d'avant ; aucune clé : rien n'est envoyé.

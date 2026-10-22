@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.344",
+  "softwareVersion": "v1.1.345",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.344';
+const __APEX_CHAT_VERSION__ = 'v1.1.345';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.344" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.344</div>
+  <div id="splash-version" data-ver="v1.1.345" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.344</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.345</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -8332,6 +8332,15 @@ K._grpMemberKey = async function(uid, force){
   }
   // v1.1.297 : clé de signature — épinglée même si le bundle ne la sert plus (un serveur ne
   // peut pas « désactiver » la signature d'un membre déjà vu : la clé épinglée reste exigée).
+  // v1.1.345 — une clé par appareil : la clé « nouvelle » du bundle est celle d'un appareil que ce membre a
+  // DÉCLARÉ (il change d'appareil) → ce n'est pas un changement suspect ; l'épingle suit, sans bandeau.
+  let devs = [];
+  try{ devs = K._devicesOf ? await K._devicesOf(uid) : []; }catch(_e){ devs = []; }
+  const declaree = (k, champ) => !!k && devs.some((d) => d && d[champ] === k);
+  try{
+    if(b.sig && K._grpSigPinned(uid) && K._grpSigPinned(uid) !== b.sig && declaree(b.sig, 'signing_key_pub')){ localStorage.setItem('gsigkey_' + uid, b.sig); localStorage.removeItem('gsigkey_pending_' + uid); }
+    if(b.pub && K._grpPinnedKey(uid) && K._grpPinnedKey(uid) !== b.pub && declaree(b.pub, 'identity_key_pub')){ localStorage.setItem('gpeerkey_' + uid, b.pub); localStorage.removeItem('gpeerkey_pending_' + uid); }
+  }catch(e){ _safeCatch('grp-tofu-appareil', e); }
   const rs = ApexCrypto.resolvePeerKey(K._grpSigPinned(uid), b.sig || null);
   try{
     if(rs.pin) localStorage.setItem('gsigkey_' + uid, rs.pin);
@@ -8387,12 +8396,30 @@ K._grpRenderKeyBanner = function(conv){
 K._grpDistribute = async function(conv, own, raw, recips){
   const me = K.user.id;
   const entries = [];
-  for(const r of recips){
-    try{
-      const wk = await ApexCrypto.deriveGroupWrapKey(K._cryptoKeys.privateKey, await ApexCrypto.importPublicKey(r.pub));
-      const e = await ApexCrypto.wrapGroupSenderKey(wk, raw, [conv.id, me, r.uid, own.epoch, own.kid]);
-      entries.push({ to: r.uid, iv: e.iv, w: e.w });
-    }catch(e){ _safeCatch('grp-wrap', e); }
+  // v1.1.345 — une clé par appareil : en plus de l'entrée d'avant (clé du compte, lue par les anciennes versions,
+  // toujours EN PREMIER pour elles), une entrée par appareil déclaré de chaque destinataire ET de mes autres appareils.
+  const myDev = K._deviceId ? K._deviceId() : null;
+  const cibles = recips.slice();
+  if(myDev && !cibles.some((r) => r.uid === me)) cibles.push({ uid: me, pub: null });
+  for(const r of cibles){
+    if(r.pub && r.uid !== me){
+      try{
+        const wk = await ApexCrypto.deriveGroupWrapKey(K._cryptoKeys.privateKey, await ApexCrypto.importPublicKey(r.pub));
+        const e = await ApexCrypto.wrapGroupSenderKey(wk, raw, [conv.id, me, r.uid, own.epoch, own.kid]);
+        entries.push({ to: r.uid, iv: e.iv, w: e.w });
+      }catch(e){ _safeCatch('grp-wrap', e); }
+    }
+    if(!myDev || !K._devicesOf) continue;
+    let devs = [];
+    try{ devs = await K._devicesOf(r.uid); }catch(_e){ devs = []; }
+    for(const d of devs.slice(0, ApexCrypto.MDEV_MAX_DEVICES || 24)){
+      if(!d || !d.device_id || !d.identity_key_pub || (r.uid === me && d.device_id === myDev)) continue;
+      try{
+        const wk = await ApexCrypto.deriveGroupWrapKey(K._cryptoKeys.privateKey, await ApexCrypto.importPublicKey(d.identity_key_pub));
+        const e = await ApexCrypto.wrapGroupSenderKey(wk, raw, [conv.id, me, r.uid, own.epoch, own.kid, 'dev', myDev, d.device_id]);
+        entries.push({ to: r.uid, d: d.device_id, fd: myDev, iv: e.iv, w: e.w });
+      }catch(e){ _safeCatch('grp-wrap-dev', e); }
+    }
   }
   if(!entries.length) return [];
   let wires = ApexCrypto.buildGroupKeyMessages({ from: me, epoch: own.epoch, kid: own.kid }, entries);
@@ -8400,7 +8427,7 @@ K._grpDistribute = async function(conv, own, raw, recips){
   if(sk) wires = await ApexCrypto.signGroupKeyMessages(sk.priv, conv.id, wires);
   const now = Date.now();
   wires.forEach((w, i) => K._dispatchWire(conv.id, { type: 'message', ciphertext: w, mime: K._GRP_CTL_MIME, ts: now, id: 'gk_' + now + '_' + i + '_' + Math.random().toString(36).slice(2, 7) }));
-  return entries.map(e => e.to);
+  return Array.from(new Set(entries.map(e => e.to).filter(u => u !== me)));
 };
 // ---- état du groupe + rotation + distribution. opts.check : lecture seule (ouverture du chat).
 K._grpPrepare = async function(conv, opts){
@@ -8488,7 +8515,7 @@ K._grpEncryptOutgoing = async function(conv, plaintext, opts){
       : { kind: 'm', mid: (opts.mid ? String(opts.mid) : ('g_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10))) };
     try{
       const sk = await K._grpSigKeys();   // v1.1.297 : signé par l'appareil (authenticité de l'émetteur)
-      payload = await ApexCrypto.groupEncrypt(prep.own.key, plaintext, { conv: conv.id, from: K.user.id, epoch: prep.own.epoch, kid: prep.own.kid, kind: bind.kind, mid: bind.mid }, sk ? sk.priv : null);
+      payload = await ApexCrypto.groupEncrypt(prep.own.key, plaintext, { conv: conv.id, from: K.user.id, epoch: prep.own.epoch, kid: prep.own.kid, kind: bind.kind, mid: bind.mid, sd: K._deviceId ? K._deviceId() : undefined }, sk ? sk.priv : null);
     }
     catch(e){ _safeCatch('grp-encrypt', e); payload = null; }
   }
@@ -8534,11 +8561,34 @@ K._grpCtlSeen = function(id){
 K._grpHandleKey = async function(conv, sender, body){
   const me = K.user && K.user.id;
   if(!me || body.from !== sender || !Array.isArray(body.keys)) return false;
-  const mine = body.keys.find(e => e && e.to === me && typeof e.iv === 'string' && typeof e.w === 'string');
-  if(!mine) return false;
+  const myDev = K._deviceId ? K._deviceId() : null;
+  const pourMoi = (e) => e && e.to === me && typeof e.iv === 'string' && typeof e.w === 'string';
+  const devEntry = myDev ? body.keys.find(e => pourMoi(e) && e.d === myDev && typeof e.fd === 'string') : null;
+  const mine = body.keys.find(e => pourMoi(e) && e.d === undefined);
+  if(!devEntry && !mine) return false;
   if(await K._grpLoadSenderKey(conv.id, sender, body.epoch, body.kid)) return true;
   if(!K._cryptoKeys){ try{ await _ensureCryptoKeys(); }catch(_){ } }
   if(!K._cryptoKeys) return false;
+  // v1.1.345 — entrée pour CET appareil : clé de l'appareil émetteur prise dans SA liste d'appareils déclarés ;
+  // distribution signée par cet appareil quand il a une clé de signature déclarée (sinon rien n'est adopté).
+  if(devEntry){
+    const dev = await K._deviceOf(sender, devEntry.fd);
+    if(dev && dev.identity_key_pub){
+      try{
+        let signe = false;
+        if(dev.signing_key_pub){
+          if(!(await ApexCrypto.groupVerifyKey(await ApexCrypto.importSigningPublicKey(dev.signing_key_pub), body, conv.id))) return false;
+          signe = true;
+        }
+        const wkd = await ApexCrypto.deriveGroupWrapKey(K._cryptoKeys.privateKey, await ApexCrypto.importPublicKey(dev.identity_key_pub));
+        const kd = await ApexCrypto.unwrapGroupSenderKey(wkd, devEntry, [conv.id, sender, me, body.epoch, body.kid, 'dev', devEntry.fd, myDev]);
+        await K._grpStoreSenderKey(conv.id, sender, body.epoch, body.kid, kd, signe);
+        await K._grpRetryPending(conv.id);
+        return true;
+      }catch(e){ _safeCatch('grp-key-dev', e); }
+    }
+  }
+  if(!mine || sender === me) return false;
   let mk = await K._grpMemberKey(sender);
   if(mk.status === 'nokey') mk = await K._grpMemberKey(sender, true);
   if(!mk.pub || mk.status === 'pending') return false;   // clé de l'émetteur changée non acceptée : rien n'est adopté
@@ -8555,7 +8605,9 @@ K._grpHandleKey = async function(conv, sender, body){
 };
 K._grpHandleRequest = async function(conv, requester, body){
   const me = K.user && K.user.id;
-  if(!me || requester === me || body.sender !== me || body.from !== requester) return false;
+  if(!me || body.sender !== me || body.from !== requester) return false;
+  // v1.1.345 : une demande de MOI vient d'un de mes AUTRES appareils (jamais de celui-ci) ; on lui répond par sa liste déclarée.
+  if(requester === me && (!body.d || body.d === (K._deviceId ? K._deviceId() : null))) return false;
   const tk = conv.id + '|' + requester;
   const now = Date.now();
   if(now - (K._grpAnsAt[tk] || 0) < 30000) return false;
@@ -8566,7 +8618,8 @@ K._grpHandleRequest = async function(conv, requester, body){
   if(!ep || !Array.isArray(ep.members) || ep.members.indexOf(requester) < 0) return false;   // pas membre à cette époque
   const members = await K._grpMembers(conv, true);                                            // liste FRAÎCHE
   if(!members || members.indexOf(requester) < 0) return false;                                // membre retiré : rien
-  const mk = await K._grpMemberKey(requester);
+  // Mes autres appareils : seulement ceux de MA liste déclarée (cf. _grpDistribute), sans clé de compte.
+  const mk = requester === me ? { status: 'ok', pub: null } : await K._grpMemberKey(requester);
   if(mk.status !== 'ok') return false;                                                        // clé changée non acceptée : rien
   K._grpAnsAt[tk] = now;
   const raw = await K._grpUnseal(ep.sealed);
@@ -8577,12 +8630,12 @@ K._grpHandleRequest = async function(conv, requester, body){
 };
 K._grpRequestKey = function(conv, sender, epoch, kid){
   const me = K.user && K.user.id;
-  if(!me || !sender || sender === me) return false;
+  if(!me || !sender) return false;   // v1.1.345 : sender === me = clé d'un de MES autres appareils
   const k = conv.id + '|' + sender + '|' + epoch + '|' + kid;
   const now = Date.now();
   if(now - (K._grpReqAt[k] || 0) < 60000) return false;
   K._grpReqAt[k] = now;
-  const wire = ApexCrypto.buildGroupKeyRequest({ from: me, sender, epoch, kid });
+  const wire = ApexCrypto.buildGroupKeyRequest({ from: me, sender, epoch, kid, d: K._deviceId ? K._deviceId() : undefined });
   K._dispatchWire(conv.id, { type: 'message', ciphertext: wire, mime: K._GRP_CTL_MIME, ts: now, id: 'gr_' + now + '_' + Math.random().toString(36).slice(2, 7) });
   return true;
 };
@@ -8633,7 +8686,7 @@ K._grpDecode = async function(conv, raw, meta){
   const me = K.user && K.user.id;
   const sender = meta.sender || null;
   if(pw.kind === 'key'){
-    if(pw.body && sender && sender !== me){
+    if(pw.body && sender){   // v1.1.345 : aussi une distribution de MES autres appareils
       // Mémorisée AVANT tout await : un message de groupe arrivé juste après l'attend.
       const p = K._grpHandleKey(conv, sender, pw.body).catch(e => { _safeCatch('grp-key', e); return false; });
       K._grpInflight[conv.id] = p;
@@ -8659,7 +8712,7 @@ K._grpDecode = async function(conv, raw, meta){
   const skRec = sender ? await K._grpIdbGet(K._grpSkId(conv.id, sender, pw.body.epoch, pw.body.kid)) : null;
   const key = (skRec && skRec.key) || null;
   if(!key){
-    if(!meta.retry && sender && sender !== me){ try{ K._grpRequestKey(conv, sender, pw.body.epoch, pw.body.kid); }catch(e){ _safeCatch('grp-request', e); } }
+    if(!meta.retry && sender){ try{ K._grpRequestKey(conv, sender, pw.body.epoch, pw.body.kid); }catch(e){ _safeCatch('grp-request', e); } }   // v1.1.345 : aussi à mes autres appareils
     return { text: K._GROUP_KEY_MISSING, encrypted: false, unencrypted: false, undecryptable: true, grp_pending: raw };
   }
   // v1.1.297 — AUTHENTICITÉ : émetteur à clé de signature → signature valide exigée AVANT
@@ -8669,10 +8722,17 @@ K._grpDecode = async function(conv, raw, meta){
   //  seuls les messages d'une époque distribuée AVANT la signature (v1.1.296) restent lus comme avant.
   let sigPub = null;
   try{ sigPub = await K._grpSenderSigKey(sender); }catch(e){ _safeCatch('grp-sig-key', e); sigPub = null; }
-  if(sigPub && (pw.body.sg !== undefined || skRec.sg === true)){
+  // v1.1.345 — une clé de signature par appareil : `sd` désigne l'appareil signataire ; sa clé vient de la liste
+  // des appareils DÉCLARÉS de l'émetteur (un `sd` inventé ne mène qu'à un refus).
+  let devSig = null;
+  if(pw.body.sd && sender){ try{ const dv = await K._deviceOf(sender, pw.body.sd); devSig = (dv && dv.signing_key_pub) || null; }catch(e){ _safeCatch('grp-sig-dev', e); } }
+  if((sigPub || devSig) && (pw.body.sg !== undefined || skRec.sg === true)){
     let ok = false;
-    try{ ok = await ApexCrypto.groupVerifyMsg(await ApexCrypto.importSigningPublicKey(sigPub), pw.body, { conv: conv.id, from: sender, ctxId }); }
-    catch(e){ _safeCatch('grp-sig-verify', e); ok = false; }
+    for(const cle of [devSig, sigPub]){
+      if(ok || !cle) continue;
+      try{ ok = await ApexCrypto.groupVerifyMsg(await ApexCrypto.importSigningPublicKey(cle), pw.body, { conv: conv.id, from: sender, ctxId }); }
+      catch(e){ _safeCatch('grp-sig-verify', e); ok = false; }
+    }
     if(!ok){
       // bundle relu (au plus 1×/min par membre) : une clé de signature changée passe « en attente » (bandeau).
       const now = Date.now();
@@ -9906,9 +9966,11 @@ K._publishDevice = async function(force){
     const pub = lg('crypto_pub', null);
     if(!pub || !K.token || !K.user) return false;
     const jour = new Date().toISOString().slice(0, 10);
-    const marque = [K.user.id, pub, K._deviceId(), jour].join('|');
+    let sig = null;   // v1.1.345 : clé de signature de CET appareil (groupes)
+    try{ sig = (typeof K._grpSigPub === 'function') ? await K._grpSigPub() : null; }catch(_e){ sig = null; }
+    const marque = [K.user.id, pub, K._deviceId(), jour, sig || ''].join('|');
     if(!force && lg('device_published', null) === marque) return true;
-    const corps = { device_id: K._deviceId(), identity_key_pub: pub, crypto_caps: K._CRYPTO_CAPS + ',' + K._MDEV_CAP, label: K._deviceLabel() };
+    const corps = { device_id: K._deviceId(), identity_key_pub: pub, crypto_caps: K._CRYPTO_CAPS + ',' + K._MDEV_CAP, label: K._deviceLabel(), ...(sig ? { signing_key_pub: sig } : {}) };
     let r = await K._api('POST', '/api/keys/device', corps);
     if(r && r.error === 'device_revoked'){
       // Cet appareil avait été retiré : il se représente sous un NOUVEL identifiant (ses anciens messages restent illisibles ici).
@@ -9916,7 +9978,7 @@ K._publishDevice = async function(force){
       corps.device_id = K._deviceId();
       r = await K._api('POST', '/api/keys/device', corps);
     }
-    if(r && r.ok){ ls('device_published', [K.user.id, pub, K._deviceId(), jour].join('|')); K._devCache = {}; return true; }
+    if(r && r.ok){ ls('device_published', [K.user.id, pub, K._deviceId(), jour, sig || ''].join('|')); K._devCache = {}; return true; }
   }catch(e){ _safeCatch('publish-device', e); }
   return false;
 };
@@ -9932,6 +9994,12 @@ K._devicesOf = async function(uid, force){
     K._devCache[uid] = { at: Date.now(), list };
     return list;
   }catch(e){ _safeCatch('devices-of', e); return c ? c.list : []; }
+};
+// v1.1.345 — un appareil DÉCLARÉ d'un compte (liste relue une fois s'il est inconnu). null = pas déclaré.
+K._deviceOf = async function(uid, deviceId){
+  if(!uid || !deviceId || !K._devicesOf) return null;
+  const f = (l) => (l || []).find((d) => d && d.device_id === deviceId) || null;
+  return f(await K._devicesOf(uid)) || f(await K._devicesOf(uid, true));
 };
 // Chiffre pour chaque appareil du correspondant ET chacun des miens. null = repli sur l'ancien format.
 K._mdevEncrypt = async function(conv, plaintext, kind, id){
@@ -19492,6 +19560,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.344", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.345", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

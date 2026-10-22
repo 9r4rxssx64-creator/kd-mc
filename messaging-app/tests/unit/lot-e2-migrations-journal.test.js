@@ -30,9 +30,11 @@ const RACINE = resolve(APP, '..');
 const journal = (db) => db.prepare(`SELECT filename, checksum, mode FROM ${JOURNAL} ORDER BY filename`).all().map((r) => ({ ...r }));
 const schema = (db) => db.prepare("SELECT type, name, sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' AND name <> '_migrations' ORDER BY type, name").all().map((r) => ({ ...r }));
 /** L'ancien procédé : chaque fichier exécuté tel quel, erreurs ignorées (= une base de prod d'avant le journal). */
-function ancienneBase() {
+// jusqua : une base de prod d'AVANT le journal n'a que les fichiers de cette époque (≤ AMORCE_JUSQUA) ; les suivants
+// (ex. 0028 : ALTER TABLE … ADD COLUMN, non rejouable) arrivent ensuite par le journal.
+function ancienneBase(jusqua) {
   const db = new DatabaseSync(':memory:');
-  for (const f of listerMigrations(MIG)) { try { db.exec(readFileSync(join(MIG, f), 'utf8')); } catch (_) { /* rejoué */ } }
+  for (const f of listerMigrations(MIG)) { if (jusqua && f > jusqua) continue; try { db.exec(readFileSync(join(MIG, f), 'utf8')); } catch (_) { /* rejoué */ } }
   return db;
 }
 function dossier(fichiers) {
@@ -74,7 +76,7 @@ describe('journal des migrations sur une vraie SQLite', () => {
   });
 
   it('amorçage d\'une base en service sans journal : fichiers anciens notés SANS être rejoués, les nouveaux exécutés', async () => {
-    const db = ancienneBase();
+    const db = ancienneBase(AMORCE_JUSQUA);
     db.exec("UPDATE users SET prekey_signed='GSIG1:x' WHERE id='kdmc_admin'");
     const r = await appliquer(executeurSqlite(db), MIG);
     expect(r.ok).toBe(true);

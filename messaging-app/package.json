@@ -1,6 +1,6 @@
 {
   "name": "apex-chat-messaging",
-  "version": "1.1.344",
+  "version": "1.1.345",
   "private": true,
   "type": "module",
   "description": "Apex Chat — PWA messagerie chiffrée privée Kevin DESARZENS",
@@ -18,7 +18,8 @@
     "test:runtime-admin": "node tests/runtime-admin-server-only.mjs",
     "test:fonctions-reelles": "node tools/fonctions-reelles.mjs",
     "test:ralliement-navigateur": "node tests/runtime-ralliement-reprise.mjs",
-    "test:cle-appareils-navigateur": "node tests/runtime-cle-par-appareil.mjs"
+    "test:cle-appareils-navigateur": "node tests/runtime-cle-par-appareil.mjs",
+    "test:groupe-appareils-navigateur": "node tests/runtime-groupe-appareils.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

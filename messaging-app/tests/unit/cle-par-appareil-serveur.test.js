@@ -107,3 +107,45 @@ describe('registre des appareils', () => {
     expect(rows).toEqual(['kdmc_admin']);
   });
 });
+
+describe('v1.1.345 — clé de signature par appareil (groupes)', () => {
+  const SIG = 'GSIG1:' + 'B'.repeat(88);
+  it("chaque appareil publie SA clé de signature ; tout membre la lit dans la liste ; une forme invalide est refusée", async () => {
+    const { env } = base();
+    expect((await appel(env, 'kevin', 'POST', '/api/keys/device', { device_id: 'kevin-iphone-01', identity_key_pub: CLE + 'A', signing_key_pub: SIG + 'A' })).j.ok).toBe(true);
+    expect((await appel(env, 'kevin', 'POST', '/api/keys/device', { device_id: 'kevin-pc-0000002', identity_key_pub: CLE + 'B', signing_key_pub: SIG + 'C' })).j.ok).toBe(true);
+    const vu = (await appel(env, 'remy', 'GET', '/api/keys/kevin/devices')).j.devices;
+    expect(vu.map((d) => d.signing_key_pub).sort()).toEqual([SIG + 'A', SIG + 'C']);
+    expect((await appel(env, 'kevin', 'POST', '/api/keys/device', { device_id: 'kevin-iphone-01', identity_key_pub: CLE + 'A', signing_key_pub: 'pas-une-cle' })).j.error).toBe('bad_signing_key');
+    expect((await appel(env, 'kevin', 'POST', '/api/keys/device', { device_id: 'kevin-iphone-01', identity_key_pub: CLE + 'A', signing_key_pub: 'GSIG1:' + 'x'.repeat(400) })).j.error).toBe('bad_signing_key');
+  });
+  it('republier sans clé de signature garde celle déjà connue', async () => {
+    const { env } = base();
+    await appel(env, 'kevin', 'POST', '/api/keys/device', { device_id: 'kevin-iphone-01', identity_key_pub: CLE + 'A', signing_key_pub: SIG + 'A' });
+    await appel(env, 'kevin', 'POST', '/api/keys/device', { device_id: 'kevin-iphone-01', identity_key_pub: CLE + 'A' });
+    expect((await appel(env, 'remy', 'GET', '/api/keys/kevin/devices')).j.devices[0].signing_key_pub).toBe(SIG + 'A');
+  });
+});
+
+describe('v1.1.345 — un compte effacé emporte ses appareils (aucune clé orpheline)', () => {
+  const nb = (DB, uid) => DB.raw.prepare('SELECT COUNT(*) c FROM user_devices WHERE user_id=?').get(uid).c;
+  it('« supprimer mon compte » efface ses appareils, et l\'export RGPD les liste avant', async () => {
+    const { DB, env } = base();
+    await appel(env, 'remy', 'POST', '/api/keys/device', { device_id: 'remy-iphone-0001', identity_key_pub: CLE + 'R', label: 'iPhone' });
+    expect(nb(DB, 'remy')).toBe(1);
+    const exp = await worker.fetch(makeRequest({ method: 'GET', path: '/api/users/me/export', token: await tok('remy') }), env, CTX);
+    expect((await exp.json()).devices.map((d) => d.device_id)).toEqual(['remy-iphone-0001']);
+    const r = await worker.fetch(makeRequest({ method: 'DELETE', path: '/api/users/me', token: await tok('remy'), body: { confirm: 'SUPPRIMER' } }), env, CTX);
+    expect(r.status).toBe(200);
+    expect(nb(DB, 'remy')).toBe(0);
+  });
+  it('le nettoyage des comptes du robot de tests efface aussi leurs appareils', async () => {
+    const { DB, env } = base();
+    seedUser(DB, 'robot-e2e', { source: 'e2e-test' });
+    await appel(env, 'robot-e2e', 'POST', '/api/keys/device', { device_id: 'robot-iphone-001', identity_key_pub: CLE + 'X' });
+    expect(nb(DB, 'robot-e2e')).toBe(1);
+    const r = await worker.fetch(makeRequest({ method: 'POST', path: '/api/test/cleanup', extraHeaders: { 'X-Test-Auth': 'admin-secret' } }), env, CTX);
+    expect(r.status).toBe(200);
+    expect(nb(DB, 'robot-e2e')).toBe(0);
+  });
+});

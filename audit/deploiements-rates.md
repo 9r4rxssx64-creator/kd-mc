@@ -7,46 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ Deploy Apex Chat (Cloudflare Workers) — 22/10/2026 15:14 UTC
-
-- **Branche** : `main` · **Commit** : `a6efabf3` · **Run** : `39802533926`
-- **Ce qui a lâché** : Tests unitaires du commit (porte avant déploiement) › Tests + seuils de couverture (vitest.config.js)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/39802533926
-- **Ce que la machine a dit** :
-
-```
-^[[90mstderr^[[2m | tests/unit/api-worker-otp.test.js^[[2m > ^[[22m^[[2mhandleSendOtp — validation^[[2m > ^[[22m^[[2mTextBelt fail → inline OTP fallback
-^[[22m^[[39m[sendPushToUser] web-push failed: HTTP error
-^[[22m^[[39mQueue consumer error Error: timecapsule push failed (1 envoi(s))
-^[[22m^[[39mAPI error /api/stories GET no such table: stories Error: no such table: stories
-^[[22m^[[39mDaily backup failed ni BACKUP_ENCRYPTION_KEY ni JWT_SIGN_KEY : refus d'écrire une sauvegarde en clair
-^[[22m^[[39mAPI error /api/system/config GET db sql crash Error: db sql crash
-^[[22m^[[39m::warning::wrangler d1 essai 1/3 : ✘ [ERROR] D1_ERROR: Internal error, please try again (code 7500)
-^[[22m^[[39mQueue consumer error Error: DB fail
-     ^[[33m^[[2m✓^[[22m^[[39m l'étape « Apply D1 migrations » du workflow, jouée en bash : journal posé, rejeu à vide, échec = sortie ≠ 0^[[33m 8027^[[2mms^[[22m^[[39m
-^[[22m^[[39mDaily backup failed env.APEX_CHAT_MEDIA.put is not a function
-^[[22m^[[39mDaily backup failed env.APEX_CHAT_MEDIA.put is not a function
-^[[22m^[[39m[summarize] groq failed: Groq 500
-^[[22m^[[39m[summarize] anthropic failed: Anthropic 500
-^[[22m^[[39m[summarize] groq failed: Groq 500
-^[[22m^[[39m[summarize] anthropic failed: Anthropic 500
-^[[22m^[[39m[summarize] groq failed: Groq 500
-^[[22m^[[39m[summarize] anthropic failed: Anthropic 500
-^[[22m^[[39m[summarize] groq failed: Groq 500
-^[[22m^[[39m[summarize] anthropic failed: Anthropic 500
-^[[22m^[[39m[sendPushToUser] web-push failed: push down
-^[[90mstderr^[[2m | tests/unit/lot-j-fiabilite-file.test.js^[[2m > ^[[22m^[[2mcapsule temporelle : fin des essais sans fin^[[2m > ^[[22m^[[2méchue depuis moins de 24 h et envoi en échec → nouvel essai (comme avant)
-^[[22m^[[39m[sendPushToUser] web-push failed: HTTP error
-^[[90mstderr^[[2m | tests/unit/lot-j-fiabilite-file.test.js^[[2m > ^[[22m^[[2mcapsule temporelle : fin des essais sans fin^[[2m > ^[[22m^[[2méchue depuis moins de 24 h et envoi en échec → nouvel essai (comme avant)
-^[[22m^[[39mQueue consumer error Error: timecapsule push failed (1 envoi(s))
-^[[90mstderr^[[2m | tests/unit/lot-j-fiabilite-file.test.js^[[2m > ^[[22m^[[2mcapsule temporelle : fin des essais sans fin^[[2m > ^[[22m^[[2méchue depuis plus de 24 h et envoi toujours en échec → close, plus jamais réessayée
-^[[22m^[[39m[sendPushToUser] web-push failed: HTTP error
-   ^[[32m✓^[[39m sso-from-kdmc : un raté ponctuel du domaine ne refuse pas la personne ^[[2m(6)^[[22m
-     ^[[33m^[[2m✓^[[22m^[[39m panne durable : refus après deux essais seulement (pas de boucle)^[[33m 412^[[2mms^[[22m^[[39m
-ERROR: Coverage for functions (98.97%) does not meet "workers/api-worker.js" threshold (99%) for workers/api-worker.js
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -568,4 +528,17 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
+##[error]Process completed with exit code 1.
 ```

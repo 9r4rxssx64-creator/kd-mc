@@ -43,6 +43,42 @@ describe('ralliement du compte Kevin en double', () => {
       expect(await K._ralliementKevin()).toBe(false); expect(K.login).not.toHaveBeenCalled();
     }
   });
+  it("app installée (cookies isolés, Face ID de Safari invisible) : pass du domaine relu d'abord, puis UN aller-retour Face ID par le portail, une fois par 6 h", async () => {
+    vi.useFakeTimers();
+    try {
+      localStorage.removeItem('kdmc_ralliement_bounce_ts');
+      const ordre = [];
+      const { K, sso, toasts } = monter(DOUBLON, null);
+      K._domainePass = vi.fn(async () => { ordre.push('pass'); return null; });
+      K._kdmcBounceToLogin = vi.fn(() => { ordre.push('aller-retour'); return true; });
+      sso.mockImplementation(async () => { ordre.push('sso'); return null; });
+      expect(await K._ralliementKevin()).toBe(false);
+      expect(K._kdmcBounceToLogin).not.toHaveBeenCalled();           // pas avant le petit délai (le message se lit)
+      await vi.advanceTimersByTimeAsync(1600);
+      expect(ordre).toEqual(['pass', 'sso', 'aller-retour']);       // le pass du domaine est relu AVANT le contrôle
+      expect(K._kdmcBounceToLogin).toHaveBeenCalledWith(true);
+      expect(toasts.join()).toMatch(/Face ID/);
+      // une 2e ouverture dans les 6 h : pas de nouvel aller-retour
+      const b = monter(DOUBLON, null); b.K._domainePass = async () => null; b.K._kdmcBounceToLogin = vi.fn(() => true);
+      await b.K._ralliementKevin(); await vi.advanceTimersByTimeAsync(1600);
+      expect(b.K._kdmcBounceToLogin).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); localStorage.removeItem('kdmc_ralliement_bounce_ts'); }
+  });
+  it("au retour du portail (?_ssob=1) ou si le rattachement réussit : aucun nouvel aller-retour (jamais de boucle)", async () => {
+    vi.useFakeTimers();
+    try {
+      localStorage.removeItem('kdmc_ralliement_bounce_ts');
+      const ancien = location.search;
+      history.replaceState(null, '', '/?_ssob=1');
+      const a = monter(DOUBLON, null); a.K._domainePass = async () => null; a.K._kdmcBounceToLogin = vi.fn(() => true);
+      await a.K._ralliementKevin(); await vi.advanceTimersByTimeAsync(1600);
+      expect(a.K._kdmcBounceToLogin).not.toHaveBeenCalled();
+      history.replaceState(null, '', '/' + ancien);
+      const b = monter(DOUBLON, { token: 'T2', user: { id: 'kdmc_admin' } }); b.K._domainePass = async () => null; b.K._kdmcBounceToLogin = vi.fn(() => true);
+      expect(await b.K._ralliementKevin()).toBe(true); await vi.advanceTimersByTimeAsync(1600);
+      expect(b.K._kdmcBounceToLogin).not.toHaveBeenCalled();
+    } finally { vi.useRealTimers(); localStorage.removeItem('kdmc_ralliement_bounce_ts'); history.replaceState(null, '', '/'); }
+  });
   it('lancé 3 s après chaque connexion', () => {
     expect(html).toMatch(/K\._postLogin = function\(\)\{\n  if\(!K\.user\) return;\n  setTimeout\(\(\) => \{ try \{ K\._ralliementKevin && K\._ralliementKevin\(\); \} catch\(_\) \{\} \}, 3000\);/);
   });

@@ -4,6 +4,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.338 (2026-10-22 — la fusion des comptes de Kevin marche aussi depuis l'app installée)
+
+- MESURÉ : après son Face ID dans Safari, les 3 comptes Apex Chat de Kevin restaient séparés (conversations de Laurence et Rémi invisibles sur son iPhone). L'app installée a ses propres cookies : le Face ID de Safari ne l'atteint pas, et la page présentait un vieux pass non prouvé.
+- `K._ralliementKevin` relit d'abord le pass du domaine, puis fait UN aller-retour Face ID par le portail si le vrai compte n'est pas rendu (une fois par 6 h, jamais au retour). Test `ralliement-kevin.test.js`. Leçon 713.
+- Nettoyage : 35 comptes `temps-reel`, 20 groupes d'essai et 152 messages laissés par le robot sont effacés (mon contrôle précédent cherchait le mauvais champ).
+
+
 ## Domaine — audit 22.10 (pont 197), points 2 et 4 — 2026-10-22
 
 - CORS : push, auth, proxy de secrets ne répondent plus `Access-Control-Allow-Origin: *` ; seulement kd-mc.com et sous-domaines, github.io, app installée, local (+ `Vary: Origin`). Coffre R2 : accepte aussi kd-mc.com. Test `verify-cors-domaine.mjs` (28 contrôles).

@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.337",
+  "softwareVersion": "v1.1.338",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.337';
+const __APEX_CHAT_VERSION__ = 'v1.1.338';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.337" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.337</div>
+  <div id="splash-version" data-ver="v1.1.338" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.338</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.337</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.338</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -17563,8 +17563,23 @@ K._ralliementKevin = async function(){
     if(!u || u.id === 'kdmc_admin' || !u.is_admin || !u.is_kevin_alias || u.source !== 'kdmc-sso') return false;
     if(K._ralliementKevinFait) return false;
     K._ralliementKevinFait = true;                       // une seule tentative par chargement de page
+    /* 22.10.2026 (Kevin : « Face ID fait, toujours pareil » ; app installée sur l'écran d'accueil) — mesuré en base : après son Face ID dans Safari, rien ne bougeait. Une app installée a des cookies à
+       elle : le Face ID de Safari ne l'atteint pas, et le vieux pass gardé dans la page (non prouvé) était présenté à la place → « Face ID requis ». Deux changements : (1) on relit d'abord le pass du
+       domaine (cookie) quand il existe ; (2) si le domaine ne rend toujours pas le vrai compte, UN aller-retour par le portail (Face ID dans l'app elle-même), au plus une fois toutes les 6 h. */
+    try{ if(typeof K._domainePass === 'function') await K._domainePass(); }catch(_e){ /* pas de cookie : on garde le pass en mémoire */ }
     const r = await _authSsoFromKdmc();
-    if(!(r && r.token && r.user && r.user.id === 'kdmc_admin')) return false;
+    if(!(r && r.token && r.user && r.user.id === 'kdmc_admin')){
+      try{
+        const dejaRevenu = /[?&]_ssob=1/.test((typeof location !== 'undefined' && location.search) || '');
+        const dernier = Number((typeof localStorage !== 'undefined' && localStorage.getItem('kdmc_ralliement_bounce_ts')) || 0);
+        if(!dejaRevenu && typeof K._kdmcBounceToLogin === 'function' && Date.now() - dernier > 6 * 3600e3){
+          localStorage.setItem('kdmc_ralliement_bounce_ts', String(Date.now()));
+          try{ toast('🔐 Face ID demandé pour réunir tes comptes…', 'ok', 2500); }catch(_e){ /* écran sans toast */ }
+          setTimeout(() => { try{ K._kdmcBounceToLogin(true); }catch(_e){ _safeCatch('ralliement-bounce', _e); } }, 1500);
+        }
+      }catch(_e){ _safeCatch('ralliement-bounce-garde', _e); }
+      return false;
+    }
     await K.login(r.user, r.token);
     try{ await K._refreshConvs(); }catch(_e){ _safeCatch('ralliement-liste', _e); }
     try{ K._fetchContacts(true); }catch(_e){ _safeCatch('ralliement-contacts', _e); }
@@ -19206,6 +19221,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.337", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.338", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

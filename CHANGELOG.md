@@ -4,6 +4,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Domaine — audit 22.10 (pont 197), points 2 et 4 — 2026-10-22
+
+- CORS : push, auth, proxy de secrets ne répondent plus `Access-Control-Allow-Origin: *` ; seulement kd-mc.com et sous-domaines, github.io, app installée, local (+ `Vary: Origin`). Coffre R2 : accepte aussi kd-mc.com. Test `verify-cors-domaine.mjs` (28 contrôles).
+- kdmc-outlook / kdmc-mail : 404 aux chemins inconnus (au lieu de 200) ; page de réglage Outlook avec CSP, X-Frame-Options, nosniff. 
+- Point 3 (racine du proxy de secrets) volontairement laissée : lue sans PIN par Apex AI. Leçon 710.
+
+
 ## Domaine (routeur) + Apex Chat (serveur) — 2026-10-22 — le refus d'un pass dit pourquoi
 
 - MESURÉ : le robot ne fait entrer qu'une personne sur deux (2 passages sur 3), alors que le domaine la reconnaît dans le navigateur ; `/__sso/whoami` répondait `{ok:false}` sans motif.

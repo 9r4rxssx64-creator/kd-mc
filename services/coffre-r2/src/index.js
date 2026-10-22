@@ -20,6 +20,8 @@ const MAX_BYTES = 200 * 1024 * 1024; // 200 Mo / objet (chunké côté client au
 
 function originAllowed(origin) {
   if (!origin) return false;
+  /* Audit du domaine 22.10.2026 (pont 197, point 2) : kd-mc.com et ses sous-domaines étaient refusés (seul github.io passait). */
+  if (/^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/.test(origin)) return true;
   return ALLOW_ORIGINS.some((o) => origin === o || origin.startsWith(o + ":") || origin.startsWith(o + "/"));
 }
 function corsHeaders(origin) {

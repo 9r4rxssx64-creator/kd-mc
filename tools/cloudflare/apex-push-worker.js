@@ -30,14 +30,28 @@ const APEX_PATH = "/apex/ax_push_subs.json"; // chemin Firebase Realtime DB
 const APEX_HISTORY_PATH = "/apex/ax_push_history.json";
 const APEX_STATS_PATH = "/apex/ax_push_stats.json";
 
+/* Audit du domaine 22.10.2026 (pont 197, point 2) : ce worker répondait `Access-Control-Allow-Origin: *` à n'importe quel site. Il ne répond plus que pour le domaine
+   (kd-mc.com et ses sous-domaines), le dépôt github.io, l'app installée (capacitor/ionic) et le développement local ; un autre site ne reçoit aucun en-tête CORS. */
+const ORIGINE_DOMAINE = /^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/;
+const ORIGINES_EXACTES = ["https://9r4rxssx64-creator.github.io", "capacitor://localhost", "ionic://localhost"];
+export function origineAutorisee(o) {
+  if (!o) return false;
+  return ORIGINE_DOMAINE.test(o) || ORIGINES_EXACTES.indexOf(o) >= 0 || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o);
+}
+export function corsPour(request, base) {
+  const h = { ...base, "Vary": "Origin" };
+  const o = request.headers.get("Origin");
+  if (origineAutorisee(o)) h["Access-Control-Allow-Origin"] = o;
+  return h;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const cors = {
-      "Access-Control-Allow-Origin": "*",
+    const cors = corsPour(request, {
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization"
-    };
+    });
     if (request.method === "OPTIONS") return new Response(null, { headers: cors });
 
     // Health check public

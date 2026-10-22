@@ -128,6 +128,8 @@ await page.addInitScript(() => {
   try { const sp = speechSynthesis.speak.bind(speechSynthesis); speechSynthesis.speak = (u) => { try { window.__entendus.push(String(u.text || '')); } catch {} return sp(u); }; } catch {}
 });
 const erreurs = [], echecs = [];
+/* « Quitter la leçon ? » est une boîte du navigateur (confirm) : refusée d'office par Playwright. Sur le compte jetable, on l'accepte comme le ferait la personne. */
+if (JETABLE) page.on('dialog', (d) => { d.accept().catch(() => {}); });
 /* ce que l'IA a VRAIMENT répondu (statut + raison), vu du navigateur — sert aussi en --jetable, où la garde d'écriture est coupée et ne compte plus */
 const reponsesIA = [];
 page.on('response', async (r) => { try { const u = new URL(r.url()); if (u.pathname !== '/__lingua/ai' || r.request().method() !== 'POST') return;
@@ -320,7 +322,11 @@ try {
       await clic('.ap-raccroche');
       await page.waitForFunction(() => /Ton bilan|Bilan indisponible|Aucune faute/.test((document.querySelector('.ap-bilan') || {}).innerText || ''), null, { timeout: 30000 }).catch(() => {});
       const bil = await page.evaluate(() => { const b = document.querySelector('.ap-bilan'); return b ? { t: /Ton bilan|Aucune faute/.test(b.innerText), corr: b.querySelectorAll('.ap-corr').length } : null; }).catch(() => null);
-      chk(bil && bil.t, `bilan de fin d'appel affiché (${bil ? bil.corr : 0} correction(s))`, 'bilans IA vus : ' + JSON.stringify(reponsesIA.filter((x) => x.mode === 'appel-bilan').slice(0, 3)));
+      const bilIA = reponsesIA.filter((x) => x.mode === 'appel-bilan');
+      const iaAbsente = bilIA.length > 0 && bilIA.every((x) => x.statut === 200 && x.ok === false && x.raison === 'ai_absent');
+      const honnete = await page.evaluate(() => /Bilan indisponible/.test((document.querySelector('.ap-bilan') || {}).innerText || '')).catch(() => false);
+      if (!(bil && bil.t) && iaAbsente && honnete) gris('bilan de fin d\'appel : l\'IA gratuite n\'a pas répondu dans le délai (ai_absent) — l\'écran le dit honnêtement (« Bilan indisponible… XP comptés »), à relancer');
+      else chk(bil && bil.t, `bilan de fin d'appel affiché (${bil ? bil.corr : 0} correction(s))`, 'bilans IA vus : ' + JSON.stringify(bilIA.slice(0, 3)));
       await capture(page, 'appel-bilan');
       await clic('.ap-fin .btn-main'); await attends(600);
     } else gris('bouton « Appeler maintenant » introuvable dans les réglages d\'appel');
@@ -364,7 +370,9 @@ try {
     const lanceR = await page.evaluate(async () => { const b = [...document.querySelectorAll('.review-card button')].find((x) => /Révision libre|Révision du jour|Réviser maintenant/i.test(x.textContent)); if (!b) return false; b.click(); await new Promise((r) => setTimeout(r, 1200)); return !!document.querySelector('.lesson-body'); }).catch(() => false);
     chk(lanceR, 'Réviser : une révision démarre vraiment (écran de leçon)');
     await fermerModales();
-    await page.evaluate(() => { const q = document.querySelector('.quit'); if (q) q.click(); }).catch(() => {}); await attends(600); await fermerModales();
+    await page.evaluate(() => { const q = document.querySelector('.quit'); if (q) q.click(); }).catch(() => {}); await attends(600);
+    await page.evaluate(() => { const m = document.querySelector('.overlay.show, .modal'); const b = m && [...m.querySelectorAll('button')].find((x) => /Quitter|Oui|Arrêter|Abandonner/i.test(x.textContent || '')); if (b) b.click(); }).catch(() => {}); await attends(700);
+    if (!(await retour())) ko('retour impossible à l\'accueil depuis la révision');
     await onglet('Ligue'); await attends(900);
     const lig = await texte(); chk(/Ligue|XP|semaine/i.test(lig) && lig.length > 60, 'Ligue : le classement de la semaine s\'affiche');
     await onglet('Profil'); await attends(900);

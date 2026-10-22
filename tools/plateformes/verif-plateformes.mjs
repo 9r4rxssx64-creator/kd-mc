@@ -88,7 +88,7 @@ async function mesure2(moteur, ap, navLog) {
   const touch = !!(opts.hasTouch);
   const sortie = { tPret, touch, vues: {} };
   for (const vue of ['proche', 'lignee', 'tree']) {
-    await p.evaluate((v) => { try { if (v === 'tree') VIEWSTYLE = 'arbre'; else if (v === 'lignee') VIEWSTYLE = 'lignee'; } catch (e) { /* page pas prête */ } const b = document.querySelector('.tab[data-view="' + (v === 'proche' ? 'proche' : 'tree') + '"]'); if (b) b.click(); }, vue);
+    await rejouer(() => p.evaluate((v) => { try { if (v === 'tree') VIEWSTYLE = 'arbre'; else if (v === 'lignee') VIEWSTYLE = 'lignee'; } catch (e) { /* page pas prête */ } const b = document.querySelector('.tab[data-view="' + (v === 'proche' ? 'proche' : 'tree') + '"]'); if (b) b.click(); }, vue));
     await p.waitForTimeout(vue === 'proche' ? 700 : 1400);
     sortie.vues[vue] = await rejouer(() => p.evaluate(() => {
       const R = (e) => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, r: r.right, b: r.bottom, w: r.width, h: r.height }; };
@@ -159,6 +159,7 @@ for (const ap of MATRICE) {
       ok(v.chev.length === 0, `${t} : aucun contrôle ne chevauche un autre` + (v.chev.length ? ' — ' + v.chev.join(',') : ''));
       if (m.touch) ok(v.minBtn >= 40, `${t} : boutons de zoom et onglets ≥ 40 px au toucher (${Math.round(v.minBtn)})`);
       if (v.st) ok(v.st.h >= v.H * 0.45, `${t} : la scène fait ≥ 45 % de la hauteur (${Math.round(v.st.h)} sur ${v.H})`);
+      if (v.st && vue === 'tree') ok(v.st.h >= v.H * 0.8, `${t} : L'ARBRE D'ABORD — la scène prend ≥ 80 % de la hauteur de l'écran (${Math.round(100 * v.st.h / v.H)} %)`);
       ok(v.sansAlt === 0, `${t} : aucune image sans attribut alt (${v.sansAlt})`);
     }
     if (m.zoom && !m.zoom.err) {

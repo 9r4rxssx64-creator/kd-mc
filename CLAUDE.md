@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 229 règles — le texte de Kevin, une par une
+## 📜 Les 230 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1004,6 +1004,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🧪 RÈGLE ABSOLUE — TOUT TESTER, PARTOUT, TOUT LE TEMPS (ordinateur, iPhone, Android, toutes les plateformes), ET NE PLUS JAMAIS ÉCRIRE « NON TESTÉ » : CE QUE JE NE PEUX PAS FAIRE, LE LENOVO OU UN ROBOT GRATUIT LE FAIT (Kevin 2026-10-22, ABSOLUE, TOUTES LES BRANCHES)
 **« Il faut que tu fasses absolument toutes les vérifications tout le temps, à chaque travail demandé, à chaque audit… et tu testes toujours tout sur l'ordinateur, iPhone, Android, toutes les […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tout-tester-partout-tout-le-temps-ordinateur-iphone-android-toutes-les-plateformes-et-ne-plus-jamais-écrire-non-testé-ce-que-je-ne-peux-pas-faire-le-lenovo-ou-un-robot-gratuit-le-fait-kevin-2026-10-22-absolue-toutes-les-branches)
+
+### 🔎 RÈGLE ABSOLUE — ARBRE : CHERCHER PHOTOS, PRESSE, GUERRE ET DOCUMENTS POUR TOUT LE MONDE, PARTOUT, ET REPARTIR SUR TOUTE NOUVELLE FAMILLE À CHAQUE NOUVEAU NOM (Kevin 2026-10-22, ABSOLUE, TOUTES LES BRANCHES)
+**« Je ne vois pas de photos à part celles que j'ajoute moi. Il faudrait en récupérer un maximum pour tout le monde. Peu importe la source, tant qu'elle est vraie et qu'on reconnaît la personne […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-chercher-photos-presse-guerre-et-documents-pour-tout-le-monde-partout-et-repartir-sur-toute-nouvelle-famille-à-chaque-nouveau-nom-kevin-2026-10-22-absolue-toutes-les-branches)
 
 ---
 

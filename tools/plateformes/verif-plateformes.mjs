@@ -137,5 +137,9 @@ for (const ap of MATRICE) {
 for (const b of Object.values(lanceurs)) await b.close();
 srv.close();
 console.log(`\n${n - ko}/${n} contrôles OK` + (ko ? ` — ${ko} rouge(s) :\n  - ` + rouges.join('\n  - ') : ''));
+if (process.env.GITHUB_ACTIONS) { /* annotations : lisibles par l'API même quand le journal ne se télécharge pas */
+  for (const r of rouges.slice(0, 40)) console.log('::error title=plateformes::' + r.replace(/[\r\n]+/g, ' ').slice(0, 400));
+  console.log('::notice title=plateformes::' + (n - ko) + '/' + n + ' contrôles OK ; moteurs : ' + Object.keys(lanceurs).join(', '));
+}
 console.log('Moteurs lancés : ' + Object.keys(lanceurs).join(', ') + (Object.keys(lanceurs).length < 3 ? '  (webkit/firefox : robot du dépôt public)' : ''));
 process.exit(ko ? 1 : 0);

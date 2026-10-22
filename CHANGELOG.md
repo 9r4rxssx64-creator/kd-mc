@@ -45,6 +45,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Trouvé en vrai navigateur : à la RÉOUVERTURE (session gardée), l'appareil ne publiait jamais sa clé → corrigé.
 - Preuves : vitest 2267 verts, couverture 100 % `crypto-core` ; vrai Chromium 3 appareils `runtime-cle-par-appareil.mjs` 8/8 (1/8 avec la 1.1.342). Leçon 722. Limites : anciens messages restent illisibles ; médias et groupes = phase 2.
 
+## CMCteams v9.981 (2026-10-22 — la sortie « ← Portail » est dans la barre du haut)
+- Un lien « ← Portail » (ou ⌂ quand la flèche Retour est là) dans la barre du haut, 44 px : la pastille du routeur, qui recouvrait la bannière du pit boss quand l'accueil s'ouvrait tard, se retire dès que le lien est là.
+
 ## Light v1.110 (2026-10-22 — les boutons de la light se touchent au doigt)
 - « Équipe miroir → / Aller à mon équipe → », la pastille de version et la ligne de diagnostic font maintenant au moins 44 px de haut (mesuré au robot « formats » : 124×27, 58×24 et 25 px avant).
 

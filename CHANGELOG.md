@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex AI v13.4.381 (2026-10-22 — 5 erreurs de moins à chaque ouverture)
+- Les documents gardés au coffre privé (NOTES_USER, MEMO_RESUME, KEVIN_INVENTORY, KEVIN_ACTIONS_TODO, MEMORY_PERSISTENT, mémoire Apex) ne sont plus demandés au relais, qui lit le dépôt public : 5 × HTTP 404 en moins à chaque ouverture (audit Apex AI, tâche 21). Garde test:apex-docs-prives ; 12 547 tests Apex verts.
+
 ## Apex Chat v1.1.345 (2026-10-22 — groupes : chaque appareil de chaque membre lit et signe)
 
 - Avant : la clé d'envoi d'un groupe était emballée pour UNE clé par membre (la dernière publiée) → le PC de Kevin ne recevait pas la clé (« 🔒 clé de groupe pas encore reçue »), et une seule clé de signature par compte → les messages de son autre appareil arrivaient « ⚠️ message non authentifié ».

@@ -50,6 +50,22 @@ export const CLE_RELAIS = 'ax_github_proxy_url';
  */
 export const RELAIS_PAR_DEFAUT = 'https://apex-depot-relais.9r4rxssx64.workers.dev';
 
+/**
+ * Documents gardés au COFFRE privé : le relais lit le dépôt PUBLIC, où ils n'existent pas (volontairement —
+ * tools/depot-public/regles.json, « prive_toujours »). Mesuré le 22.10.2026 (audit Apex AI, tâche 21) :
+ * 5 × HTTP 404 sur le relais à chaque ouverture, pour rien (requêtes du plafond gratuit Workers + bruit).
+ * On ne les demande donc plus au relais. Garde : tests/verify-apex-docs-prives.mjs (chaque document lu par
+ * Apex qui est privé dans regles.json doit être ici).
+ */
+export const DOCS_PRIVES: ReadonlySet<string> = new Set([
+  'NOTES_USER.md',
+  'MEMO_RESUME.md',
+  'KEVIN_INVENTORY.md',
+  'KEVIN_ACTIONS_TODO.md',
+  'MEMORY_PERSISTENT.md',
+  'tools/memory/apex-memory.json',
+]);
+
 function estAdresseValable(v: string): boolean {
   /* Uniquement https, et rien d'autre : une adresse bancale enverrait les
      lectures n'importe où. En cas de doute → pas de relais, lecture
@@ -125,6 +141,10 @@ export async function lireFichierDetaille(
   chemin: string,
   opts?: { branche?: string; timeoutMs?: number },
 ): Promise<{ contenu: string | null; statut: number; raison: string }> {
+  const propre = String(chemin || '').replace(/^\/+/, '');
+  if (adresseRelais() && DOCS_PRIVES.has(propre)) {
+    return { contenu: null, statut: 0, raison: `Document privé (gardé au coffre, pas servi par le relais) : ${propre}` };
+  }
   const url = urlLecture(chemin, opts?.branche ?? 'main');
   const ctrl = new AbortController();
   const minuteur = setTimeout(() => ctrl.abort(), opts?.timeoutMs ?? 12_000);

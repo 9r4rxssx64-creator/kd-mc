@@ -21,6 +21,8 @@ import {
   CLE_RELAIS,
   DEPOT,
   RELAIS_PAR_DEFAUT,
+  DOCS_PRIVES,
+  lireFichierDetaille,
 } from '../../services/integrations/depot-github.js';
 
 describe('depot-github — choix de l’adresse', () => {
@@ -76,6 +78,19 @@ describe('depot-github — la lecture ne fait jamais planter Apex', () => {
   it('un 404 rend null au lieu de lever une erreur', async () => {
     globalThis.fetch = vi.fn(async () => new Response('Not Found', { status: 404 })) as never;
     await expect(lireFichier('CLAUDE.md')).resolves.toBeNull();
+  });
+
+  it('22.10 (tâche 21) : un document PRIVÉ (gardé au coffre) n est jamais demandé au relais — 0 requête, raison claire', async () => {
+    const f = vi.fn(async () => new Response('Not Found', { status: 404 }));
+    globalThis.fetch = f as never;
+    for (const doc of DOCS_PRIVES) {
+      const r = await lireFichierDetaille(doc);
+      expect(r.contenu).toBeNull();
+      expect(r.raison).toMatch(/privé/);
+    }
+    expect(f).not.toHaveBeenCalled();
+    await lireFichier('CLAUDE.md');
+    expect(f).toHaveBeenCalledTimes(1); /* un document publié, lui, est bien lu */
   });
 
   it('une coupure réseau rend null au lieu de lever une erreur', async () => {

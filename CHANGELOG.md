@@ -10,6 +10,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - « telemetry pushIncoming persist failed » (mémoire pleine) : file locale limitée à 50 entrées réduites ; si la mémoire refuse encore, 10 entrées, puis la file est vidée (Firebase a la copie). Tâches 22 et 4 du pont.
 - Preuves : `tests/unit/coffre-jeton-recharge.test.ts` 9/9 ; contre l'ancien code 6 rouges sur 8 (et 3 pour le seul fichier Gist). Leçon 739.
 
+## Apex AI v13.4.384 (2026-10-22 — fin de la notification « 1 clés restaurées » à chaque ouverture)
+- Une clé mal rangée déplacée vers sa bonne case est notée « retirée » : la sauvegarde ne la remet plus (fin de la boucle déplacement / restauration, plus de copie de secours empilée à chaque ouverture).
+- Bouton « Sync maintenant » : le message nomme le service et la cause (« GitHub Gist : clé absente du Coffre »…).
+- Notification « 1 clé restaurée » en français simple, seulement quand une clé est vraiment récupérée.
+- Relecture des documents : les documents gardés au coffre ne comptent plus comme échecs (fin de l'alerte « 4 doc(s) fetch failed »).
+
 ## Staging v0.1.1 + routeur (2026-10-22 — en-têtes de sécurité, bulle de version)
 - Routeur : chaque page HTML du domaine qui n'en a pas reçoit `Permissions-Policy` (caméra/micro/partage d'écran = la page et Jitsi ; pistage publicitaire coupé) et une CSP de base (`base-uri`, `object-src`, `frame-ancestors`), sans aucune règle de script. Tâche 29 du pont.
 - Staging v0.1.1 : la bulle partagée de version (mise à jour forcée) est chargée — `test:bulles-partout` était rouge sur `main` depuis l'ajout de staging.

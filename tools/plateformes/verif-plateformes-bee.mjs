@@ -34,6 +34,7 @@ const srv = http.createServer((q, r) => {
   const p = decodeURIComponent(new URL(q.url, 'http://x').pathname);
   if (p === '/__sso/whoami') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end(JSON.stringify({ ok: true, uid: 'kdmc_admin', name: 'Kevin DESARZENS', verified: true, admin: true })); }
   if (p === '/__javis/ai') { let c = ''; q.on('data', (d) => { c += d; }); q.on('end', () => { QUESTIONS.push(c); r.writeHead(200, { 'content-type': 'application/json' }); r.end(JSON.stringify({ ok: true, provider: 'qwen', gratuit: true, text: 'Coucou Kevin, tout va bien !' })); }); return; }
+  if (p === '/temoin.html') { const csp = (fs.readFileSync(path.join(BEE, 'index.html'), 'utf8').match(/<meta http-equiv="Content-Security-Policy" content="([^"]*)"/) || [])[1] || "default-src 'self'"; r.writeHead(200, { 'content-type': MIME['.html'] }); return r.end('<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="' + csp + '"><title>Témoin</title><p>Témoin</p>'); }
   if (p === '/hote.html') { r.writeHead(200, { 'content-type': MIME['.html'] }); return r.end(HOTE); }
   const f = path.join(BEE, p === '/' ? 'index.html' : p.replace(/^\//, ''));
   if (!f.startsWith(BEE) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); return r.end('nope'); }
@@ -76,9 +77,9 @@ const MESURE = () => {
   return o;
 };
 
-async function surface(page, nom, plat, moteur, mode, tact) {
+async function surface(page, nom, plat, moteur, mode, tact, bruitHarnais) {
   const erreurs = [];
-  page.on('pageerror', (e) => erreurs.push(String(e && e.message).slice(0, 120)));
+  page.on('pageerror', (e) => { const m = String(e && e.message).slice(0, 120); if (!bruitHarnais.has(m)) erreurs.push(m); });
   const t0 = Date.now();
   await page.goto(base + (mode === 'app' ? '/' : '/hote.html'), { waitUntil: 'domcontentloaded' });
   const tag = `${plat} · ${moteur} · ${nom}`;
@@ -137,7 +138,14 @@ for (const [moteur, nav] of Object.entries(lanceurs)) {
       await ctx.addInitScript(() => { try { localStorage.setItem('kdmc_perso3d', '0'); } catch (_) { /* rien */ } });
       const page = await ctx.newPage();
       await page.route(/lingua\.kd-mc\.com\/.*/, (rt) => rt.fulfill({ status: 404, body: '' }));
-      try { await surface(page, mode === 'app' ? 'app Bee' : 'sur une autre app', a.nom, moteur, mode, tact); }
+      /* un TÉMOIN sans Bee, avec la même CSP et les mêmes scripts d'init : une erreur qu'il produit aussi vient de l'outil de test (Firefox + CSP), pas de Bee */
+      const bruitHarnais = new Set();
+      if (mode === 'app') {
+        const tem = await ctx.newPage(); tem.on('pageerror', (e) => bruitHarnais.add(String(e && e.message).slice(0, 120)));
+        await tem.goto(base + '/temoin.html', { waitUntil: 'load' }).catch(() => {}); await tem.evaluate(() => 1).catch(() => {}); await tem.waitForTimeout(300); await tem.close();
+        if (bruitHarnais.size) console.log(`  ℹ️  ${moteur} : le témoin sans Bee produit déjà « ${[...bruitHarnais][0]} » → écarté pour cet appareil (bruit de l'outil, pas de Bee)`);
+      }
+      try { await surface(page, mode === 'app' ? 'app Bee' : 'sur une autre app', a.nom, moteur, mode, tact, bruitHarnais); }
       catch (e) { ok(false, `${a.nom} · ${moteur} · ${mode} : plantage du contrôle — ${String(e.message).split('\n')[0].slice(0, 100)}`); }
       await ctx.close();
     }

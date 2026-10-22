@@ -329,6 +329,49 @@ try {
   /* 9. le coach : non testé exprès */
   if (!JETABLE) gris('coach : seul l\'écran est ouvert avec ton compte — une question au coach s\'écrit dans ton fil d\'activité (lecture seule oblige) ; la question posée est testée sur le compte jetable (--jetable)');
 
+  /* 9a. compte jetable : TOUS les autres écrans de l'accueil, un par un (verbes, prononciation, histoires, anecdotes, statistiques, jeux, dictionnaire, révision) */
+  if (JETABLE && !RAPIDE) {
+    await fermerModales(); await onglet('Accueil'); await attends(800);
+    const ecrans = [
+      ['Les verbes', '.verbs-link'], ['Atelier prononciation', '.pron-link'], ['Histoires de la ruche', '.stories-card:not(.verbs-link):not(.pron-link):not(.hist-link):not(.vie-link):not(.appel-link):not(.cercle-link):not(.stats-link)'],
+      ['Histoire et anecdotes', '.hist-link'], ['Mes statistiques', '.stats-link'], ['Défi éclair ⚡', '.game-card.blitz'], ['Paires 🃏', '.game-card.pairs']];
+    /* retour à l'accueil depuis n'importe quel écran, y compris les jeux plein écran (sans barre d'onglets) : un bouton « Accueil / quitter / fermer / ✕ » */
+    const retour = async () => {
+      for (let k = 0; k < 4; k++) {
+        if (await page.$('.tabbar')) { if (await onglet('Accueil')) { await attends(500); return true; } }
+        await page.evaluate(() => { const b = [...document.querySelectorAll('button, a')].find((x) => /Accueil|Quitter|Fermer|Terminer|^✕$|^×$|^←/.test((x.textContent || '').trim()) || x.classList.contains('quit') || x.classList.contains('bz-quit')); if (b) b.click(); }).catch(() => {});
+        await attends(700);
+      }
+      return !!(await page.$('.tabbar'));
+    };
+    for (const [nom, sel] of ecrans) {
+      const rentre = await retour(); if (!rentre) { ko(`avant « ${nom} » : impossible de revenir à l'accueil (plus de barre d'onglets)`); break; }
+      const e0 = erreurs.length;
+      const clique = await clic(sel); await attends(1500);
+      const t = await texte(); const dessin = t.length > 60;
+      chk(clique && dessin && erreurs.length === e0, `écran « ${nom} » : s'ouvre, affiche du contenu, 0 erreur JavaScript${clique ? '' : ' — carte absente'}`, `${t.length} caractères, ${erreurs.length - e0} erreur(s)`);
+      await capture(page, 'ecran-' + nom.replace(/[^a-z]/gi, '').toLowerCase().slice(0, 14));
+      await fermerModales();
+    }
+    /* Réviser (avec cours) : les boutons, le dictionnaire, une révision qui démarre */
+    await retour();
+    await onglet('Réviser'); await attends(900);
+    const rev = await page.evaluate(() => ({ boutons: document.querySelectorAll('.review-card button').length, titre: /Réviser/.test(document.body.innerText) })).catch(() => ({}));
+    chk(rev.titre && rev.boutons >= 3, `Réviser (avec un cours) : l'écran propose ${rev.boutons || 0} façons de réviser`);
+    const dict = await page.evaluate(async () => { const b = [...document.querySelectorAll('.review-card button')].find((x) => /dictionnaire/i.test(x.textContent)); if (!b) return { err: 'bouton absent' }; b.click(); await new Promise((r) => setTimeout(r, 900)); return { unites: document.querySelectorAll('.dict-unit').length, grille: document.querySelectorAll('.dict-grid').length }; }).catch(() => ({}));
+    chk(dict && !dict.err && (dict.unites > 0 || dict.grille > 0), `dictionnaire : s'ouvre avec ses unités (${dict.unites || 0})`, JSON.stringify(dict));
+    await onglet('Réviser'); await attends(700);
+    const lanceR = await page.evaluate(async () => { const b = [...document.querySelectorAll('.review-card button')].find((x) => /Révision libre|Révision du jour|Réviser maintenant/i.test(x.textContent)); if (!b) return false; b.click(); await new Promise((r) => setTimeout(r, 1200)); return !!document.querySelector('.lesson-body'); }).catch(() => false);
+    chk(lanceR, 'Réviser : une révision démarre vraiment (écran de leçon)');
+    await fermerModales();
+    await page.evaluate(() => { const q = document.querySelector('.quit'); if (q) q.click(); }).catch(() => {}); await attends(600); await fermerModales();
+    await onglet('Ligue'); await attends(900);
+    const lig = await texte(); chk(/Ligue|XP|semaine/i.test(lig) && lig.length > 60, 'Ligue : le classement de la semaine s\'affiche');
+    await onglet('Profil'); await attends(900);
+    const pro = await texte(); chk(/Profil|Compte|Paramètres|Réglages/i.test(pro) && pro.length > 80, 'Profil : réglages et compte s\'affichent');
+    await onglet('Accueil'); await attends(600);
+  }
+
   /* 9b. compte jetable : coach, réouvertures (service worker), hors-ligne, largeurs 375 / 390 px */
   if (JETABLE && !RAPIDE) {
     await fermerModales(); await onglet('Coach'); await attends(1200);

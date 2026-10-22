@@ -134,6 +134,41 @@ async function scenarioA(moteur, ap) {
   return out;
 }
 
+/* C. tous les autres écrans, un par un (verbes, prononciation, histoires, anecdotes, statistiques, deux jeux, Réviser, dictionnaire, révision, Ligue, Profil) */
+async function scenarioC(moteur, ap) {
+  const { ctx, p, erreurs, touch } = await ouvrir(moteur, ap, true);
+  const res = []; const retour = async () => {
+    for (let k = 0; k < 4; k++) {
+      if (await p.$('.tabbar')) { if (await appuyer(p, touch, 0)) { await p.waitForTimeout(450); return true; } }
+      await p.evaluate(() => { const b = [...document.querySelectorAll('button, a')].find((x) => /Accueil|Quitter|Fermer|Terminer|^✕$|^×$|^←/.test((x.textContent || '').trim()) || x.classList.contains('quit') || x.classList.contains('bz-quit')); if (b) b.click(); }).catch(() => {});
+      await p.waitForTimeout(600);
+    }
+    return !!(await p.$('.tabbar'));
+  };
+  const ECRANS = [['Les verbes', '.verbs-link'], ['Prononciation', '.pron-link'], ['Histoires', '.stories-card:not(.verbs-link):not(.pron-link):not(.hist-link):not(.vie-link):not(.appel-link):not(.cercle-link):not(.stats-link)'],
+    ['Histoire et anecdotes', '.hist-link'], ['Statistiques', '.stats-link'], ['Défi éclair', '.game-card.blitz'], ['Paires', '.game-card.pairs'], ['Mon cercle', '.cercle-link']];
+  for (const [nom, sel] of ECRANS) {
+    const rentre = await retour(); if (!rentre) { res.push({ nom, bloque: true }); break; }
+    const e0 = erreurs.length;
+    const clique = await p.evaluate((q) => { const e = document.querySelector(q); if (!e) return false; e.click(); return true; }, sel).catch(() => false);
+    await p.waitForTimeout(1100);
+    const t = await texte(p); const dehors = await p.evaluate(() => document.documentElement.scrollWidth - Math.round(window.visualViewport ? visualViewport.width : innerWidth)).catch(() => 0);
+    res.push({ nom, clique, dessin: t.length > 60, erreurs: erreurs.length - e0, deborde: dehors > 2 });
+  }
+  const r2 = await retour(); let revue = null;
+  if (r2) {
+    await appuyer(p, touch, 1); await p.waitForTimeout(800);
+    revue = await p.evaluate(async () => { const o = { boutons: document.querySelectorAll('.review-card button').length };
+      const d = [...document.querySelectorAll('.review-card button')].find((x) => /dictionnaire/i.test(x.textContent)); if (d) { d.click(); await new Promise((r) => setTimeout(r, 800)); o.dict = document.querySelectorAll('.dict-unit, .dict-grid').length; }
+      return o; }).catch(() => ({}));
+    await appuyer(p, touch, 4); await p.waitForTimeout(700); const lig = (await texte(p)).length > 60;
+    await appuyer(p, touch, 5); await p.waitForTimeout(700); const pro = (await texte(p)).length > 80;
+    revue.lig = lig; revue.pro = pro;
+  }
+  await ctx.close();
+  return { res, revue, r2 };
+}
+
 async function scenarioB(moteur, ap) {
   const { ctx, p, erreurs, touch } = await ouvrir(moteur, ap, false);
   const choix = await p.evaluate(() => /Choisis une langue/.test(document.body.innerText || '')).catch(() => false);
@@ -154,6 +189,7 @@ for (const ap of MATRICE) {
     const tag = `${ap.nom}/${moteur}`; const t0 = Date.now(); let A, B;
     const limite = (pr) => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error('plus de 100 s : moteur figé')), 100000))]);
     try { A = await limite(scenarioA(moteur, ap)); } catch (e) { ok(false, `${tag} : Lingua avec cours ne s'ouvre pas — ${String(e.message).split('\n')[0].slice(0, 100)}`); continue; }
+    let C; try { C = await limite(scenarioC(moteur, ap)); } catch (e) { ok(false, `${tag} : parcours des écrans — ${String(e.message).split('\n')[0].slice(0, 100)}`); }
     try { B = await limite(scenarioB(moteur, ap)); } catch (e) { ok(false, `${tag} : Lingua sans langue ne s'ouvre pas — ${String(e.message).split('\n')[0].slice(0, 100)}`); }
     if (process.env.GITHUB_ACTIONS) console.log('::notice title=plateformes-etape::' + tag + ' mesuré en ' + Math.round((Date.now() - t0) / 1000) + ' s');
     const g = A.geo; const touch = !!(ap.dev ? D[ap.dev].hasTouch : ap.tactile);
@@ -168,6 +204,10 @@ for (const ap of MATRICE) {
     ok(g.portail, `${tag} : « Portail » est dans la barre`);
     ok(g.cartes >= 6, `${tag} : cartes de l'accueil ${g.cartes}/7`);
     ok(A.vie && !A.vie.err && A.vie.leçons >= 10 && A.vie.corps && A.vie.deb <= 2 && A.vie.footDans, `${tag} : « La vraie vie » s'ouvre et une leçon démarre, bouton du bas dans l'écran` + (A.vie && A.vie.err ? ' — ' + A.vie.err : ''));
+    if (C) {
+      for (const x of C.res) ok(!x.bloque && x.clique && x.dessin && x.erreurs === 0 && !x.deborde, `${tag} : écran « ${x.nom} » s'ouvre, affiche du contenu, 0 erreur, ne déborde pas` + (x.bloque ? ' — plus de retour à l\'accueil' : !x.clique ? ' — carte absente' : x.erreurs ? ' — ' + x.erreurs + ' erreur(s) JS' : x.deborde ? ' — déborde' : ''));
+      ok(C.revue && C.revue.boutons >= 3 && C.revue.dict > 0 && C.revue.lig && C.revue.pro, `${tag} : Réviser (${C.revue ? C.revue.boutons : 0} boutons), dictionnaire (${C.revue ? C.revue.dict : 0} unités), Ligue et Profil s'affichent`);
+    }
     if (B) {
       ok(B.choix, `${tag} : sans langue, l'écran « Choisis une langue » s'affiche`);
       ok(B.tr && B.pr && B.rv, `${tag} : sans langue, les onglets réagissent (Traduire ${B.tr ? 'ouvert' : 'MUET'}, Profil ${B.pr ? 'ouvert' : 'MUET'}, Réviser ${B.rv ? 'explique' : 'MUET'})`);

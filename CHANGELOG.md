@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex AI v13.4.382 (2026-10-22 — fausses alertes en moins, notifications réglées toutes seules)
+- Sentinelle « Bot 2026 (Vercel) » retirée : le projet n'existe plus sur Vercel (DEPLOYMENT_NOT_FOUND, liste des projets lue) ; le bot tourne dans `kdmc-agent-monaco` (200).
+- Pinecone sans clé = « non utilisé » (la mémoire passe par le worker Cloudflare `kdmc-rag`), plus une alerte.
+- Tableau de bord : une clé que le service refuse s'affiche « Clé refusée », plus « Panne ».
+- Notifications : adresse du worker `apex-push-worker` posée par défaut et clé publique lue sur `/health` (fini le faux « ax_vapid_public manquant »). Tâches 23, 24, 25 du pont.
+
 ## Apex AI v13.4.381 (2026-10-22 — 5 erreurs de moins à chaque ouverture)
 - Les documents gardés au coffre privé (NOTES_USER, MEMO_RESUME, KEVIN_INVENTORY, KEVIN_ACTIONS_TODO, MEMORY_PERSISTENT, mémoire Apex) ne sont plus demandés au relais, qui lit le dépôt public : 5 × HTTP 404 en moins à chaque ouverture (audit Apex AI, tâche 21). Garde test:apex-docs-prives ; 12 547 tests Apex verts.
 

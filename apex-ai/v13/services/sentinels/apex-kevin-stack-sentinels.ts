@@ -3,12 +3,12 @@
  *
  * Kevin context drop 2026-05-15 :
  *   - kdmc-agent-monaco.vercel.app (URL Agent + /api/health + /api/cron)
- *   - kdmc-bot-2026.vercel.app (Vercel bot)
+ *   - (22.10.2026) kdmc-bot-2026.vercel.app RETIRÉ : le projet n'existe plus sur Vercel
+ *     (DEPLOYMENT_NOT_FOUND) ; le bot tourne dans kdmc-agent-monaco (/api/health le dit).
  *   - apex-memory-octnsiv.svc.aped-4627-b74a.pinecone.io (Pinecone index)
  *
  * Sentinelles ajoutées (run via sentinels.register au boot) :
  *   1. kdmc-agent-monaco-health : ping /api/health toutes 10min, alerte si KO > 30min
- *   2. kdmc-bot-2026-health : idem
  *   3. pinecone-index-status : describe index toutes 30min
  */
 
@@ -19,7 +19,6 @@ import { sentinels } from './sentinels.js';
 type SentinelResult = { ok: boolean; msg: string; ts: number };
 
 const AGENT_MONACO_HEALTH_URL = 'https://kdmc-agent-monaco.vercel.app/api/health';
-const BOT_2026_URL = 'https://kdmc-bot-2026.vercel.app';
 const PINECONE_INDEX_HOST = 'apex-memory-octnsiv.svc.aped-4627-b74a.pinecone.io';
 
 async function pingUrl(url: string, timeoutMs = 8000): Promise<{ ok: boolean; status?: number; msg: string; loadFailed?: boolean }> {
@@ -148,27 +147,7 @@ export function registerKevinStackSentinels(): void {
     },
   });
 
-  /* 2. kdmc-bot-2026-health : Vercel bot Telegram */
-  sentinels.register({
-    id: 'kdmc-bot-2026-health',
-    name: 'KDMC Bot 2026 (Vercel)',
-    desc: `Ping ${BOT_2026_URL} toutes 10min`,
-    intervalMs: 10 * 60 * 1000,
-    check: async (): Promise<SentinelResult> => {
-      const r = await pingUrl(BOT_2026_URL);
-      const tracking = trackLoadFailures('kdmc-bot-2026-health', !!r.loadFailed, r.ok);
-      if (!r.ok && tracking.snoozed) {
-        void triggerVercelRedeploy('kdmc-bot-2026').catch(() => { /* best-effort */ });
-      }
-      return {
-        ok: r.ok,
-        msg: r.ok ? `✅ Bot 2026 UP : ${r.msg}` : `❌ Bot 2026 DOWN : ${r.msg}${tracking.snoozed ? ' · auto-redeploy déclenché' : ''}`,
-        ts: Date.now(),
-      };
-    },
-  });
-
-  /* 3. pinecone-index-status : Vector DB Apex */
+  /* 2. pinecone-index-status : Vector DB Apex */
   sentinels.register({
     id: 'pinecone-index-status',
     name: 'Pinecone apex-memory index',
@@ -179,7 +158,9 @@ export function registerKevinStackSentinels(): void {
         const { vault } = await import('../vault/vault.js');
         const apiKey = await vault.readKey('ax_pinecone_key').catch(() => '');
         if (!apiKey) {
-          return { ok: false, msg: 'Pinecone API key absente du Vault', ts: Date.now() };
+          /* 22.10.2026 : sans clé, Pinecone n'est simplement pas utilisé (la mémoire d'Apex
+           * passe par le worker Cloudflare kdmc-rag) → pas une alerte, aucun appel réseau. */
+          return { ok: true, msg: '⏸ Pinecone non utilisé (pas de clé) · mémoire = Cloudflare', ts: Date.now() };
         }
         const ctrl = new AbortController();
         const t = setTimeout(() => ctrl.abort(), 8000);
@@ -210,5 +191,5 @@ export function registerKevinStackSentinels(): void {
     },
   });
 
-  logger.info('kevin-stack-sentinels', '✅ 3 sentinelles Kevin stack enregistrées');
+  logger.info('kevin-stack-sentinels', '✅ 2 sentinelles Kevin stack enregistrées');
 }

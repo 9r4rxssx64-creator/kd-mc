@@ -10,7 +10,7 @@
  * APP_VER dans bootstrap.js. Workflow `sw-cache-sync.yml` synchronise auto.
  */
 
-const CACHE_VERSION  = 'apex-v13.4.381';   /* 22.10 : les documents gardés au coffre ne sont plus demandés au relais (5 × 404 en moins à chaque ouverture) ; 17.10 : cloneSite envoie le laissez-passer du domaine au worker kdmc-clone ; 379 : plus de bulle « Proxy Cloudflare activé » (info inutile, vue par le robot) ; 378 : clé refusée + gratuites muettes = erreur récupérable, pas « clé invalide » */
+const CACHE_VERSION  = 'apex-v13.4.382';   /* 382 (22.10) : sentinelle Bot 2026 retirée (projet Vercel disparu), Pinecone sans clé = non utilisé, « Clé refusée » au lieu de « Panne », push réglée toute seule (worker + clé publique) ; 381 : les documents gardés au coffre ne sont plus demandés au relais (5 × 404 en moins à chaque ouverture) ; 17.10 : cloneSite envoie le laissez-passer du domaine au worker kdmc-clone ; 379 : plus de bulle « Proxy Cloudflare activé » (info inutile, vue par le robot) ; 378 : clé refusée + gratuites muettes = erreur récupérable, pas « clé invalide » */
 const STATIC_CACHE   = CACHE_VERSION + '-static';
 const RUNTIME_CACHE  = CACHE_VERSION + '-runtime';
 const OFFLINE_CACHE  = CACHE_VERSION + '-offline';

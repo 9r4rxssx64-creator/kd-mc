@@ -202,6 +202,16 @@ describe('features/dashboard — loadRechargeLinks (Kevin v13.0.20+)', () => {
 });
 
 describe('features/dashboard — renderServiceHealthCard (Kevin lumière)', () => {
+  it("une clé refusée s'affiche « Clé refusée », pas « Panne » (22.10.2026, tâche 23)", () => {
+    const html = renderServiceHealthCard([
+      { service: 'vercel', light: 'red', totalKeys: 1, activeKeys: 0, failingKeys: 0, invalidKeys: 1, lastSuccess: 0 },
+      { service: 'cloudflare', light: 'red', totalKeys: 1, activeKeys: 0, failingKeys: 1, invalidKeys: 0, lastSuccess: 0 },
+    ]);
+    expect(html).toContain('Clé refusée');
+    expect(html).toContain('Panne');
+    expect(html.match(/Clé refusée/g)?.length).toBe(1);
+  });
+
   it('rend message vide si aucun service', () => {
     const html = renderServiceHealthCard([]);
     expect(html).toContain('Aucune clé API');

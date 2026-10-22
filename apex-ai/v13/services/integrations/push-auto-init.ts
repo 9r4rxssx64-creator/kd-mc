@@ -47,11 +47,48 @@ export interface PushInitStatus {
   last_check: number;
 }
 
+/* 22.10.2026 (tâche 25) : le worker push du compte principal ; il publie sa clé publique sur /health. */
+export const DEFAULT_PUSH_WORKER_URL = 'https://apex-push-worker.9r4rxssx64.workers.dev';
+
 const HEARTBEAT_INTERVAL_MS = 6 * 60 * 60 * 1000; /* 6h */
 const FIRST_BOOT_DELAY_MS = 30_000; /* 30s : laisse user explorer avant prompt */
 
 class PushAutoInit {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+  /**
+   * 22.10.2026 (tâche 25) : règle la push tout seul — adresse du worker par défaut si absente,
+   * clé publique VAPID lue sur `<worker>/health` si absente. Jamais de secret ici (la clé
+   * admin reste au coffre). Ne remplace rien de déjà posé.
+   */
+  async autoConfigure(): Promise<{ worker_set: boolean; vapid_fetched: boolean }> {
+    let workerSet = false;
+    let vapidFetched = false;
+    try {
+      let workerUrl = localStorage.getItem('apex_v13_push_worker_url') ?? '';
+      if (!workerUrl.startsWith('http')) {
+        workerUrl = DEFAULT_PUSH_WORKER_URL;
+        localStorage.setItem('apex_v13_push_worker_url', workerUrl);
+        workerSet = true;
+      }
+      if ((localStorage.getItem('ax_vapid_public') ?? '').length > 30) return { worker_set: workerSet, vapid_fetched: false };
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const resp = await fetch(`${workerUrl.replace(/\/+$/, '')}/health`, { signal: ctrl.signal });
+      clearTimeout(t);
+      if (resp.ok) {
+        const data = (await resp.json()) as { vapidPublic?: unknown };
+        const cle = typeof data.vapidPublic === 'string' ? data.vapidPublic : '';
+        if (/^B[A-Za-z0-9_-]{60,120}$/.test(cle)) {
+          localStorage.setItem('ax_vapid_public', cle);
+          vapidFetched = true;
+        }
+      }
+    } catch {
+      /* réseau coupé : on réessaiera au prochain démarrage */
+    }
+    return { worker_set: workerSet, vapid_fetched: vapidFetched };
+  }
 
   /**
    * Vérifie config VAPID public key + worker URL (P0 audit gap).

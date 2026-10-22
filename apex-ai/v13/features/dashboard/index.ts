@@ -377,7 +377,8 @@ export function renderServiceHealthCard(
   return items
     .map((s, idx) => {
       const color = lightColor[s.light];
-      const label = lightLabel[s.light];
+      /* 22.10.2026 (tâche 23) : une clé que le service refuse n'est pas une panne du service. */
+      const label = s.light === 'red' && s.invalidKeys > 0 && s.failingKeys === 0 ? 'Clé refusée' : lightLabel[s.light];
       const stats = `${s.activeKeys}/${s.totalKeys} active${s.failingKeys > 0 ? ` · ${s.failingKeys} failing` : ''}${s.invalidKeys > 0 ? ` · ${s.invalidKeys} invalid` : ''}`;
       const links = rechargeLinks[s.service] ?? { recharge: null, usage: null, apiKeys: null };
       /* Bouton "Recharge directe" visible si yellow/red OU si recharge URL connue. */

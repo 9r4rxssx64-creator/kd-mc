@@ -29,9 +29,9 @@ describe('apex-kevin-stack-sentinels (v13.4.149 coverage)', () => {
   });
 
   describe('registerKevinStackSentinels', () => {
-    it('enregistre 3 sentinelles', () => {
+    it('enregistre 2 sentinelles (Bot 2026 retiré : projet Vercel inexistant, 22.10.2026)', () => {
       registerKevinStackSentinels();
-      expect(mockSentinels.register).toHaveBeenCalledTimes(3);
+      expect(mockSentinels.register).toHaveBeenCalledTimes(2);
     });
 
     it('enregistre agent-monaco-health', () => {
@@ -43,12 +43,10 @@ describe('apex-kevin-stack-sentinels (v13.4.149 coverage)', () => {
       expect(agentMonaco?.[0].intervalMs).toBe(10 * 60 * 1000);
     });
 
-    it('enregistre bot-2026-health', () => {
+    it("n'enregistre plus bot-2026-health (fausse alerte « DOWN » permanente)", () => {
       registerKevinStackSentinels();
       const calls = mockSentinels.register.mock.calls;
-      const bot = calls.find((c) => c[0].id === 'kdmc-bot-2026-health');
-      expect(bot).toBeDefined();
-      expect(bot?.[0].intervalMs).toBe(10 * 60 * 1000);
+      expect(calls.find((c) => c[0].id === 'kdmc-bot-2026-health')).toBeUndefined();
     });
 
     it('enregistre pinecone-index-status', () => {
@@ -92,14 +90,16 @@ describe('apex-kevin-stack-sentinels (v13.4.149 coverage)', () => {
   });
 
   describe('pinecone check fonction', () => {
-    it('retourne ok=false si pas de API key', async () => {
+    it("sans clé : pas une panne (Pinecone non utilisé, mémoire = Cloudflare), aucun appel réseau", async () => {
       mockVault.readKey.mockResolvedValue('');
+      const f = vi.spyOn(globalThis, 'fetch');
       registerKevinStackSentinels();
       const calls = mockSentinels.register.mock.calls;
       const pcConfig = calls.find((c) => c[0].id === 'pinecone-index-status')?.[0];
       const r = await pcConfig?.check();
-      expect(r?.ok).toBe(false);
-      expect(r?.msg).toContain('API key absente');
+      expect(r?.ok).toBe(true);
+      expect(r?.msg).toContain('non utilisé');
+      expect(f).not.toHaveBeenCalled();
     });
 
     it('retourne ok=true si Pinecone répond OK', async () => {

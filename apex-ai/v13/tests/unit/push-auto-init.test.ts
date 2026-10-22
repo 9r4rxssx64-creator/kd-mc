@@ -147,6 +147,46 @@ describe('Push Auto-Init (autonome iOS+Android app fermée)', () => {
     });
   });
 
+  describe('autoConfigure (22.10.2026, tâche 25 : la push se règle toute seule)', () => {
+    const VRAIE = 'B' + 'x'.repeat(86);
+    it('rien de posé → adresse du worker par défaut + clé publique lue sur /health', async () => {
+      localStorage.removeItem('ax_vapid_public');
+      localStorage.removeItem('apex_v13_push_worker_url');
+      const f = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(JSON.stringify({ ok: true, configured: true, vapidPublic: VRAIE }), { status: 200 }),
+      );
+      const r = await pushAutoInit.autoConfigure();
+      expect(localStorage.getItem('apex_v13_push_worker_url')).toBe('https://apex-push-worker.9r4rxssx64.workers.dev');
+      expect(localStorage.getItem('ax_vapid_public')).toBe(VRAIE);
+      expect(String(f.mock.calls[0]?.[0])).toBe('https://apex-push-worker.9r4rxssx64.workers.dev/health');
+      expect(r.vapid_fetched).toBe(true);
+      const cfg = pushAutoInit.checkPushConfig();
+      expect(cfg.vapid_set).toBe(true);
+      expect(cfg.worker_url_set).toBe(true);
+      f.mockRestore();
+    });
+    it('déjà posé → ne touche à rien, aucun appel réseau', async () => {
+      localStorage.setItem('ax_vapid_public', 'B'.repeat(64));
+      localStorage.setItem('apex_v13_push_worker_url', 'https://autre.example');
+      const f = vi.spyOn(globalThis, 'fetch');
+      await pushAutoInit.autoConfigure();
+      expect(f).not.toHaveBeenCalled();
+      expect(localStorage.getItem('apex_v13_push_worker_url')).toBe('https://autre.example');
+      f.mockRestore();
+    });
+    it('réponse invalide ou réseau coupé → pas de fausse clé posée', async () => {
+      localStorage.removeItem('ax_vapid_public');
+      const f = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{"vapidPublic":"<script>"}', { status: 200 }));
+      await pushAutoInit.autoConfigure();
+      expect(localStorage.getItem('ax_vapid_public')).toBeNull();
+      f.mockRejectedValue(new Error('network'));
+      const r = await pushAutoInit.autoConfigure();
+      expect(r.vapid_fetched).toBe(false);
+      expect(localStorage.getItem('ax_vapid_public')).toBeNull();
+      f.mockRestore();
+    });
+  });
+
   describe('checkPushConfig (P0 audit gap fix)', () => {
     it('rien set → ready_for_prod=false + 3 warnings', () => {
       localStorage.removeItem('ax_vapid_public');

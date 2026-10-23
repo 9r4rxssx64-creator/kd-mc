@@ -25,23 +25,25 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Installer Chromium, WebKit et Firefox un par un (cause lisible, un moteur absent n'empêche pas les autres)
+      - name: Installer Chromium, WebKit et Firefox (navigateurs, puis bibliothèques système, puis vérification de ce qui se lance)
         # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
-        # 22-23.10 : l'installation en bloc s'est figée ou a échoué 3 fois sur 5 (réseau du serveur, journal illisible) : un moteur à la fois, 2 essais de 5 min,
-        # la fin du journal d'erreur remonte en annotation ; les moteurs installés sont passés au robot (ENGINES), Chromium est exigé.
+        # 23.10, cause LUE dans les annotations (run 40005190242) : mon délai tuait `apt` en plein vol, le verrou dpkg restait pris et TOUS les essais suivants
+        # échouaient. Donc : (1) les navigateurs se téléchargent sans apt, avec délai ; (2) les bibliothèques système en UNE fois, apt réessaie seul
+        # (Acquire::Retries) et attend le verrou (DPkg::Lock::Timeout), jamais tué ; (3) on lance chaque moteur pour savoir lesquels marchent vraiment.
         timeout-minutes: 18
         run: |
+          sudo sh -c 'printf "Acquire::Retries \"5\";\nAcquire::http::Timeout \"30\";\nDPkg::Lock::Timeout \"300\";\n" > /etc/apt/apt.conf.d/80-robot'
           npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
-          OK=""
           for moteur in chromium webkit firefox; do
             for essai in 1 2; do
-              if timeout 300 ./node_modules/.bin/playwright install --with-deps "$moteur" > "/tmp/install-$moteur.log" 2>&1; then OK="${OK:+$OK,}$moteur"; break; fi
-              fin=$(tail -n 3 "/tmp/install-$moteur.log" | tr '\n' ' ' | cut -c1-300)
-              echo "::warning title=lingua-plateformes::installation $moteur essai $essai en échec : $fin"
+              if timeout 240 ./node_modules/.bin/playwright install "$moteur" > "/tmp/dl-$moteur.log" 2>&1; then break; fi
+              echo "::warning title=lingua-plateformes::téléchargement $moteur essai $essai en échec : $(tail -n 2 "/tmp/dl-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
             done
           done
-          echo "Moteurs installés : $OK"
-          case ",$OK," in *,chromium,*) ;; *) echo "::error title=lingua-plateformes::Chromium n'a pas pu être installé"; exit 1;; esac
+          ./node_modules/.bin/playwright install-deps chromium webkit firefox > /tmp/deps.log 2>&1 || echo "::warning title=lingua-plateformes::bibliothèques système en échec : $(tail -n 3 /tmp/deps.log | tr '\n' ' ' | cut -c1-300)"
+          OK=$(node -e "(async()=>{const p=require('playwright');const ok=[];for(const m of ['chromium','webkit','firefox']){try{const b=await p[m].launch();await b.close();ok.push(m);}catch(e){console.error('::warning title=lingua-plateformes::'+m+' ne se lance pas : '+String(e.message).split('\n')[0].slice(0,200));}}console.log(ok.join(','));})()")
+          echo "Moteurs qui se lancent : $OK"
+          case ",$OK," in *,chromium,*) ;; *) echo "::error title=lingua-plateformes::Chromium ne se lance pas"; exit 1;; esac
           echo "ENGINES_OK=$OK" >> "$GITHUB_ENV"
 
       - name: La matrice d'appareils (iPhone, Android, tablettes, portables, grand écran)

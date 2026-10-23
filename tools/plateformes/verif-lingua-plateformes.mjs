@@ -67,7 +67,7 @@ for (const m of voulus) {
     lanceurs[m] = await type.launch(m === 'chromium' ? { executablePath: chromePath() } : {});
   } catch (e) { console.log(`  ⏭  moteur « ${m} » absent ici (${String(e.message).split('\n')[0].slice(0, 70)}) — couvert par le robot du dépôt public`); }
 }
-if (!lanceurs.chromium) { console.log('  ❌ chromium indisponible : rien à mesurer'); process.exit(1); }
+if (!Object.keys(lanceurs).length) { console.log('  ❌ aucun moteur disponible : rien à mesurer'); process.exit(1); }   /* un job par moteur en CI : chacun n\'en lance qu\'un */
 
 const ONGLETS = ['Accueil', 'Réviser', 'Coach', 'Traduire', 'Ligue', 'Profil'];
 

@@ -16,8 +16,14 @@ concurrency:
 
 jobs:
   plateformes:
+    # 23.10 : un job PAR moteur, en parallèle (le run à trois moteurs d'affilée dépassait 14 min : 17 appareils × 3 parcours × 3 moteurs). Gratuit au dépôt public.
+    strategy:
+      fail-fast: false
+      matrix:
+        moteur: [chromium, webkit, firefox]
+    name: plateformes (${{ matrix.moteur }})
     runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -33,15 +39,14 @@ jobs:
         timeout-minutes: 16
         run: |
           npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
-          for moteur in chromium webkit firefox; do
-            for essai in 1 2; do
-              if timeout 240 ./node_modules/.bin/playwright install "$moteur" > "/tmp/dl-$moteur.log" 2>&1; then break; fi
-              echo "::warning title=lingua-plateformes::téléchargement $moteur essai $essai en échec : $(tail -n 2 "/tmp/dl-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
-            done
+          moteur="${{ matrix.moteur }}"
+          for essai in 1 2; do
+            if timeout 240 ./node_modules/.bin/playwright install "$moteur" > "/tmp/dl-$moteur.log" 2>&1; then break; fi
+            echo "::warning title=lingua-plateformes::téléchargement $moteur essai $essai en échec : $(tail -n 2 "/tmp/dl-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
           done
           lancer() { node -e "(async()=>{const p=require('playwright');try{const b=await p['$1'].launch();await b.close();process.exit(0);}catch(e){console.error(String(e.message).split('\n')[0].slice(0,200));process.exit(1);}})()" 2>/tmp/lance.log; }
           OK=""
-          for moteur in chromium webkit firefox; do
+          for moteur in "$moteur"; do
             if ! lancer "$moteur"; then
               echo "::warning title=lingua-plateformes::$moteur ne démarre pas tel quel ($(cat /tmp/lance.log | cut -c1-160)) : installation de ses bibliothèques (6 min au plus)"
               sudo timeout -k 20 360 env "PATH=$PATH" ./node_modules/.bin/playwright install-deps "$moteur" > "/tmp/deps-$moteur.log" 2>&1 || echo "::warning title=lingua-plateformes::bibliothèques $moteur incomplètes : $(tail -n 2 "/tmp/deps-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
@@ -50,11 +55,11 @@ jobs:
           done
           echo "Moteurs qui se lancent : $OK"
           echo "::notice title=lingua-plateformes::moteurs qui se lancent : $OK"
-          case ",$OK," in *,chromium,*) ;; *) echo "::error title=lingua-plateformes::Chromium ne se lance pas"; exit 1;; esac
+          [ -n "$OK" ] || { echo "::error title=lingua-plateformes::${{ matrix.moteur }} ne se lance pas"; exit 1; }
           echo "ENGINES_OK=$OK" >> "$GITHUB_ENV"
 
       - name: La matrice d'appareils (iPhone, Android, tablettes, portables, grand écran)
-        timeout-minutes: 14   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles
+        timeout-minutes: 30   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles
         env:
           ENGINES: ${{ env.ENGINES_OK }}
           EXIGE_PLAYWRIGHT: "1"

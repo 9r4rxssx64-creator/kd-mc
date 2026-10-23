@@ -70,6 +70,14 @@
       + '<h2 class="cat">🎛️ Piloter le domaine</h2><div class="grid">'
       + card('🗂️', 'Qui se connecte', 'Historique de chaque personne : apps, appareils, en ligne', 'https://admin.kd-mc.com/')
       + card('🎛️', 'Centre de contrôle', 'Tous mes liens 1-clic : apps, clés, workers, Firebase', '/liens/')
+      /* Kevin 23.10.2026 : « que j'ai toutes les tuiles, qu'il ne m'en manque pas ». Mesuré : 7 pages créées (6 ajoutées ici ; « Changer mon code admin » est déjà dans Réglages, tableau.js) par les branches étaient sur le portail
+         (cartes admin) ou dans Claude, mais PAS dans l'admin. Garde : tests/admin-tuiles.test.mjs (toute carte admin du portail a sa tuile ici). */
+      + card('📋', 'Tableau KDMC', 'Toutes les tâches des branches, qui attend quoi, envoyer du travail', 'https://claude.ai/artifact/TainhAk9Vrd9k2ZZ2VuVP6')
+      + card('🧪', 'Staging KDMC — le tableau', 'Le site d\'essai : état, données de test, remise à zéro', 'https://claude.ai/artifact/5akE9yY4MBoRxFUrYAvXJJ')
+      + card('🗃️', 'Toutes mes pages Claude', 'Tableaux, dossiers, études créés pour toi', 'https://claude.ai/code/artifacts')
+      + card('💰', 'Finances', 'Coffre finances chiffré : relevés, factures, budget', 'https://cmcteams.kd-mc.com/tools/finances/')
+      + card('📨', 'Messages employés', 'Les messages que les employés t\'envoient depuis CMCteams', 'https://cmcteams.kd-mc.com/tools/messages/')
+      + card('🧬', 'Cloneur de sites', 'Lire, extraire ou cloner une page web', '/clone/')
       + '</div>'
       + '<h2 class="cat">🎨 Studios de création</h2><div class="grid">'
       + card('🎨', 'Studio — La Détente', 'Créer logos & produits (POD)', 'https://shops.kd-mc.com/la-detente/studio.html')

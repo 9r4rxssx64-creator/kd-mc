@@ -34,7 +34,10 @@
     'https://apex-ai.kd-mc.com/': 'ia', 'https://javis.kd-mc.com/': 'ia', 'https://bot.kd-mc.com/': 'ia',
     'https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/health/workers-status.json': 'ia',
     '/admin/openai.html': 'couts',
-    '/liens/': 'reglages', 'https://autorisations.kd-mc.com/': 'reglages', 'https://coffre.kd-mc.com/': 'reglages'
+    '/liens/': 'reglages', 'https://autorisations.kd-mc.com/': 'reglages', 'https://coffre.kd-mc.com/': 'reglages',
+    /* 23.10 : les 7 tuiles ajoutées (« qu'il ne m'en manque pas ») */
+    'https://claude.ai/artifact/TainhAk9Vrd9k2ZZ2VuVP6': 'ia', 'https://claude.ai/artifact/5akE9yY4MBoRxFUrYAvXJJ': 'ia', 'https://claude.ai/code/artifacts': 'ia',
+    'https://cmcteams.kd-mc.com/tools/messages/': 'messages', 'https://cmcteams.kd-mc.com/tools/finances/': 'reglages'
   };
   function ranger(href) { return RANGEMENT[href] || 'apps'; }
 

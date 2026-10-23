@@ -108,3 +108,16 @@ test('chaque raccourci interne vise une section qui existe vraiment dans la page
   }
   assert.ok(/hashchange/.test(src) && /el\.open = true/.test(src), 'les sections repliées doivent se déplier quand on arrive par une tuile');
 });
+
+/* Kevin 23.10.2026 : « que j'ai toutes les tuiles, qu'il ne m'en manque pas ». Toute carte réservée à l'admin sur le portail
+   (class="card adm") et toute page « Messages employés » doivent avoir LEUR tuile dans l'admin. */
+test('toute carte admin du portail a sa tuile dans l\'admin', async () => {
+  const { readFileSync } = await import('node:fs');
+  const portail = readFileSync(new URL('../kdmc-home/index.html', import.meta.url), 'utf8');
+  const liens = [...portail.matchAll(/class="card adm" href="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(liens.length >= 10, 'cartes admin du portail lues : ' + liens.length);
+  const tableau = readFileSync(new URL('../kdmc-home/admin/tableau.js', import.meta.url), 'utf8');   /* tuiles ajoutées par le tableau (Réglages…) */
+  const manquent = liens.filter((u) => !html.includes('href="' + u + '"') && !tableau.includes("'" + u + "']"));
+  assert.deepEqual(manquent, [], 'tuiles absentes de l\'admin : ' + manquent.join(', '));
+  for (const u of ['https://cmcteams.kd-mc.com/tools/messages/', 'https://claude.ai/code/artifacts']) assert.ok(html.includes('href="' + u + '"'), 'tuile absente : ' + u);
+});

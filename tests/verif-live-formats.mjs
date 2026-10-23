@@ -56,11 +56,20 @@ const MESURES = () => {
   const quels = {};
   for (const e of cibles) { const r = e.getBoundingClientRect(); if (Math.min(r.width, r.height) < 44) { const act = ((e.getAttribute('onclick') || '').match(/^[\s(]*([\w.$]+)/) || [])[1] || ''; const k = `${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : ''}${act ? '[' + act.slice(0, 22) + ']' : ''} ${Math.round(r.width)}×${Math.round(r.height)}`; quels[k] = (quels[k] || 0) + 1; } }
   let petitsTextes = 0;
+  const quelsTextes = {};   /* taille → nombre, et « où » : balise.classe + conteneur nommé le plus proche (jamais le texte) */
+  const parTaille = {};
   for (const e of document.querySelectorAll('body *')) {
     if (!vis(e)) continue;
     let propre = false;
     for (const n of e.childNodes) if (n.nodeType === 3 && n.textContent.trim().length > 1) { propre = true; break; }
-    if (propre && parseFloat(getComputedStyle(e).fontSize) < 14) petitsTextes++;
+    const fs = parseFloat(getComputedStyle(e).fontSize);
+    if (propre && fs < 14) {
+      petitsTextes++;
+      parTaille[fs] = (parTaille[fs] || 0) + 1;
+      const zone = e.closest('[id]'); const z = zone ? '#' + zone.id.replace(/[0-9a-f]{8,}/gi, '…').slice(0, 18) : '';
+      const k = e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className.trim() ? '.' + e.className.trim().split(/\s+/)[0].slice(0, 16) : '') + ' ' + fs + 'px ' + z;
+      quelsTextes[k] = (quelsTextes[k] || 0) + 1;
+    }
   }
   /* la pastille « ← Portail » du routeur recouvre-t-elle un élément de l'app ? on échantillonne 9 points de sa surface */
   let pastille = null, recouverts = 0;
@@ -77,7 +86,7 @@ const MESURES = () => {
     }
     recouverts = vus.size;
   }
-  return { debord: document.documentElement.scrollWidth - window.innerWidth, large: window.innerWidth, cibles: cibles.length, petitsBoutons, quels, petitsTextes, pastille, recouverts };
+  return { debord: document.documentElement.scrollWidth - window.innerWidth, large: window.innerWidth, cibles: cibles.length, petitsBoutons, quels, quelsTextes, parTaille, petitsTextes, pastille, recouverts };
 };
 
 async function ouvrir(cible, largeur) {
@@ -111,6 +120,7 @@ try {
       ok(pret, `${cible.nom} ${largeur} px : l'app est prête connectée en admin (${msPret} ms)`, 'planning / admin non chargés en 60 s');
       ok(m.debord <= 1, `${cible.nom} ${largeur} px : pas de défilement horizontal (débord ${m.debord} px)`, `la page déborde de ${m.debord} px`);
       ok(sonde.erreurs === 0, `${cible.nom} ${largeur} px : aucune erreur JavaScript`, `${sonde.erreurs} erreur(s)`);
+      if (m.petitsTextes) dire(`   ℹ️ ${largeur} px : textes < 14 px par taille : ${Object.entries(m.parTaille).sort((x, y) => y[1] - x[1]).map(([t, n]) => `${t}px ×${n}`).join(' · ')} — où : ${Object.entries(m.quelsTextes).sort((x, y) => y[1] - x[1]).slice(0, 10).map(([k, n]) => `${k} ×${n}`).join(' · ')}`);
       if (m.petitsBoutons) dire(`   ℹ️ ${largeur} px : petites zones (balise.classe largeur×hauteur ×nombre) : ${Object.entries(m.quels).sort((x, y) => y[1] - x[1]).slice(0, 8).map(([k, n]) => `${k} ×${n}`).join(' · ')}`);
       dire(`   ℹ️ ${largeur} px : ${m.cibles} zones cliquables dont ${m.petitsBoutons} < 44 px · ${m.petitsTextes} textes < 14 px · pastille Portail ${m.pastille ? `${m.pastille.w}×${m.pastille.h} en (${m.pastille.x},${m.pastille.y}), recouvre ${m.recouverts} élément(s)` : 'absente'} · DCL ${perf.dcl} ms · load ${perf.load} ms · LCP ${perf.lcp} ms`);
       /* un 401 suivi d'un 200 sur le même chemin = la session n'avait pas encore répondu, la donnée est bien arrivée ; sans 200 après = donnée jamais lue */

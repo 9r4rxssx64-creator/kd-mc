@@ -607,6 +607,8 @@ export async function bootstrapServices(uid: string | null): Promise<readonly In
             const hasLocalKeys = multi && JSON.parse(multi as string).length > 0;
             if (hasLocalKeys) {
               logger.debug('gist-backup-boot', 'Coffre non-vide, skip pull');
+              /* 23.10.2026 : coffre rempli → c'est le moment d'ENVOYER la sauvegarde (une fois par jour, en silence). */
+              await apexGithubGistBackup.pushSiDu();
               return;
             }
             const result = await apexGithubGistBackup.pullBackup();

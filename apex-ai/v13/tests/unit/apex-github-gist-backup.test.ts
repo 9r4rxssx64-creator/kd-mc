@@ -3,6 +3,9 @@
  *
  * Module : services/apex-github-gist-backup.ts (~280 stmts, était 0% coverage).
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../core/logger.js', () => ({
@@ -46,6 +49,51 @@ describe('apex-github-gist-backup (v13.4.141 coverage)', () => {
   afterEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+  });
+
+  describe('pushSiDu (23.10.2026 — la sauvegarde Gist ne partait jamais toute seule)', () => {
+    it("pas encore faite aujourd'hui : envoie, note le résultat, sans rien afficher", async () => {
+      const spy = vi.spyOn(apexGithubGistBackup, 'pushBackup').mockResolvedValue({ ok: true, gist_id: 'g1', bytes: 10 });
+      const r = await apexGithubGistBackup.pushSiDu();
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(r.fait).toBe(true);
+      const note = JSON.parse(localStorage.getItem('apex_v13_gist_backup_dernier') ?? '{}') as { ok?: boolean; ts?: number };
+      expect(note.ok).toBe(true);
+      expect(typeof note.ts).toBe('number');
+      spy.mockRestore();
+    });
+    it("déjà réussie il y a moins de 24 h : n'envoie rien", async () => {
+      localStorage.setItem('apex_v13_gist_backup_dernier', JSON.stringify({ ts: Date.now() - 3600_000, ok: true }));
+      const spy = vi.spyOn(apexGithubGistBackup, 'pushBackup');
+      const r = await apexGithubGistBackup.pushSiDu();
+      expect(spy).not.toHaveBeenCalled();
+      expect(r.fait).toBe(false);
+      spy.mockRestore();
+    });
+    it("un échec est noté avec sa cause et réessayé dans l'heure, pas 24 h plus tard", async () => {
+      const spy = vi.spyOn(apexGithubGistBackup, 'pushBackup').mockResolvedValue({ ok: false, error: 'jeton GitHub refusé (expiré ou révoqué)' });
+      await apexGithubGistBackup.pushSiDu();
+      const note = JSON.parse(localStorage.getItem('apex_v13_gist_backup_dernier') ?? '{}') as { ok?: boolean; erreur?: string; ts?: number };
+      expect(note.ok).toBe(false);
+      expect(note.erreur).toContain('refusé');
+      localStorage.setItem('apex_v13_gist_backup_dernier', JSON.stringify({ ...note, ts: Date.now() - 2 * 3600_000 }));
+      await apexGithubGistBackup.pushSiDu();
+      expect(spy).toHaveBeenCalledTimes(2);
+      spy.mockRestore();
+    });
+    it("non-admin : ne tente rien", async () => {
+      mockAuth.isAdminSync.mockReturnValue(false);
+      const spy = vi.spyOn(apexGithubGistBackup, 'pushBackup');
+      const r = await apexGithubGistBackup.pushSiDu();
+      expect(spy).not.toHaveBeenCalled();
+      expect(r.fait).toBe(false);
+      spy.mockRestore();
+    });
+  });
+
+  it("déclaration ≠ déploiement : le démarrage d'Apex appelle bien pushSiDu", () => {
+    const src = readFileSync(join(process.cwd(), 'services/core-svc/services-bootstrap.ts'), 'utf8');
+    expect(src).toMatch(/apexGithubGistBackup\.pushSiDu\(\)/);
   });
 
   describe('pushBackup', () => {

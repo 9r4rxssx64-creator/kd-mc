@@ -10,6 +10,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - « telemetry pushIncoming persist failed » (mémoire pleine) : file locale limitée à 50 entrées réduites ; si la mémoire refuse encore, 10 entrées, puis la file est vidée (Firebase a la copie). Tâches 22 et 4 du pont.
 - Preuves : `tests/unit/coffre-jeton-recharge.test.ts` 9/9 ; contre l'ancien code 6 rouges sur 8 (et 3 pour le seul fichier Gist). Leçon 739.
 
+## Apex AI v13.4.385 (2026-10-23 — la sauvegarde GitHub part enfin toute seule)
+- La sauvegarde chiffrée du coffre vers un gist GitHub privé ne partait plus jamais (GitHub : jeton « jamais utilisé », dernier gist de mai). Elle part maintenant au démarrage, en silence (ni fenêtre, ni QR), au plus une fois par 24 h ; un échec est noté avec sa cause et réessayé au bout d'une heure.
+
 ## Apex AI v13.4.384 (2026-10-22 — fin de la notification « 1 clés restaurées » à chaque ouverture)
 - Une clé mal rangée déplacée vers sa bonne case est notée « retirée » : la sauvegarde ne la remet plus (fin de la boucle déplacement / restauration, plus de copie de secours empilée à chaque ouverture).
 - Bouton « Sync maintenant » : le message nomme le service et la cause (« GitHub Gist : clé absente du Coffre »…).

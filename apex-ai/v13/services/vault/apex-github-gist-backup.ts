@@ -77,6 +77,37 @@ class ApexGithubGistBackup {
   private readonly THROTTLE_MS = 30_000; /* min 30s entre 2 pushes */
 
   /**
+   * 23.10.2026 (Kevin « Vérifier que la sauvegarde GitHub part enfin », pont 447) : GitHub a montré que le jeton
+   * « gist » n'avait JAMAIS servi et que le dernier gist datait de mai. Cause : l'envoi ne partait que quand Kevin
+   * collait une clé ; depuis la 383 une clé restaurée ne le déclenche plus (voulu : fin du QR à chaque ouverture),
+   * donc plus rien ne l'envoyait. Ici : un envoi silencieux (ni fenêtre, ni QR, ni bulle) au plus une fois par 24 h
+   * après un succès, et une nouvelle tentative au bout d'une heure après un échec. Le résultat (et la cause, jamais
+   * le jeton) est noté dans `apex_v13_gist_backup_dernier`.
+   */
+  async pushSiDu(): Promise<{ fait: boolean; ok?: boolean; erreur?: string }> {
+    if (!auth.isAdminSync()) return { fait: false };
+    const CLE = 'apex_v13_gist_backup_dernier';
+    try {
+      const note = JSON.parse(localStorage.getItem(CLE) ?? 'null') as { ts?: number; ok?: boolean } | null;
+      if (note && typeof note.ts === 'number') {
+        const age = Date.now() - note.ts;
+        if (note.ok && age < 24 * 3600_000) return { fait: false };
+        if (!note.ok && age < 3600_000) return { fait: false };
+      }
+    } catch { /* note illisible : on tente */ }
+    const r = await this.pushBackup({ force: true });
+    /* Rien à sauvegarder ou pas de jeton : pas une panne, on réessaiera au prochain démarrage. */
+    if (!r.ok && (r.error === 'github_token_missing' || r.error === 'vault_empty_skip' || r.error === 'admin_only_push')) {
+      return { fait: false, ok: false, erreur: r.error };
+    }
+    try {
+      localStorage.setItem(CLE, JSON.stringify({ ts: Date.now(), ok: r.ok, ...(r.ok ? {} : { erreur: String(r.error ?? 'inconnu').slice(0, 200) }) }));
+    } catch { /* quota */ }
+    if (!r.ok) logger.warn('gist-backup', `sauvegarde quotidienne non faite : ${r.error ?? 'inconnu'}`);
+    return { fait: true, ok: r.ok, ...(r.ok ? {} : { erreur: r.error ?? 'inconnu' }) };
+  }
+
+  /**
    * Push tout le vault encrypted vers Gist privé.
    * Idempotent : update gist existant ou crée.
    * Admin only.

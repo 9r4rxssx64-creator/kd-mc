@@ -54,7 +54,7 @@ const MESURES = () => {
   const petitsBoutons = cibles.filter((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height) < 44; }).length;
   /* quels éléments : balise + classe + taille seulement (jamais le texte : il peut porter un nom de personne) */
   const quels = {};
-  for (const e of cibles) { const r = e.getBoundingClientRect(); if (Math.min(r.width, r.height) < 44) { const k = `${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : ''} ${Math.round(r.width)}×${Math.round(r.height)}`; quels[k] = (quels[k] || 0) + 1; } }
+  for (const e of cibles) { const r = e.getBoundingClientRect(); if (Math.min(r.width, r.height) < 44) { const act = ((e.getAttribute('onclick') || '').match(/^[\s(]*([\w.$]+)/) || [])[1] || ''; const k = `${e.tagName.toLowerCase()}${e.className && typeof e.className === 'string' ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : ''}${act ? '[' + act.slice(0, 22) + ']' : ''} ${Math.round(r.width)}×${Math.round(r.height)}`; quels[k] = (quels[k] || 0) + 1; } }
   let petitsTextes = 0;
   for (const e of document.querySelectorAll('body *')) {
     if (!vis(e)) continue;

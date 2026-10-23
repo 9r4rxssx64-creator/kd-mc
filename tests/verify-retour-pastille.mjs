@@ -132,9 +132,12 @@ try {
   const ROTA = "default-src 'self'; script-src 'none'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'";
   const racine = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta http-equiv="Content-Security-Policy" content="' + ROTA + '"><title>Rotaplan</title></head><body><h1>Rotaplan</h1><p>Page sans script</p></body></html>';
   const transformer = async (html, opts, entetes) => (await injecterBouton(new Response(html, { status: 200, headers: Object.assign({ 'content-type': 'text/html' }, entetes || {}) }), '', opts)).text();
-  { const t = await transformer(racine, { hote: 'rotaplan.kd-mc.com', dest: 'document' });
+  /* 23.10 : la politique réelle d'une boutique est posée à la fois par la balise <meta> ET par l'en-tête — le routeur doit réécrire LES DEUX (nonce de CETTE réponse), sinon l'installateur est refusé (pont 419) */
+  const repRota = await injecterBouton(new Response(racine, { status: 200, headers: { 'content-type': 'text/html', 'content-security-policy': ROTA } }), '', { hote: 'rotaplan.kd-mc.com', dest: 'document' });
+  const cspServi = repRota.headers.get('content-security-policy') || ROTA;
+  { const t = await repRota.text();
     ok(t.includes(PASTILLE_SANS_SCRIPT) && !t.includes('/__boite/bouton.js'), '5a. CSP « script-src none » : pas de script injecté, mais le lien de sortie est posé par le routeur');
-    const A = await ouvrir(browser, 'rotaplan.kd-mc.com', { '/': t }, { mesTout: true, csp: ROTA });
+    const A = await ouvrir(browser, 'rotaplan.kd-mc.com', { '/': t }, { mesTout: true, csp: cspServi });
     const p = await A.page.evaluate(() => { const a = document.querySelector('a[data-kdmc-pastille="routeur"]'); if (!a) return null; const r = a.getBoundingClientRect(), cs = getComputedStyle(a); return { href: a.getAttribute('href'), pos: cs.position, h: Math.round(r.height), w: Math.round(r.width), x: Math.round(r.left), y: Math.round(r.top) }; });
     ok(p && p.href === 'https://kd-mc.com/' && p.pos === 'fixed' && p.h >= 44 && p.w >= 44 && p.x <= 12 && p.y <= 16, '5b. dans Chromium, sous la CSP réelle de Rotaplan, le lien est visible, fixe en haut à gauche, ≥ 44 px', p);
     ok(A.erreurs.filter((e) => /Content Security Policy/i.test(e)).length === 0, '5c. aucune violation de CSP', A.erreurs);

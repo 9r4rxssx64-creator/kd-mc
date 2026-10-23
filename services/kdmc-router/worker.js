@@ -1901,6 +1901,9 @@ const PORTES = [
   { dossier: '/CMCteams/kdmc-home/empreinte', niveau: 'admin', verrou: () => priveLock('Changer mon code admin', '🔑') },
   { dossier: '/CMCteams/tools/finances', niveau: 'admin', verrou: () => priveLock('Finances', '💰') },
   { dossier: '/CMCteams/tools/messages', niveau: 'admin', verrou: () => priveLock('Messages employés', '📨') },
+  /* 23.10 (Kevin : « tout moi seul pour l'instant ; on changera quand elle aura mis en place sa boutique ») : Dashboard boutiques et Sourcing aussi. */
+  { dossier: '/CMCteams/shops/dashboard', niveau: 'admin', verrou: () => priveLock('Dashboard boutiques', '📊') },
+  { dossier: '/CMCteams/shops/sourcing', niveau: 'admin', verrou: () => priveLock('Sourcing fournisseurs', '📦') },
   { dossier: '/CMCteams/tools/cuisine', niveau: 'fiche', app: 'cuisine.kd-mc.com', nom: 'A Cüjina de Mùnegu' },
   { dossier: '/CMCteams/kdmc-home/worldmonitor', niveau: 'fiche', app: 'worldmonitor.kd-mc.com', nom: 'World Monitor' },
   { dossier: '/CMCteams/kdmc-home/osint', niveau: 'fiche', app: 'osint.kd-mc.com', nom: 'OSINT' },

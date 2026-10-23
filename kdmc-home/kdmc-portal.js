@@ -131,7 +131,8 @@
          (verified) + nom autorisé. Un inconnu qui tape "Kevin"/"Laurence" SANS Face ID
          n'est PAS verified → ne voit rien (leçon #99 : un nom auto-déclaré n'accorde aucun droit). */
       /* 23.10 (Kevin : « aucun bouton, aucune possibilité pour les autres d'atterrir dans ma partie ») : en VUE MEMBRE (s.apercu), même Kevin ne voit pas l'espace privé. */
-      var isPriv = !(s && s.apercu) && (!!(s && s.admin) || (!!(s && s.verified) && named));
+      /* 23.10 (Kevin : « tout moi seul pour l'instant ») : l'espace privé n'est plus ouvert à Laurence (nom + Face ID) — admin prouvé seulement. */
+      var isPriv = !(s && s.apercu) && !!(s && s.admin);
       priv.hidden = !isPriv;
       /* 16.10 : le tableau de bord, tout en haut de la page, suit la même règle que « Mon espace » */
       var tdb = document.getElementById('tdb-haut'); if (tdb) tdb.hidden = !isPriv;

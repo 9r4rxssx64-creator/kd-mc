@@ -34,7 +34,7 @@ const va = async (url, extra, asn, e) => {
 const SRC = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 const HOTES = [...SRC.match(/const ROUTES\s*=\s*\{[\s\S]*?\n\};/)[0].matchAll(/'([a-z0-9.-]+\.kd-mc\.com)':/g)].map((x) => x[1]).filter((h) => h !== 'admin.kd-mc.com');
 const PORTAIL = ['kd-mc.com', 'www.kd-mc.com'];
-const ADMIN_SEUL = ['beatbot.kd-mc.com', 'autorisations.kd-mc.com', 'staging.kd-mc.com', 'coffre.kd-mc.com', 'bot.kd-mc.com'];   /* verrou « admin » (code / Face ID), plus strict que la fiche — coffre et bot depuis le 23.10 (test:vue-admin) */
+const ADMIN_SEUL = ['beatbot.kd-mc.com', 'autorisations.kd-mc.com', 'staging.kd-mc.com', 'coffre.kd-mc.com', 'bot.kd-mc.com', 'dashboard.kd-mc.com', 'sourcing.kd-mc.com'];   /* verrou « admin » (code / Face ID), plus strict que la fiche — coffre et bot depuis le 23.10 (test:vue-admin) */
 ok(HOTES.length >= 30, 'adresses lues dans ROUTES : ' + HOTES.length);
 
 /* 1. Un inconnu : la porte sur CHAQUE adresse (sauf le portail), jamais la page. */

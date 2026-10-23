@@ -36,7 +36,7 @@ const kevin = 'kdmc_sso=' + signe('kdmc_admin', 1);
 const grant = signe('__kdmc_admin__', 1);
 
 /* 1 — pages privées */
-const PRIVEES = ['https://coffre.kd-mc.com/', 'https://bot.kd-mc.com/', 'https://kd-mc.com/admin/', 'https://kd-mc.com/admin/commerce.html', 'https://kd-mc.com/liens/',
+const PRIVEES = ['https://coffre.kd-mc.com/', 'https://bot.kd-mc.com/', 'https://dashboard.kd-mc.com/', 'https://sourcing.kd-mc.com/', 'https://kd-mc.com/admin/', 'https://kd-mc.com/admin/commerce.html', 'https://kd-mc.com/liens/',
   'https://kd-mc.com/clone/', 'https://kd-mc.com/empreinte/', 'https://cmcteams.kd-mc.com/tools/finances/', 'https://cmcteams.kd-mc.com/tools/messages/'];
 for (const u of PRIVEES) {
   const m = await va(u, { cookie: anne }); ok(!m.servi && /espace privé|Réservé à l'administrateur/.test(m.t), 'MEMBRE → ' + u + ' : verrou admin, rien de servi  [' + m.st + ']');

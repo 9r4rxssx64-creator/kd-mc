@@ -21,7 +21,7 @@
 import { ACTIONS_ARBRE } from './bee-arbre-ecrire.js';   // Bee modifie l'arbre (Kevin 15.10 : « modifier, chercher, arranger… comme toi et Apex ») : propose → ✅ → écrit champ par champ avec copie avant
 import { DROITS, outilsLectureDroits, RE_DROITS } from './bee-droits.js';
 import { ACTIONS_TACHES, outilsTaches, RE_TACHES, REGLES_TACHES } from './bee-taches.js';   // tâches de code déposées pour Claude Code (Kevin 16.10)
-import { DROITS_MAX, outilsLectureMax, RE_DROITS_MAX } from './bee-droits-max.js';   // Kevin 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par lui seul), régler le robot (testnet)
+import { DROITS_MAX, ACTIONS_DROITS_MAX, droitsMaxOuverts, TEXTE_FERME, outilsLectureMax, RE_DROITS_MAX } from './bee-droits-max.js';   // Kevin 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par lui seul), régler le robot (testnet)
 import { DROITS_PLUS, outilsLecturePlus, RE_DROITS_PLUS } from './bee-droits-plus.js';   // la suite (Kevin 16.10 : « il doit pouvoir tout faire… ») : lire plus, gérer les comptes, régler le robot — jamais le coffre, le code admin, l'argent réel   // les droits admin du domaine (Kevin 13.10 : « donne-lui tous les droits », confirmé par lui : liste + bouton ✅)
 
 export const VALIDITE_MS = 5 * 60e3;
@@ -205,6 +205,7 @@ export const ACTIONS = Object.keys(CATALOGUE);
 export async function proposer(env, action, champsBruts, now, ctx) {
   const a = CATALOGUE[String(action || '')]; now = now || Date.now();
   if (!a) return { ok: false, erreur: 'Action inconnue. Actions possibles : ' + ACTIONS.join(', ') + '.' };
+  if (ACTIONS_DROITS_MAX.includes(String(action)) && !droitsMaxOuverts(env)) return { ok: false, erreur: TEXTE_FERME };   // fermé par Kevin le 23.10 (bee-droits-max.js)
   const v = a.valider(champsBruts || {}, now);
   if (v.erreur) return { ok: false, erreur: v.erreur };
   /* ENRICHIR : le DOMAINE complète les champs avec des faits vrais (ex. le NOM de la personne visée, lu chez lui) : le résumé que Kevin lit ne vient jamais de l'IA. */
@@ -311,6 +312,7 @@ export async function handleAgir(request, env, outils) {
   const p = await verifier(env, b.jeton, now);
   if (!p) return J({ ok: false, reason: 'proposition_invalide_ou_expiree', texte: 'Cette proposition a expiré ou n\'est pas valide : redemande-la à Bee.' }, 400);
   const a = CATALOGUE[p.a]; if (!a) return J({ ok: false, reason: 'action_inconnue' }, 400);
+  if (ACTIONS_DROITS_MAX.includes(p.a) && !droitsMaxOuverts(env)) return J({ ok: false, reason: 'droit_ferme', texte: TEXTE_FERME }, 403);   // même une proposition signée AVANT la fermeture ne s'exécute plus
   if (!(await premiereFois(env, p.n, p.exp, now))) return J({ ok: false, reason: 'deja_utilisee', texte: 'Cette proposition a déjà été utilisée.' }, 409);
   let r;
   try { r = await a.executer(env, p.c, { now, appeler: (chemin, init) => outils.appeler(request, chemin, init), armer: outils.armer ? () => outils.armer() : null, arbre: outils.arbre ? outils.arbre() : null }); }

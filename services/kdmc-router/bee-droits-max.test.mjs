@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 import { createHash, createHmac } from 'node:crypto';
 import mod from './worker.js';
 import { CATALOGUE, ACTIONS, RE_AGIR } from './bee-agir.js';
-import { DROITS_MAX, ACTIONS_DROITS_MAX, codeAuHasard, RE_DROITS_MAX } from './bee-droits-max.js';
+import { DROITS_MAX, ACTIONS_DROITS_MAX, PORTES_DROITS_MAX, droitsMaxOuverts, codeAuHasard, RE_DROITS_MAX } from './bee-droits-max.js';
 
 let pass = 0, fail = 0;
 const ok = (c, m, d) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m + (d !== undefined ? ' → ' + String(d).slice(0, 300) : '')); } };
@@ -38,7 +38,7 @@ globalThis.fetch = async (url, init) => {
   }
   return R({ error: 'réseau non prévu : ' + u }, 599);
 };
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', RAILWAY_TOKEN: 'rt', AI: { run: async () => ({ response: 'ancien chemin' }) } };
+const env = { BEE_DROITS_MAX: '1', KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', RAILWAY_TOKEN: 'rt', AI: { run: async () => ({ response: 'ancien chemin' }) } };
 const att = []; const ctx = { waitUntil: (x) => att.push(x), passThroughOnException() {} };
 const req = async (hote, chemin, { m = 'GET', headers = {}, corps } = {}) => { const r = await mod.fetch(new Request('https://' + hote + chemin, { method: m, headers, body: corps === undefined ? undefined : JSON.stringify(corps) }), env, ctx); await Promise.all(att.splice(0)); return r; };
 const login = await req('kd-mc.com', '/__admin/login', { m: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' }, corps: { code: '424242' } });
@@ -131,6 +131,30 @@ for (const q of ['crée un compte pour Paul Durand', 'régle le risque du robot 
   ok(RE_AGIR.test(q), '5e. prend les mains : « ' + q + ' »');
 ok(!RE_DROITS_MAX.test('bonjour, il fait beau, la réalité est belle') && !RE_DROITS_MAX.test('quelle position pour dormir ?'), '5f. une conversation ordinaire ne prend pas les mains');
 ok(!/openai|anthropic|api\.openai|stripe/i.test(MAXSRC), '5g. 0 € : aucun moteur payant');
+
+
+/* ───────── 6. FERMÉS PAR KEVIN (« Ferme pour l'instant », 23.10) : trois verrous, aucun ne suffit seul ───────── */
+{ ok(droitsMaxOuverts({ BEE_DROITS_MAX: '1' }) && !droitsMaxOuverts({}) && !droitsMaxOuverts({ BEE_DROITS_MAX: '0' }) && !droitsMaxOuverts({ BEE_DROITS_MAX: 'oui' }), '6. fermé PAR DÉFAUT : seul "1" ouvre (absent, "0", "oui" = fermé)');
+  const wr = readFileSync(new URL('./wrangler.toml', import.meta.url), 'utf8');
+  ok(/^BEE_DROITS_MAX = "0"/m.test(wr), '6b. la configuration du routeur le pose à "0"');
+  const prop = (await carte('crée le compte de Nina Roux', 'compte_creer', { prenom: 'Nina', nom: 'Roux', telephone: '0611223344' })).p;
+  ok(prop && prop.jeton, '6c. (ouvert) une proposition signée existe');
+  const envF = Object.assign({}, env, { BEE_DROITS_MAX: '0' });
+  const avantKv = JSON.stringify([...kv.entries()]);
+  /* verrou 1 : la proposition */
+  const { proposer } = await import('./bee-agir.js');
+  for (const [a, ch] of [['compte_creer', { prenom: 'Nina', nom: 'Roux', telephone: '0611223344' }], ['robot_reglage', { risque_pct: 2 }]]) {
+    const r = await proposer(envF, a, ch, Date.now(), { appeler: async () => ({ ok: true, config: {} }) });
+    ok(!r.ok && /fermé ce droit pour l'instant/.test(r.erreur) && /rouvre/.test(r.erreur), '6d. verrou 1 — ' + a + ' : aucune carte, Kevin lit « rouvre » — ' + (r.erreur || '').slice(0, 80)); }
+  /* verrou 2 : une carte signée AVANT la fermeture ne s'exécute plus */
+  const rr = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/agir', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://javis.kd-mc.com' }, KEVIN), body: JSON.stringify({ jeton: prop.jeton, confirme: true }) }), envF, ctx);
+  const jr = await rr.json();
+  ok(rr.status === 403 && jr.reason === 'droit_ferme' && !/CODE :/.test(jr.texte || '') && JSON.stringify([...kv.entries()]) === avantKv, '6e. verrou 2 — ✅ sur une carte déjà signée : 403 « droit_ferme », aucun compte, aucun code — ' + JSON.stringify(jr).slice(0, 120));
+  /* verrou 3 : les PORTES elles-mêmes */
+  reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'robot_config', {})] }, { content: 'Voilà.' }];
+  await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, KEVIN), body: JSON.stringify({ messages: [{ role: 'user', content: 'montre-moi le réglage du robot' }] }) }), envF, ctx);
+  ok(/porte_non_autorisee/.test(toolMsgs()), '6f. verrou 3 — la lecture du réglage du robot est refusée à la PORTE (porte_non_autorisee) — ' + toolMsgs().slice(-120));
+  ok(PORTES_DROITS_MAX.length === 2 && PORTES_DROITS_MAX.every((x) => PORTES.includes(x)), '6g. les 2 portes fermées par l\'interrupteur sont exactement celles de la liste blanche ajoutées le 23.10'); }
 
 console.log(`${pass} ✓ / ${fail} ✗  (bee-droits-max)`);
 process.exit(fail ? 1 : 0);

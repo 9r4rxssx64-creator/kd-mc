@@ -37,6 +37,7 @@ import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE 
 import { REGLES_TACHES } from './bee-taches.js';   // Bee dépose les tâches de code pour Claude Code (derrière ✅)
 import { avecJournal, bilanDiag } from './bee-diag.js';   // le journal des demandes à Bee + son test de bout en bout (Kevin 16.10 : « je ne peux rien lui faire faire »)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
+import { PORTES_DROITS_MAX, droitsMaxOuverts } from './bee-droits-max.js';   // Kevin 23.10 « Ferme pour l'instant » : ces 2 portes restent fermées sauf BEE_DROITS_MAX = "1"
 import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR, CATALOGUE as CATALOGUE_BEE, ACTIONS as ACTIONS_BEE } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
 import { handlePartout, PARTOUT_TAG, MARQUEUR, nonceBee, cspPourBee, cspAccepteBee, marqueurKevin } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
 export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wrangler.toml)   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
@@ -4858,6 +4859,7 @@ function outilsBee(env, ctx) {
     },
     appeler: async (request, chemin, init) => {
       if (PORTES_BEE.indexOf(String(chemin).split('?')[0]) < 0) return { ok: false, status: 0, reason: 'porte_non_autorisee' };
+      if (PORTES_DROITS_MAX.indexOf(String(chemin).split('?')[0]) >= 0 && !droitsMaxOuverts(env)) return { ok: false, status: 0, reason: 'porte_non_autorisee' };   // droits fermés par Kevin (23.10) : la porte reste fermée tant que BEE_DROITS_MAX n'est pas "1"
       const h = new Headers();
       for (const k of ['cookie', 'authorization', 'x-kdmc-sso', 'x-kdmc-admin']) { const v = request.headers.get(k); if (v) h.set(k, v); }
       const o = new URL(request.url).origin;

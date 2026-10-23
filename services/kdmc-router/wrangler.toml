@@ -156,6 +156,8 @@ namespace_id = "2706"
 simple = { limit = 10, period = 60 }
 
 [vars]
+# 23.10 (Kevin : « Ferme pour l'instant ») : créer un compte et régler le robot par Bee sont FERMÉS. "1" les rouvre (à poser seulement quand Kevin dit « rouvre »).
+BEE_DROITS_MAX = "0"
 KDMC_PUSH_URL = "https://apex-push-worker.9r4rxssx64.workers.dev"
 # 15.10 (Kevin : « En attendant WhatsApp je valide manuellement ») : toute NOUVELLE inscription attend ton accord dans « Mes messages ».
 # Pour revenir à l'inscription libre (numéro cru) : "0" puis redéployer le routeur.

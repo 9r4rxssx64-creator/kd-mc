@@ -95,6 +95,11 @@ export const DROITS_MAX = {
   },
 };
 export const ACTIONS_DROITS_MAX = Object.keys(DROITS_MAX);
+/* L'INTERRUPTEUR (Kevin 23.10 soir : « Ferme pour l'instant ») : ces droits sont FERMÉS par défaut ; seul BEE_DROITS_MAX = "1" (variable du routeur, posée par Claude Code quand Kevin dit « rouvre ») les ouvre.
+   Fermés à TROIS endroits (aucun ne suffit seul) : la proposition (bee-agir.js), l'exécution après ✅ (handleAgir), et les PORTES elles-mêmes (appeler, worker.js). */
+export const PORTES_DROITS_MAX = ['/__admin/compte-invite', '/__bot/config'];
+export const droitsMaxOuverts = (env) => String(env && env.BEE_DROITS_MAX) === '1';
+export const TEXTE_FERME = 'Tu as fermé ce droit pour l\'instant (créer un compte, régler le robot) : je ne peux ni le proposer ni le faire. Dis-moi « rouvre » et je le rouvre.';
 
 export function outilsLectureMax(o) {
   const defs = [

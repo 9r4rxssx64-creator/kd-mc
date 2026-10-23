@@ -1,0 +1,77 @@
+name: Staging Apex Chat — déployer le Worker de TEST (page + API, base staging-apex-chat)
+
+# 23.10.2026 (tâche « Staging : brancher un Worker Apex Chat », pont 552/553/339/558). Déploie `apex-chat-api-staging` (config :
+# messaging-app/workers/wrangler.staging.toml) : une copie d'Apex Chat qui n'utilise QUE la base de test, un KV de test, un bucket de test,
+# ses propres Durable Objects ; aucun cron, aucune file, aucun push. Adresse : https://apex-chat-api-staging.9r4rxssx64.workers.dev
+# À la main uniquement, aucun cron. Ne touche JAMAIS le Worker de production (autre nom, autre base).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-apex-chat-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      HOTE: apex-chat-api-staging.9r4rxssx64.workers.dev
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: '22' }
+      - name: Installer wrangler
+        run: npm install -g wrangler@4
+
+      - name: Pages de staging (adresse de l'API remplacée)
+        run: node messaging-app/tools/staging-site.mjs messaging-app/.staging-site
+
+      - name: Bucket R2 de test
+        working-directory: messaging-app/workers
+        run: wrangler r2 bucket create apex-chat-media-staging || echo "(bucket déjà là, ou droit R2 absent : le déploiement le dira)"
+
+      - name: Déployer le Worker de test
+        working-directory: messaging-app/workers
+        env:
+          WRANGLER_LOG_PATH: ${{ runner.temp }}/wrangler-logs
+        run: wrangler deploy -c wrangler.staging.toml
+
+      - name: Cause lisible d'un déploiement refusé
+        if: failure()
+        run: |
+          f=$(ls -t "$RUNNER_TEMP"/wrangler-logs/*.log 2>/dev/null | head -1)
+          [ -n "$f" ] || { echo "::error title=wrangler::aucun journal wrangler trouvé"; exit 0; }
+          grep -iE "error|✘|\[ERROR\]|code:" "$f" | sed -E 's/[0-9a-f]{32}/***/g' | cut -c1-300 | head -12 | while IFS= read -r l; do echo "::error title=wrangler::$l"; done
+
+      - name: Secrets du Worker de test (générés une fois, jamais affichés)
+        working-directory: messaging-app/workers
+        run: |
+          EXISTING=$(wrangler secret list -c wrangler.staging.toml 2>/dev/null || echo '[]')
+          has_secret() { echo "$EXISTING" | grep -q "\"$1\""; }
+          put_secret() { printf '%s' "$2" | wrangler secret put "$1" -c wrangler.staging.toml >/dev/null; }
+          for S in JWT_SIGN_KEY APEX_CHAT_ADMIN_TOKEN; do
+            if has_secret "$S"; then echo "::notice::$S déjà présent — conservé"; else put_secret "$S" "$(openssl rand -hex 48)"; echo "::notice::$S généré (première fois)"; fi
+          done
+
+      - name: Preuve en ligne (santé, page, base de test)
+        run: |
+          set -e
+          code=000
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/h.json -w '%{http_code}' "https://$HOTE/api/health" || true)
+            [ "$code" = "200" ] && break; sleep 8
+          done
+          echo "santé HTTP $code"; sed -E 's/[0-9a-f]{32}/***/g' /tmp/h.json | cut -c1-300; echo
+          [ "$code" = "200" ] || { echo "::error::l'API de staging ne répond pas"; exit 1; }
+          grep -q '"d1":"ok"' /tmp/h.json || { echo "::error::la base de test ne répond pas"; exit 1; }
+          page=$(curl -s "https://$HOTE/")
+          echo "$page" | grep -q "STAGING" || { echo "::error::la page de staging n'a pas le bandeau STAGING"; exit 1; }
+          if echo "$page" | grep -q "apex-chat-api.9r4rxssx64.workers.dev"; then echo "::error::la page de staging vise encore l'API de PRODUCTION"; exit 1; fi
+          echo "::notice::staging en ligne : https://$HOTE/ (API + page, base staging-apex-chat)"

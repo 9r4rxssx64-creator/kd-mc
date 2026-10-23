@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Staging d'Apex Chat — Worker de test (2026-10-23, pas de version d'app)
+- Worker `apex-chat-api-staging` (config `wrangler.staging.toml`) : même code que la production, base `staging-apex-chat`, KV et bucket de test, Durable Objects propres, aucun cron / file / push, inscription par numéro de test (`ALLOW_TEST_OTP`) seulement ici. La page est servie par le Worker (`tools/staging-site.mjs` : adresse de l'API remplacée, bandeau « STAGING », robots interdit). Robot public `deploy-apex-chat-staging.yml` (à la main) avec preuve en ligne (santé, base, page). Garde `test:staging-worker`.
+
 ## Staging d'Apex Chat — base de test (2026-10-23, outil + robot, pas de version d'app)
 - `tools/staging/apex-chat-staging.mjs` : schéma (migrations 0001→0028), jeu de test (3 comptes « test-audit-… » jetables, 2 conversations, 4 messages chiffrés factices), comptage, remise à zéro vers l'état de référence, contrôle « aucune trace » (lignes ajoutées + empreinte des lignes de référence). Robot public gratuit `staging-apex-chat-donnees.yml` (à la main, aucun cron), action `cycle` = preuve de bout en bout. Refuse tout nom qui ne commence pas par `staging-` et l'identifiant de la production.
 - Garde `npm run test:staging-apex-chat` (22 contrôles, vraie SQLite, rouge sous sabotage). Tâche 33 du pont. Leçon 752.

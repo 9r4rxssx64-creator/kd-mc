@@ -1,0 +1,76 @@
+# ============================================================================
+#  Apex Chat — STAGING (environnement de TEST, jamais la production)
+#  Tâche « Staging : brancher un Worker Apex Chat », pont 552/553/339 (23.10.2026).
+#
+#  Même code que la production (api-worker.js), mais :
+#   - un Worker À PART  : apex-chat-api-staging  → https://apex-chat-api-staging.9r4rxssx64.workers.dev
+#   - une base D1 à part : staging-apex-chat (outil : tools/staging/apex-chat-staging.mjs)
+#   - un KV à part       : staging-ACCOUNTS ; un bucket R2 à part : apex-chat-media-staging
+#   - ses propres Durable Objects (nouveau script = nouveaux objets, rien de partagé)
+#   - la page est servie PAR le Worker (dossier d'actifs produit par tools/staging-site.mjs : adresse de l'API remplacée)
+#   - AUCUN cron, AUCUNE file d'attente, AUCUN push (pas de service PUSH_WORKER, adresse push neutralisée) : un essai ne peut rien envoyer à personne
+#   - ALLOW_TEST_OTP = "true" : on s'inscrit avec un numéro de test et le code 000000 — UNIQUEMENT ici (la production reste à "false")
+#  Garde : tests/verify-staging-worker.mjs (aucun identifiant de production dans ce fichier).
+# ============================================================================
+
+name = "apex-chat-api-staging"
+main = "api-worker.js"
+compatibility_date = "2026-04-27"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[ai]
+binding = "AI"
+
+# Pages de l'app (copie de messaging-app/ avec l'adresse de l'API de staging), servies avant le code du Worker.
+[assets]
+directory = "../.staging-site"
+binding = "ASSETS"
+run_worker_first = ["/api/*", "/health"]
+
+[[d1_databases]]
+binding = "APEX_CHAT_DB"
+database_name = "staging-apex-chat"
+database_id = "655bac27-c95d-4fb5-8fb4-b5dc90328678"
+
+[[r2_buckets]]
+binding = "APEX_CHAT_MEDIA"
+bucket_name = "apex-chat-media-staging"
+
+[[kv_namespaces]]
+binding = "APEX_CHAT_CACHE"
+id = "92ffd03d55784d45a685818982314e69"  # staging-ACCOUNTS
+
+[[kv_namespaces]]
+binding = "APEX_CHAT_KV"
+id = "92ffd03d55784d45a685818982314e69"  # staging-ACCOUNTS
+
+[[durable_objects.bindings]]
+name = "CONVERSATION_DO"
+class_name = "ConversationDO"
+
+[[durable_objects.bindings]]
+name = "BROADCAST_DO"
+class_name = "BroadcastDO"
+
+[[durable_objects.bindings]]
+name = "PRESENCE_DO"
+class_name = "PresenceDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ConversationDO", "BroadcastDO", "PresenceDO"]
+
+[vars]
+ENV = "staging"
+APEX_BASE_URL = "https://staging.kd-mc.com/"
+APEX_CHAT_BASE_URL = "https://apex-chat-api-staging.9r4rxssx64.workers.dev/"
+ADMIN_MODE = "A"
+KEVIN_INVISIBLE_ADMIN = "true"
+ADMIN_BYPASS_REQUIRE_MFA = "true"
+ALLOW_TEST_OTP = "true"
+AUTH_PROVIDER = "firebase"
+TURN_PROVIDER = "p2p-only"
+JWT_ISSUER = "apex-chat-staging"
+# Adresse neutre : même si du code tentait un envoi push, rien ne partirait vers le vrai worker de notifications.
+APEX_PUSH_WORKER_URL = "https://push-desactive.invalid"

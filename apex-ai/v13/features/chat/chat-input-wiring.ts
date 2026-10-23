@@ -96,21 +96,31 @@ export function wireChatInput(rootEl: HTMLElement, ctx: ChatInputCtx): void {
             toast.success(`🔑 ${result.stored.length} clé(s) chiffrée(s) AES-GCM-256 : ${names}`, { duration: 6000 });
             /* v13.4.102 — Vérification asynchrone push Firebase via vault-firebase-backup.
              * Pas attendre dans le toast principal (UX rapide), mais checker 4s après. */
+            /* 23.10.2026 (tâche 4) : un jeton GitHub vient d'être rangé → l'envoi au Gist part tout seul ; 8 s plus tard on DIT le résultat
+             * (la preuve est à l'écran : plus besoin d'aller lire GitHub ou la console). */
+            if (result.stored.some((x) => /^ax_github_/.test(x.pattern.storageKey))) {
+              void (async () => {
+                try {
+                  await new Promise((r) => setTimeout(r, 8000));
+                  const { phraseGist } = await import('../../services/vault/apex-github-gist-backup.js');
+                  const phrase = phraseGist();
+                  if (phrase) (phrase.startsWith('☁️') ? toast.info : toast.warn)(phrase, { duration: 9000 });
+                } catch { /* silent */ }
+              })();
+            }
             void (async () => {
               try {
                 await new Promise((r) => setTimeout(r, 4000));
                 const { vaultFirebaseBackup } = await import('../../services/vault/vault-firebase-backup.js');
                 const fbList = await vaultFirebaseBackup.listAll();
                 const fbKeys = new Set(fbList.map((e) => e.key));
-                const storedKeys = result.stored.map((s) => `ax_${s.pattern.name.toLowerCase().replace(/\s+/g, '_')}_key`);
-                const fbOk = storedKeys.filter((k) => fbKeys.has(k)).length;
-                if (fbOk === storedKeys.length) {
-                  toast.info(`💾 Firebase backup OK : ${fbOk}/${storedKeys.length} clés sauvegardées cross-device.`, { duration: 5000 });
-                } else if (fbOk === 0) {
-                  toast.warn(`🚨 Firebase backup KO : 0/${storedKeys.length} sauvegardées. Tes clés sont local-only — RISQUE perte au reinstall PWA.`, { duration: 10000 });
-                } else {
-                  toast.warn(`⚠️ Firebase backup partiel : ${fbOk}/${storedKeys.length}`, { duration: 7000 });
-                }
+                const storedKeys = result.stored.map((s) => s.pattern.storageKey);
+                const { firebase } = await import('../../services/storage/firebase.js');
+                const { bilanFirebase } = await import('../../services/vault/bilan-sauvegarde.js');
+                const bilan = bilanFirebase(storedKeys, fbKeys, firebase.isConnected());
+                if (bilan.niveau === 'ok') toast.info(bilan.texte, { duration: bilan.duree });
+                else if (bilan.niveau === 'ko') toast.warn(bilan.texte, { duration: bilan.duree });
+                else toast.warn(bilan.texte, { duration: bilan.duree });
               } catch { /* silent */ }
             })();
           }

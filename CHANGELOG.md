@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex AI v13.4.387 (2026-10-23 — la sauvegarde GitHub dit son résultat à l'écran ; fin de la fausse alerte « Firebase backup KO »)
+- Kevin a collé son jeton neuf (rangé sous « GitHub PAT classic »). Impossible à prouver de l'extérieur : le Lenovo n'a pas le droit de lire la page des jetons, et un gist secret n'apparaît pas dans la liste publique. Maintenant, 8 s après le rangement d'un jeton GitHub, Apex AI affiche « ☁️ Sauvegarde GitHub faite à l'instant : N clé(s) chiffrée(s) » ou « ⚠️ Sauvegarde GitHub non faite : <cause> » (jamais le jeton). La note `apex_v13_gist_backup_dernier` est écrite par chaque vraie tentative, pas seulement l'envoi du jour.
+- Fausse alerte « 🚨 Firebase backup KO : 0/1 — RISQUE perte » supprimée : le code devinait le nom de la clé (`ax_github_pat_classic_key` au lieu de `ax_github_pat_classic`) et, Firebase étant hors ligne, la liste était vide. Vrai nom lu (`storageKey`) ; hors ligne : « copie cloud en attente, tes clés sont bien rangées ».
+- Preuves : `tests/unit/gist-preuve-ecran.test.ts` 8/8, 2 rouges sans les correctifs. Leçon 755.
+
 ## Qui se connecte (kdmc-access) v1.4.0 — Bee aussi sur l'admin (2026-10-23)
 - La page `admin.kd-mc.com` porte la ligne de Bee (Kevin seul la voit) ; le worker relaie au domaine `/__javis/*`, `GET /__sso/whoami` et `/__lingua/tts`, rien d'autre ; interrupteur `BEE_PARTOUT=0`. `staging.kd-mc.com` a un vrai nom (« 🧪 Staging (test) ») au lieu de l'adresse brute.
 

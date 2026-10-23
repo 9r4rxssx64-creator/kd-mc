@@ -35,7 +35,8 @@ jobs:
 
       - name: Bucket R2 de test
         working-directory: messaging-app/workers
-        run: wrangler r2 bucket create apex-chat-media-staging || echo "(bucket déjà là, ou droit R2 absent : le déploiement le dira)"
+        run: |
+          wrangler r2 bucket create apex-chat-media-staging || echo "(bucket déjà là, ou droit R2 absent - le déploiement le dira)"
 
       - name: Déployer le Worker de test
         working-directory: messaging-app/workers

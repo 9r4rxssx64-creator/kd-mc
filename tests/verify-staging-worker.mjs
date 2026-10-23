@@ -56,6 +56,9 @@ try {
 } finally { rmSync(dossier, { recursive: true, force: true }); }
 
 /* 5. le workflow */
+{ const { createRequire } = await import('node:module'); const jy = createRequire(import.meta.url)('js-yaml');
+  let y = null; try { y = jy.load(wf); } catch (e) { y = null; console.log('   YAML : ' + String(e.message).split('\n')[0]); }
+  ok(!!(y && y.on && y.on.workflow_dispatch !== undefined && y.jobs && y.jobs.deploy), 'le workflow est du YAML VALIDE avec workflow_dispatch (23.10 : une ligne « : » non protégée le rendait illisible pour GitHub)'); }
 ok(/workflow_dispatch/.test(wf) && !/^\s*schedule:/m.test(wf) && !/\bcron:/.test(wf), 'déploiement à la main uniquement, aucun cron');
 ok(/-c wrangler\.staging\.toml/.test(wf) && !/wrangler deploy\s*$/m.test(wf), 'le déploiement vise toujours -c wrangler.staging.toml');
 ok(!/wrangler (deploy|secret put|d1)[^\n]*apex-chat-main/.test(wf) && !/afee673e/.test(wf), 'le workflow ne nomme ni la base ni l’identifiant de la production');

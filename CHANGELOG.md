@@ -63,6 +63,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Trouvé en vrai navigateur : à la RÉOUVERTURE (session gardée), l'appareil ne publiait jamais sa clé → corrigé.
 - Preuves : vitest 2267 verts, couverture 100 % `crypto-core` ; vrai Chromium 3 appareils `runtime-cle-par-appareil.mjs` 8/8 (1/8 avec la 1.1.342). Leçon 722. Limites : anciens messages restent illisibles ; médias et groupes = phase 2.
 
+## CMCteams v9.984 (2026-10-23 — dernières zones tactiles repérées au robot)
+- Le bouton « risques burnout », les boutons et cartes qui ouvrent un panneau (`sv`), la pastille « à synchroniser » et quelques cartes cliquables font 44 px de haut.
+
 ## CMCteams v9.983 (2026-10-23 — suite : les boutons des listes se touchent au doigt)
 - Les filtres rapides, « Effacer » et les boutons de sections de la liste des employés (36 px) et tous les boutons qui portaient une hauteur minimale de 36 à 40 px font maintenant 44 px.
 

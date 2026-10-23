@@ -5024,6 +5024,41 @@ async function handleAdmin(request, url, env) {
     if (!me.grant) await audLog(env, { ev: 'admin_grant_session', uid: me.uid });
     return J({ ok: true, grant, via: me.grant ? 'grant' : 'session' }, [cookie, MARQUEUR]);   /* idem : le marqueur « c'est Kevin » (un indice sans secret) */
   }
+  /* SECOURS « J'ai perdu Face ID sur mon iPhone » (23.10 : Kevin bloqué après le nettoyage des clés, code admin oublié).
+     Un appareil où l'admin est DÉJÀ PROUVÉ (le Lenovo : Face ID ou grant) fabrique un lien à usage UNIQUE, valable 10 min ;
+     ouvert sur l'iPhone, il y pose la même session admin vérifiée que le code admin, puis l'iPhone réactive Face ID.
+     Jeton de 256 bits, seule son empreinte est rangée (KV `la:`), effacé AVANT d'ouvrir (un 2e clic ne marche pas), tout est tracé. */
+  if (path === '/__admin/lien-appareil' && request.method === 'POST') {
+    const me = await adminSession(request, env);
+    if (!me) return J({ ok: false, reason: 'need_admin' }, undefined, 403);
+    if (!env.ACCOUNTS) return J({ ok: false, reason: 'stockage_absent' });
+    const brut = crypto.getRandomValues(new Uint8Array(32));
+    const jeton = b64uEnc(brut);
+    const exp = Date.now() + 10 * 60e3;
+    await env.ACCOUNTS.put('la:' + (await sha256Hex(jeton)), JSON.stringify({ exp, par: appareilLabel(request.headers.get('user-agent') || '').slice(0, 60) }), { expirationTtl: 600 });
+    await audLog(env, { ev: 'admin_lien_appareil_cree', uid: me.uid });
+    return J({ ok: true, url: 'https://kd-mc.com/__admin/lien-appareil/ouvrir?t=' + jeton, exp });
+  }
+  if (path === '/__admin/lien-appareil/ouvrir' && request.method === 'GET') {
+    const jeton = String(url.searchParams.get('t') || '');
+    const page = (titre, texte) => new Response('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KDMC</title><body style="margin:0;background:#0b1409;color:#f3f0e6;font:17px/1.5 -apple-system,sans-serif;padding:32px 20px;text-align:center"><h1 style="color:#e8b830;font-size:22px">' + titre + '</h1><p>' + texte + '</p><p><a style="display:inline-block;min-height:48px;line-height:48px;padding:0 22px;border-radius:14px;background:#e8b830;color:#0b1409;font-weight:700;text-decoration:none" href="https://kd-mc.com/">Ouvrir le portail</a></p></body>', { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' } });
+    if (!/^[A-Za-z0-9_-]{40,60}$/.test(jeton) || !env.ACCOUNTS) return page('Lien non valable', 'Demande un nouveau lien à ton ordinateur.');
+    const cle = 'la:' + (await sha256Hex(jeton));
+    let rec = null; try { rec = JSON.parse((await env.ACCOUNTS.get(cle)) || 'null'); } catch { rec = null; }
+    if (!rec || !(rec.exp > Date.now())) return page('Lien expiré ou déjà utilisé', 'Un lien ne sert qu\'une fois, pendant 10 minutes. Demande-en un nouveau à ton ordinateur.');
+    await env.ACCOUNTS.delete(cle);   // usage unique : effacé avant d'ouvrir quoi que ce soit
+    const grant = await ssoSign(secret, '__kdmc_admin__', 'admin', 1);
+    const accA = await accGet(env, CANON_UID);
+    const nomA = (accA && accA.name) || 'Kevin Desarzens';
+    await enrich(env, request, CANON_UID, nomA, true, undefined, {});
+    const token = await ssoSign(secret, CANON_UID, nomA, true, true, false, appareilDe(request));
+    await audLog(env, { ev: 'admin_lien_appareil_ouvert', par: rec.par || '' });
+    const h = new Headers({ location: 'https://kd-mc.com/?appareil=ajoute', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
+    h.append('set-cookie', `kdmc_admin=${grant}; Domain=.kd-mc.com; Path=/; Max-Age=43200; Secure; HttpOnly; SameSite=Lax`);
+    h.append('set-cookie', `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`);
+    h.append('set-cookie', MARQUEUR);
+    return new Response(null, { status: 302, headers: h });
+  }
   if (path === '/__admin/logout' && request.method === 'POST') {
     return J({ ok: true }, 'kdmc_admin=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax');
   }

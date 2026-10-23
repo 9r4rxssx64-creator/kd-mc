@@ -38,4 +38,5 @@ jobs:
           U=$(printf '%s' "$R" | jq -r '.url // empty')
           rm -f j.txt
           if [ -z "$U" ]; then echo "ÉCHEC : $(printf '%s' "$R" | jq -c '{ok,reason}')"; exit 1; fi
-          echo "LIEN_CHIFFRE=$(printf '%s' "$U" | openssl pkeyutl -encrypt -pubin -inkey pub.pem -pkeyopt rsa_padding_mode:oaep | base64 -w0)"
+          C=$(printf '%s' "$U" | openssl pkeyutl -encrypt -pubin -inkey pub.pem -pkeyopt rsa_padding_mode:oaep | base64 -w0)
+          echo "::notice title=lien-chiffre::$C"   # une note lisible par l'API (le journal brut est servi hors de github.com)

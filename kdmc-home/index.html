@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.84 -->
+<!-- v1.0.85 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -137,6 +137,8 @@
   .ios-tip{background:rgba(106,138,255,.1);border:1px solid rgba(106,138,255,.3);color:#cdd8ff;border-radius:13px;padding:12px 14px;font-size:13.5px}
   .cat{margin:24px 0 10px;display:flex;align-items:center;gap:10px;color:var(--gold);font-size:13px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700}
   .cat::after{content:"";flex:1;height:1px;background:var(--line)}
+  /* 23.10 (Lenovo msg 660) : `hidden` gagne TOUJOURS — `.grid{display:grid}` affichait la carte admin en vue membre */
+  [hidden]{display:none!important}
   .grid{display:grid;grid-template-columns:1fr;gap:13px}
   @media(min-width:560px){.grid{grid-template-columns:1fr 1fr}}
   a.card{display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;background:linear-gradient(160deg,var(--card),#0c150f);border:1px solid var(--line);border-radius:18px;padding:16px 18px;min-height:72px;transition:transform .15s,border-color .15s,box-shadow .15s}
@@ -319,10 +321,10 @@
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.84"></script>
-  <script src="kdmc-boite.js?v=1.0.84"></script>
-  <script src="kdmc-portal.js?v=1.0.84"></script>
+  <script src="kdmc-sso.js?v=1.0.85"></script>
+  <script src="kdmc-boite.js?v=1.0.85"></script>
+  <script src="kdmc-portal.js?v=1.0.85"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.84" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.85" data-color="#c9a227" defer></script>
 </body>
 </html>

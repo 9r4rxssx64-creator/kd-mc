@@ -47,7 +47,10 @@ async function vue(session) {
   await p.waitForTimeout(600);
   const r = await p.evaluate(() => {
     const z = document.getElementById('tableau-zone'), tdb = document.getElementById('tdb-haut');
-    return { tab: z ? !z.hidden : null, tdb: tdb ? !tdb.hidden : null,
+    /* VISIBLE À L'ÉCRAN, pas seulement l'attribut : `.grid{display:grid}` battait `hidden`
+       (23.10, Lenovo msg 660 : carte « Mon tableau de bord ADMIN » encore affichée en vue membre). */
+    const vu = el => !!el && getComputedStyle(el).display !== 'none' && el.getClientRects().length > 0;
+    return { tab: vu(z), tdb: vu(tdb),
              lien: z && z.querySelector('a') ? z.querySelector('a').href : null };
   });
   await ctx.close();
@@ -59,15 +62,18 @@ const kevinFi = await vue({ uid: 'u-kevin', name: 'Kevin DESARZENS', admin: fals
 const lolo    = await vue({ uid: 'u-lolo', name: 'Laurence Saint-Polit', admin: false, verified: false });
 const inconnu = await vue({ uid: 'u-x', name: 'Jean Dupont', admin: false, verified: false });
 const perso   = await vue(null);
+const membre  = await vue({ uid: 'kdmc_admin', name: 'Kevin DESARZENS', admin: false, verified: true, apercu: 'membre', abonnement: 'max' });
 
 ok('Kevin admin voit la tuile Tableau KDMC', admin.tab === true);
 ok('la tuile mène au tableau (page claude.ai)', (admin.lien || '').startsWith('https://claude.ai/artifact/'), admin.lien);
-ok('Kevin vérifié par Face ID la voit aussi', kevinFi.tab === true);
+ok('un « Kevin » Face ID sans admin prouvé ne la voit pas (23.10 : admin seul)', kevinFi.tab === false && kevinFi.tdb === false);
+ok('Kevin admin voit la carte « Mon tableau de bord ADMIN »', admin.tdb === true);
+ok('VUE MEMBRE (👁) : ni la tuile ni la carte admin à l\'écran', membre.tab === false && membre.tdb === false, JSON.stringify(membre));
 ok('même règle que le tableau de bord admin', admin.tab === admin.tdb && kevinFi.tab === kevinFi.tdb);
 ok('Laurence ne la voit pas', lolo.tab === false);
 ok('un client inconnu ne la voit pas', inconnu.tab === false);
 ok('un visiteur non connecté ne la voit pas', perso.tab === false);
 
 await b.close(); srv.close();
-console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Tout passe — 5 profils vérifiés en vrai navigateur'));
+console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Tout passe — 6 profils vérifiés en vrai navigateur'));
 process.exit(ko ? 1 : 0);

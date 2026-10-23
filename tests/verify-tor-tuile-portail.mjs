@@ -60,13 +60,14 @@ const lolo    = await vue({ uid: 'u-lolo', name: 'Laurence Saint-Polit', admin: 
 const inconnu = await vue({ uid: 'u-x', name: 'Jean Dupont', admin: false, verified: false });
 const perso   = await vue(null);
 
-ok('Kevin, reconnu par son nom SANS Face ID, voit la tuile', kevin.tor === true);
+ok('un « Kevin » au nom seul (sans admin prouvé) ne la voit PAS (23.10 : un homonyme voyait les raccourcis)', kevin.tor === false);
 ok('Kevin admin prouvé la voit aussi', admin.tor === true);
-ok('la tuile pointe sur tor.kd-mc.com', (kevin.lien || '').includes('tor.kd-mc.com'), kevin.lien);
+ok('la tuile pointe sur tor.kd-mc.com', (admin.lien || '').includes('tor.kd-mc.com'), admin.lien);
 ok('Laurence ne la voit pas', lolo.tor === false);
 ok('un client inconnu ne la voit pas', inconnu.tor === false);
 ok('un visiteur non connecté ne la voit pas', perso.tor === false);
-ok('aucune régression : Laurence voit toujours le bot', lolo.bot === true);
+ok('Laurence ne voit plus le bot (23.10 Kevin : « tout moi seul pour l\'instant »)', lolo.bot === false);
+ok('Kevin admin voit le bot', admin.bot === true);
 ok('aucune régression : l\'inconnu ne voit toujours pas le bot', inconnu.bot === false);
 
 await b.close(); srv.close();

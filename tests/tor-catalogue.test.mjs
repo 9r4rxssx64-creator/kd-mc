@@ -214,7 +214,9 @@ t('la tuile du portail existe, pointe sur l\'outil, et reste dans une zone priv�
   assert(zone.includes('https://tor.kd-mc.com/'), 'la tuile ne pointe plus sur l\'outil');
   const js = readFileSync(new URL('../kdmc-home/kdmc-portal.js', import.meta.url), 'utf8');
   assert(js.includes("getElementById('tor-zone')"), 'la règle d\'affichage de la tuile a disparu');
-  assert(/estKevin[\s\S]{0,120}kevin\|desarzens/.test(js), 'la tuile n\'est plus réservée à Kevin');
+  /* 23.10 : réservée à l'ADMIN PROUVÉ (s.admin), plus jamais au nom seul (un homonyme « Kevin » la voyait) */
+  assert(/torZone\.hidden\s*=\s*!\(s && s\.admin\)/.test(js), 'la tuile n\'est plus réservée à l\'admin prouvé');
+  assert(!/torZone\.hidden[^;]*(?:named|estKevin|kevin)/.test(js), 'la tuile s\'ouvre de nouveau sur un nom');
 });
 
 

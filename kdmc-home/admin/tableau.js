@@ -221,7 +221,7 @@
     var C = function (id) { return document.getElementById('corps-' + id) || document.createElement('div'); };
     C('personnes').innerHTML = '<button class="grosbtn" id="tb-creer" type="button">➕ Créer un compte pour une personne</button><h2 class="cat">✋ À trancher</h2><div class="bb" id="tb-attente"><p class="info">Lecture de la boîte…</p></div>'
       + '<h2 class="cat">🔎 Qui se connecte</h2><div class="grid" id="tuiles-personnes"></div><div id="admin-comptes"></div>';
-    C('messages').innerHTML = '<div id="tb-messages"><p class="info">Lecture de la boîte…</p></div><button class="grosbtn" id="tb-boite" type="button">📬 Ouvrir la boîte — lire et répondre</button>';
+    C('messages').innerHTML = '<div id="tb-messages"><p class="info">Lecture de la boîte…</p></div><button class="grosbtn" id="tb-boite" type="button">📬 Ouvrir la boîte — lire et répondre</button><div class="grid" id="tuiles-messages"></div>';   /* 23.10 : sans cette grille, la tuile « Messages employés » disparaissait (Lenovo, pont 589) */
     C('commerce').innerHTML = '<div id="commerce-app"></div><h2 class="cat">🔗 Mes pages de vente & boutiques</h2><div class="grid" id="tuiles-commerce"></div>';
     C('apps').innerHTML = '<p class="info" id="tb-versions-info">Toutes les apps du domaine. La version affichée est celle du dépôt.</p><div class="grid" id="tuiles-apps"></div>';
     C('ia').innerHTML = '<p class="info lien-info" id="tb-sante" data-va="https://github.com/9r4rxssx64-creator/cmcteams/actions">Santé des services : lecture…</p><div class="grid" id="tuiles-ia"></div>';
@@ -238,7 +238,7 @@
       var a = cartes[i], href = a.getAttribute('href') || '';
       var m = /^https:\/\/([a-z0-9.-]+)\/$/.exec(href), v = m && versions && versions[m[1]] && versions[m[1]].version;
       if (v) { var d = a.querySelector('.d'); var sp = document.createElement('span'); sp.className = 'ver'; sp.textContent = v; if (d) d.appendChild(sp); }
-      var g = document.getElementById('tuiles-' + ranger(href));
+      var g = document.getElementById('tuiles-' + ranger(href)) || document.getElementById('tuiles-apps');   /* jamais une tuile perdue : sans place prévue, elle va dans « Apps du domaine » */
       if (g) g.appendChild(a);
     }
     Object.keys(TUILES).forEach(function (sec) {

@@ -81,26 +81,6 @@ export function jetonAChanger(erreur?: string): boolean {
     && /refusé|sans le droit|sans accès/.test(erreur) && !/indisponible|réseau/.test(erreur);
 }
 
-/** Dernier résultat d'une VRAIE tentative d'envoi au Gist (collage d'un jeton, envoi du jour, bouton) : lu par l'écran, jamais le jeton. */
-export const NOTE_GIST = 'apex_v13_gist_backup_dernier';
-export function noterResultatGist(r: { ok: boolean; clefs?: number; jeton?: string; erreur?: string }): void {
-  try {
-    localStorage.setItem(NOTE_GIST, JSON.stringify({ ts: Date.now(), ok: r.ok, ...(r.clefs !== undefined ? { clefs: r.clefs } : {}), ...(r.jeton ? { jeton: r.jeton } : {}), ...(r.ok ? {} : { erreur: String(r.erreur ?? 'inconnu').slice(0, 200) }) }));
-  } catch { /* quota */ }
-}
-/** Phrase pour Kevin, en français simple, à partir de la note (ou rien si aucun envoi n'a eu lieu). */
-export function phraseGist(maintenant = Date.now()): string | null {
-  try {
-    const n = JSON.parse(localStorage.getItem(NOTE_GIST) ?? 'null') as { ts?: number; ok?: boolean; clefs?: number; erreur?: string } | null;
-    if (!n || typeof n.ts !== 'number') return null;
-    const min = Math.max(0, Math.round((maintenant - n.ts) / 60_000));
-    const quand = min < 1 ? "à l'instant" : min < 60 ? `il y a ${min} min` : `il y a ${Math.round(min / 60)} h`;
-    return n.ok
-      ? `☁️ Sauvegarde GitHub faite ${quand}${n.clefs ? ` : ${n.clefs} clé(s) chiffrée(s)` : ''}`
-      : `⚠️ Sauvegarde GitHub non faite (${quand}) : ${n.erreur ?? 'cause inconnue'}`;
-  } catch { return null; }
-}
-
 class ApexGithubGistBackup {
   private throttleLastPush = 0;
   private readonly THROTTLE_MS = 30_000; /* min 30s entre 2 pushes */
@@ -115,7 +95,7 @@ class ApexGithubGistBackup {
    */
   async pushSiDu(): Promise<{ fait: boolean; ok?: boolean; erreur?: string }> {
     if (!auth.isAdminSync()) return { fait: false };
-    const CLE = NOTE_GIST;
+    const CLE = 'apex_v13_gist_backup_dernier';
     try {
       const note = JSON.parse(localStorage.getItem(CLE) ?? 'null') as { ts?: number; ok?: boolean } | null;
       if (note && typeof note.ts === 'number') {
@@ -124,18 +104,14 @@ class ApexGithubGistBackup {
         if (!note.ok && age < 3600_000) return { fait: false };
       }
     } catch { /* note illisible : on tente */ }
-    const debut = Date.now();
     const r = await this.pushBackup({ force: true });
     /* Rien à sauvegarder ou pas de jeton : pas une panne, on réessaiera au prochain démarrage. */
     if (!r.ok && (r.error === 'github_token_missing' || r.error === 'vault_empty_skip' || r.error === 'admin_only_push')) {
       return { fait: false, ok: false, erreur: r.error };
     }
-    /* La note (ts, ok, cause, nombre de clés) est écrite par pushBackup lui-même, y compris pour un collage de jeton ;
-     * si elle n'a pas été mise à jour pendant cet appel (envoi remplacé, doublure de test), on la note ici. */
     try {
-      const n = JSON.parse(localStorage.getItem(CLE) ?? 'null') as { ts?: number } | null;
-      if (!n || typeof n.ts !== 'number' || n.ts < debut) noterResultatGist({ ok: r.ok, ...(r.ok ? {} : { erreur: String(r.error ?? 'inconnu') }) });
-    } catch { /* note illisible */ }
+      localStorage.setItem(CLE, JSON.stringify({ ts: Date.now(), ok: r.ok, ...(r.ok ? {} : { erreur: String(r.error ?? 'inconnu').slice(0, 200) }) }));
+    } catch { /* quota */ }
     if (!r.ok) logger.warn('gist-backup', `sauvegarde quotidienne non faite : ${r.error ?? 'inconnu'}`);
     if (!r.ok && jetonAChanger(r.error)) void this.prevenirJetonAChanger();
     return { fait: true, ok: r.ok, ...(r.ok ? {} : { erreur: r.error ?? 'inconnu' }) };
@@ -231,7 +207,6 @@ class ApexGithubGistBackup {
         this.throttleLastPush = now;
         this.persistGistId(gistId);
         logger.info('gist-backup', `pushed ${vaultPlaintext.count} keys to gist ${gistId.slice(0, 8)}… (jeton ${cle})`);
-        noterResultatGist({ ok: true, clefs: vaultPlaintext.count, jeton: cle });
         return { ok: true, gist_id: gistId, bytes: contentJSON.length };
       } catch (err: unknown) {
         causes.push(`${cle} : ${err instanceof Error ? err.message : String(err)}`);
@@ -239,7 +214,6 @@ class ApexGithubGistBackup {
     }
     const resume = causes.join(' · ').slice(0, 300);
     logger.error('gist-backup', `sauvegarde impossible : ${resume}`);
-    noterResultatGist({ ok: false, erreur: resume });
     return { ok: false, error: `gist_refus: ${resume}` };
   }
 

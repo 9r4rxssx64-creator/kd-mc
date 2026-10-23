@@ -71,4 +71,10 @@ const who = async (c) => JSON.parse((await va('https://cmcteams.kd-mc.com/__sso/
   ok(/kdmc_vue=;/.test(c), 'déconnexion : le cookie de vue est effacé'); }
 ok(/kdmc_k=1/.test(INSTALLER_JS) && /data-kdmc-vue/.test(INSTALLER_JS) && /\/__admin\/vue/.test(INSTALLER_JS), 'le bouton 👑/👁 n\'apparaît que sur les appareils de Kevin (marqueur kdmc_k) et passe par /__admin/vue');
 
+/* 5 — portail : en vue membre, l'espace privé disparaît (Lenovo, pont 610 : il restait affiché en v1.0.82, car le portail ne recevait pas « apercu ») */
+{ const portail = readFileSync(new URL('../../kdmc-home/kdmc-portal.js', import.meta.url), 'utf8'), sso = readFileSync(new URL('../../kdmc-home/kdmc-sso.js', import.meta.url), 'utf8');
+  const ligne = (portail.match(/var isPriv = [^\n]*/) || [''])[0];
+  ok(/s\.apercu/.test(ligne) && /s\.admin/.test(ligne) && !/named|verified/.test(ligne), 'portail : espace privé = admin prouvé ET pas en vue membre  (' + ligne.slice(0, 90) + ')');
+  ok(/apercu: j\.apercu/.test(sso), 'kdmc-sso.js transmet « apercu » au portail'); }
+
 console.log('\n' + (fail ? '❌' : '✅') + ' vue admin / membre : ' + pass + ' OK / ' + fail + ' échec(s)'); process.exit(fail ? 1 : 0);

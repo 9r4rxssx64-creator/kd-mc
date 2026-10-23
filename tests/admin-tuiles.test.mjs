@@ -121,3 +121,13 @@ test('toute carte admin du portail a sa tuile dans l\'admin', async () => {
   assert.deepEqual(manquent, [], 'tuiles absentes de l\'admin : ' + manquent.join(', '));
   for (const u of ['https://cmcteams.kd-mc.com/tools/messages/', 'https://claude.ai/code/artifacts']) assert.ok(html.includes('href="' + u + '"'), 'tuile absente : ' + u);
 });
+
+/* 23.10 (Lenovo, pont 589 : « Messages employés » introuvable) : chaque rubrique où tableau.js range une tuile a SA grille dans la page. */
+test('chaque rubrique de rangement a sa grille (aucune tuile perdue)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const t = readFileSync(new URL('../kdmc-home/admin/tableau.js', import.meta.url), 'utf8');
+  const bloc = (t.match(/var RANGEMENT = \{([\s\S]*?)\n  \};/) || ['', ''])[1];
+  const secs = [...new Set([...bloc.matchAll(/:\s*'([a-z]+)'/g)].map((m) => m[1]))];
+  assert.ok(secs.length >= 5, 'rubriques lues : ' + secs.join(','));
+  for (const s of secs) assert.ok(t.includes('id="tuiles-' + s + '"'), 'aucune grille id="tuiles-' + s + '" : ses tuiles disparaîtraient');
+});

@@ -75,13 +75,15 @@ export async function bilanDiag(env, o) {
   const en = Object.keys(o.pauses || {});
   L.push(en.length ? '• IA gratuites en PAUSE à l\'instant : ' + en.map((k) => k + ' (' + propre((o.pauses[k] || {}).raison, 60) + ', encore ' + Math.round(+((o.pauses[k] || {}).secondes) || 0) + ' s)').join(' · ') : '• IA gratuites en pause : aucune');
   /* LE TEST DES OUTILS, fournisseur par fournisseur (18.10 : « gemini a une clé mais ne sert jamais » — sans le message exact on devine) : un tout petit appel avec un outil factice, la cause en clair. */
-  if (typeof o.sondeOutils === 'function') {
-    let sonde = []; try { sonde = await o.sondeOutils(); } catch (_) { sonde = []; }
-    if (sonde && sonde.length) L.push('• Test des outils, IA par IA : ' + sonde.map((x) => x.nom + (x.ok ? ' ✅ ' + (x.ms | 0) + ' ms' + (x.outil ? ' (appelle l\'outil)' : ' (répond sans appeler l\'outil)') : ' ❌ ' + propre(x.erreur, 330))).join(' · '));
-  }
-  let ia = null; try { ia = await o.ia(); } catch (_) { ia = null; }
+  /* LES SOUS-REQUÊTES D'UN WORKER GRATUIT SONT COMPTÉES (50 par appel) : 23.10, le robot réel lisait « le nuage dit : Too many subrequests » — c'était le TEST qui avait tout dépensé en essais d'IA, pas le nuage.
+     Le nuage de l'arbre se lit donc EN PREMIER (peu d'appels), et si un essai d'IA a déjà répondu, on ne refait pas un appel pour « l'IA qui répond à l'instant ». */
+  let ar = null; if (typeof o.arbre === 'function') { try { ar = await o.arbre(); } catch (e) { ar = { erreur: String(e && e.message || e).slice(0, 80) }; } }
+  let sonde = []; if (typeof o.sondeOutils === 'function') { try { sonde = await o.sondeOutils(); } catch (_) { sonde = []; } }
+  if (sonde && sonde.length) L.push('• Test des outils, IA par IA : ' + sonde.map((x) => x.nom + (x.ok ? ' ✅ ' + (x.ms | 0) + ' ms' + (x.outil ? ' (appelle l\'outil)' : ' (répond sans appeler l\'outil)') : ' ❌ ' + propre(x.erreur, 330))).join(' · '));
+  const dejaRepondu = (sonde || []).find((x) => x && x.ok);
+  let ia = dejaRepondu ? { provider: dejaRepondu.nom, ms: dejaRepondu.ms | 0 } : null;
+  if (!ia) { try { ia = await o.ia(); } catch (_) { ia = null; } }
   L.push(ia && ia.provider ? '• IA gratuite qui répond à l\'instant : ✅ ' + ia.provider + ' (' + ia.ms + ' ms)' : '• IA gratuite qui répond à l\'instant : ❌ aucune dans les 7 s — Bee ne peut pas travailler avec ses outils (limite gratuite atteinte ?)');
-  let ar = null; try { ar = await o.arbre(); } catch (e) { ar = { erreur: String(e && e.message || e).slice(0, 80) }; }
   if (ar) {
     L.push('• Arbre publié sur le domaine : ' + (ar.seed ? '✅ ' + ar.seed + ' personnes' : '❌ non'));
     L.push('• Code famille connu du domaine : ' + (ar.codehash ? '✅ oui' : '❌ non (Bee ne peut pas écrire)'));

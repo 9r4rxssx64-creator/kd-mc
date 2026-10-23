@@ -43,14 +43,61 @@ export function partout() {
     window.__kdmcBee = 1;
 
     var cadre = null, ouvert = false;
-    function bas() { return 'calc(env(safe-area-inset-bottom, 0px) + ' + (ouvert ? 8 : 88) + 'px)'; }
+    /* OÙ POSER LE ROND (Kevin 23.10, audit réel dans son Chrome : sur Apex AI le rond recouvrait le champ de saisie, le bouton ↑ et ⚙️ ; sur CMCteams le bouton ⏱) : en bas à droite par défaut, mais s'il recouvre un
+       contrôle PERMANENT de la page (bouton, lien ou champ d'une barre fixe ou collante), il monte le long du bord droit, puis passe au bord gauche, jusqu'à une place libre. Aucun contrôle de l'app n'est jamais caché. */
+    var place = { cote: 'right', bas: 88 };
+    function bas() { return 'calc(env(safe-area-inset-bottom, 0px) + ' + (ouvert ? 8 : place.bas) + 'px)'; }
     function taille() {
       if (!cadre) return;
       var s = cadre.style;
-      s.right = '8px'; s.bottom = bas();
+      if (ouvert || place.cote === 'right') { s.right = '8px'; s.left = 'auto'; } else { s.left = '8px'; s.right = 'auto'; }
+      s.bottom = bas();
       if (ouvert) { s.width = Math.max(280, Math.min(window.innerWidth - 16, 436)) + 'px'; s.height = Math.max(320, Math.min(Math.round(window.innerHeight * 0.8), 660)) + 'px'; }
       else { s.width = '92px'; s.height = '92px'; }
     }
+    function permanent(e) {
+      for (var n = e, k = 0; n && n.nodeType === 1 && k < 14; n = n.parentElement, k++) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
+      return false;
+    }
+    function controles() {
+      var out = [], els = document.querySelectorAll('button,a[href],input,textarea,select,summary,[role="button"],[onclick]');
+      for (var i = 0; i < els.length && out.length < 120; i++) {
+        var e = els[i], r = e.getBoundingClientRect();
+        if (r.width < 8 || r.height < 8 || r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) continue;
+        var cs = getComputedStyle(e);
+        if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+        if (permanent(e)) out.push(r);
+      }
+      return out;
+    }
+    function recouvre(boite, rs) {
+      var n = 0;
+      for (var i = 0; i < rs.length; i++) {
+        var r = rs[i], w = Math.min(boite.r, r.right) - Math.max(boite.l, r.left), h = Math.min(boite.b, r.bottom) - Math.max(boite.t, r.top);
+        if (w > 2 && h > 2) n++;                                   // même un coin de bouton recouvert compte : un doigt tombe dessus
+      }
+      return n;
+    }
+    function choisirPlace() {
+      if (!cadre || ouvert) return;
+      var rs = controles(), W = window.innerWidth, H = window.innerHeight, meilleure = null, note = 1e9;
+      var maxBas = Math.max(88, Math.round(H * 0.7) - 92);
+      var cotes = ['right', 'left'];
+      for (var c = 0; c < cotes.length; c++) {
+        for (var b = 88; b <= maxBas; b += 16) {
+          var l = cotes[c] === 'right' ? W - 8 - 92 : 8, bas0 = H - b;
+          var n = recouvre({ l: l, r: l + 92, t: bas0 - 92, b: bas0 }, rs);
+          if (n < note) { note = n; meilleure = { cote: cotes[c], bas: b }; }
+          if (n === 0) break;
+        }
+        if (note === 0) break;
+      }
+      if (!meilleure) return;
+      var actuelle = recouvre({ l: place.cote === 'right' ? W - 100 : 8, r: place.cote === 'right' ? W - 8 : 100, t: H - place.bas - 92, b: H - place.bas }, rs);
+      if (actuelle === 0) return;                                  // déjà libre : on ne bouge pas (pas de saut inutile)
+      if (meilleure.cote !== place.cote || meilleure.bas !== place.bas) { place = meilleure; taille(); }
+    }
+    function replacer() { choisirPlace(); setTimeout(choisirPlace, 1200); setTimeout(choisirPlace, 3500); setTimeout(choisirPlace, 8000); }
     function contexte() {
       try {
         cadre.contentWindow.postMessage({ kdmcBee: 1, t: 'contexte', app: String(location.hostname).split('.')[0] || 'domaine', titre: String(document.title || '').slice(0, 120), chemin: String(location.pathname || '/').slice(0, 120) }, location.origin);
@@ -69,12 +116,12 @@ export function partout() {
       window.addEventListener('message', function (e) {
         if (!cadre || e.origin !== location.origin || e.source !== cadre.contentWindow) return;   // seul NOTRE cadre, de NOTRE origine
         var d = e.data; if (!d || d.kdmcBee !== 1) return;
-        if (d.t === 'pret') { cadre.style.display = 'block'; taille(); contexte(); }
+        if (d.t === 'pret') { cadre.style.display = 'block'; taille(); contexte(); replacer(); }
         else if (d.t === 'ouvert') { ouvert = true; taille(); }
-        else if (d.t === 'ferme') { ouvert = false; taille(); }
+        else if (d.t === 'ferme') { ouvert = false; taille(); choisirPlace(); }
         else if (d.t === 'cache') { try { cadre.parentNode.removeChild(cadre); } catch (x) { /* déjà parti */ } cadre = null; }
       });
-      window.addEventListener('resize', taille);
+      window.addEventListener('resize', function () { taille(); choisirPlace(); });
       (document.body || document.documentElement).appendChild(cadre);
     }
     if (marqueur) return monter();

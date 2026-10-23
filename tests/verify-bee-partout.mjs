@@ -36,6 +36,8 @@ const srv = http.createServer((q, r) => {
   q.on('end', () => {
     const J = (o, st = 200) => { r.writeHead(st, { 'content-type': 'application/json' }); r.end(JSON.stringify(o)); };
     if (u === '/') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage()); }
+    if (u === '/barre.css') { r.setHeader('content-type', 'text/css'); return r.end('#up{position:fixed;right:12px;bottom:110px;width:44px;height:44px}#reg{position:fixed;right:12px;bottom:160px;width:44px;height:44px}#champ{position:fixed;left:8px;bottom:110px;width:200px;height:44px}'); }
+    if (u === '/barre') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('<link rel="stylesheet" href="/barre.css">', '<textarea id="champ"></textarea><button id="up">↑</button><button id="reg">⚙️</button>')); }
     if (u === '/off') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('<meta name="kdmc-bee" content="off">')); }
     if (u === '/deja') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('', '<div id="javis-root"></div>')); }
     if (u === '/dans-un-cadre') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end('<!doctype html><body><iframe id="f" src="/"></iframe>'); }
@@ -243,6 +245,40 @@ console.log('D. Les retraits');
     chk(n === 0 && !ETAT.req.some((r) => /__javis\/cadre/.test(r)), nom + ' → aucun cadre');
     await ctx.close();
   }
+}
+
+/* ───────── F. Bee ne recouvre AUCUN contrôle de l'app (Kevin 23.10, audit réel dans son Chrome : Apex AI — champ, ↑, ⚙️ ; CMCteams — ⏱) ───────── */
+console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ ou un lien permanent');
+{
+  ETAT.whoami = 'kevin'; ETAT.qui = 'kevin';
+  const inter = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0;
+  const mesure = (page) => page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); const R = (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
+    return { cadre: R(f), controles: ['#up', '#reg', '#champ'].map((q) => { const e = document.querySelector(q); return e ? [q, R(e)] : null; }).filter(Boolean), W: innerWidth, H: innerHeight, d: getComputedStyle(f).display }; });
+  const { ctx, page } = await ouvre({ url: '/barre' });
+  await page.waitForFunction(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); return f && getComputedStyle(f).display === 'block'; }, null, { timeout: 20000 }).catch(() => {});
+  await dors(1800);
+  let m = await mesure(page);
+  const touche = m.controles.filter(([, r]) => inter(m.cadre, r)).map(([q]) => q);
+  chk(m.d === 'block' && touche.length === 0, `une barre fixe avec champ, ↑ et ⚙️ : le rond de Bee ne recouvre rien (recouvert : ${touche.join(', ') || 'aucun'} · rond en ${Math.round(m.cadre.left)},${Math.round(m.cadre.top)})`);
+  chk(m.cadre.left >= 0 && m.cadre.top >= 0 && m.cadre.right <= m.W && m.cadre.bottom <= m.H, 'et il reste ENTIER dans l\'écran');
+  const fr = page.frames().find((f) => /__javis\/cadre/.test(f.url()));
+  await fr.locator('#javis-launcher').click();
+  await page.waitForFunction(() => document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect().width > 250, null, { timeout: 5000 }).catch(() => {});
+  const o = await cadreVisible(page);
+  chk(o && o.right === 8 && o.bottom === 8, `ouvert, le chat reprend sa grande place en bas à droite (${o && o.w}×${o && o.h})`);
+  await fr.locator('#javis-close').click();
+  await page.waitForFunction(() => document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect().width < 120, null, { timeout: 5000 }).catch(() => {});
+  await dors(300);
+  m = await mesure(page);
+  chk(m.controles.filter(([, r]) => inter(m.cadre, r)).length === 0, 'refermé, le rond retrouve une place libre (il ne retombe pas sur les boutons)');
+  await ctx.close();
+  /* une page SANS contrôle permanent : Bee garde sa place habituelle (aucun saut inutile) */
+  const n = await ouvre();
+  await n.page.waitForFunction(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); return f && getComputedStyle(f).display === 'block'; }, null, { timeout: 20000 }).catch(() => {});
+  await dors(1800);
+  const c0 = await cadreVisible(n.page);
+  chk(c0 && c0.right === 8 && c0.bottom >= 80 && c0.bottom <= 100, `une page sans barre fixe : Bee reste en bas à droite, au-dessus du bouton ✉️ (${JSON.stringify(c0 && { right: c0.right, bottom: c0.bottom })})`);
+  await n.ctx.close();
 }
 
 /* ───────── E. sabotage : le parent n'obéit qu'à SON cadre ───────── */

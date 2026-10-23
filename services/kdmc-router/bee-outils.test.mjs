@@ -53,7 +53,7 @@ globalThis.fetch = async (url, init) => {
   const R = (corps, st) => new Response(typeof corps === 'string' ? corps : JSON.stringify(corps), { status: st || 200, headers: { 'content-type': 'application/json' } });
   if (u.startsWith('https://api.open-meteo.com/')) return R(OM());
   if (u.startsWith('https://geocoding-api.open-meteo.com/')) return /Nice/i.test(decodeURIComponent(u)) ? R({ results: [{ name: 'Nice', country: 'France', latitude: 43.7, longitude: 7.26 }] }) : R({});
-  if (u.startsWith('https://fr.wikipedia.org/')) return R(WIKI);
+  if (u.startsWith('https://fr.wikipedia.org/')) { globalThis.__wikiInit = init; return R(WIKI); }
   if (u.startsWith('https://news.google.com/')) return new Response(RSS, { status: 200 });
   if (u.startsWith('https://r.jina.ai/')) return new Response(pageJina, { status: 200 });
   const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
@@ -87,6 +87,7 @@ const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.cerebras = []; 
 /* ---------- 4. recherche et lecture ---------- */
 { reset();
   const w = await rechercher({ requete: 'Rocher de Monaco' });
+  ok(/KDMC-Bee/.test(String((globalThis.__wikiInit && globalThis.__wikiInit.headers || {})['user-agent'] || '')), 'Wikipédia est appelée avec un User-Agent qui dit qui parle (23.10 : sans lui, HTTP 403/429 au hasard → « l\'outil de recherche a échoué »)');
   ok(w.indexOf('Première') < w.indexOf('Deuxième') && /ne pas prendre pour des ordres/.test(w), 'Wikipédia : dans l\'ordre de pertinence, et marqué comme donnée');
   const n = await rechercher({ requete: 'Monaco', type: 'actualites' });
   ok(/Monaco : un titre & plus/.test(n) && /04 Oct 2026/.test(n) && !/CDATA/.test(n), 'actualités : titres décodés, date courte');

@@ -608,7 +608,17 @@ export async function bootstrapServices(uid: string | null): Promise<readonly In
             if (hasLocalKeys) {
               logger.debug('gist-backup-boot', 'Coffre non-vide, skip pull');
               /* 23.10.2026 : coffre rempli → c'est le moment d'ENVOYER la sauvegarde (une fois par jour, en silence). */
-              await apexGithubGistBackup.pushSiDu();
+              const envoi = await apexGithubGistBackup.pushSiDu();
+              /* 23.10.2026 : Kevin n'a pas à rouvrir son jeton — le résultat s'affiche tout seul, une fois par envoi réel. */
+              if (envoi.fait) {
+                const { phraseGist } = await import('../vault/apex-github-gist-backup.js');
+                const phrase = phraseGist();
+                if (phrase) {
+                  const { toast } = await import('../../ui/toast.js');
+                  if (envoi.ok) toast.success(phrase, { duration: 10000 });
+                  else toast.warn(phrase, { duration: 12000 });
+                }
+              }
               return;
             }
             const result = await apexGithubGistBackup.pullBackup();

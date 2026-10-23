@@ -732,7 +732,10 @@ export function render(rootEl: HTMLElement): void {
             style="padding:10px 16px;background:rgba(34,204,119,0.15);color:var(--ax-green);border:1px solid rgba(34,204,119,0.3);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px">📂 Importer JSON (depuis Drive)</button>
           <button id="ax-vault-qr-backup"
             style="padding:10px 16px;background:linear-gradient(135deg,var(--ax-gold-deep),var(--ax-gold));color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">📦 Backup vault QR (Photos iCloud)</button>
+          <button id="ax-vault-gist-now" type="button"
+            style="padding:10px 16px;background:rgba(106,138,255,0.15);color:var(--ax-blue);border:1px solid rgba(106,138,255,0.3);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px">☁️ Sauvegarder sur GitHub maintenant</button>
         </div>
+        <p id="ax-vault-gist-etat" style="margin:10px 0 0;color:rgba(255,255,255,0.7);font-size:12px;line-height:1.5"></p>
       </section>
 
       <section style="margin-top:14px;padding:14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px">
@@ -1538,6 +1541,45 @@ function attachHandlers(rootEl: HTMLElement): void {
    * 1. Try LZ-string compress (UTF16) → souvent -70% taille
    * 2. Si toujours trop gros → upload Gist privé chiffré + QR contient juste l'URL
    * 3. Si Gist KO → fallback download JSON */
+  /* 23.10.2026 (Kevin a perdu la valeur de son jeton) : Apex garde le jeton ; ce bouton envoie la sauvegarde et DIT le résultat, sans rien recoller. */
+  const gistNowBtn = rootEl.querySelector<HTMLButtonElement>('#ax-vault-gist-now');
+  const gistEtat = rootEl.querySelector<HTMLElement>('#ax-vault-gist-etat');
+  const montrerEtatGist = async (): Promise<void> => {
+    const { phraseGist } = await import('../../services/vault/apex-github-gist-backup.js');
+    if (gistEtat) gistEtat.textContent = phraseGist() ?? 'Aucune sauvegarde GitHub envoyée pour le moment.';
+  };
+  if (gistEtat) void montrerEtatGist();
+  if (gistNowBtn && activeVaultScope) {
+    activeVaultScope.bind(gistNowBtn, 'click', () => {
+      void (async () => {
+        haptic.tap();
+        gistNowBtn.disabled = true;
+        try {
+          const { apexGithubGistBackup, phraseGist, jetonAChanger, LIEN_NOUVEAU_JETON_GIST } =
+            await import('../../services/vault/apex-github-gist-backup.js');
+          const r = await apexGithubGistBackup.pushBackup({ force: true });
+          const phrase = phraseGist() ?? (r.ok ? '☁️ Sauvegarde GitHub faite' : '⚠️ Sauvegarde GitHub non faite');
+          if (r.ok) toast.success(phrase, { duration: 10000 });
+          else toast.warn(phrase, { duration: 12000 });
+          await montrerEtatGist();
+          if (!r.ok && jetonAChanger(r.error) && gistEtat) {
+            const a = document.createElement('a');
+            a.href = LIEN_NOUVEAU_JETON_GIST;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = ' → Créer un nouveau jeton (une seule fois, puis le coller dans le chat)';
+            a.style.cssText = 'color:var(--ax-gold);display:inline-block;min-height:44px;line-height:44px';
+            gistEtat.appendChild(a);
+          }
+        } catch (err: unknown) {
+          toast.warn(`⚠️ Sauvegarde GitHub non faite : ${err instanceof Error ? err.message : 'erreur'}`);
+        } finally {
+          gistNowBtn.disabled = false;
+        }
+      })();
+    });
+  }
+
   const qrBackupBtn = rootEl.querySelector<HTMLButtonElement>('#ax-vault-qr-backup');
   if (qrBackupBtn && activeVaultScope) {
     activeVaultScope.bind(qrBackupBtn, 'click', () => {

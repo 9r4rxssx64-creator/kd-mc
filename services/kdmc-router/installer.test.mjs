@@ -93,6 +93,7 @@ qui = { uid: 'u2', nom: 'Autre', admin: false }; j = await (await req('/__push/i
 const autreApp = await (await handlePush(new Request('https://lingua.kd-mc.com/__push/installee?appareil=' + AP), new URL('https://lingua.kd-mc.com/__push/installee?appareil=' + AP), env, { qui: async () => ({ uid: 'u1' }) })).json();
 ok(autreApp.installee === false, '7j. une AUTRE app (lingua) sur le même appareil : installee:false (chaque app a son installation)');
 qui = { uid: 'u1', nom: 'Test Un', admin: false }; await req('/__push/installee', { appareil: AP, installee: false }); ok(inst().length === 0, '7k. désinstallée → la ligne s\'efface');
+{ const mf = manifestPour('lingua.kd-mc.com'); ok(Array.isArray(mf.related_applications) && mf.related_applications[0].platform === 'webapp' && mf.related_applications[0].url === 'https://lingua.kd-mc.com/__installer/manifest.webmanifest' && /getInstalledRelatedApps/.test(INSTALLER_JS), '7m. manifeste « related_applications » + getInstalledRelatedApps : Chrome reconnaît l\'app installée jamais ouverte'); }
 ok(/kdmc_app_installee_at/.test(INSTALLER_JS) && /\/__push\/installee/.test(INSTALLER_JS) && /data-kdmc-app-installee/.test(INSTALLER_JS), '7l. le script client signale, demande et masque les boutons des apps');
 /* 6 — injection dans chaque page */
 const page = new Response('<html><body><p>Bonjour</p></body></html>', { headers: { 'content-type': 'text/html' } });

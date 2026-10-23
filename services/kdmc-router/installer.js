@@ -48,6 +48,7 @@ export function manifestPour(host) {
   const nom = nomApp(host);
   return { name: nom, short_name: nom.length > 12 ? nom.slice(0, 12) : nom, description: nom + ' — kd-mc.com', start_url: '/', scope: '/', id: '/', display: 'standalone', orientation: 'any',
     background_color: '#0b1409', theme_color: '#0b1409', lang: 'fr',
+    related_applications: [{ platform: 'webapp', url: 'https://' + String(host || 'kd-mc.com').toLowerCase() + '/__installer/manifest.webmanifest' }],   /* 23.10 : Chrome dit alors à l'onglet que l'app est installée, même jamais ouverte (getInstalledRelatedApps) */
     icons: [{ src: '/__installer/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: '/__installer/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }, { src: '/__installer/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }] };
 }
 

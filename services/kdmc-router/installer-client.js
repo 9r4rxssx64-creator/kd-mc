@@ -53,6 +53,8 @@ export const INSTALLER_JS = String.raw`(function () {
     }
     function demanderSiInstallee() {
       if (INSTALLEE || DEJA) return;
+      /* Chrome / Edge (ordinateur, Android) : l'app installée mais jamais ouverte se voit quand même (manifeste avec related_applications) — retour du Lenovo, pont 507 */
+      try { if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(function (l) { if (l && l.length && !INSTALLEE) marquerDeja(); }).catch(function () { /* */ }); } catch (e) { /* */ }
       api('/__push/installee?appareil=' + encodeURIComponent(appareil())).then(function (r) { if (r && r.ok && r.installee) marquerDeja(); }).catch(function () { /* */ });
     }
     function el(tag, css, html) { var e = document.createElement(tag); if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; return e; }

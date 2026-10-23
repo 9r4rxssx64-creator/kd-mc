@@ -146,6 +146,13 @@ async function suite(js, etiquette) {
     await p3.goto(base + '/'); await p3.waitForTimeout(600);
     rec(!(await p3.evaluate(() => !!document.querySelector('[data-kdmc-installer="pastille"]'))), etiquette + " F3. Android, app déjà ouverte depuis l'écran d'accueil : l'onglet Chrome n'a plus la 📲");
     await ctx3.close();
+    /* F4 — Chrome ordinateur : app installée mais JAMAIS ouverte → Chrome le dit (getInstalledRelatedApps) → pas de 📲 (Lenovo, pont 504) */
+    const ctx4 = await nav.newContext({ viewport: { width: 1280, height: 720 } }); const p4 = await ctx4.newPage();
+    await ctx4.addCookies([{ name: 'anonyme', value: '1', url: base }]);
+    await p4.addInitScript(() => { navigator.getInstalledRelatedApps = () => Promise.resolve([{ platform: 'webapp', url: location.origin + '/__installer/manifest.webmanifest' }]); });
+    await p4.goto(base + '/'); await p4.waitForTimeout(700);
+    rec(!(await p4.evaluate(() => !!document.querySelector('[data-kdmc-installer="pastille"]'))), etiquette + " F4. ordinateur, app installée jamais ouverte : Chrome le dit, plus de 📲");
+    await ctx4.close();
   });
   /* E — page qui a déjà son manifeste ; cadre */
   await essai(js, async (nav, base) => {
@@ -160,7 +167,7 @@ async function suite(js, etiquette) {
 await suite(INSTALLER_JS, 'vrai script —');
 /* sabotage : sans l'appel prompt() et sans ajout du manifeste, la preuve doit rougir */
 const avant = fails;
-const saboté = INSTALLER_JS.replace('p.prompt();', '').replace('var tout = DEJA || (', 'var tout = (').replace("st.textContent = sel + '{display:none!important}';", '').replace("m.href = '/__installer/manifest.webmanifest'; h.appendChild(m);", '');
+const saboté = INSTALLER_JS.replace('p.prompt();', '').replace('var tout = DEJA || (', 'var tout = (').replace('if (l && l.length && !INSTALLEE) marquerDeja();', '').replace("st.textContent = sel + '{display:none!important}';", '').replace("m.href = '/__installer/manifest.webmanifest'; h.appendChild(m);", '');
 console.log('\n— sabotage : script sans prompt() ni manifeste (la preuve doit ROUGIR) —');
 await suite(saboté, 'sabotage —');
 const rougi = fails - avant; fails = avant;

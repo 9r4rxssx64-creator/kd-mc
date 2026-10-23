@@ -118,6 +118,15 @@ class Vault {
       if (!(key.endsWith('_key') || key.endsWith('_token'))) return;
       if (e.newValue !== null && e.newValue !== '') return; /* Pas un effacement */
       if (!e.oldValue) return; /* Pas de valeur perdue */
+      /* 23.10.2026 (pont 464) : une clé que la récupération vient de RANGER sous un autre nom (ou que Kevin a retirée)
+       * est notée dans `ax_credentials_deleted` : ce n'est pas un effacement — ni erreur, ni alerte, ni remise depuis l'ombre. */
+      try {
+        const retirees = JSON.parse(localStorage.getItem('ax_credentials_deleted') ?? '[]') as unknown;
+        if (Array.isArray(retirees) && retirees.includes(key)) {
+          logger.info('vault-watch', `clé retirée volontairement (rangée ou supprimée) : ${key}`);
+          return;
+        }
+      } catch { /* registre illisible : on traite comme un effacement */ }
       logger.error('vault-watch', `🚨 KEY ERASED via storage event : ${key}`, {
         oldLen: e.oldValue.length,
       });

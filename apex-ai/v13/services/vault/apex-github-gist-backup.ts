@@ -72,6 +72,15 @@ export function causeGithub(status: number): string {
   return `réponse GitHub inattendue (HTTP ${status})`;
 }
 
+/** Page de création d'un jeton GitHub déjà remplie : nom + seule case « gist ». */
+export const LIEN_NOUVEAU_JETON_GIST = 'https://github.com/settings/tokens/new?scopes=gist&description=Apex-AI-GIST';
+
+/** Vrai quand TOUS les jetons du coffre ont été refusés (401/403/404) : le remède est un jeton neuf, pas un réessai. */
+export function jetonAChanger(erreur?: string): boolean {
+  return typeof erreur === 'string' && erreur.startsWith('gist_refus')
+    && /refusé|sans le droit|sans accès/.test(erreur) && !/indisponible|réseau/.test(erreur);
+}
+
 class ApexGithubGistBackup {
   private throttleLastPush = 0;
   private readonly THROTTLE_MS = 30_000; /* min 30s entre 2 pushes */
@@ -104,7 +113,36 @@ class ApexGithubGistBackup {
       localStorage.setItem(CLE, JSON.stringify({ ts: Date.now(), ok: r.ok, ...(r.ok ? {} : { erreur: String(r.error ?? 'inconnu').slice(0, 200) }) }));
     } catch { /* quota */ }
     if (!r.ok) logger.warn('gist-backup', `sauvegarde quotidienne non faite : ${r.error ?? 'inconnu'}`);
+    if (!r.ok && jetonAChanger(r.error)) void this.prevenirJetonAChanger();
     return { fait: true, ok: r.ok, ...(r.ok ? {} : { erreur: r.error ?? 'inconnu' }) };
+  }
+
+  /**
+   * 23.10.2026 (pont 497, tâche 4) : tous les jetons du coffre sont refusés par GitHub → le seul remède est un jeton neuf
+   * avec le droit « gist ». Une alerte (cloche + notification), au plus une fois par 24 h, avec un lien qui ouvre la page de
+   * création DÉJÀ remplie (nom + case gist) ; Kevin n'a qu'à valider, copier le jeton et le coller dans le chat d'Apex.
+   */
+  async prevenirJetonAChanger(): Promise<boolean> {
+    const CLE = 'apex_v13_gist_alerte_ts';
+    try {
+      const dernier = Number(localStorage.getItem(CLE) ?? '0');
+      if (Date.now() - dernier < 24 * 3600_000) return false;
+      localStorage.setItem(CLE, String(Date.now()));
+    } catch { /* quota : on alerte quand même */ }
+    try {
+      const { kevinAlerts } = await import('../admin/kevin-alerts.js');
+      await kevinAlerts.alertKevin({
+        severity: 'warn',
+        title: '🔑 Sauvegarde GitHub : un jeton neuf est nécessaire',
+        body: 'GitHub refuse le jeton enregistré. 1) Touche cette alerte : la page GitHub s’ouvre déjà remplie (nom Apex-AI-GIST, case gist cochée). 2) Touche « Generate token » en bas, puis copie le jeton affiché. 3) Reviens ici et colle-le dans le chat d’Apex : il le range tout seul et lance la sauvegarde.',
+        source: 'gist-backup',
+        cta_url: LIEN_NOUVEAU_JETON_GIST,
+      });
+      return true;
+    } catch (err: unknown) {
+      logger.warn('gist-backup', 'alerte jeton à changer non envoyée', { msg: err instanceof Error ? err.message : String(err) });
+      return false;
+    }
   }
 
   /**

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex AI v13.4.386 (2026-10-23 — sauvegarde GitHub : un jeton neuf en deux touches ; fin des faux « clé effacée »)
+- Mesuré chez Kevin (Apex 385) : le seul jeton lisible du coffre est refusé par GitHub, le bon jeton « Apex-AI-GIST » (jamais utilisé) n'y est pas. Maintenant, quand TOUS les jetons sont refusés (401/403/404), une alerte (cloche + notification), au plus une fois par 24 h, ouvre la page de création GitHub déjà remplie (nom Apex-AI-GIST, case gist) ; Kevin valide, copie le jeton et le colle dans le chat : rangé tout seul, sauvegarde lancée.
+- Les 7 « KEY ERASED via storage event » : des clés RANGÉES sous un autre nom par la récupération (notées dans `ax_credentials_deleted`) étaient prises pour des effacements (erreur, alerte, remise depuis l'ombre). Elles sont ignorées ; un vrai effacement garde son erreur.
+- Preuves : `tests/unit/coffre-gist-renouveler.test.ts` 5/5, 2 rouges sans les correctifs ; suite Apex 12 575 verts. Tâche 4 du pont (pont 497/464). Leçon 751.
+
 ## Apex AI v13.4.383 (2026-10-22 — le jeton GitHub ne s'affiche plus en QR à chaque ouverture)
 - Avant : à chaque chargement, le coffre qui se recharge tout seul réenregistrait le jeton GitHub → un QR du jeton EN CLAIR s'ouvrait (1,5 s après), le trousseau iCloud redemandait « Sauvegarder ? » et une sauvegarde Gist partait (et échouait). Maintenant `setKey(…, { origine })` : une restauration (Firebase, Gist, trousseau, récupération, import) n'ouvre ni QR, ni trousseau, ni Gist ; le QR ne s'ouvre que quand Kevin colle lui-même le jeton.
 - Sauvegarde Gist : la vraie cause est écrite (« jeton GitHub refusé », « sans le droit gist », « réseau injoignable »…, jamais le jeton) ; un refus de la liste ne crée plus un 2ᵉ gist ; CHAQUE jeton du coffre est essayé (un ancien jeton sans le droit « gist » passait avant le nouveau : GitHub disait « Never used », pont 249).

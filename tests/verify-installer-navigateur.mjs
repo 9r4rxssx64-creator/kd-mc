@@ -15,6 +15,11 @@ function serveur(js) {
     if (q.url === '/__push/cle') return json({ ok: true, cle: 'BPcle_publique_test-AAAA' });
     if (q.url === '/__push/abonner') return json({ ok: true, actif: true });
     if (q.url === '/__push/test') return json({ ok: true, envoyes: 1 });
+    if (q.url === '/__admin/vue' && q.method === 'GET') {   /* l'état VRAI, comme le routeur : admin expiré → 403 */
+      const ck = q.headers.cookie || '';
+      if (/admin_expire=1/.test(ck)) { r.writeHead(403, { 'content-type': 'application/json' }); return r.end(JSON.stringify({ ok: false, reason: 'admin_requis' })); }
+      return json({ ok: true, mode: /kdmc_vue=membre/.test(ck) ? 'membre' : 'admin' });
+    }
     if (q.url === '/__admin/vue') { const m = /membre/.test(corps); r.writeHead(200, { 'content-type': 'application/json', 'set-cookie': m ? 'kdmc_vue=membre; Path=/' : 'kdmc_vue=; Path=/; Max-Age=0' }); return r.end(JSON.stringify({ ok: true, mode: m ? 'membre' : 'admin' })); }
     if (q.url.startsWith('/__push/installee')) return json(q.method === 'POST' ? { ok: true, installee: true } : { ok: true, installee: !!(q.headers.cookie && /installee=1/.test(q.headers.cookie)) });
     if (q.url === '/apex') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body><div id="install-hint">📱 Mets Apex Chat sur ton écran d\'accueil</div><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
@@ -167,6 +172,12 @@ async function suite(js, etiquette) {
     rec(appels.some((a) => a.startsWith('POST /__admin/vue') && /membre/.test(a)) && (await p.evaluate(() => (document.querySelector('[data-kdmc-vue]') || {}).textContent)) === '👁 Vue membre', etiquette + ' G3. un toucher → le domaine bascule, la page revient en « 👁 Vue membre »');
     await p.evaluate(() => { const b = document.querySelector('[data-kdmc-vue]'); if (b) b.click(); }); await p.waitForTimeout(800);
     rec((await p.evaluate(() => (document.querySelector('[data-kdmc-vue]') || {}).textContent)) === '👑 Vue admin', etiquette + ' G4. re-toucher → retour en « 👑 Vue admin »');
+    /* G5 (Kevin 23.10 soir : « Tableau KDMC a disparu… pas connecté en admin… censé y avoir un bouton admin partout ») :
+       marqueur présent mais session admin EXPIRÉE → le bouton le dit et mène à la connexion, il ne prétend plus « 👑 Vue admin » */
+    await ctx.addCookies([{ name: 'admin_expire', value: '1', url: base }]);
+    await p.goto(base + '/'); await p.waitForTimeout(700);
+    const g5 = await p.evaluate(() => { const b = document.querySelector('[data-kdmc-vue]'); return b ? { t: b.textContent, h: b.getBoundingClientRect().height } : null; });
+    rec(!!g5 && g5.t === '🔑 Connexion admin' && g5.h >= 44, etiquette + ' G5. admin expiré : bouton « 🔑 Connexion admin » (≥ 44 px)', JSON.stringify(g5));
     await ctx.close();
   });
   /* E — page qui a déjà son manifeste ; cadre */

@@ -19,7 +19,7 @@ export const INSTALLER_JS = String.raw`(function () {
     try { if (/(?:^|;\s*)kdmc_k=1(?:;|$)/.test(document.cookie)) {
       var poserVue = function () {
         if (!document.body || document.querySelector('[data-kdmc-vue]')) return;
-        var membre = /(?:^|;\s*)kdmc_vue=membre(?:;|$)/.test(document.cookie);
+        var membre = /(?:^|;\s*)kdmc_vue=membre(?:;|$)/.test(document.cookie);   /* première idée, corrigée par le domaine juste après */
         var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-kdmc-vue', membre ? 'membre' : 'admin');
         b.textContent = membre ? '👁 Vue membre' : '👑 Vue admin';
         b.setAttribute('aria-label', membre ? 'Tu vois le domaine comme un membre abonné. Toucher pour revenir en admin.' : 'Tu es en admin. Toucher pour voir le domaine comme un membre abonné.');
@@ -33,6 +33,24 @@ export const INSTALLER_JS = String.raw`(function () {
             .catch(function () { b.disabled = false; b.textContent = membre ? '👁 Vue membre' : '👑 Vue admin'; });
         };
         document.body.appendChild(b);
+        /* 23.10 soir (Kevin : « Tableau KDMC a disparu… je ne suis pas connecté en admin… il était censé y avoir un bouton admin partout ») :
+           le marqueur dure 1 an, la session admin moins. Le bouton affichait « 👑 Vue admin » alors que l'admin avait expiré, puis disparaissait.
+           Il demande maintenant l'état VRAI au domaine (1 requête, appareils de Kevin seulement) ; admin expiré → « 🔑 Connexion admin »
+           qui mène à l'écran du code / Face ID (kd-mc.com/admin/). Ce bouton n'ouvre rien : c'est le domaine qui vérifie. */
+        fetch('/__admin/vue', { credentials: 'include' }).then(function (r) { return r.status === 403 ? { ok: false, reason: 'admin_requis' } : r.json(); })
+          .then(function (j) {
+            if (j && j.ok) {
+              membre = j.mode === 'membre'; b.setAttribute('data-kdmc-vue', membre ? 'membre' : 'admin');
+              b.textContent = membre ? '👁 Vue membre' : '👑 Vue admin';
+              return;
+            }
+            if (j && j.reason === 'admin_requis') {
+              b.setAttribute('data-kdmc-vue', 'connexion'); b.textContent = '🔑 Connexion admin';
+              b.setAttribute('aria-label', 'Ta session admin a expiré. Toucher pour te reconnecter (code ou Face ID).');
+              b.style.background = '#3a2a05'; b.style.color = '#ffd76a'; b.style.border = '1px solid #e8b830';
+              b.onclick = function () { location.href = 'https://kd-mc.com/admin/'; };
+            }
+          }).catch(function () { /* hors ligne : on garde le bouton tel quel */ });
       };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poserVue); else poserVue();
     } } catch (e) { /* */ }

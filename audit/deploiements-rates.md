@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 23/10/2026 21:04 UTC
+
+- **Branche** : `main` · **Commit** : `010ff846` · **Run** : `40023982540`
+- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/40023982540
+- **Ce que la machine a dit** :
+
+```
+Vérif-login robot : 9 OK / 0 échec(s)
+Admin domaine test: 41 passed, 0 failed
+  ✅ depuis une adresse hors du domaine → refusé
+Alerte nouvelle connexion : 9 passed, 0 failed
+12 OK · 0 échec(s)
+✅ amont-404 : 6 OK / 0 FAIL
+Antonin TTS test: 13 passed, 0 failed
+Appel push test: 35 passed, 0 failed
+Approvals private-admin gate test: 4 passed, 0 failed
+Apps consistency test: 7 passed, 0 failed
+  ✅ 6. la personne est refusée sur une app fermée, avec un message clair
+  ✅ 11. se reconnecter par une app fermée est refusé aussi (pas de contournement par /__sso/issue)
+  ✅ 14. sans preuve admin, la fermeture en lot est refusée
+  ✅ 21. sans app, sans personne ou sans action : refusé en clair (jamais « à moitié »)
+24 OK / 0 échec(s)
+  ✅ 2. session sur le seul nom (code non prouvé) : refusé
+  ✅ 4. Paul (code prouvé mais arbre NON ouvert à sa fiche) : refusé
+  ✅ 5. Zoé (compte révoqué) : refusé
+  ✅ 6a. l'admin au code seul : refusé (Face ID exigé)
+  ✅ 8. origine étrangère : refusée
+arbre-cle : 11 OK / 0 échec(s)
+✅ arbre-media : 14 ok, 0 échec(s)
+✅ arbre (routeur) : 54 OK / 0 FAIL
+  ✅ 2d. même nom + même identifiant → refusé, aucune fiche, message neutre
+  ✅ 2e. même nom écrit autrement (majuscules, espaces) + autre identifiant → refusé
+  ✅ 2f. même identifiant sous un autre nom → refusé
+✅ bannir : 21 ok, 0 échec(s)
+Beatbot private-admin gate test: 5 passed, 0 failed
+Beatbot relay guard test: 17 passed, 0 failed
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

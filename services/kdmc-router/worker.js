@@ -4795,7 +4795,8 @@ let _fbJeton = { v: '', exp: 0 };
 const PORTES_BEE = ['/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__bot/kill', '/__bot/start', '/__bot/status',
   '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke',
   '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/bannis', '/__admin/debannir', '/__admin/attendus', '/__demandes',
-  '/__bot/ia', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/ia/annuler', '/__bot/scan', '/__bot/marche', '/__bot/liens', '/__bot/fleet', '/__bot/history', '/__bot/analysis'];   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre, création de compte restent FERMÉS (bee-droits.js)
+  '/__bot/ia', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/ia/annuler', '/__bot/scan', '/__bot/marche', '/__bot/liens', '/__bot/fleet', '/__bot/history', '/__bot/analysis',
+  '/__admin/compte-invite', '/__bot/config', '/__bot/reel'];   // + 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par Kevin seul), régler le robot (testnet), lire le contrôle du réel (bee-droits-max.js)   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre restent FERMÉS (bee-droits.js) ; création de compte et réglage du robot ouverts le 23.10 (bee-droits-max.js)
 async function diagBee(request, env, session) {
   const pingIA = async () => {
     const t = Date.now();
@@ -4877,7 +4878,7 @@ function decrirePouvoirs(ex) {
   for (const d of DEFINITIONS.concat(lect.filter((x) => !DEFINITIONS.some((y) => y.name === x.name)))) L.push('• ' + d.name + ' — ' + String(d.description).split(/\.\s/)[0].slice(0, 150));
   L.push('', 'Mes ACTIONS (je les prépare, tu les confirmes avec ✅ — rien ne part avant) :');
   for (const k of ACTIONS_BEE) L.push('• ' + k + ' — ' + CATALOGUE_BEE[k].titre + (CATALOGUE_BEE[k].risque === 'eleve' ? ' (risque élevé)' : ''));
-  L.push('', 'Fermé par tes règles : le coffre et les clés, le code admin, créer un compte avec un code, l\'argent réel du robot, modifier l\'arbre, déployer du code (je t\'écris alors la consigne pour Claude Code).');
+  L.push('', 'Impossible (des faits, pas des refus) : le coffre et les clés (chiffrés sur ton appareil), le code admin (il ne s\'écrit nulle part), passer le robot en argent réel (aucune porte ne le fait), modifier le planning, supprimer ou publier dans l\'arbre, déployer du code (je t\'écris alors la consigne pour Claude Code).');
   return L.join('\n');
 }
 function listeApps(fermees) {

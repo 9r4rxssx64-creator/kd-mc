@@ -215,6 +215,36 @@ console.log('C. Le bouton de confirmation');
   ETAT.ia = null; ETAT.agirRep = { st: 200, j: { ok: true, texte: '⏰ C\'est noté.' } };
 }
 
+/* ───────── C ter. le code d'un compte créé (Kevin 23.10 « Go oui tout ») : affiché UNE fois sur la carte, copiable, jamais gardé ───────── */
+console.log('C ter. Le code d\'un compte créé');
+{
+  ETAT.whoami = 'kevin';
+  const PROP = { action: 'compte_creer', titre: 'Créer un compte pour une personne', icone: '🆕', risque: 'eleve', resume: 'CRÉER le compte de « Léa Martin ».', jeton: 'v1.CORPS.' + 'b'.repeat(64) };
+  ETAT.ia = { ok: true, text: 'Carte prête.', provider: 'cerebras', gratuit: true, propositions: [PROP] };
+  ETAT.agirRep = { st: 200, j: { ok: true, texte: '🆕 Le compte de Léa Martin est créé.\n\n🔑 CODE : K7M2QX9P\n\nRecopie-le MAINTENANT.' } };
+  const { ctx, page, err } = await ouvre();
+  await ctx.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE }).catch(() => {});
+  const fr = await (async () => { for (let i = 0; i < 60; i++) { const f = page.frames().find((x) => /__javis\/cadre/.test(x.url())); if (f) return f; await dors(250); } })();
+  await fr.waitForSelector('#javis-launcher', { timeout: 10000 });
+  await fr.locator('#javis-launcher').click();
+  await fr.locator('#javis-input').fill('crée un compte pour Léa Martin');
+  await fr.locator('#javis-input').press('Enter');
+  await fr.waitForSelector('.javis-carte', { timeout: 10000 });
+  chk(!(await fr.locator('.javis-carte-r').textContent()).includes('K7M2QX9P'), 'avant le ✅ : aucun code sur la carte');
+  await fr.locator('.javis-carte-ok').click();
+  await fr.waitForSelector('.javis-carte-copie', { timeout: 10000 }).catch(() => {});
+  const m = await fr.evaluate(() => { const f = document.querySelector('.javis-carte-f'), b = document.querySelector('.javis-carte-copie'); const r = b && b.getBoundingClientRect(); return { t: f.textContent, ws: getComputedStyle(f).whiteSpace, h: r ? Math.round(r.height) : 0, sel: getComputedStyle(f).userSelect || getComputedStyle(f).webkitUserSelect, hist: JSON.stringify([localStorage, sessionStorage]) + document.cookie }; });
+  chk(/CODE : K7M2QX9P/.test(m.t) && /pre-wrap/.test(m.ws) && /text/.test(m.sel), 'après le ✅ : le code est affiché lisible (lignes conservées) et sélectionnable');
+  chk(m.h >= 44, 'un bouton « Copier le code » de ' + m.h + ' px (≥ 44)');
+  await fr.locator('.javis-carte-copie').click(); await dors(400);
+  chk(/Copié/.test(await fr.locator('.javis-carte-copie').textContent()) && await page.evaluate(() => navigator.clipboard.readText().catch(() => '')) .then((t) => t === 'K7M2QX9P' || t === '').catch(() => true), 'toucher le bouton copie le code (ou, si le navigateur le refuse, le dit)');
+  const stock = await fr.evaluate(() => { let h = ''; try { h = JSON.stringify(Object.assign({}, localStorage)) + JSON.stringify(Object.assign({}, sessionStorage)); } catch (e) { /* fermé */ } return h; });
+  chk(!stock.includes('K7M2QX9P'), 'le code n\'est gardé NULLE PART dans l\'appareil (ni historique de la conversation, ni stockage)');
+  chk(err.length === 0, 'aucune erreur JS' + (err[0] ? ' — ' + err[0] : ''));
+  await ctx.close();
+  ETAT.ia = null; ETAT.agirRep = { st: 200, j: { ok: true, texte: '⏰ C\'est noté.' } };
+}
+
 /* ───────── C bis. les adresses du domaine deviennent des liens ───────── */
 console.log('C bis. Les liens');
 {

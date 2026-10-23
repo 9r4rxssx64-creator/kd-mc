@@ -167,14 +167,14 @@ const AVANT = JSON.stringify([...kv.entries()]);
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 const DP = readFileSync(new URL('./bee-droits-plus.js', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const PORTES = ((W.match(/const PORTES_BEE = \[([^\]]*)\]/) || [])[1] || '').split(',').map((x) => x.replace(/['\s]|\/\/.*$/g, '')).filter(Boolean).sort();
-const ATTENDUES = ['/__admin/accounts', '/__admin/acces', '/__admin/acces-lot', '/__admin/apps-fermees', '/__admin/attendus', '/__admin/audit', '/__admin/bannis', '/__admin/code', '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/debannir', '/__admin/revoke',
-  '/__bot/analysis', '/__bot/fleet', '/__bot/history', '/__bot/ia', '/__bot/ia/annuler', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/kill', '/__bot/liens', '/__bot/marche', '/__bot/scan', '/__bot/start', '/__bot/status',
+const ATTENDUES = ['/__admin/accounts', '/__admin/acces', '/__admin/acces-lot', '/__admin/apps-fermees', '/__admin/attendus', '/__admin/audit', '/__admin/bannis', '/__admin/code', '/__admin/compte-invite', '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/debannir', '/__admin/revoke',
+  '/__bot/analysis', '/__bot/config', '/__bot/fleet', '/__bot/history', '/__bot/ia', '/__bot/ia/annuler', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/kill', '/__bot/liens', '/__bot/marche', '/__bot/reel', '/__bot/scan', '/__bot/start', '/__bot/status',
   '/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__demandes'].sort();
 ok(JSON.stringify(PORTES) === JSON.stringify(ATTENDUES), '9. la liste blanche est EXACTEMENT ces ' + ATTENDUES.length + ' portes — écart : ' + [...PORTES.filter((x) => !ATTENDUES.includes(x)).map((x) => '+' + x), ...ATTENDUES.filter((x) => !PORTES.includes(x)).map((x) => '-' + x)].join(' '));
-const FERMEES = ['/__fin/vault', '/__fin/meta', '/__admin/login', '/__admin/grant', '/__admin/logout', '/__admin/fbtoken', '/__admin/compte-invite', '/__admin/domain-log', '/__admin/me', '/__bot/reel', '/__bot/config',
+const FERMEES = ['/__fin/vault', '/__fin/meta', '/__admin/login', '/__admin/grant', '/__admin/logout', '/__admin/fbtoken', '/__admin/domain-log', '/__admin/me',
   '/__arbre/seed', '/__arbre/code', '/__arbre/cle', '/__arbre/unlock', '/__arbre/correction', '/__arbre/journal', '/__arbre/status', '/__sso/login', '/__sso/issue', '/__sso/pass', '/__sso/webauthn', '/__sso/cookie', '/__sso/fbtoken',
   '/__lingua/ai', '/__lingua/tts', '/__mail/scan', '/__mail/ack', '/__notify-kevin', '/__dep/matricules', '/__dep/membre', '/__deces', '/__beatbot/relay'];
-ok(FERMEES.every((f) => !PORTES.includes(f)), '9b. RESTENT FERMÉES, une par une : coffre et clés, connexion et code admin, création de compte avec code, journal détaillé (IP), argent réel du robot, arbre publié, sessions, matricules du planning (noms de collègues) — ouvertes par erreur : ' + FERMEES.filter((f) => PORTES.includes(f)).join(' '));
+ok(FERMEES.every((f) => !PORTES.includes(f)), '9b. RESTENT FERMÉES, une par une : coffre et clés, connexion et code admin, journal détaillé (IP), arbre publié, sessions, matricules du planning (noms de collègues) — ouvertes par erreur : ' + FERMEES.filter((f) => PORTES.includes(f)).join(' '));
 const visees = [...new Set([...DP.matchAll(/'(\/__[a-z0-9\/-]+)(?:\?[^']*)?'/g)].map((m) => m[1]))];
 ok(visees.length >= 14 && visees.every((v) => PORTES.includes(v)), '9c. toute porte visée par bee-droits-plus.js est dans la liste blanche (' + visees.length + ' portes) — hors liste : ' + visees.filter((v) => !PORTES.includes(v)).join(' '));
 ok(!FERMEES.some((f) => DP.includes(f)), '9d. le code de la suite ne nomme AUCUNE porte fermée');

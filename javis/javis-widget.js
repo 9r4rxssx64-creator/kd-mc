@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.22';
+  var JAVIS_VER = 'v1.23';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -403,7 +403,7 @@
       '.javis-carte-b{display:flex;gap:8px}.javis-carte-b button{flex:1;min-height:44px;border-radius:12px;border:0;font:inherit;font-weight:700;cursor:pointer}' +
       '.javis-ouvrir-go{background:#f6b73c;color:#1a1204}.javis-ouvrir-rester{background:#3a2c14;color:#f3f0e6}' +
       '.javis-atelier-b{background:#f6b73c;color:#1a1204}.javis-atelier-img{display:block;max-width:100%;border-radius:10px;margin:6px 0}' +
-      '.javis-carte-ok{background:#f6b73c;color:#1a1204}.javis-carte-non{background:#3a2c14;color:#f3f0e6}.javis-carte-b button:disabled{opacity:.6;cursor:default}.javis-carte-f{font-size:13px}' +
+      '.javis-carte-ok{background:#f6b73c;color:#1a1204}.javis-carte-non{background:#3a2c14;color:#f3f0e6}.javis-carte-b button:disabled{opacity:.6;cursor:default}.javis-carte-f{font-size:13px;white-space:pre-wrap;-webkit-user-select:text;user-select:text}.javis-carte-copie{display:block;margin-top:8px;min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#f6b73c;color:#1a1204;font:700 15px/1 -apple-system,BlinkMacSystemFont,sans-serif}' +
       /* DANS LE CADRE d'une autre app (Bee partout) : le parent règle la taille du cadre ; la pastille est dans son coin, le chat remplit le cadre ouvert */
       'html.javis-cadre #javis-launcher{right:12px;bottom:12px}' +
       'html.javis-cadre #javis-panel{top:0;right:0;left:0;bottom:0;max-width:none;max-height:none;margin:0;border-radius:18px}' +
@@ -1681,6 +1681,12 @@
           var bon = !!(x.j && x.j.ok);
           var txt = (x.j && x.j.texte) || (x.st === 403 ? 'Je ne te reconnais plus : touche Face ID puis redemande.' : x.st === 429 ? 'Doucement, réessaie dans une minute.' : 'Ça n\'a pas marché (' + x.st + ').');
           fige(txt, bon);
+          /* 🔑 un code tiré au hasard par le domaine (création de compte) : affiché ICI seulement, jamais dans l'historique ; un bouton le copie (iPhone : un toucher suffit) */
+          var mc = bon && /CODE : ([A-Z0-9]{8})\b/.exec(txt);
+          if (mc) { var cp = document.createElement('button'); cp.type = 'button'; cp.className = 'javis-carte-copie'; cp.textContent = '\uD83D\uDCCB Copier le code';
+            cp.addEventListener('click', function () { var fait = function () { cp.textContent = '\u2705 Copié'; };
+              try { navigator.clipboard.writeText(mc[1]).then(fait, function () { cp.textContent = 'Touche le code et copie-le'; }); } catch (e) { cp.textContent = 'Touche le code et copie-le'; } });
+            fin.appendChild(cp); }
           if (bon) { allRigs(root).forEach(function (rg) { react(rg, 'joie', 1200); }); tone([660, 880], .2); vibrate(8); }
           var h = loadHistory(); h.push({ role: 'assistant', content: (bon ? '[Action faite] ' : '[Action non faite] ') + String(p.resume || '').slice(0, 200) }); saveHistory(h);
         })

@@ -262,6 +262,7 @@
   "tests/verify-chemins-domaine.mjs",
   "tests/verify-chevauchements-iphone.mjs",
   "tests/verify-cloudflare-analytics-couper.mjs",
+  "tests/verify-cmc-ecritures-apres-jeton.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",
   "tests/verify-cmc-zones-tactiles.mjs",
   "tests/verify-cmcteams-invite.mjs",

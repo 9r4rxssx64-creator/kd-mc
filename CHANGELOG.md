@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.987 + light v1.113 — plus aucun refus 401 au démarrage (2026-10-23)
+- Mesuré par le Lenovo dans le Chrome de Kevin : 8 refus 401 sur CMCteams, 2 sur la light. Cause CMCteams : 5 écritures (cmc_presence, cmc_chefs_t, cmc_pw, cmc_reg, cmc_events) partaient AVANT le jeton, étaient refusées, comptaient comme panne et ouvraient le disjoncteur (« Firebase temporairement indisponible », écritures en file 60 s) ; elles attendent maintenant la fin de la connexion (reprise de secours à 8 s) et un refus de droits (401/403) ne compte plus comme panne. Cause light : `NR5E.regler` / `HEURES.regler` lisaient avant le jeton ; le démarrage les relit une fois le jeton là.
+- Autre source des refus : `cmcRestoreFromAll` relisait chaque clé manquante sur Firebase SANS jeton (12 refus 401 sur un appareil au stockage vide, cmc_timings, cmc_exchanges, cmc_day_notes, cmc_templates…) : chemin mort depuis que les règles exigent un compte ; supprimé (le flux en direct remet déjà ces clés avec ses filtres).
+- Gardes : `test:cmc-ecritures-apres-jeton` (0 refus, disjoncteur fermé, file vide ; sabotage → rouge), `test:light-relire-apres-jeton` (A : 0 lecture sans jeton ; SABOTAGE=1 et 2).
+
 ## CMCteams v9.986 — derniers textes sous 12 px (2026-10-23)
 - Plancher de lisibilité 12 px étendu à la fenêtre de bienvenue (`#cmcV10Welcome`) et à la barre du haut (`#topbar`) ; les grilles et le dessin SVG gardent leur densité. La light n'a pas de mode hors ligne : volontaire (voir MEMO 23.10 nuit 4).
 

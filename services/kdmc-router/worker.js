@@ -5039,13 +5039,24 @@ async function handleAdmin(request, url, env) {
     await audLog(env, { ev: 'admin_lien_appareil_cree', uid: me.uid });
     return J({ ok: true, url: 'https://kd-mc.com/__admin/lien-appareil/ouvrir?t=' + jeton, exp });
   }
-  if (path === '/__admin/lien-appareil/ouvrir' && request.method === 'GET') {
-    const jeton = String(url.searchParams.get('t') || '');
+  if (path === '/__admin/lien-appareil/ouvrir' && (request.method === 'GET' || request.method === 'POST')) {
+    /* 23.10 (Kevin : « il m'a ouvert le domaine une fois, mais je ne suis pas reconnu ») : ouvert dans le navigateur intégré de Gmail,
+       la session restait dans Gmail, pas dans Safari. Désormais : la page (GET) n'ouvre RIEN — elle dit d'abord « ouvre ce lien dans
+       Safari » si on est dans une app (Gmail…) ; le jeton n'est consommé que par le bouton (POST). Les robots qui pré-ouvrent les liens
+       d'un mail ne le brûlent donc plus. */
+    let jeton = String(url.searchParams.get('t') || '');
+    if (request.method === 'POST') { try { const f = await request.formData(); jeton = String(f.get('t') || jeton); } catch { /* corps vide */ } }
     const page = (titre, texte) => new Response('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KDMC</title><body style="margin:0;background:#0b1409;color:#f3f0e6;font:17px/1.5 -apple-system,sans-serif;padding:32px 20px;text-align:center"><h1 style="color:#e8b830;font-size:22px">' + titre + '</h1><p>' + texte + '</p><p><a style="display:inline-block;min-height:48px;line-height:48px;padding:0 22px;border-radius:14px;background:#e8b830;color:#0b1409;font-weight:700;text-decoration:none" href="https://kd-mc.com/">Ouvrir le portail</a></p></body>', { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' } });
     if (!/^[A-Za-z0-9_-]{40,60}$/.test(jeton) || !env.ACCOUNTS) return page('Lien non valable', 'Demande un nouveau lien à ton ordinateur.');
     const cle = 'la:' + (await sha256Hex(jeton));
     let rec = null; try { rec = JSON.parse((await env.ACCOUNTS.get(cle)) || 'null'); } catch { rec = null; }
     if (!rec || !(rec.exp > Date.now())) return page('Lien expiré ou déjà utilisé', 'Un lien ne sert qu\'une fois, pendant 10 minutes. Demande-en un nouveau à ton ordinateur.');
+    if (request.method !== 'POST') {
+      const ua = request.headers.get('user-agent') || '';
+      const dansApp = /GSA\/|Gmail|FBAN|FBAV|Instagram|Line\/|wv\)/i.test(ua) || (/iPhone|iPad/.test(ua) && !/Safari\//.test(ua));
+      const conseil = dansApp ? '<p style="background:#33260f;color:#fbbf63;border-radius:12px;padding:12px">⚠️ Tu es dans une app (Gmail…). Ici, l\'accès resterait enfermé dans Gmail. Touche ⋯ ou Partager en haut, puis <b>« Ouvrir dans Safari »</b>, et touche le bouton là-bas.</p>' : '';
+      return new Response('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KDMC</title><body style="margin:0;background:#0b1409;color:#f3f0e6;font:17px/1.5 -apple-system,sans-serif;padding:32px 20px;text-align:center"><h1 style="color:#e8b830;font-size:22px">Ouvrir ton accès sur cet appareil</h1>' + conseil + '<p>Un seul toucher : ce téléphone est reconnu comme toi, puis tu réactives Face ID dans « Mes appareils ».</p><form method="post"><input type="hidden" name="t" value="' + jeton + '"><button style="min-height:52px;padding:0 24px;border:0;border-radius:14px;background:#e8b830;color:#0b1409;font:700 17px -apple-system,sans-serif">✅ Ouvrir mon accès ici</button></form><p style="color:#a1a8b8;font-size:14px">Le lien ne sert qu\'une fois et expire 10 minutes après son envoi.</p></body>', { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' } });
+    }
     await env.ACCOUNTS.delete(cle);   // usage unique : effacé avant d'ouvrir quoi que ce soit
     const grant = await ssoSign(secret, '__kdmc_admin__', 'admin', 1);
     const accA = await accGet(env, CANON_UID);

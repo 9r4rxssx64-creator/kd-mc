@@ -20,18 +20,23 @@ const run = async () => {
   const t = new URL(j.url).searchParams.get('t');
   ok(![...store.keys()].some((k) => k.includes(t)) && [...store.keys()].some((k) => k.startsWith('la:')), 'seule l\'empreinte du jeton est rangée');
   r = await mod.fetch(REQ('/__admin/lien-appareil/ouvrir?t=' + t), env);
+  ok(r.status === 200 && !/kdmc_admin=/.test(r.headers.get('set-cookie') || '') && /Ouvrir mon accès/.test(await r.text()), 'ouvrir le lien (GET, ou robot de Gmail) ne consomme RIEN : il faut toucher le bouton');
+  r = await mod.fetch(REQ('/__admin/lien-appareil/ouvrir?t=' + t, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/300.0 Mobile/15E148' } }), env);
+  ok(/Ouvrir dans Safari/.test(await r.text()), 'dans Gmail (navigateur intégré) : la page dit d\'ouvrir dans Safari');
+  const POSTF = (tk) => REQ('/__admin/lien-appareil/ouvrir', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 't=' + encodeURIComponent(tk) });
+  r = await mod.fetch(POSTF(t), env);
   const sc = r.headers.get('set-cookie') || '';
   ok(r.status === 302 && /kdmc_admin=/.test(sc) && /kdmc_sso=/.test(sc) && /HttpOnly/.test(sc), '1er clic sur l\'iPhone : session admin vérifiée posée, retour au portail');
-  r = await mod.fetch(REQ('/__admin/lien-appareil/ouvrir?t=' + t), env);
-  ok(r.status === 200 && !/kdmc_admin=/.test(r.headers.get('set-cookie') || '') && /déjà utilisé/.test(await r.text()), '2e clic : refusé (usage unique)');
-  r = await mod.fetch(REQ('/__admin/lien-appareil/ouvrir?t=' + 'A'.repeat(43)), env);
+  r = await mod.fetch(POSTF(t), env);
+  ok(r.status === 200 && !/kdmc_admin=/.test(r.headers.get('set-cookie') || '') && /déjà utilisé/.test(await r.text()), '2e toucher : refusé (usage unique)');
+  r = await mod.fetch(POSTF('A'.repeat(43)), env);
   ok(r.status === 200 && !/kdmc_admin=/.test(r.headers.get('set-cookie') || ''), 'jeton inventé : refusé');
   /* lien expiré */
   r = await mod.fetch(REQ('/__admin/lien-appareil', { method: 'POST', headers: { cookie: 'kdmc_admin=' + g[1] } }), env);
   const t2 = new URL((await r.json()).url).searchParams.get('t');
   const k2 = [...store.keys()].find((k) => k.startsWith('la:') && JSON.parse(store.get(k)).exp);
   const v = JSON.parse(store.get(k2)); v.exp = Date.now() - 1; store.set(k2, JSON.stringify(v));
-  r = await mod.fetch(REQ('/__admin/lien-appareil/ouvrir?t=' + t2), env);
+  r = await mod.fetch(POSTF(t2), env);
   ok(!/kdmc_admin=/.test(r.headers.get('set-cookie') || ''), 'lien de plus de 10 min : refusé');
   console.log(`Lien d'appareil : ${pass} OK / ${fail} échec(s)`);
   process.exit(fail ? 1 : 0);

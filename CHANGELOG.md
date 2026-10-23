@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.986 — derniers textes sous 12 px (2026-10-23)
+- Plancher de lisibilité 12 px étendu à la fenêtre de bienvenue (`#cmcV10Welcome`) et à la barre du haut (`#topbar`) ; les grilles et le dessin SVG gardent leur densité. La light n'a pas de mode hors ligne : volontaire (voir MEMO 23.10 nuit 4).
+
+## Javis / Bee v1.23 — créer un compte, régler le robot (2026-10-23)
+- Bee peut CRÉER UN COMPTE (code tiré au hasard par le domaine, montré une seule fois à Kevin avec un bouton « Copier le code ») et RÉGLER LE ROBOT (testnet, bornes du domaine), toujours après le ✅ de Kevin ; elle lit aussi le réglage du robot et le contrôle du passage au réel. Les cartes gardent leurs retours à la ligne et se sélectionnent.
 ## Javis / Bee v1.23 — créer un compte, régler le robot (2026-10-23, FERMÉS le soir même sur ordre de Kevin)
 - (Fermé par défaut : interrupteur `BEE_DROITS_MAX`.) Bee peut CRÉER UN COMPTE (code tiré au hasard par le domaine, montré une seule fois à Kevin avec un bouton « Copier le code ») et RÉGLER LE ROBOT (testnet, bornes du domaine), toujours après le ✅ de Kevin ; elle lit aussi le réglage du robot. Les cartes gardent leurs retours à la ligne et se sélectionnent.
 

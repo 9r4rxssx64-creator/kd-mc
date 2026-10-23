@@ -151,6 +151,18 @@ ok((await bilanDiag({}, { session: {}, fournisseurs: [], ia: async () => null, a
   const r = await bee(env, { diag: true });
   ok(r.st === 200 && /Test des outils, IA par IA :/.test(r.j.texte) && /cerebras ✅ \d+ ms \(appelle l'outil\)/.test(r.j.texte) && /groq ✅ \d+ ms \(répond sans appeler l'outil\)/.test(r.j.texte), '12e. la sonde du vrai routeur : cerebras appelle l\'outil, groq répond sans l\'appeler', JSON.stringify(r.j).slice(0, 400)); }
 
+/* 12f. SOUS-REQUÊTES (23.10, robot réel : « le nuage dit : Too many subrequests ») : le nuage de l'arbre se lit AVANT les essais d'IA, et une IA qui a déjà répondu à la sonde n'est pas rappelée */
+{ const ordre = []; let appelsIA = 0;
+  const b = await bilanDiag({}, { session: { grant: true }, fournisseurs: [], pauses: {},
+    arbre: async () => { ordre.push('arbre'); return { seed: 3, codehash: true, nuage: true }; },
+    sondeOutils: async () => { ordre.push('sonde'); return [{ nom: 'groq', ok: true, ms: 210, outil: true }]; },
+    ia: async () => { appelsIA++; ordre.push('ia'); return { provider: 'x', ms: 1 }; } });
+  ok(ordre[0] === 'arbre' && ordre.indexOf('sonde') === 1, '12f. le nuage de l\'arbre est lu AVANT les essais d\'IA', ordre.join('>'));
+  ok(appelsIA === 0 && /IA gratuite qui répond à l'instant : ✅ groq \(210 ms\)/.test(b.texte) && b.ok, '12g. une IA déjà passée à la sonde n\'est pas rappelée (économie de sous-requêtes)', b.texte);
+  ok(b.texte.indexOf('Test des outils') < b.texte.indexOf('Nuage de l'), '12h. l\'ordre d\'affichage reste celui d\'avant');
+  const b2 = await bilanDiag({}, { session: { grant: true }, fournisseurs: [], pauses: {}, arbre: async () => null, sondeOutils: async () => [{ nom: 'cerebras', ok: false, erreur: 'HTTP 402' }], ia: async () => { appelsIA++; return { provider: 'groq', ms: 300 }; } });
+  ok(appelsIA === 1 && /groq \(300 ms\)/.test(b2.texte), '12i. sans réponse à la sonde, l\'appel d\'IA a bien lieu', b2.texte); }
+
 globalThis.fetch = vraiFetch;
 console.log('\n' + pass + ' ✓ / ' + fail + ' ✗  (bee-diag)');
 process.exit(fail ? 1 : 0);

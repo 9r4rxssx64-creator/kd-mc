@@ -25,6 +25,16 @@ export const QWEN_MODELS = [
   '@cf/qwen/qwq-32b',
 ];
 
+/* DERNIER RECOURS GRATUIT (Kevin 23.10.2026 : « trouve des solutions pour les IA gratuites, ajoute pour ne pas avoir de problème, appels etc. »).
+   Run réel 39819772411 : le bilan d'appel a rendu `ai_absent` — les 2 Qwen (≤ 8 s chacun sous échéance) n'ont pas tenu, les autres gratuits étaient en
+   pause ou sans clé. Ces petits modèles de Workers AI (inclus dans le compte, 0 clé, 0 facture) répondent en 1-3 s : ils passent APRÈS toute la chaîne,
+   jamais avant. Un nom retiré par Cloudflare est simplement sauté (essai suivant). */
+export const CF_RAPIDES = [
+  '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+  '@cf/meta/llama-3.1-8b-instruct-fast',
+  '@cf/meta/llama-3.2-3b-instruct',
+];
+
 /* Ordre des gratuits : c'est LUI que « gratuit d'abord » suit quand plusieurs existent. */
 /* 2.10.2026 (Kevin « Go freellm ») : FreeLLMAPI empile ~34 paliers gratuits derrière un serveur — ici, la même idée
    SANS serveur : les paliers gratuits dont Kevin détient déjà la clé entrent dans la cascade, après ceux d'avant
@@ -357,6 +367,27 @@ function withTimeout(ms) {
   return { signal: ctrl.signal, done: () => clearTimeout(t) };
 }
 
+/* Texte d'une réponse Workers AI (objet déjà décodé, `result`, `text` ou format OpenAI) — sans <think>. */
+function texteWorkersAi(r) {
+  const brut = r && (r.response !== undefined ? r.response : (r.result && r.result.response !== undefined ? r.result.response : (r.text !== undefined ? r.text : (r.choices && r.choices[0] && r.choices[0].message ? r.choices[0].message.content : ''))));
+  return stripThink(brut && typeof brut === 'object' ? JSON.stringify(brut) : brut);
+}
+/** Les petits modèles rapides de Workers AI, l'un après l'autre, dans le temps qui reste (≤ 7 s chacun). */
+async function callCfRapide(env, messages, o) {
+  const tried = [];
+  for (const model of CF_RAPIDES) {
+    const reste = o.finMs ? o.finMs - Date.now() - 300 : Infinity;
+    const delai = Math.min(o.rapideMs || 7000, reste);
+    if (delai < 1500) { tried.push(model + ':échéance'); break; }
+    try {
+      const r = await withDeadline(env.AI.run(model, { messages, max_tokens: o.maxTokens, temperature: o.temperature }), delai);
+      const text = texteWorkersAi(r);
+      if (text) return { text, model };
+      tried.push(model + ':vide');
+    } catch (e) { tried.push(model + ':' + String((e && e.message) || e).slice(0, 80)); }
+  }
+  throw new Error(tried.join(' ; '));
+}
 async function callQwen(env, messages, o) {
   const tried = [];
   /* Chaque modèle a SON délai (audit Bee 30.09, mesuré : un Qwen muet bloquait la réponse plus de
@@ -538,6 +569,26 @@ export async function routeText(env, opts) {
       const ms = dureePause(status, msg, e && e.retryAfter);
       if (ms) await pauser(provider, ms, 'HTTP ' + status + ' ' + msg.slice(0, 60));
       tried.push({ provider, error: msg.slice(0, 160), pause_s: ms ? Math.round(ms / 1000) : undefined });
+    }
+  }
+  /* DERNIER RECOURS (23.10) — tout a échoué : 1) les petits modèles rapides de Workers AI (gratuits, sans clé) ; 2) les GRATUITS mis en pause, retentés malgré la
+     pause (une pause se trompe : « per minute » se vide en 70 s, et un 429 isolé mettait toute la chaîne au repos). Jamais un payant, et seulement dans le temps qui reste. */
+  if (o.dernierRecours !== false) {
+    const poR = () => Object.assign({}, o, { finMs, timeoutMs: Math.min(o.timeoutMs, finMs ? Math.max(0, finMs - Date.now()) : o.timeoutMs) });
+    if (env && env.AI && (!finMs || finMs - Date.now() >= 2000)) {
+      try { const r = await callCfRapide(env, messages, poR()); tried.push({ provider: 'cf-rapide', ok: true, recours: true }); return { ok: true, text: r.text, provider: 'qwen', model: r.model, domain, tried, recours: 'cf-rapide' }; }
+      catch (e) { tried.push({ provider: 'cf-rapide', error: String((e && e.message) || e).slice(0, 160), recours: true }); }
+    }
+    for (const t of tried.filter((x) => x.skipped && /^en pause/.test(x.skipped) && FREE_PROVIDERS.indexOf(x.provider) >= 0 && x.provider !== 'qwen')) {
+      const reste = finMs ? finMs - Date.now() : Infinity;
+      if (reste < 2500) break;
+      const provider = t.provider, po = Object.assign({}, o, { model: o.models && o.models[provider], finMs, timeoutMs: Math.min(o.timeoutMs, reste) });
+      try {
+        const r = provider === 'gemini' ? await callGemini(env[SECRET_NAMES.gemini], messages, po) : await callOpenAiLike(provider, env[SECRET_NAMES[provider]], messages, po);
+        pauses.delete(provider);
+        tried.push({ provider, ok: true, recours: true });
+        return { ok: true, text: r.text, provider, model: r.model, modele_relais: r.modele_relais, domain, tried, recours: 'pause-ignoree' };
+      } catch (e) { tried.push({ provider, error: String((e && e.message) || e).slice(0, 160), recours: true }); }
     }
   }
   return { ok: false, text: '', provider: null, model: null, domain, tried, error: chain.length ? 'tous les moteurs ont échoué' : 'aucune IA disponible' };

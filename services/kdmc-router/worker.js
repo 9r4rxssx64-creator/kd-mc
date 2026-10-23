@@ -2686,7 +2686,7 @@ async function handleLingua(request, url, env) {
           + 'Réponds UNIQUEMENT par un objet JSON, sans texte autour : {"bravo":"une phrase courte en français qui félicite pour une chose précise bien dite","corrections":[{"dit":"la phrase exacte dite","mieux":"la phrase corrigée et naturelle en ' + langName + '","pourquoi":"une phrase simple en français"}],"a_cote":[{"dit":"la phrase exacte dite","question":"ce que demandait la mascotte, en français, court","idee":"une réponse simple et correcte en ' + langName + ' qui répond vraiment à la question"}]}';
         const corps = t10.map((x, i) => (i + 1) + '. ' + (x.q ? 'Question de la mascotte : « ' + x.q + ' »\n   ' : '') + 'Phrase dite : ' + x.d).join('\n');
         const ai = await routeText(env, { messages: [{ role: 'system', content: sysB }, { role: 'user', content: corps }], domain: 'translation', chain: chaineGratuite(env, 'translation'), maxTokens: 650, temperature: 0.2, timeoutMs: 12000, budgetMs: 20000 });   /* 17.10 (réel, run 39032054956) : TOUTE la chaîne tient en 20 s — l'écran ne reste plus « prépare ton bilan… » */
-        if (!ai.ok) return JL({ ok: false, reason: 'ai_absent' });
+        if (!ai.ok) return JL({ ok: false, reason: 'ai_absent', tried: (ai.tried || []).map((t) => ({ provider: t.provider, skipped: t.skipped, error: t.error })) });   /* 23.10 : la CAUSE remonte (fournisseur + raison courte, jamais une clé) — le run 39819772411 disait seulement « ai_absent » */
         return JL(Object.assign({ ok: true, by: ai.provider }, lireBilanAppel(ai.text, dites)));
       }
       /* Les QUESTIONS posées au coach entrent dans le fil de la personne (début du texte seulement, 160 caractères ; pas pour les appels automatiques de la mascotte). */

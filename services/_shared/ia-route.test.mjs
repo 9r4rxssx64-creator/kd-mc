@@ -7,7 +7,7 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   detectDomain, planChain, routeText, stripThink, availableProviders, routingStatus,
-  QWEN_MODELS, FREE_PROVIDERS, DOMAIN_PREFERENCES, SECRET_NAMES,
+  QWEN_MODELS, CF_RAPIDES, FREE_PROVIDERS, DOMAIN_PREFERENCES, SECRET_NAMES,
   _resetPauses, enPause, pauser, dureePause, anticiperDepuisEntetes, NIVEAU, chatAvecOutils,
 } from './ia-route.js';
 
@@ -133,9 +133,38 @@ test('routeText : 1er modèle Qwen mort → le suivant, Qwen entièrement mort �
   try {
     const r3 = await routeText(env3, { prompt: 'bonjour' });
     assert.equal(r3.ok, false);
-    assert.equal(r3.tried.length, 2);
+    assert.equal(r3.tried.length, 3, 'qwen, groq, puis le dernier recours (petits modèles rapides) — tout mort');
     assert.match(r3.tried[1].error, /429/);
+    assert.equal(r3.tried[2].provider, 'cf-rapide');
   } finally { f3.restore(); }
+});
+
+test('DERNIER RECOURS (23.10, ai_absent du bilan d\'appel) : les 4 Qwen morts → un petit modèle rapide de Workers AI répond, gratuit, sans clé', async () => {
+  const ai = fakeAI({ dead: QWEN_MODELS, reply: 'Réponse de secours' });
+  const r = await routeText({ AI: ai }, { prompt: 'bonjour', budgetMs: 20000 });
+  assert.equal(r.ok, true);
+  assert.equal(r.text, 'Réponse de secours');
+  assert.equal(r.recours, 'cf-rapide');
+  assert.ok(CF_RAPIDES.includes(r.model));
+  assert.ok(!r.tried.some((t) => t.provider === 'anthropic' || t.provider === 'openai'), 'jamais un payant');
+});
+
+test('DERNIER RECOURS : un gratuit MIS EN PAUSE est retenté quand tout le reste a échoué (une pause se trompe)', async () => {
+  pauser('groq', 60000, 'limite par minute');
+  const f = mockFetch((url) => (/groq/.test(url) ? openaiReply('Salut depuis Groq') : okJson({})));
+  try {
+    const r = await routeText({ AI: fakeAI({ allDead: true }), GROQ_API_KEY: 'g' }, { prompt: 'bonjour', budgetMs: 20000 });
+    assert.equal(r.ok, true); assert.equal(r.provider, 'groq'); assert.equal(r.recours, 'pause-ignoree');
+    assert.equal(enPause('groq'), null, 'la pause est levée une fois le fournisseur revenu');
+  } finally { f.restore(); }
+});
+
+test('DERNIER RECOURS : coupé avec dernierRecours:false, et jamais hors du temps imparti', async () => {
+  const ai = fakeAI({ dead: QWEN_MODELS });
+  const r = await routeText({ AI: ai }, { prompt: 'bonjour', dernierRecours: false });
+  assert.equal(r.ok, false);
+  const r2 = await routeText({ AI: fakeAI({ dead: QWEN_MODELS }) }, { prompt: 'bonjour', finMs: Date.now() + 500 });
+  assert.equal(r2.ok, false, 'moins de 2 s restantes : on ne dépasse pas l\'échéance');
 });
 
 test('routeText : chaîne forcée et domaine forcé respectés ; premium → Anthropic d\'abord', async () => {

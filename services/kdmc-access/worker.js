@@ -279,6 +279,26 @@ async function handleHistory(request, env, origin) {
    L'écran de code DE la page reste pour qui a déjà un compte (la page entre seule pour Kevin reconnu).
    Retour arrière sans toucher au code : ACCES_PAGE_COMPTE = "0" dans wrangler.toml (vars). */
 export function accesPageCompteActif(env) { return !(env && String(env.ACCES_PAGE_COMPTE) === '0'); }
+/* 🐝 BEE SUR L'ADMIN AUSSI (Kevin 23.10.2026 : « Oui, je veux qu'il soit partout… »). admin.kd-mc.com est un worker à part : le routeur ne lui pose rien.
+   Donc ICI : (1) la page porte la ligne de Bee (le même petit script public que partout) ; (2) tout ce que ce script demande sous /__javis/ est RELAYÉ tel quel au domaine
+   (kd-mc.com), qui reste seul juge (« est-ce Kevin ? » par sa session prouvée) — ce worker ne décide rien, ne lit rien, ne garde rien. Interrupteur : BEE_PARTOUT = "0". */
+export const BEE_TAG = '<script src="/__javis/partout.js"></script>';
+export function beePosee(env) { return !(env && String(env.BEE_PARTOUT) === '0'); }
+export function pageAvecBee(html, env) {
+  if (!beePosee(env)) return html;
+  const i = html.toLowerCase().lastIndexOf('</body>');
+  return i >= 0 ? html.slice(0, i) + BEE_TAG + html.slice(i) : html + BEE_TAG;
+}
+/* Ce que le cadre de Bee demande au domaine : ses propres portes (/__javis/), la question « qui est là ? » (lecture) et la voix. Rien d'autre n'est relayé. */
+export const RELAIS_BEE = /^\/(?:__javis\/|__sso\/whoami$|__lingua\/tts$)/;
+export async function relaisBee(request, url) {
+  const h = new Headers(request.headers);
+  for (const k of ['host', 'cf-connecting-ip', 'x-forwarded-for', 'x-real-ip']) h.delete(k);
+  const corps = request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.arrayBuffer();
+  const r = await fetch('https://kd-mc.com' + url.pathname + url.search, { method: request.method, headers: h, body: corps, redirect: 'manual' });
+  const sortie = new Headers(r.headers); sortie.delete('content-length');
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: sortie });
+}
 const ENTETES_PAGE = { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
   'X-Frame-Options': 'DENY', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains', 'Content-Security-Policy': "frame-ancestors 'none'" };
@@ -337,7 +357,7 @@ async function handlePage(request, env) {
   const origine = request.headers.get('origin');
   if ((site && site !== 'same-origin' && site !== 'none') || (origine && origine !== new URL(request.url).origin)) return refus('origine');
   if (accesPageCompteActif(env) && !(await sessionDomaine(request, env))) return refus('compte_requis');
-  return new Response(PAGE_HTML, { status: 200, headers: { ...ENTETES_PAGE, Vary: 'Cookie, Authorization' } });
+  return new Response(pageAvecBee(PAGE_HTML, env), { status: 200, headers: { ...ENTETES_PAGE, Vary: 'Cookie, Authorization' } });
 }
 
 /* /__sso/entrer — la porte d'entrée du portail (kdmc-sso.js `porte()`), qui part vers `<app>/__sso/entrer?to=…&h=…` pour
@@ -373,6 +393,7 @@ export default {
        seul « / » servait la page ; tout autre chemin ouvert à la main ou depuis un raccourci (/index.html, /qui, /?x…)
        tombait sur l'erreur brute. Une PAGE demandée (GET/HEAD, hors API) montre donc toujours la page ; seules les
        API inconnues (JSON) gardent le 404. */
+    if (RELAIS_BEE.test(url.pathname) && beePosee(env)) return relaisBee(request, url);   // Bee sur l'admin : le domaine répond (voir plus haut)
     if (url.pathname === '/page' && request.method === 'GET') return handlePage(request, env);
     if (url.pathname === '/__sso/entrer' && request.method === 'GET') return handleEntrer(url);
     const estApi = /^\/(health|log|history|page|__sso)\b/.test(url.pathname) || /\.(js|json|css|map|png|svg|ico|txt|xml)$/i.test(url.pathname);
@@ -382,7 +403,7 @@ export default {
       if (accesPageCompteActif(env) && !(await sessionDomaine(request, env))) return entreeCompte(url);
       /* Audit du domaine 27.09.2026 : cette page (admin.kd-mc.com) partait sans aucun en-tête de
          sécurité (note 0/100). Page admin → jamais encadrable, jamais de référent, HTTPS forcé. */
-      return new Response(PAGE_HTML, { status: 200, headers: ENTETES_PAGE });
+      return new Response(pageAvecBee(PAGE_HTML, env), { status: 200, headers: ENTETES_PAGE });
     }
     return json({ ok: false, error: 'not_found' }, 404, origin);
   },

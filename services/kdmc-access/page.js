@@ -101,7 +101,7 @@ export const PAGE_HTML = `<!doctype html>
 </style></head>
 <body>
 <div id="app"></div>
-<div class="badge" id="vbadge" role="button" tabindex="0" title="Toucher = forcer la mise à jour" style="cursor:pointer;min-height:24px">kdmc-access v1.3.0</div>
+<div class="badge" id="vbadge" role="button" tabindex="0" title="Toucher = forcer la mise à jour" style="cursor:pointer;min-height:24px">kdmc-access v1.4.0</div>
 <script>
 (function(){
   var $=function(s,r){return (r||document).querySelector(s)};
@@ -134,7 +134,7 @@ export const PAGE_HTML = `<!doctype html>
   function dayKey(ts){var d=new Date(ts);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
   function dayLabel(ts){var k=dayKey(ts);if(k===dayKey(Date.now()))return "Aujourd'hui";if(k===dayKey(Date.now()-86400000))return 'Hier';return new Date(ts).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}
   function dur(ms){if(!ms||ms<60000)return '< 1 min';var m=Math.round(ms/60000);if(m<60)return m+' min';var h=Math.floor(m/60);return h+' h'+(m%60?' '+(m%60)+' min':'')}
-  var APPNM={'kd-mc.com':'🏠 Portail','www.kd-mc.com':'🏠 Portail','cmcteams.kd-mc.com':'📅 CMCteams','apex-ai.kd-mc.com':'🤖 Apex','apex-chat.kd-mc.com':'💬 Apex Chat','coffre.kd-mc.com':'🔐 Coffre','dashboard.kd-mc.com':'📊 Dashboard','sourcing.kd-mc.com':'📦 Sourcing','beatbot.kd-mc.com':'🌊 PoolPilot','arbre.kd-mc.com':'🌳 Arbre','lingua.kd-mc.com':'🐝 Lingua','studio.kd-mc.com':'🎬 Studio','bot.kd-mc.com':'🤖 Bot','la-detente.kd-mc.com':'🛍 La Détente','chez-lolo.kd-mc.com':'🛍 Chez Lolo','departs.kd-mc.com':'🚪 Départs','autorisations.kd-mc.com':'🆔 Autorisations','cmcteams-light.kd-mc.com':'🚪 CMCteams light','cuisine.kd-mc.com':'🍳 Cuisine','cocina.kd-mc.com':'🍳 Cuisine','cujina.kd-mc.com':'🍳 Cuisine','javis.kd-mc.com':'🐝 Javis','tor.kd-mc.com':'🧅 Tor en clair','worldmonitor.kd-mc.com':'🌍 World Monitor','osint.kd-mc.com':'🔎 OSINT','ia.kd-mc.com':'🧠 IA','outils.kd-mc.com':'🧰 Outils','shops.kd-mc.com':'🛍 Boutiques','kit.kd-mc.com':'📦 Kit IA','rotaplan.kd-mc.com':'📋 Rotaplan','croupier.kd-mc.com':'🎲 Devenir croupier','dossiers.kd-mc.com':'📁 Dossiers'};
+  var APPNM={'kd-mc.com':'🏠 Portail','www.kd-mc.com':'🏠 Portail','cmcteams.kd-mc.com':'📅 CMCteams','staging.kd-mc.com':'🧪 Staging (test)','apex-ai.kd-mc.com':'🤖 Apex','apex-chat.kd-mc.com':'💬 Apex Chat','coffre.kd-mc.com':'🔐 Coffre','dashboard.kd-mc.com':'📊 Dashboard','sourcing.kd-mc.com':'📦 Sourcing','beatbot.kd-mc.com':'🌊 PoolPilot','arbre.kd-mc.com':'🌳 Arbre','lingua.kd-mc.com':'🐝 Lingua','studio.kd-mc.com':'🎬 Studio','bot.kd-mc.com':'🤖 Bot','la-detente.kd-mc.com':'🛍 La Détente','chez-lolo.kd-mc.com':'🛍 Chez Lolo','departs.kd-mc.com':'🚪 Départs','autorisations.kd-mc.com':'🆔 Autorisations','cmcteams-light.kd-mc.com':'🚪 CMCteams light','cuisine.kd-mc.com':'🍳 Cuisine','cocina.kd-mc.com':'🍳 Cuisine','cujina.kd-mc.com':'🍳 Cuisine','javis.kd-mc.com':'🐝 Javis','tor.kd-mc.com':'🧅 Tor en clair','worldmonitor.kd-mc.com':'🌍 World Monitor','osint.kd-mc.com':'🔎 OSINT','ia.kd-mc.com':'🧠 IA','outils.kd-mc.com':'🧰 Outils','shops.kd-mc.com':'🛍 Boutiques','kit.kd-mc.com':'📦 Kit IA','rotaplan.kd-mc.com':'📋 Rotaplan','croupier.kd-mc.com':'🎲 Devenir croupier','dossiers.kd-mc.com':'📁 Dossiers'};
   function appNm(h){return APPNM[h]||String(h||'')}
   /* ═══ UNE PERSONNE = UNE CARTE, MÊME ÉCRITE AUTREMENT (Kevin 22.09.2026) ═══
      Sur sa capture, Kevin apparaissait DEUX FOIS : « DESARZENS K » (108 actions,

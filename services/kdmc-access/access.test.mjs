@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import worker from './worker.js';
 import { PAGE_HTML } from './page.js';
+import { pageAvecBee } from './worker.js';
 import { readFileSync } from 'node:fs';
 
 const { privateKey } = crypto.generateKeyPairSync('rsa', {
@@ -292,7 +293,7 @@ test('GET /page : la page à un compte du domaine (cookie OU Bearer), relayée a
       assert.equal(r.headers.get('cache-control'), 'no-store', quoi);
       assert.equal(r.headers.get('access-control-allow-origin'), null, quoi + ' : aucun CORS');
       for (const h of ENTETES_SECU) assert.ok(r.headers.get(h), quoi + ' : ' + h);
-      assert.equal(await r.text(), PAGE_HTML, quoi + ' : exactement la page');
+      assert.equal(await r.text(), pageAvecBee(PAGE_HTML, ENV), quoi + ' : exactement la page (plus la ligne de Bee)');
     }
     assert.equal(vus[0]['user-agent'], 'iPhone UA', 'le User-Agent de la personne est relayé (famille d\'appareil)');
   } finally { globalThis.fetch = orig; }
@@ -456,4 +457,55 @@ test('la bulle de version est VRAIE (plus « v1.0 » figé) et la page se met à
   assert.ok(/addEventListener\('click',recharger\)/.test(PAGE_HTML), 'toucher la bulle recharge tout de suite');
   assert.ok(/visibilitychange/.test(PAGE_HTML) && /setInterval\(verifier,60000\)/.test(PAGE_HTML), 'relecture au retour sur l\'écran et chaque minute');
   assert.ok(/m\[1\]!==ICI\) recharger\(\)/.test(PAGE_HTML), 'recharge seulement si la version servie a changé');
+});
+
+/* 🐝 BEE SUR L'ADMIN (Kevin 23.10.2026 : « Oui, je veux qu'il soit partout »). Le routeur ne sert pas admin.kd-mc.com : ce worker pose la ligne de Bee
+   et relaie /__javis/* au domaine, qui reste seul juge de « est-ce Kevin ? ». */
+test('Bee sur l\'admin : la page (entrée ET /page) porte la ligne de Bee, une seule fois, avant </body>', async () => {
+  const orig = globalThis.fetch; globalThis.fetch = mockFetch({});
+  const { oublierSessions, BEE_TAG } = await import('./worker.js');
+  try {
+    oublierSessions();
+    const rp = await worker.fetch(req('/page', { headers: { authorization: 'Bearer pass-kevin' } }), ENV);
+    const tp = await rp.text();
+    assert.equal(rp.status, 200);
+    assert.equal(tp.split(BEE_TAG).length - 1, 1, '/page : une seule ligne de Bee');
+    assert.ok(tp.indexOf(BEE_TAG) < tp.toLowerCase().lastIndexOf('</body>') + 1 && tp.indexOf(BEE_TAG) > tp.toLowerCase().lastIndexOf('<script') - 4000, 'avant </body>');
+    oublierSessions();
+    const rr = await worker.fetch(req('/', { headers: { authorization: 'Bearer pass-kevin' } }), ENV);
+    assert.ok((await rr.text()).includes(BEE_TAG), '« / » avec session : la page porte Bee');
+    const re = await worker.fetch(req('/'), ENV);
+    assert.equal(re.status, 401); const te = await re.text();
+    assert.ok(!te.includes(BEE_TAG) && !te.includes('vbadge'), 'sans session : l\'entrée ne porte ni Bee ni la page');
+    oublierSessions();
+    const coupe = await (await worker.fetch(req('/page', { headers: { authorization: 'Bearer pass-kevin' } }), { ...ENV, BEE_PARTOUT: '0' })).text();
+    assert.ok(!coupe.includes('/__javis/'), 'BEE_PARTOUT=0 : plus de Bee sur l\'admin');
+  } finally { globalThis.fetch = orig; oublierSessions(); }
+});
+
+test('Bee sur l\'admin : /__javis/* est relayé tel quel au domaine (méthode, corps, cookies, origine), jamais servi ici', async () => {
+  const orig = globalThis.fetch; const vus = [];
+  globalThis.fetch = async (u, o) => { vus.push({ u: String(u), o }); return new Response('{"ok":true,"relais":1}', { status: 200, headers: { 'content-type': 'application/json', 'set-cookie': 'kdmc_k=1; Domain=.kd-mc.com' } }); };
+  try {
+    const r = await worker.fetch(req('/__javis/agir?x=1', { method: 'POST', headers: { cookie: 'kdmc_sso=abc', origin: 'https://admin.kd-mc.com', 'content-type': 'application/json', host: 'admin.kd-mc.com', 'cf-connecting-ip': '1.2.3.4' }, body: '{"a":1}' }), ENV);
+    assert.equal(r.status, 200); assert.deepEqual(await r.json(), { ok: true, relais: 1 });
+    assert.equal(vus.length, 1);
+    assert.equal(vus[0].u, 'https://kd-mc.com/__javis/agir?x=1', 'vers le domaine, même chemin et même requête');
+    assert.equal(vus[0].o.method, 'POST'); assert.equal(new TextDecoder().decode(vus[0].o.body), '{"a":1}');
+    const h = vus[0].o.headers;
+    assert.equal(h.get('cookie'), 'kdmc_sso=abc'); assert.equal(h.get('origin'), 'https://admin.kd-mc.com', 'l\'origine d\'un autre site resterait refusée par le domaine');
+    assert.ok(!h.get('cf-connecting-ip') && !h.get('host'), 'adresse et hôte ne sont pas recopiés');
+    assert.equal(vus[0].o.redirect, 'manual');
+    vus.length = 0;
+    const off = await worker.fetch(req('/__javis/partout.js'), { ...ENV, BEE_PARTOUT: '0' });
+    assert.equal(vus.length, 0, 'interrupteur coupé : rien n\'est relayé');
+    assert.notEqual(off.headers.get('x-kdmc-relais'), '1');
+    vus.length = 0;
+    await worker.fetch(req('/__javisx/agir'), ENV); await worker.fetch(req('/page2/__javis/agir'), ENV);
+    assert.equal(vus.filter((x) => /__javis/.test(x.u)).length, 0, 'seul le préfixe exact /__javis/ est relayé');
+    await worker.fetch(req('/__sso/whoami'), ENV); await worker.fetch(req('/__lingua/tts'), ENV);
+    assert.deepEqual(vus.map((x) => new URL(x.u).pathname), ['/__sso/whoami', '/__lingua/tts'], 'le cadre a aussi « qui est là ? » et la voix — et rien d\'autre');
+    vus.length = 0; await worker.fetch(req('/__sso/webauthn/auth/verify'), ENV); await worker.fetch(req('/__admin/login'), ENV); await worker.fetch(req('/__fin/vault'), ENV);
+    assert.equal(vus.length, 0, 'ni Face ID, ni connexion admin, ni coffre ne passent par ce relais');
+  } finally { globalThis.fetch = orig; }
 });

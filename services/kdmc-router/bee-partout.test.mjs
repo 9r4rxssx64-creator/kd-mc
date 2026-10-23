@@ -76,7 +76,7 @@ const gardees = [];
 for (const h of sans.splice(0)) { const t = await (await req(h, '/', { headers: Object.assign({ 'sec-fetch-dest': 'document', accept: 'text/html', 'x-kdmc-sonde': 't' }, KEVIN) })).text(); if (t.includes(PARTOUT_TAG)) { avec++; gardees.push(h); } else sans.push(h); }
 ok(sans.length === 0 && avec >= 22, '1c. le script de Bee est sur CHAQUE adresse ouverte (' + avec + ' adresses dont ' + gardees.join(', ') + ' une fois Kevin reconnu ; sans : ' + sans.join(',') + ' ; portes fermées : ' + portes.length + ')', sans);
 const xa = await (await req('admin.kd-mc.com', '/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'x-kdmc-sonde': 't' } })).text();
-ok(!xa.includes(PARTOUT_TAG), '1d. pas sur admin.kd-mc.com');
+ok(!xa.includes(PARTOUT_TAG), '1d. le ROUTEUR ne sert pas admin.kd-mc.com (worker à part) : Bee y est posée par kdmc-access, voir services/kdmc-access/access.test.mjs et tests/verify-bee-admin.mjs');
 const xj = await (await req('lingua.kd-mc.com', '/app.js')).text(), xk = await (await req('lingua.kd-mc.com', '/data.json')).text();
 ok(!xj.includes(PARTOUT_TAG) && !xk.includes(PARTOUT_TAG), '1e. jamais dans un script ni une donnée (HTML seulement)');
 const coupe = await (await req('lingua.kd-mc.com', '/', { headers: { 'sec-fetch-dest': 'document', accept: 'text/html', 'x-kdmc-sonde': 't' }, e: Object.assign({}, env, { BEE_PARTOUT: '0' }) })).text();

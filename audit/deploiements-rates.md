@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 23/10/2026 21:07 UTC
+
+- **Branche** : `main` · **Commit** : `5e1d1b5a` · **Run** : `40024300160`
+- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/40024300160
+- **Ce que la machine a dit** :
+
+```
+Vérif-login robot : 9 OK / 0 échec(s)
+Admin domaine test: 41 passed, 0 failed
+  ✅ depuis une adresse hors du domaine → refusé
+Alerte nouvelle connexion : 9 passed, 0 failed
+12 OK · 0 échec(s)
+✅ amont-404 : 6 OK / 0 FAIL
+Antonin TTS test: 13 passed, 0 failed
+Appel push test: 35 passed, 0 failed
+Approvals private-admin gate test: 4 passed, 0 failed
+Apps consistency test: 7 passed, 0 failed
+  ✅ 6. la personne est refusée sur une app fermée, avec un message clair
+  ✅ 11. se reconnecter par une app fermée est refusé aussi (pas de contournement par /__sso/issue)
+  ✅ 14. sans preuve admin, la fermeture en lot est refusée
+  ✅ 21. sans app, sans personne ou sans action : refusé en clair (jamais « à moitié »)
+24 OK / 0 échec(s)
+  ✅ 2. session sur le seul nom (code non prouvé) : refusé
+  ✅ 4. Paul (code prouvé mais arbre NON ouvert à sa fiche) : refusé
+  ✅ 5. Zoé (compte révoqué) : refusé
+  ✅ 6a. l'admin au code seul : refusé (Face ID exigé)
+  ✅ 8. origine étrangère : refusée
+arbre-cle : 11 OK / 0 échec(s)
+✅ arbre-media : 14 ok, 0 échec(s)
+✅ arbre (routeur) : 54 OK / 0 FAIL
+  ✅ 2d. même nom + même identifiant → refusé, aucune fiche, message neutre
+  ✅ 2e. même nom écrit autrement (majuscules, espaces) + autre identifiant → refusé
+  ✅ 2f. même identifiant sous un autre nom → refusé
+✅ bannir : 21 ok, 0 échec(s)
+Beatbot private-admin gate test: 5 passed, 0 failed
+Beatbot relay guard test: 17 passed, 0 failed
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 23/10/2026 21:06 UTC
 
 - **Branche** : `main` · **Commit** : `c4c137f3` · **Run** : `40024176726`
@@ -555,17 +595,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

@@ -2,7 +2,7 @@
  * autorisations acceptées, notifications reçues application fermée, écran éteint »). Couche partagée, comme ✉️ : le routeur ajoute le script à chaque page HTML (worker.js, BOUTON_TAG).
  *
  *   /__installer/installer.js · manifest.webmanifest (par adresse) · sw.js (service worker de repli) · icon-192.png · icon-512.png · maskable-512.png · apple-touch-icon.png
- *   /__push/cle (clé publique) · abonner · desabonner · moi · test · envoyer (admin)
+ *   /__push/cle (clé publique) · abonner · desabonner · moi · test · envoyer (admin) · installee (l'app est-elle déjà sur CET appareil ?)
  *
  * GRATUIT, SANS NOUVEAU SECRET : l'envoi passe par le service de notifications déjà en ligne (apex-push-worker, POST /web-push) avec le jeton que le routeur a déjà (KDMC_PUSH_TOKEN) ;
  * les abonnements vivent dans D1 (CERCLE_DB), 0 écriture KV. Un abonnement = un appareil d'un compte. Mort (404/410) = effacé.
@@ -53,7 +53,11 @@ export function manifestPour(host) {
 
 const SCHEMA = 'CREATE TABLE IF NOT EXISTS push_domaine (id TEXT PRIMARY KEY, uid TEXT NOT NULL, sub TEXT NOT NULL, app TEXT, installee INTEGER DEFAULT 0, ua TEXT, cree INTEGER, vu INTEGER, echecs INTEGER DEFAULT 0, test_at INTEGER DEFAULT 0)';
 const pret = new WeakSet();
-async function base(db) { if (!pret.has(db)) { await db.prepare(SCHEMA).run(); await db.prepare('CREATE INDEX IF NOT EXISTS push_domaine_uid ON push_domaine (uid)').run(); pret.add(db); } }
+/* 23.10 (Kevin : « quand l'application est déjà installée sur l'appareil qui consulte, enlever les petits visuels pour l'ajouter, partout ») : l'app posée
+   sur l'écran d'accueil le dit au domaine (compte + app + appareil) ; sur iPhone, Safari ne partage RIEN avec l'app installée, seul le domaine peut le savoir. */
+const SCHEMA_INST = 'CREATE TABLE IF NOT EXISTS apps_installees (uid TEXT NOT NULL, host TEXT NOT NULL, appareil TEXT NOT NULL, at INTEGER, PRIMARY KEY (uid, host, appareil))';
+const APPAREIL_OK = /^[a-z0-9_.@x-]{3,60}$/;
+async function base(db) { if (!pret.has(db)) { await db.prepare(SCHEMA).run(); await db.prepare('CREATE INDEX IF NOT EXISTS push_domaine_uid ON push_domaine (uid)').run(); await db.prepare(SCHEMA_INST).run(); pret.add(db); } }
 
 /* Envoie une notification à des abonnements. Renvoie { envoyes, morts, echecs }. Un abonnement mort (404/410) est effacé ; 20 échecs d'affilée aussi. */
 export async function pousser(env, lignes, payload, fetchFn) {
@@ -115,6 +119,13 @@ export async function handlePush(request, url, env, outils) {
     const qui = await outils.qui(request).catch(() => null);
     if (m === 'POST' && !ORIGINE_OK.test(origine)) return R({ ok: false, reason: 'origine_refusee' }, 403);
     if (!qui || !qui.uid) return R({ ok: false, reason: 'connexion_requise' }, 401);
+    const hote = String(request.headers.get('host') || url.hostname || '').toLowerCase().slice(0, 80);
+    if (p === '/installee' && m === 'GET') {
+      const ap = String(url.searchParams.get('appareil') || '');
+      if (!APPAREIL_OK.test(ap)) return R({ ok: false, reason: 'appareil_invalide' }, 400);
+      const l = await db.prepare('SELECT at FROM apps_installees WHERE uid = ? AND host = ? AND appareil = ?').bind(qui.uid, hote, ap).first();
+      return R({ ok: true, installee: !!l });
+    }
     if (p === '/moi' && m === 'GET') { const n = (await db.prepare('SELECT COUNT(*) AS n FROM push_domaine WHERE uid = ?').bind(qui.uid).first()).n || 0; return R({ ok: true, appareils: n }); }
     if (m !== 'POST') return R({ ok: false, reason: 'methode' }, 405);
     let b = {}; try { b = await request.json(); } catch { b = {}; }
@@ -132,6 +143,15 @@ export async function handlePush(request, url, env, outils) {
       await db.prepare('INSERT INTO push_domaine (id, uid, sub, app, installee, ua, cree, vu, echecs) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0) ON CONFLICT(id) DO UPDATE SET uid = excluded.uid, sub = excluded.sub, app = excluded.app, installee = excluded.installee, ua = excluded.ua, vu = excluded.vu, echecs = 0')
         .bind(id, qui.uid, clean, String(b.app || '').slice(0, 60), b.installee ? 1 : 0, String(request.headers.get('user-agent') || '').slice(0, 160), Date.now(), Date.now()).run();
       return R({ ok: true, actif: true });
+    }
+    if (p === '/installee') {
+      const ap = String(b.appareil || '');
+      if (!APPAREIL_OK.test(ap)) return R({ ok: false, reason: 'appareil_invalide' }, 400);
+      if (b.installee === false) { await db.prepare('DELETE FROM apps_installees WHERE uid = ? AND host = ? AND appareil = ?').bind(qui.uid, hote, ap).run(); return R({ ok: true, installee: false }); }
+      const n = (await db.prepare('SELECT COUNT(*) AS n FROM apps_installees WHERE uid = ?').bind(qui.uid).first()).n || 0;
+      if (n >= 200) await db.prepare('DELETE FROM apps_installees WHERE rowid IN (SELECT rowid FROM apps_installees WHERE uid = ? ORDER BY at ASC LIMIT 1)').bind(qui.uid).run();
+      await db.prepare('INSERT INTO apps_installees (uid, host, appareil, at) VALUES (?, ?, ?, ?) ON CONFLICT(uid, host, appareil) DO UPDATE SET at = excluded.at').bind(qui.uid, hote, ap, Date.now()).run();
+      return R({ ok: true, installee: true });
     }
     if (p === '/desabonner') { const e = String(b.endpoint || ''); if (e) await db.prepare('DELETE FROM push_domaine WHERE id = ? AND uid = ?').bind(await sha(e), qui.uid).run(); return R({ ok: true, actif: false }); }
     if (p === '/test') {

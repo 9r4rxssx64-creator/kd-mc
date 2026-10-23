@@ -78,6 +78,22 @@ ok(envois[0].corps.payload.url === 'https://kd-mc.com/', '5e. une adresse hors d
 ok((await req('/__push/envoyer', { title: 'a', body: 'b' })).status === 400, '5f. sans destinataire → refusé (jamais « tout le monde » par erreur)');
 statutPush = 410; const avant = lignes().length; await pousserA(env, 'u2', { title: 'a', body: 'b' }); ok(lignes().length === avant - 1, '5g. abonnement mort (410) → effacé');
 statutPush = 201;
+/* 7 — « l'app est déjà sur CET appareil » (Kevin 23.10 : plus de visuel d'installation quand elle est installée) */
+qui = { uid: 'u1', nom: 'Test Un', admin: false };
+const AP = 'iphone-17-390x844@3', inst = () => env.CERCLE_DB._s.prepare('SELECT * FROM apps_installees ORDER BY at').all();
+j = await (await req('/__push/installee?appareil=' + AP)).json(); ok(j.ok && j.installee === false, '7. pas encore signalée → installee:false', JSON.stringify(j));
+qui = null; ok((await req('/__push/installee', { appareil: AP })).status === 401 && inst().length === 0, '7b. sans compte → refusé, rien enregistré'); qui = { uid: 'u1', nom: 'Test Un', admin: false };
+ok((await req('/__push/installee', { appareil: AP }, { origin: 'https://pirate.example' })).status === 403, '7c. depuis un site extérieur → refusé');
+ok((await req('/__push/installee', { appareil: '<script>' })).status === 400, '7d. appareil illisible → refusé');
+j = await (await req('/__push/installee', { appareil: AP, installee: true })).json(); ok(j.ok && inst().length === 1 && inst()[0].host === 'arbre.kd-mc.com' && inst()[0].uid === 'u1', '7e. l\'app installée se signale (compte + app + appareil)', JSON.stringify(inst()));
+await req('/__push/installee', { appareil: AP }); ok(inst().length === 1, '7f. deux signalements = une seule ligne');
+j = await (await req('/__push/installee?appareil=' + AP)).json(); ok(j.installee === true, '7g. le navigateur du MÊME appareil lit installee:true');
+j = await (await req('/__push/installee?appareil=android-14-412x915@2.63')).json(); ok(j.installee === false, '7h. un AUTRE appareil du même compte : installee:false (il garde le bouton)');
+qui = { uid: 'u2', nom: 'Autre', admin: false }; j = await (await req('/__push/installee?appareil=' + AP)).json(); ok(j.installee === false, '7i. un autre compte ne voit pas l\'installation de u1');
+const autreApp = await (await handlePush(new Request('https://lingua.kd-mc.com/__push/installee?appareil=' + AP), new URL('https://lingua.kd-mc.com/__push/installee?appareil=' + AP), env, { qui: async () => ({ uid: 'u1' }) })).json();
+ok(autreApp.installee === false, '7j. une AUTRE app (lingua) sur le même appareil : installee:false (chaque app a son installation)');
+qui = { uid: 'u1', nom: 'Test Un', admin: false }; await req('/__push/installee', { appareil: AP, installee: false }); ok(inst().length === 0, '7k. désinstallée → la ligne s\'efface');
+ok(/kdmc_app_installee_at/.test(INSTALLER_JS) && /\/__push\/installee/.test(INSTALLER_JS) && /data-kdmc-app-installee/.test(INSTALLER_JS), '7l. le script client signale, demande et masque les boutons des apps');
 /* 6 — injection dans chaque page */
 const page = new Response('<html><body><p>Bonjour</p></body></html>', { headers: { 'content-type': 'text/html' } });
 const o = await (await injecterBouton(page, '', { hote: 'arbre.kd-mc.com' })).text();

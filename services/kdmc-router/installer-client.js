@@ -23,6 +23,38 @@ export const INSTALLER_JS = String.raw`(function () {
     var differe = null, installeeMaintenant = false;
     function lire(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
     function ecrire(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    /* 23.10 (Kevin : « quand l'application est déjà installée sur l'appareil qui consulte, enlever les petits visuels pour l'ajouter, partout ») :
+       l'app ouverte depuis l'écran d'accueil le note (ici, et au domaine pour l'iPhone où Safari ne partage rien avec l'app) ; le navigateur de ce
+       même appareil n'affiche alors plus ni 📲, ni feuille d'installation, ni les boutons « Installer » propres aux apps. */
+    var DEJA_TTL = 14 * 86400000;
+    function appareil() {
+      var plat = IOS ? (/ipad/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ipad' : 'iphone') : ANDROID ? 'android' : /mac/i.test(UA) ? 'mac' : /windows/i.test(UA) ? 'win' : /cros/i.test(UA) ? 'chromeos' : 'autre';
+      var os = (UA.match(/OS (\d+)_/) || UA.match(/Android (\d+)/) || UA.match(/Windows NT (\d+)/) || [0, 0])[1];
+      var w = 0, h = 0, d = 1; try { w = Math.min(screen.width, screen.height) | 0; h = Math.max(screen.width, screen.height) | 0; d = Math.round((window.devicePixelRatio || 1) * 100) / 100; } catch (e) { /* */ }
+      return (plat + '-' + os + '-' + w + 'x' + h + '@' + d).toLowerCase().replace(/[^a-z0-9_.@x-]/g, '').slice(0, 60);
+    }
+    function dejaIci() { var t = +lire('kdmc_app_installee_at') || 0; return t > 0 && Date.now() - t < DEJA_TTL; }
+    var DEJA = !INSTALLEE && dejaIci();   /* l'app est installée sur cet appareil, et on la regarde dans le navigateur */
+    var MASQUER = { '*': '#install-hint,#install-bar,#btnInstall,#pwa-go', 'kd-mc.com': '#install', 'www.kd-mc.com': '#install' };
+    function masquerBoutonsDesApps() {
+      try {
+        if (document.getElementById('kdmc-inst-masque')) return;
+        var sel = MASQUER['*'] + (MASQUER[HOTE] ? ',' + MASQUER[HOTE] : '');
+        var st = document.createElement('style'); st.id = 'kdmc-inst-masque'; st.textContent = sel + '{display:none!important}';
+        (document.head || document.documentElement).appendChild(st);
+        document.documentElement.setAttribute('data-kdmc-app-installee', '1');
+      } catch (e) { /* */ }
+    }
+    function marquerDeja() { DEJA = true; ecrire('kdmc_app_installee_at', String(Date.now())); masquerBoutonsDesApps(); if (!feuille) majPastille(); }
+    function signalerInstallee() {
+      ecrire('kdmc_app_installee_at', String(Date.now()));
+      if (Date.now() - (+lire('kdmc_inst_signale') || 0) < 7 * 86400000) return;
+      api('/__push/installee', { appareil: appareil(), installee: true }).then(function (r) { if (r && r.ok) ecrire('kdmc_inst_signale', String(Date.now())); }).catch(function () { /* */ });
+    }
+    function demanderSiInstallee() {
+      if (INSTALLEE || DEJA) return;
+      api('/__push/installee?appareil=' + encodeURIComponent(appareil())).then(function (r) { if (r && r.ok && r.installee) marquerDeja(); }).catch(function () { /* */ });
+    }
     function el(tag, css, html) { var e = document.createElement(tag); if (css) e.style.cssText = css; if (html != null) e.innerHTML = html; return e; }
 
     /* 1. Rendre l'app INSTALLABLE même si sa page n'a pas prévu manifeste ni icône (jamais de doublon : on n'ajoute que ce qui manque) */
@@ -78,18 +110,18 @@ export const INSTALLER_JS = String.raw`(function () {
       return Promise.resolve({ ok: false, raison: IOS ? 'ios_guide' : 'pas_de_bouton_navigateur' });
     }
     window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); differe = e; majPastille(); });
-    window.addEventListener('appinstalled', function () { installeeMaintenant = true; ecrire('kdmc_installee', '1'); majPastille(); if (feuille) ouvrir(); });
+    window.addEventListener('appinstalled', function () { installeeMaintenant = true; ecrire('kdmc_installee', '1'); ecrire('kdmc_app_installee_at', String(Date.now())); masquerBoutonsDesApps(); majPastille(); if (feuille) ouvrir(); });
 
     /* 5. Interface : UNE petite pastille 📲 (haut à droite), une feuille avec deux gros boutons */
     var pastille = null, feuille = null, fond = null;
     var NOIR = '#0b1409', OR = '#e8b830', TEXTE = '#f3f0e6';
     function majPastille() {
       if (!document.body) return;
-      var tout = (INSTALLEE || installeeMaintenant) && (PROPRES_NOTIFS || etatNotifs() === 'granted' || !PUSH_OK);
+      var tout = DEJA || ((INSTALLEE || installeeMaintenant) && (PROPRES_NOTIFS || etatNotifs() === 'granted' || !PUSH_OK));
       if (tout && !feuille) { if (pastille) { pastille.remove(); pastille = null; } return; }
       if (!pastille) {
-        pastille = el('button', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;z-index:2147482000;min-width:44px;min-height:44px;border-radius:22px;border:1px solid ' + OR + ';background:' + NOIR + ';color:' + OR + ';font:700 18px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.45);cursor:pointer;padding:0 12px', '📲');
-        pastille.type = 'button'; pastille.setAttribute('aria-label', "Installer l'application et activer les notifications"); pastille.setAttribute('data-kdmc-installer', 'pastille');
+        pastille = el('button', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;z-index:2147482000;min-width:44px;min-height:44px;border-radius:22px;border:1px solid ' + OR + ';background:' + NOIR + ';color:' + OR + ';font:700 18px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.45);cursor:pointer;padding:0 12px', (INSTALLEE || installeeMaintenant) ? '🔔' : '📲');
+        pastille.type = 'button'; pastille.setAttribute('aria-label', (INSTALLEE || installeeMaintenant) ? 'Activer les notifications' : "Installer l'application et activer les notifications"); pastille.setAttribute('data-kdmc-installer', 'pastille');
         pastille.onclick = ouvrir; document.body.appendChild(pastille);
         placer(); setTimeout(placer, 1500); setTimeout(placer, 5000); setTimeout(placer, 12000); setTimeout(placer, 25000);
       }
@@ -128,20 +160,20 @@ export const INSTALLER_JS = String.raw`(function () {
       feuille = el('div', 'position:fixed;left:0;right:0;bottom:0;z-index:2147482600;background:' + NOIR + ';color:' + TEXTE + ';border-radius:20px 20px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px);max-height:86vh;overflow:auto;box-shadow:0 -8px 30px rgba(0,0,0,.6)');
       feuille.setAttribute('role', 'dialog'); feuille.setAttribute('aria-label', 'Installer et notifications'); feuille.setAttribute('data-kdmc-installer', 'feuille');
       var tete = el('div', 'display:flex;align-items:center;justify-content:space-between;margin:0 0 12px');
-      tete.appendChild(el('div', 'font:700 19px/1.2 -apple-system,sans-serif;color:' + OR, '📲 Sur ton téléphone'));
+      var dejaInst = INSTALLEE || installeeMaintenant;
+      tete.appendChild(el('div', 'font:700 19px/1.2 -apple-system,sans-serif;color:' + OR, dejaInst ? '🔔 Notifications' : '📲 Sur ton téléphone'));
       var x = el('button', 'min-width:44px;min-height:44px;border:0;background:transparent;color:' + TEXTE + ';font-size:22px;cursor:pointer', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Fermer'); x.onclick = fermer; tete.appendChild(x);
       feuille.appendChild(tete);
       var msg = el('div', 'font:14px/1.45 -apple-system,sans-serif;color:#f6d97a;min-height:20px;margin:0 0 8px', '');
-      var dejaInst = INSTALLEE || installeeMaintenant;
-      var aideInst = dejaInst ? "L'application est sur ton écran d'accueil." : (differe ? "Un toucher, tu acceptes, et elle arrive sur ton écran d'accueil." : (IOS ? "Sur iPhone, Apple demande 3 gestes : je te les montre." : "Ouvre le menu du navigateur puis « Installer l'application »."));
-      feuille.appendChild(ligne("Installer l'application", aideInst, dejaInst ? '✅ Installée' : "📲 Installer sur l'écran d'accueil", function () {
+      var aideInst = (differe ? "Un toucher, tu acceptes, et elle arrive sur ton écran d'accueil." : (IOS ? "Sur iPhone, Apple demande 3 gestes : je te les montre." : "Ouvre le menu du navigateur puis « Installer l'application »."));
+      if (!dejaInst) feuille.appendChild(ligne("Installer l'application", aideInst, "📲 Installer sur l'écran d'accueil", function () {
         installer().then(function (r) {
-          if (r.ok) { msg.textContent = '✅ Installée. Ouvre-la depuis ton écran d\'accueil, puis active les notifications.'; ouvrir(); }
+          if (r.ok) { ouvrir(); if (feuille && feuille.lastChild) feuille.lastChild.textContent = '✅ Installée. Ouvre-la depuis ton écran d\'accueil, puis active les notifications.'; }
           else if (r.raison === 'ios_guide') guideIOS();
           else if (r.raison === 'dismissed') msg.textContent = "Pas d'installation pour l'instant : tu peux revenir ici quand tu veux.";
           else msg.textContent = IOS ? '' : "Ton navigateur n'a pas proposé l'installation : ouvre son menu ⋮ puis « Installer l'application ».";
         });
-      }, dejaInst));
+      }, false));
       if (IOS && !INSTALLEE && !installeeMaintenant && !PROPRES_NOTIFS) {
         feuille.appendChild(ligne('Notifications', "Sur iPhone, d'abord installer l'application (étape au-dessus), puis l'ouvrir depuis l'écran d'accueil : le bouton d'activation apparaîtra tout seul.", "🔔 Après l'installation", function () {}, true));
       } else if (PUSH_OK) {
@@ -187,18 +219,23 @@ export const INSTALLER_JS = String.raw`(function () {
     /* 22.10 (Kevin : « le mieux, c'est de le proposer à l'inscription, à tous les comptes ») : dès qu'une personne est connectée (nouveau compte ou première connexion sur cet appareil)
        et que l'app n'est pas installée, la feuille « 📲 Installer » s'ouvre d'elle-même, UNE fois par compte et par appareil. Compte pas encore créé : on surveille quelques minutes. */
     function proposerALInscription() {
-      if (INSTALLEE || installeeMaintenant) return;
+      if (INSTALLEE || installeeMaintenant || DEJA) return;
       var essais = 0;
       function verifier() {
-        if (INSTALLEE || installeeMaintenant || feuille) return;
+        if (INSTALLEE || installeeMaintenant || DEJA || feuille) return;
         essais++;
         try {
           fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
             if (j && j.ok && j.uid) {
               var cle = 'kdmc_inst_inscr_' + String(j.uid).slice(0, 40);
               if (lire(cle)) return;
-              ecrire(cle, String(Date.now()));
-              setTimeout(function () { if (!feuille && !(INSTALLEE || installeeMaintenant)) ouvrir(); }, 1500);
+              /* l'app est peut-être déjà sur cet appareil (iPhone : seul le domaine le sait) : on demande AVANT d'ouvrir la feuille */
+              api('/__push/installee?appareil=' + encodeURIComponent(appareil())).then(function (r) { return r; }, function () { return null; }).then(function (r) {
+                if (r && r.ok && r.installee) { marquerDeja(); return; }
+                ecrire(cle, String(Date.now()));
+                setTimeout(function () { if (!feuille && !(INSTALLEE || installeeMaintenant || DEJA)) ouvrir(); }, 1500);
+              });
+              return;
             } else if (essais < 24) setTimeout(verifier, 10000);
           }).catch(function () { /* silencieux */ });
         } catch (e) { /* silencieux */ }
@@ -208,7 +245,10 @@ export const INSTALLER_JS = String.raw`(function () {
     /* 6. Démarrage : préparer, puis montrer la pastille ; première ouverture de l'app INSTALLÉE : proposer les notifications (une fois par jour) */
     function demarrer() {
       preparer();
+      if (INSTALLEE) signalerInstallee();
+      if (INSTALLEE || DEJA) masquerBoutonsDesApps();
       majPastille();
+      demanderSiInstallee();
       proposerALInscription();
       if (INSTALLEE && PUSH_OK && etatNotifs() === 'default') {
         var dernier = +lire('kdmc_notifs_propose') || 0;
@@ -217,7 +257,7 @@ export const INSTALLER_JS = String.raw`(function () {
       /* déjà autorisée : s'assurer que l'abonnement est bien enregistré au domaine (appareil changé, abonnement expiré) */
       if (PUSH_OK && etatNotifs() === 'granted' && Date.now() - (+lire('kdmc_notifs_ok') || 0) > 6 * 86400000) { activerNotifs(); }
     }
-    window.kdmcInstaller = { ouvrir: ouvrir, installer: installer, activerNotifs: activerNotifs, etat: function () { return { ios: IOS, safari: SAFARI, android: ANDROID, installee: INSTALLEE || installeeMaintenant, installable: !!differe, notifs: etatNotifs(), push: PUSH_OK }; } };
+    window.kdmcInstaller = { ouvrir: ouvrir, installer: installer, activerNotifs: activerNotifs, etat: function () { return { ios: IOS, safari: SAFARI, android: ANDROID, installee: INSTALLEE || installeeMaintenant, dejaSurAppareil: DEJA, appareil: appareil(), installable: !!differe, notifs: etatNotifs(), push: PUSH_OK }; } };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer); else demarrer();
   } catch (e) { /* jamais d'erreur dans la page de quelqu'un */ }
 })();`;

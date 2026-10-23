@@ -92,6 +92,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Trouvé en vrai navigateur : à la RÉOUVERTURE (session gardée), l'appareil ne publiait jamais sa clé → corrigé.
 - Preuves : vitest 2267 verts, couverture 100 % `crypto-core` ; vrai Chromium 3 appareils `runtime-cle-par-appareil.mjs` 8/8 (1/8 avec la 1.1.342). Leçon 722. Limites : anciens messages restent illisibles ; médias et groupes = phase 2.
 
+## CMCteams v9.985 + Light v1.112 (2026-10-23 — plus aucun texte sous 12 px hors grilles ; la barre du haut de CMCteams tient sur iPhone)
+- Les étiquettes de 9 à 11 px (hors tableaux et grilles du planning, qui gardent leur densité) passent à 12 px : légendes, notes, lignes d'état, horodatages du chat de la light.
+- Barre du haut de CMCteams : en dessous de 430 px de large le titre disparaissait (0 à 6 px) depuis le lien « ← Portail » et les boutons de 44 px ; le lien devient « ← » seul, et la touche ⌘, la pastille ADM et le ♦ se retirent sur téléphone : le titre garde 135 à 172 px, tout tient dans l'écran.
+
 ## CMCteams v9.984 (2026-10-23 — dernières zones tactiles repérées au robot)
 - Le bouton « risques burnout », les boutons et cartes qui ouvrent un panneau (`sv`), la pastille « à synchroniser » et quelques cartes cliquables font 44 px de haut.
 

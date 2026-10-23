@@ -131,14 +131,9 @@ const run = async () => {
   r = await mod.fetch(REQ('/__sso/passkeys', { headers: { authorization: dup.strong } }), env);
   j = await r.json();
   ok(j.count === 3 && j.passkeys.some((p) => p.label === 'iPhone') && j.passkeys.every((p) => !p.jwk), 'la liste donne le nom, jamais la clé');
-  r = await mod.fetch(POST('/__sso/passkeys/garder-seulement', { id: 'inconnu' }, { authorization: dup.strong }), env);
-  j = await r.json();
-  ok(j.ok === false && JSON.parse(store.get('pk:dup-user')).length === 3, 'garder-seulement avec un id inconnu → refus, rien retiré');
-  r = await mod.fetch(POST('/__sso/passkeys/garder-seulement', { id: pkDup[0].credId.slice(0, 12) }, { cookie: 'kdmc_sso=' + passFaible('dup-user', 'Dup User') }), env);
-  ok((await r.json()).ok === false && JSON.parse(store.get('pk:dup-user')).length === 3, 'garder-seulement depuis session FAIBLE → refus');
   r = await mod.fetch(POST('/__sso/passkeys/garder-seulement', { id: pkDup[0].credId.slice(0, 12) }, { authorization: dup.strong }), env);
   j = await r.json();
-  ok(j.ok && j.removed === 2 && j.remaining === 1 && JSON.parse(store.get('pk:dup-user'))[0].credId === pkDup[0].credId, 'garder-seulement (Face ID) → ne reste que cet appareil');
+  ok(j.ok === false && JSON.parse(store.get('pk:dup-user')).length === 3, '23.10 : « garder seulement » est DÉSACTIVÉ (il a effacé la vraie clé de Kevin) — rien n\'est retiré, même avec Face ID');
 
   /* 9) Strix vuln-0001 (CSRF de connexion) : /issue refuse un site tiers, accepte le domaine */
   r = await mod.fetch(POST('/__sso/issue', { uid: 'csrf-user', name: 'Csrf User', cgu: true }, { origin: 'https://evil.example' }), env);

@@ -4327,6 +4327,7 @@ async function handleSso(request, url, env, ctx) {
   }
   /* « Garder seulement cet appareil » : retire TOUS mes autres passkeys d'un coup (nettoyage des doublons). Même exigence que « Retirer » : Face ID prouvé cette session. */
   if (path === '/__sso/passkeys/garder-seulement' && request.method === 'POST') {
+    return J({ ok: false, reason: 'désactivé : retire les appareils un par un' });   /* 23.10 : a bloqué Kevin (sa vraie clé iPhone effacée). Jamais d'effacement en masse de clés d'accès. */
     const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
     if (!s.verified) return J({ ok: false, reason: 'Face ID requis pour gérer tes appareils' });

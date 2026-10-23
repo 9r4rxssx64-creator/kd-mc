@@ -524,16 +524,8 @@
       /* plusieurs clés ET on sait laquelle est celle de cet appareil → nettoyage en un toucher (la 1re fois, les doublons d'avant les noms) */
       var qui = pk.filter(function (k) { return mine && mine.indexOf(k.id) === 0; })[0];
       el.innerHTML = '<b>📱 Mes appareils Face ID</b>' + rows + actBtn
-        + (pk.length > 1 && qui ? '<button class="ss-act" id="ss-keep" type="button">🧹 Garder seulement cet appareil (retire les ' + (pk.length - 1) + ' autres)</button>' : '')
         + (pk.length ? '<button class="ss-act" id="ss-revoke" type="button">🚪 Déconnecter mes autres appareils</button>' : '');
-      var kp = document.getElementById('ss-keep');
-      if (kp) kp.addEventListener('click', function () {
-        if (!confirm('Garder seulement CET appareil ?\n\nLes ' + (pk.length - 1) + ' autres clés Face ID sont retirées (doublons ou anciens appareils). Tu pourras toujours en ajouter avec Face ID ou te connecter avec nom + code.')) return;
-        kp.disabled = true; kp.textContent = '…';
-        window.kdmcSSO.keepOnlyPasskey(qui.id).then(function (r) {
-          if (r && r.ok) loadMyPasskeys(); else { kp.disabled = false; kp.textContent = (r && r.reason) === 'Face ID requis pour gérer tes appareils' ? '🔒 Face ID requis' : 'Réessaie (' + ((r && r.reason) || 'erreur') + ')'; }
-        });
-      });
+      /* 23.10 : « Garder seulement cet appareil » RETIRÉ — il a effacé la vraie clé de l'iPhone de Kevin (« cet appareil » venait d'une mémoire locale, pas de la clé réellement présente) et l'a bloqué. Retirer reste possible clé par clé. */
       var en = document.getElementById('ss-enroll');
       if (en) en.addEventListener('click', function () {
         var addMore = enrolledHere; /* clic « Ajouter un autre appareil » → on CRÉE un nouveau passkey */

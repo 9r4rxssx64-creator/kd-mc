@@ -7,7 +7,7 @@
  *     ne garde que le résumé, jamais le texte du résultat). La personne devra l'accepter avec les conditions à sa première connexion.
  *   · RÉGLER LE ROBOT (robot_reglage) : cryptos suivies, cadence, risque par trade, taille max, perte du jour max, perte totale max — les bornes sont celles du domaine
  *     (botValidateConfig) et le robot reste en TESTNET : cette porte ne peut pas toucher au mode réel.
- *   · LIRE : le réglage actuel (robot_config) et le CONTRÔLE de passage au réel (robot_reel : seuils, jours de testnet, « prêt » oui/non — lecture seule).
+ *   · LIRE : le réglage actuel (robot_config) (le contrôle de passage au réel `/__bot/reel` n'est PAS ouvert : budget de jetons des IA gratuites, et Kevin ne veut pas d'infos sensibles).
  *
  * CE QUI RESTE IMPOSSIBLE, et pourquoi (ce ne sont plus des refus, ce sont des faits) :
  *   · le coffre : il est chiffré SUR TON APPAREIL avec ton mot de passe ; le domaine n'en garde qu'un bloc illisible — aucune IA ne peut l'ouvrir, Bee pas plus qu'une autre ;
@@ -98,13 +98,11 @@ export const ACTIONS_DROITS_MAX = Object.keys(DROITS_MAX);
 
 export function outilsLectureMax(o) {
   const defs = [
-    { name: 'robot_config', description: 'Le RÉGLAGE actuel du robot de trading (cryptos, cadence, risque, tailles, pertes max) et s\'il tourne en testnet ou en réel. Lecture seule.', parameters: { type: 'object', properties: {}, required: [] } },
-    { name: 'robot_reel', description: 'Le CONTRÔLE de passage au réel : seuils à atteindre, jours de testnet, robots papier prêts ou non, « prêt » oui/non. Lecture seule — ne change RIEN et ne peut pas basculer le robot en argent réel.', parameters: { type: 'object', properties: {}, required: [] } },
+    { name: 'robot_config', description: 'Le réglage actuel du robot (cryptos, cadence, risque, pertes max) et son mode testnet/réel. Lecture seule.', parameters: { type: 'object', properties: {}, required: [] } },
   ];
   const lire = async (chemin, f, quoi) => { const r = await o.appeler(chemin, { method: 'GET' }); return r.ok ? f(r) : quoi + ' est illisible (' + (r.reason || r.detail || r.status || 'erreur') + ').'; };
   const exe = {
     robot_config: () => lire('/__bot/config', (r) => 'Réglage du robot : ' + compact(r.config, 900) + ' · mode ' + (r.live ? 'RÉEL' : 'testnet (argent fictif)') + '.', 'Le réglage'),
-    robot_reel: () => lire('/__bot/reel', (r) => 'Contrôle du passage au réel : ' + (r.pret ? 'PRÊT' : 'PAS PRÊT') + ' · testnet ' + (r.testnet && r.testnet.jours != null ? r.testnet.jours + ' jour(s) sur 14' : '?') + ' · ' + compact({ seuils: r.seuils, robots: r.robots }, 1200), 'Le contrôle'),
   };
   return { defs, exe };
 }

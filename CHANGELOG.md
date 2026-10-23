@@ -5,7 +5,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 ## Javis / Bee v1.23 — créer un compte, régler le robot (2026-10-23)
-- Bee peut CRÉER UN COMPTE (code tiré au hasard par le domaine, montré une seule fois à Kevin avec un bouton « Copier le code ») et RÉGLER LE ROBOT (testnet, bornes du domaine), toujours après le ✅ de Kevin ; elle lit aussi le réglage du robot et le contrôle du passage au réel. Les cartes gardent leurs retours à la ligne et se sélectionnent.
+- Bee peut CRÉER UN COMPTE (code tiré au hasard par le domaine, montré une seule fois à Kevin avec un bouton « Copier le code ») et RÉGLER LE ROBOT (testnet, bornes du domaine), toujours après le ✅ de Kevin ; elle lit aussi le réglage du robot. Les cartes gardent leurs retours à la ligne et se sélectionnent.
 
 ## Adresses officielles : staging + 29 workers (2026-10-23)
 - `KDMC_ADRESSES.md` : section « Staging » (une seule adresse de test pour Apex Chat, la porte staging.kd-mc.com, pas de « dev ») et tableau des 29 workers du compte principal avec rôle et mesure réelle (racine, /health). `apex-v13-backend` et `apex-vault-svc` n'existent pas.

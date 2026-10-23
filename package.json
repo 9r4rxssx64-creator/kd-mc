@@ -338,6 +338,7 @@
     "test:bee-taches": "node services/kdmc-router/bee-taches.test.mjs",
     "test:bee-droits-plus": "node services/kdmc-router/bee-droits-plus.test.mjs",
     "test:bee-droits-max": "node services/kdmc-router/bee-droits-max.test.mjs",
+    "verif:routeur-tous": "cd services/kdmc-router && for t in *.test.mjs; do echo \"── $t\"; node \"$t\" || exit 1; done",
     "test:bee-diag": "node services/kdmc-router/bee-diag.test.mjs",
     "test:bee-arbre-ecrire": "node services/kdmc-router/bee-arbre-ecrire.test.mjs",
     "test:liens-json": "node tests/verify-liens-json.mjs",

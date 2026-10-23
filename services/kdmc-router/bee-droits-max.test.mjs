@@ -3,7 +3,7 @@
  *   1. créer un compte : la carte ne montre AUCUN code ; le code est tiré au hasard par le domaine au ✅ et n'apparaît QUE sur la réponse à l'écran de Kevin —
  *      jamais dans ce que l'IA lit, dans le journal ni dans l'historique ; un code donné par l'IA est ignoré ; téléphone et prénom+nom obligatoires ; nom déjà pris : pas de code ;
  *   2. régler le robot : la carte dit « avant → après » (lu chez le domaine), bornes du domaine, jamais le mode réel ; l'exécution appelle /__bot/config avec les bons champs ;
- *   3. lire : robot_config et robot_reel (lecture seule) ;
+ *   3. lire : robot_config (lecture seule) ; robot_reel et /__bot/reel RESTENT fermés (budget de jetons des IA gratuites + pas d'infos sensibles) ;
  *   4. un autre compte, un inconnu, une signature trafiquée, une carte rejouée : rien ne bouge ;
  *   5. les portes ouvertes sont exactement 3 de plus ; le code admin, le coffre, l'arbre, le réel restent hors liste ;
  *   6. 0 € : aucun moteur payant.
@@ -104,7 +104,7 @@ const lireOutil = async (nom) => { reset(); IA_SCRIPT.cerebras = [{ content: '',
 
 /* ───────── 3. LIRE ───────── */
 { const c = await lireOutil('robot_config'); ok(/Réglage du robot/.test(c) && /RISK_PER_TRADE_PCT/.test(c) && /testnet/.test(c) && !/rt\b.*token/i.test(c), '3. robot_config : le réglage et le mode — ' + c.slice(0, 160));
-  const r = await lireOutil('robot_reel'); ok(!/porte_non_autorisee/.test(r), '3b. robot_reel : porte ouverte à Bee (lecture seule) — ' + r.slice(0, 120)); }
+  const r = await lireOutil('robot_reel'); ok(!/PRÊT|PAS PRÊT/.test(r), '3b. robot_reel n\'existe plus : rien ne dit si le robot est prêt pour le réel'); }
 
 /* ───────── 4. LES INTRUS ───────── */
 const AVANT = JSON.stringify([...kv.entries()]);
@@ -121,10 +121,10 @@ const AVANT = JSON.stringify([...kv.entries()]);
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 const MAXSRC = readFileSync(new URL('./bee-droits-max.js', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const PORTES = ((W.match(/const PORTES_BEE = \[([^\]]*)\]/) || [])[1] || '').split(',').map((x) => x.replace(/['\s]|\/\/.*$/g, '')).filter(Boolean);
-ok(['/__admin/compte-invite', '/__bot/config', '/__bot/reel'].every((x) => PORTES.includes(x)), '5. les 3 portes ouvertes sont dans la liste blanche');
+ok(['/__admin/compte-invite', '/__bot/config'].every((x) => PORTES.includes(x)), '5. les 2 portes ouvertes sont dans la liste blanche');
 const visees = [...new Set([...MAXSRC.matchAll(/'(\/__[a-z0-9\/-]+)'/g)].map((m) => m[1]))];
-ok(visees.length === 3 && visees.every((v) => PORTES.includes(v)), '5b. bee-droits-max.js ne vise que ces portes — ' + visees.join(' '));
-const FERMEES = ['/__fin/vault', '/__fin/meta', '/__admin/login', '/__admin/grant', '/__admin/fbtoken', '/__admin/domain-log', '/__arbre/seed', '/__arbre/code', '/__arbre/unlock', '/__sso/login', '/__sso/issue', '/__dep/matricules', '/__notify-kevin'];
+ok(visees.length === 2 && visees.every((v) => PORTES.includes(v)), '5b. bee-droits-max.js ne vise que ces portes — ' + visees.join(' '));
+const FERMEES = ['/__fin/vault', '/__fin/meta', '/__admin/login', '/__admin/grant', '/__admin/fbtoken', '/__admin/domain-log', '/__bot/reel', '/__arbre/seed', '/__arbre/code', '/__arbre/unlock', '/__sso/login', '/__sso/issue', '/__dep/matricules', '/__notify-kevin'];
 ok(FERMEES.every((f) => !PORTES.includes(f) && !MAXSRC.includes(f)), '5c. le coffre, le code admin, l\'arbre, les sessions, les noms de collègues : toujours hors liste et jamais nommés');
 ok(ACTIONS_DROITS_MAX.length === 2 && ACTIONS_DROITS_MAX.every((a) => ACTIONS.includes(a) && CATALOGUE[a] === DROITS_MAX[a] && CATALOGUE[a].risque === 'eleve') && !ACTIONS_DROITS_MAX.some((a) => /reel|real|coffre|cle|secret|code_admin/i.test(a)), '5d. 2 actions, au catalogue signé, risque élevé, aucune ne touche au réel, au coffre ni au code admin');
 for (const q of ['crée un compte pour Paul Durand', 'régle le risque du robot à 2', 'change la cadence en 15m', 'passe le robot en réel', 'baisse la taille max de position à 20', 'mets le risque à 50 %'])

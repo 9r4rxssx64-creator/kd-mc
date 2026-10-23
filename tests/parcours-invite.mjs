@@ -214,7 +214,8 @@ async function parcours(variante, H) {
   } finally {
     if (variante === 'C') await post(H, '/__admin/attendus', { nom: nomComplet, retirer: true }).catch(() => {});
     if (uid) { const d = await post(H, '/__admin/compte-supprimer', { uid, confirmer: true }).catch(() => ({ http: 0, j: {} })); noter(`nettoyage : compte de test ${d.j && d.j.ok ? 'supprimé' : 'NON SUPPRIMÉ (HTTP ' + d.http + ') — à supprimer à la main : ' + uid}`); }
-    const blocs = []; for (let i = 0; i < L.length; i += 6) blocs.push(L.slice(i, i + 6).join('\n'));
+    /* 23.10 : par blocs de 6 lignes, chaque annotation était coupée à 900 caractères → le milieu du rapport (dont la ligne 📲) disparaissait. Le texte entier est découpé en morceaux de 880, sans perte. */
+    const tout = L.join('\n').replace(/\r?\n/g, ' ⏎ '), blocs = []; for (let i = 0; i < tout.length && blocs.length < 9; i += 880) blocs.push(tout.slice(i, i + 880));
     blocs.forEach((bl, i) => annot('notice', `Parcours ${variante} (${i + 1}/${blocs.length})`, bl));
   }
   return out;

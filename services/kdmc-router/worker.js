@@ -1531,6 +1531,9 @@ function ssoToken(request) {
    qui les a enrôlés : sinon `pk:kevin-desarzens` pouvait être VIDE pendant que `pk:kdmc_admin` était
    plein, et un inconnu déclarant « kevin-desarzens » passait le « bootstrap » (trou trouvé le 27.09). */
 function pkKey(uid) { return 'pk:' + (ADMIN_UIDS.indexOf(uid) >= 0 ? CANON_UID : uid); }
+/* Vue membre de l'admin (23.10) : un simple cookie d'AFFICHAGE, jamais une preuve. */
+const VUE_COOKIE = 'kdmc_vue';
+export function vueMembre(request) { return /(?:^|;\s*)kdmc_vue=membre(?:;|$)/.test((request && request.headers && request.headers.get('cookie')) || ''); }
 function J(o, setCookie, status) {
   const h = new Headers({ 'content-type': 'application/json', 'cache-control': 'no-store', 'x-kdmc-sso': '1', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' });
   for (const c of Array.isArray(setCookie) ? setCookie : (setCookie ? [setCookie] : [])) h.append('set-cookie', c);
@@ -1887,6 +1890,17 @@ const PORTES = [
   { dossier: '/CMCteams/tools/poolrobot', niveau: 'admin', verrou: () => beatbotLock() },
   { dossier: '/CMCteams/tools/approvals', niveau: 'admin', verrou: () => approvalsLock() },
   { dossier: '/CMCteams/staging', niveau: 'admin', verrou: () => stagingLock() },
+  /* 23.10.2026 (Kevin : « tout ce qui est destiné à moi, l'admin, doit être bien sécurisé : aucune fuite, aucun bouton, aucune possibilité pour les
+     autres d'atterrir dans ma partie »). Mesuré : ces pages n'avaient que la porte « compte du domaine » — un compte rangé « domaine » (ou d'avant le
+     15.09) les ouvrait. Désormais code admin / Face ID, page ET fichiers (scripts, données). Garde : test:portes-admin. */
+  { dossier: '/CMCteams/coffre-fort', niveau: 'admin', verrou: () => priveLock('Coffre-fort', '🔐') },
+  { dossier: '/CMCteams/tools/crypto-bot-dashboard', niveau: 'admin', verrou: () => priveLock('Bot crypto', '🤖') },
+  { dossier: '/CMCteams/kdmc-home/admin', niveau: 'admin', verrou: () => priveLock('Admin du domaine', '👑') },
+  { dossier: '/CMCteams/kdmc-home/liens', niveau: 'admin', verrou: () => priveLock('Centre de contrôle', '🎛️') },
+  { dossier: '/CMCteams/kdmc-home/clone', niveau: 'admin', verrou: () => priveLock('Cloneur de sites', '🧬') },
+  { dossier: '/CMCteams/kdmc-home/empreinte', niveau: 'admin', verrou: () => priveLock('Changer mon code admin', '🔑') },
+  { dossier: '/CMCteams/tools/finances', niveau: 'admin', verrou: () => priveLock('Finances', '💰') },
+  { dossier: '/CMCteams/tools/messages', niveau: 'admin', verrou: () => priveLock('Messages employés', '📨') },
   { dossier: '/CMCteams/tools/cuisine', niveau: 'fiche', app: 'cuisine.kd-mc.com', nom: 'A Cüjina de Mùnegu' },
   { dossier: '/CMCteams/kdmc-home/worldmonitor', niveau: 'fiche', app: 'worldmonitor.kd-mc.com', nom: 'World Monitor' },
   { dossier: '/CMCteams/kdmc-home/osint', niveau: 'fiche', app: 'osint.kd-mc.com', nom: 'OSINT' },
@@ -3698,6 +3712,11 @@ async function handleSso(request, url, env, ctx) {
       const rep = { externe: (!estAdmin && acc && acc.externe) ? true : undefined, attente_admin: (!estAdmin && acc && acc.attente_admin) ? (acc.attente_admin === 'refuse' ? 'refuse' : 'attente') : undefined, ok: true, uid: s.uid, name: s.name, cgu: estAdmin || cguAcceptees(acc), verified: !!s.verified, code: !!s.code, code_pose: estAdmin ? true : (acc ? !!acc.code_at : null), tel_pose: estAdmin ? true : (acc ? !!(acc.fiche && acc.fiche.telephone) : null), admin: estAdmin, app, portee: (acc && acc.portee === 'app') ? 'app' : 'domaine', roles: Array.isArray(acc && acc.roles) ? acc.roles.slice(0, 10) : [],
         mail_attente: (!estAdmin && acc && acc.attente_admin === true && acc.mail_confirmation && acc.mail_confirmation.envoye_at) ? acc.mail_confirmation.masque : undefined };
       if (neuf) { rep.renouvelee = true; if (parEnTete) rep.token = neuf; }
+      /* VUE MEMBRE (Kevin 23.10.2026 : « comme dans la light, un bouton où je me connecte admin et je me déconnecte, pour mon domaine ;
+         pas connecté admin, tu simules que je suis abonné avec les meilleurs abonnements »). L'admin PROUVÉ qui a choisi « vue membre »
+         (cookie kdmc_vue=membre, posé par /__admin/vue) est vu par TOUTES les apps comme un membre : admin:false. Seulement vers le BAS :
+         le cookie ne donne jamais rien à quelqu'un qui n'est pas déjà admin prouvé. Les portes admin du serveur restent ouvertes (retour en 1 clic). */
+      if (estAdmin && vueMembre(request)) { rep.admin = false; rep.apercu = 'membre'; rep.abonnement = 'max'; rep.simulation = true; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
       else if (choix.cookie && parEnTete) { rep.token = choix.tok; rep.remplace = true; }
@@ -4272,7 +4291,7 @@ async function handleSso(request, url, env, ctx) {
     return out.ok ? J(out) : J(out, null, 503);
   }
   if (path === '/__sso/logout' && request.method === 'POST') {
-    return J({ ok: true }, `${SSO_COOKIE}=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`);
+    return J({ ok: true }, [`${SSO_COOKIE}=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`, VUE_COOKIE + '=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; SameSite=Lax']);
   }
 
   /* ===== Self-service utilisateur : chacun ne voit/gère QUE SES données =====
@@ -5073,7 +5092,20 @@ async function handleAdmin(request, url, env) {
     return new Response(null, { status: 302, headers: h });
   }
   if (path === '/__admin/logout' && request.method === 'POST') {
-    return J({ ok: true }, 'kdmc_admin=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax');
+    return J({ ok: true }, ['kdmc_admin=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax', VUE_COOKIE + '=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; SameSite=Lax']);
+  }
+  /* 👑 / 👁 LE BOUTON « VUE ADMIN / VUE MEMBRE » DE TOUT LE DOMAINE (Kevin 23.10.2026). GET : l'état (admin prouvé seulement) ;
+     POST {mode:'membre'|'admin'} : bascule. Un non-admin reçoit 403 et AUCUN bouton (le bouton de la page se retire). */
+  if (path === '/__admin/vue') {
+    const ad = await adminSession(request, env);
+    if (!ad) return J({ ok: false, reason: 'admin_requis' }, undefined, 403);
+    if (request.method === 'GET') return J({ ok: true, mode: vueMembre(request) ? 'membre' : 'admin' });
+    if (request.method !== 'POST') return J({ ok: false, reason: 'methode' }, undefined, 405);
+    const o = request.headers.get('origin') || '';
+    if (o && !/^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/i.test(o)) return J({ ok: false, reason: 'origine_refusee' }, undefined, 403);
+    let b = {}; try { b = await request.json(); } catch { b = {}; }
+    const membre = b && b.mode === 'membre';
+    return J({ ok: true, mode: membre ? 'membre' : 'admin' }, membre ? VUE_COOKIE + '=membre; Domain=.kd-mc.com; Path=/; Max-Age=86400; Secure; SameSite=Lax' : VUE_COOKIE + '=; Domain=.kd-mc.com; Path=/; Max-Age=0; Secure; SameSite=Lax');
   }
 
   /* « Qui se connecte » (admin.kd-mc.com) — SOURCE UNIQUE des connexions du domaine.
@@ -6527,6 +6559,10 @@ function verrouAdminPage(o) {
 function beatbotLock() {
   return verrouAdminPage({ titre: 'PoolPilot — privé', theme: '#08131f', fond: 'linear-gradient(180deg,#08131f,#050c14)', texte: '#e8f1fa', doux: '#93b0c8', champ: '#0d1c2c', bord: '#1f3d5a',
     bouton: 'linear-gradient(135deg,#39c2ff,#0e88c9)', surBouton: '#052034', lien: '#39c2ff', alerte: '#f2b632', emoji: '🔒🌊', h1: 'PoolPilot — espace privé' });
+}
+function priveLock(nom, emoji) {
+  return verrouAdminPage({ titre: nom + ' — privé', theme: '#0b1409', fond: 'linear-gradient(180deg,#0b1409,#050805)', texte: '#f3f0e6', doux: '#a9b39a', champ: '#0b1108', bord: '#2a331f',
+    bouton: 'linear-gradient(135deg,#e8c766,#c9a94a)', surBouton: '#0b1409', lien: '#e8c766', alerte: '#e0a83a', emoji: '🔒' + emoji, h1: nom + ' — espace privé' });
 }
 function stagingLock() {
   return verrouAdminPage({ titre: 'Staging — environnement de test', theme: '#0b1020', fond: 'linear-gradient(180deg,#0b1020,#05070f)', texte: '#eef1f8', doux: '#9aa4bd', champ: '#0b1226', bord: '#26304d',

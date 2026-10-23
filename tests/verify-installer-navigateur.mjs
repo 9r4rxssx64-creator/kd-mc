@@ -15,6 +15,7 @@ function serveur(js) {
     if (q.url === '/__push/cle') return json({ ok: true, cle: 'BPcle_publique_test-AAAA' });
     if (q.url === '/__push/abonner') return json({ ok: true, actif: true });
     if (q.url === '/__push/test') return json({ ok: true, envoyes: 1 });
+    if (q.url === '/__admin/vue') { const m = /membre/.test(corps); r.writeHead(200, { 'content-type': 'application/json', 'set-cookie': m ? 'kdmc_vue=membre; Path=/' : 'kdmc_vue=; Path=/; Max-Age=0' }); return r.end(JSON.stringify({ ok: true, mode: m ? 'membre' : 'admin' })); }
     if (q.url.startsWith('/__push/installee')) return json(q.method === 'POST' ? { ok: true, installee: true } : { ok: true, installee: !!(q.headers.cookie && /installee=1/.test(q.headers.cookie)) });
     if (q.url === '/apex') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><body><div id="install-hint">📱 Mets Apex Chat sur ton écran d\'accueil</div><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
     if (q.url === '/avec-manifeste') { r.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); return r.end('<html><head><link rel="manifest" href="/mon.json"><link rel="apple-touch-icon" href="/i.png"></head><body><p>x</p><script src="/__installer/installer.js"></script></body></html>'); }
@@ -154,6 +155,20 @@ async function suite(js, etiquette) {
     rec(!(await p4.evaluate(() => !!document.querySelector('[data-kdmc-installer="pastille"]'))), etiquette + " F4. ordinateur, app installée jamais ouverte : Chrome le dit, plus de 📲");
     await ctx4.close();
   });
+  /* G — le bouton 👑 Vue admin / 👁 Vue membre (Kevin 23.10) : seulement sur les appareils de Kevin (marqueur kdmc_k), bascule par le domaine */
+  await essai(js, async (nav, base) => {
+    const ctx = await nav.newContext({ userAgent: UA_ANDROID, viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true }); const p = await ctx.newPage();
+    await p.goto(base + '/'); await p.waitForTimeout(400);
+    rec(!(await p.evaluate(() => !!document.querySelector('[data-kdmc-vue]'))), etiquette + ' G1. sans le marqueur de Kevin : AUCUN bouton admin');
+    await ctx.addCookies([{ name: 'kdmc_k', value: '1', url: base }]);
+    await p.goto(base + '/'); await p.waitForTimeout(400);
+    rec((await p.evaluate(() => (document.querySelector('[data-kdmc-vue]') || {}).textContent)) === '👑 Vue admin', etiquette + ' G2. appareil de Kevin : bouton « 👑 Vue admin »');
+    await p.evaluate(() => { const b = document.querySelector('[data-kdmc-vue]'); if (b) b.click(); }); await p.waitForTimeout(800);
+    rec(appels.some((a) => a.startsWith('POST /__admin/vue') && /membre/.test(a)) && (await p.evaluate(() => (document.querySelector('[data-kdmc-vue]') || {}).textContent)) === '👁 Vue membre', etiquette + ' G3. un toucher → le domaine bascule, la page revient en « 👁 Vue membre »');
+    await p.evaluate(() => { const b = document.querySelector('[data-kdmc-vue]'); if (b) b.click(); }); await p.waitForTimeout(800);
+    rec((await p.evaluate(() => (document.querySelector('[data-kdmc-vue]') || {}).textContent)) === '👑 Vue admin', etiquette + ' G4. re-toucher → retour en « 👑 Vue admin »');
+    await ctx.close();
+  });
   /* E — page qui a déjà son manifeste ; cadre */
   await essai(js, async (nav, base) => {
     const ctx = await nav.newContext({ userAgent: UA_ANDROID, viewport: { width: 390, height: 780 } }); const p = await ctx.newPage();
@@ -167,7 +182,7 @@ async function suite(js, etiquette) {
 await suite(INSTALLER_JS, 'vrai script —');
 /* sabotage : sans l'appel prompt() et sans ajout du manifeste, la preuve doit rougir */
 const avant = fails;
-const saboté = INSTALLER_JS.replace('p.prompt();', '').replace('var tout = DEJA || (', 'var tout = (').replace('if (l && l.length && !INSTALLEE) marquerDeja();', '').replace("st.textContent = sel + '{display:none!important}';", '').replace("m.href = '/__installer/manifest.webmanifest'; h.appendChild(m);", '');
+const saboté = INSTALLER_JS.replace('p.prompt();', '').replace('var tout = DEJA || (', 'var tout = (').replace('if (l && l.length && !INSTALLEE) marquerDeja();', '').replace("st.textContent = sel + '{display:none!important}';", '').replace("b.setAttribute('data-kdmc-vue'", "b.setAttribute('data-x'").replace("m.href = '/__installer/manifest.webmanifest'; h.appendChild(m);", '');
 console.log('\n— sabotage : script sans prompt() ni manifeste (la preuve doit ROUGIR) —');
 await suite(saboté, 'sabotage —');
 const rougi = fails - avant; fails = avant;

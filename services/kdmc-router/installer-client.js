@@ -13,6 +13,29 @@ export const INSTALLER_JS = String.raw`(function () {
     if (window.__kdmcInstaller || window.top !== window.self) return;
     window.__kdmcInstaller = 1;
     var HOTE = location.hostname, UA = navigator.userAgent || '';
+    /* 👑 / 👁 VUE ADMIN ⇄ VUE MEMBRE, sur chaque page du domaine (Kevin 23.10.2026 : « comme dans la light, un bouton où je me connecte admin et je
+       me déconnecte »). Le bouton n'apparaît que sur les appareils de Kevin (marqueur kdmc_k, posé seulement à l'admin prouvé) : AUCUNE requête
+       pour les autres. Il ne décide rien : le domaine vérifie l'admin à chaque bascule (403 sinon, et le bouton disparaît). */
+    try { if (/(?:^|;\s*)kdmc_k=1(?:;|$)/.test(document.cookie)) {
+      var poserVue = function () {
+        if (!document.body || document.querySelector('[data-kdmc-vue]')) return;
+        var membre = /(?:^|;\s*)kdmc_vue=membre(?:;|$)/.test(document.cookie);
+        var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-kdmc-vue', membre ? 'membre' : 'admin');
+        b.textContent = membre ? '👁 Vue membre' : '👑 Vue admin';
+        b.setAttribute('aria-label', membre ? 'Tu vois le domaine comme un membre abonné. Toucher pour revenir en admin.' : 'Tu es en admin. Toucher pour voir le domaine comme un membre abonné.');
+        b.style.cssText = 'position:fixed;left:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:2147481900;min-height:44px;padding:0 14px;border-radius:22px;font:700 14px/1 -apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.45);'
+          + (membre ? 'background:#1d4ed8;color:#fff;border:2px solid #93c5fd' : 'background:#0b1409;color:#e8b830;border:1px solid #e8b830');
+        b.onclick = function () {
+          b.disabled = true; b.textContent = '…';
+          fetch('/__admin/vue', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mode: membre ? 'admin' : 'membre' }) })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (j) { if (j && j.ok) location.reload(); else { b.textContent = 'Reconnecte-toi admin (kd-mc.com)'; setTimeout(function () { b.remove(); }, 4000); } })
+            .catch(function () { b.disabled = false; b.textContent = membre ? '👁 Vue membre' : '👑 Vue admin'; });
+        };
+        document.body.appendChild(b);
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poserVue); else poserVue();
+    } } catch (e) { /* */ }
     if (/^admin\./.test(HOTE)) return;
     var IOS = /iphone|ipad|ipod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     var SAFARI = IOS ? !/crios|fxios|edgios|opios|gsa\//i.test(UA) : /^((?!chrome|android|crios|fxios).)*safari/i.test(UA);

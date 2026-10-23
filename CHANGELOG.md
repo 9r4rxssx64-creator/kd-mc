@@ -58,6 +58,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## CMCteams v9.981 (2026-10-22 — la sortie « ← Portail » est dans la barre du haut)
 - Un lien « ← Portail » (ou ⌂ quand la flèche Retour est là) dans la barre du haut, 44 px : la pastille du routeur, qui recouvrait la bannière du pit boss quand l'accueil s'ouvrait tard, se retire dès que le lien est là.
 
+## Light v1.111 (2026-10-23 — les NR/5e et les pointages sont relus quand le jeton est là)
+- La light lisait les NR/5e et les pointages avant d'avoir son jeton Firebase (refus 401, constaté dans le Chrome de Kevin) et ne les relisait plus avant une écriture. Elle les relit maintenant dès que le jeton arrive : ce qu'un autre appareil a noté apparaît tout de suite.
+
 ## Light v1.110 (2026-10-22 — les boutons de la light se touchent au doigt)
 - « Équipe miroir → / Aller à mon équipe → », la pastille de version et la ligne de diagnostic font maintenant au moins 44 px de haut (mesuré au robot « formats » : 124×27, 58×24 et 25 px avant).
 

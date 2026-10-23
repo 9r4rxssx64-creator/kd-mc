@@ -66,6 +66,7 @@ export function partout() {
         if (r.width < 8 || r.height < 8 || r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) continue;
         var cs = getComputedStyle(e);
         if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+        if (e.disabled || e.getAttribute('aria-disabled') === 'true') continue;       // un bouton grisé n'attend aucun doigt
         if (permanent(e)) out.push(r);
       }
       return out;

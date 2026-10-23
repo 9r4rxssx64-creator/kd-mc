@@ -15,23 +15,33 @@ h1{font-size:1.5em;margin:.2em 0}
 .carte{background:var(--carte);border:1px solid #26304d;border-radius:14px;padding:16px;margin:14px 0}
 .bandeau{background:#3a2a05;color:var(--or);border-radius:10px;padding:10px 12px;font-weight:700}
 li{margin:6px 0}
+.lien{display:block;background:var(--or);color:#1a1300;font-weight:700;text-align:center;text-decoration:none;border-radius:12px;padding:14px 16px;min-height:44px}
 .badge{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));font-size:12px;color:var(--doux);background:#0008;border-radius:8px;padding:4px 8px}
 </style>
 </head>
 <body>
 <main>
 <p class="bandeau">🧪 ENVIRONNEMENT DE TEST — rien ici ne touche le vrai domaine</p>
-<h1>staging.kd-mc.com</h1>
+<h1>Staging — où tester quoi</h1>
 <div class="carte">
-<p>Cette adresse sert aux essais : comptes jetables, achats de test, parcours complets. Elle est réservée à l'admin et invisible pour les moteurs de recherche.</p>
+<p><b>Il n'existe qu'UN seul environnement de test : « staging ».</b> Il n'y a pas de « dev ».</p>
+<p><a class="lien" href="https://apex-chat-api-staging.9r4rxssx64.workers.dev/">💬 Ouvrir Apex Chat de test</a></p>
 <ul>
-<li>Les données de test sont séparées de la production.</li>
-<li>Tout ce qui est créé ici est effacé après chaque essai.</li>
+<li>Page et serveur de test, base séparée de la production (bandeau « STAGING » visible).</li>
+<li>Inscription avec un numéro de test et le code <b>000000</b> (ce code ne marche que là).</li>
+<li>Pas de SMS, pas de notification, pas de connexion par le domaine.</li>
+<li>Remise à zéro : le robot « staging-apex-chat-donnees » (action reset).</li>
+</ul>
+</div>
+<div class="carte">
+<p><b>Cette page (staging.kd-mc.com)</b> est la porte d'entrée du test, réservée à l'admin. Elle ne contient pas d'application elle-même.</p>
+<ul>
+<li>Les autres apps (Arbre, Lingua, Bee, boutiques…) n'ont pas encore de version de test : on les essaie sur leur adresse habituelle, en lecture seule.</li>
 <li>Les vraies apps restent sur leurs adresses habituelles.</li>
 </ul>
 </div>
 </main>
-<div class="badge version-badge" id="ver" data-version="v0.1.1">v0.1.1</div>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="staging" data-version="v0.1.1" data-own-badge="#ver" data-color="#c9a227" defer></script>
+<div class="badge version-badge" id="ver" data-version="v0.2.0">v0.2.0</div>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="staging" data-version="v0.2.0" data-own-badge="#ver" data-color="#c9a227" defer></script>
 </body>
 </html>

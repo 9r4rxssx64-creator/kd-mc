@@ -55,6 +55,13 @@ try {
   ok(`fetch("https://${HOTE_PROD}/api")`.includes(HOTE_PROD), 'contrôle témoin : sans adaptation l’adresse de production serait restée');
 } finally { rmSync(dossier, { recursive: true, force: true }); }
 
+/* 4b. la page d'accueil du staging donne UNE adresse officielle et dit qu'il n'y a pas de « dev » (23.10 : plusieurs branches redemandaient l'adresse à Kevin) */
+{ const page = lire('staging/index.html');
+  ok(page.includes(`href="https://${HOTE_STAGING}/"`), "staging.kd-mc.com renvoie par un lien cliquable vers l'Apex Chat de test");
+  ok(/pas de « dev »/.test(page), 'la page dit qu’il n’y a pas de « dev »');
+  ok(!/achats de test/.test(page) && !/\/apex-chat\//.test(page), "la page ne promet ni achats de test ni un chemin /apex-chat/ qui n'existe pas");
+  ok(lire('staging/version.txt').trim() === (page.match(/data-version="(v[\d.]+)"/) || [])[1], 'version.txt = version de la page'); }
+
 /* 5. le workflow */
 { const { createRequire } = await import('node:module'); const jy = createRequire(import.meta.url)('js-yaml');
   let y = null; try { y = jy.load(wf); } catch (e) { y = null; console.log('   YAML : ' + String(e.message).split('\n')[0]); }

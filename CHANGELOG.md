@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Staging v0.2.0 — une seule adresse officielle (2026-10-23)
+- La page https://staging.kd-mc.com (admin seul) dit où tester quoi : bouton vers l'Apex Chat de test, « il n'y a pas de dev », les autres apps n'ont pas de version de test. Elle ne promet plus « achats de test » ni d'application sur cette adresse. Garde `test:staging-worker` étendue (lien, mention « pas de dev », version).
+
 ## Staging d'Apex Chat — Worker de test (2026-10-23, pas de version d'app)
 - Worker `apex-chat-api-staging` (config `wrangler.staging.toml`) : même code que la production, base `staging-apex-chat`, KV et bucket de test, Durable Objects propres, aucun cron / file / push, inscription par numéro de test (`ALLOW_TEST_OTP`) seulement ici. La page est servie par le Worker (`tools/staging-site.mjs` : adresse de l'API remplacée, bandeau « STAGING », robots interdit). Robot public `deploy-apex-chat-staging.yml` (à la main) avec preuve en ligne (santé, base, page). Garde `test:staging-worker`.
 

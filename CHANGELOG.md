@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Staging d'Apex Chat — base de test (2026-10-23, outil + robot, pas de version d'app)
+- `tools/staging/apex-chat-staging.mjs` : schéma (migrations 0001→0028), jeu de test (3 comptes « test-audit-… » jetables, 2 conversations, 4 messages chiffrés factices), comptage, remise à zéro vers l'état de référence, contrôle « aucune trace » (lignes ajoutées + empreinte des lignes de référence). Robot public gratuit `staging-apex-chat-donnees.yml` (à la main, aucun cron), action `cycle` = preuve de bout en bout. Refuse tout nom qui ne commence pas par `staging-` et l'identifiant de la production.
+- Garde `npm run test:staging-apex-chat` (22 contrôles, vraie SQLite, rouge sous sabotage). Tâche 33 du pont. Leçon 752.
+
 ## Apex AI v13.4.386 (2026-10-23 — sauvegarde GitHub : un jeton neuf en deux touches ; fin des faux « clé effacée »)
 - Mesuré chez Kevin (Apex 385) : le seul jeton lisible du coffre est refusé par GitHub, le bon jeton « Apex-AI-GIST » (jamais utilisé) n'y est pas. Maintenant, quand TOUS les jetons sont refusés (401/403/404), une alerte (cloche + notification), au plus une fois par 24 h, ouvre la page de création GitHub déjà remplie (nom Apex-AI-GIST, case gist) ; Kevin valide, copie le jeton et le colle dans le chat : rangé tout seul, sauvegarde lancée.
 - Les 7 « KEY ERASED via storage event » : des clés RANGÉES sous un autre nom par la récupération (notées dans `ax_credentials_deleted`) étaient prises pour des effacements (erreur, alerte, remise depuis l'ombre). Elles sont ignorées ; un vrai effacement garde son erreur.

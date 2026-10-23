@@ -1,0 +1,53 @@
+name: Staging Apex Chat — base de test (schéma, jeu de test, remise à zéro, « aucune trace »)
+
+# 23.10.2026 (tâche 33, pont 552/553). Agit UNIQUEMENT sur la base de TEST « staging-apex-chat » (jamais apex-chat-main : l'outil refuse
+# tout nom qui ne commence pas par « staging- » et l'identifiant de la production). À la main, aucun cron.
+# `cycle` = la preuve de bout en bout : schéma → jeu de test → remise à zéro → « aucune trace ». Le journal ne contient que des nombres.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'schema | seed | compter | reset | aucune-trace | cycle'
+        required: true
+        default: 'cycle'
+        type: choice
+        options: [cycle, schema, seed, compter, reset, aucune-trace]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-apex-chat-donnees
+  cancel-in-progress: false
+
+jobs:
+  base-de-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { fetch-depth: 1 }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { node-version: '22' }
+      - name: Installer wrangler
+        run: npm install -g wrangler@4
+      - name: Lancer l'action sur la base de test
+        working-directory: tools/staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_SAUVEGARDE != '' && secrets.CLOUDFLARE_API_TOKEN_SAUVEGARDE || secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ACTION: ${{ inputs.action }}
+        run: |
+          set -e
+          BASE=staging-apex-chat
+          out() { node apex-chat-staging.mjs "$1" --remote "$BASE"; }
+          if [ "$ACTION" = "cycle" ]; then
+            out schema
+            echo "--- avant le jeu de test"; out aucune-trace
+            echo "--- jeu de test"; out seed
+            echo "--- le contrôle DOIT voir des traces"; if out aucune-trace; then echo "::error::le contrôle n'a rien vu après le jeu de test"; exit 1; fi
+            echo "--- remise à zéro"; out reset
+            echo "--- après"; out aucune-trace
+          else
+            out "$ACTION"
+          fi

@@ -1,0 +1,9 @@
+# Config minimale pour que `wrangler d1 execute staging-apex-chat` trouve la base de TEST (jamais la production).
+# Base créée le 23.10.2026 sur le compte Cloudflare principal (pont 553) ; vide jusqu'au premier `schema`.
+name = "staging-apex-chat-outil"
+compatibility_date = "2024-09-23"
+
+[[d1_databases]]
+binding = "APEX_CHAT_DB"
+database_name = "staging-apex-chat"
+database_id = "655bac27-c95d-4fb5-8fb4-b5dc90328678"

@@ -5,6 +5,9 @@
    quand même sur cet appareil. */
 (function () {
   'use strict';
+  /* 23.10 : un pass déposé par le domaine dans le fragment (#kdmc_sso=, lien d'appareil de secours) REMPLACE l'ancien pass local
+     — sinon un vieux pass faible gardé ici passait devant la session neuve et Kevin restait sur « prouve que c'est toi ». */
+  try { if (window.kdmcSSO && window.kdmcSSO.consumeHashToken) window.kdmcSSO.consumeHashToken(); } catch (e) { /* jamais bloquant */ }
   var LS_ACCOUNT = 'kdmc_account_v1';
   var LS_CGU = 'kdmc_cgu_accepted_v1';
   var gate = document.getElementById('gate');

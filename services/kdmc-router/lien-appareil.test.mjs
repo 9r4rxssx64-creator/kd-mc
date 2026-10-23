@@ -2,6 +2,7 @@
    node lien-appareil.test.mjs */
 import mod from './worker.js';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 const store = new Map();
 const ACCOUNTS = { get: async (k) => (store.has(k) ? store.get(k) : null), put: async (k, v) => { store.set(k, v); }, delete: async (k) => { store.delete(k); } };
 const env = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS };
@@ -26,7 +27,7 @@ const run = async () => {
   const POSTF = (tk) => REQ('/__admin/lien-appareil/ouvrir', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 't=' + encodeURIComponent(tk) });
   r = await mod.fetch(POSTF(t), env);
   const sc = r.headers.get('set-cookie') || '';
-  ok(r.status === 302 && /kdmc_admin=/.test(sc) && /kdmc_sso=/.test(sc) && /HttpOnly/.test(sc), '1er clic sur l\'iPhone : session admin vérifiée posée, retour au portail');
+  ok(r.status === 302 && /kdmc_admin=/.test(sc) && /kdmc_sso=/.test(sc) && /HttpOnly/.test(sc) && /#kdmc_sso=[^&]{20,}/.test(r.headers.get('location') || ''), '1er clic sur l\'iPhone : session admin vérifiée posée, retour au portail');
   r = await mod.fetch(POSTF(t), env);
   ok(r.status === 200 && !/kdmc_admin=/.test(r.headers.get('set-cookie') || '') && /déjà utilisé/.test(await r.text()), '2e toucher : refusé (usage unique)');
   r = await mod.fetch(POSTF('A'.repeat(43)), env);
@@ -38,6 +39,8 @@ const run = async () => {
   const v = JSON.parse(store.get(k2)); v.exp = Date.now() - 1; store.set(k2, JSON.stringify(v));
   r = await mod.fetch(POSTF(t2), env);
   ok(!/kdmc_admin=/.test(r.headers.get('set-cookie') || ''), 'lien de plus de 10 min : refusé');
+  const portail = readFileSync(new URL('../../kdmc-home/kdmc-portal.js', import.meta.url), 'utf8');
+  ok(portail.indexOf('consumeHashToken()') > 0 && portail.indexOf('consumeHashToken()') < 1500, 'le portail range le pass du lien (#kdmc_sso=) dès son démarrage, avant tout whoami');
   console.log(`Lien d'appareil : ${pass} OK / ${fail} échec(s)`);
   process.exit(fail ? 1 : 0);
 };

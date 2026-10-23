@@ -5064,7 +5064,9 @@ async function handleAdmin(request, url, env) {
     await enrich(env, request, CANON_UID, nomA, true, undefined, {});
     const token = await ssoSign(secret, CANON_UID, nomA, true, true, false, appareilDe(request));
     await audLog(env, { ev: 'admin_lien_appareil_ouvert', par: rec.par || '' });
-    const h = new Headers({ location: 'https://kd-mc.com/?appareil=ajoute', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
+    /* le pass part AUSSI dans le fragment (#kdmc_sso=, jamais envoyé au serveur ni dans un référent) : le portail le range à la place d'un
+       ancien pass faible gardé en mémoire locale, qui passait DEVANT le cookie (23.10 : Kevin toujours sur « prouve que c'est toi »). */
+    const h = new Headers({ location: 'https://kd-mc.com/?appareil=ajoute#kdmc_sso=' + encodeURIComponent(token), 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
     h.append('set-cookie', `kdmc_admin=${grant}; Domain=.kd-mc.com; Path=/; Max-Age=43200; Secure; HttpOnly; SameSite=Lax`);
     h.append('set-cookie', `${SSO_COOKIE}=${token}; Domain=.kd-mc.com; Path=/; Max-Age=${maxAgeDe(token)}; Secure; HttpOnly; SameSite=Lax`);
     h.append('set-cookie', MARQUEUR);

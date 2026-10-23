@@ -48,6 +48,13 @@ const MATRICE = [
   { nom: 'Tablette Android paysage', dev: 'Galaxy Tab S4 landscape', moteurs: ['chromium'] },
   { nom: 'Portable bas 1272x635 (Lenovo)', vp: { width: 1272, height: 635 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
   { nom: 'Portable 1366x768', vp: { width: 1366, height: 768 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
+  /* 23.10 (Lenovo, Chrome de bureau étroit : « à 375 px, défilement horizontal = OUI ») : un navigateur de BUREAU étroit n'est pas un téléphone — il ne dézoome pas, il défile.
+     Largeurs réelles de téléphones, SANS émulation mobile. */
+  { nom: 'Navigateur étroit 340 px', vp: { width: 340, height: 740 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
+  { nom: 'Navigateur étroit 360 px (Android courant)', vp: { width: 360, height: 780 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
+  { nom: 'Navigateur étroit 375 px (iPhone SE/mini)', vp: { width: 375, height: 800 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
+  { nom: 'Navigateur étroit 390 px (iPhone Pro)', vp: { width: 390, height: 844 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
+  { nom: 'Navigateur étroit 412 px (Pixel)', vp: { width: 412, height: 915 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
   { nom: 'Grand écran 1920x1080', vp: { width: 1920, height: 1080 }, souris: true, moteurs: ['chromium'] }
 ];
 const filtre = process.env.PLAT ? new RegExp(process.env.PLAT, 'i') : null;
@@ -104,6 +111,7 @@ async function scenarioA(moteur, ap) {
     const tabs = [...b.querySelectorAll('.tab')].map((t) => { const q = t.getBoundingClientRect(); return { x: q.left, r: q.right, y: q.top, b: q.bottom, w: q.width, h: q.height, txt: (t.textContent || '').trim() }; });
     return { W, H: innerHeight, deborde: document.documentElement.scrollWidth - W, barreDans: r.left >= -1 && r.right <= W + 1 && r.bottom <= innerHeight + 1 && r.top >= 0, n: tabs.length,
       sortis: tabs.filter((t) => t.x < -1 || t.r > W + 1).map((t) => t.txt.slice(0, 10)), minCote: Math.min(...tabs.map((t) => Math.min(t.w, t.h))),
+      hautPetit: Math.round(Math.min(...['.tb-flag', '.tb-av', '.tb-cercle'].map((q) => { const e = document.querySelector(q); const r = e && e.getBoundingClientRect(); return r ? Math.min(r.width, r.height) : 99; }))),
       version: !!document.querySelector('.tabbar .tab-ver'), portail: !!document.querySelector('.tabbar a[data-kdmc-retour]'),
       cartes: ['vie-link', 'appel-link', 'cercle-link', 'verbs-link', 'pron-link', 'hist-link', 'stats-link'].filter((c) => document.querySelector('.' + c)).length };
   });
@@ -200,6 +208,7 @@ for (const ap of MATRICE) {
     ok(A.recouverts.length === 0, `${tag} : rien ne recouvre un onglet` + (A.recouverts.length ? ' — recouverts : ' + A.recouverts.join(',') : ''));
     ok(A.muets.length === 0 && A.distincts >= 5, `${tag} : les 6 onglets répondent au ${touch ? 'toucher' : 'clic'} et changent d'écran (${A.distincts} écrans distincts${A.muets.length ? ', MUETS : ' + A.muets.join(',') : ''})`);
     if (touch) ok(g.minCote >= 40, `${tag} : onglets ≥ 40 px au toucher (${Math.round(g.minCote)})`);
+    if (g.W >= 340 && g.W <= 520) ok(g.hautPetit >= 43, `${tag} : drapeau, cercle et avatar de la barre du haut ≥ 44 px (${g.hautPetit} px)`);
     ok(g.version, `${tag} : la version est dans la barre`);
     ok(g.portail, `${tag} : « Portail » est dans la barre`);
     ok(g.cartes >= 6, `${tag} : cartes de l'accueil ${g.cartes}/7`);

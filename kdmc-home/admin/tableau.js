@@ -155,7 +155,7 @@
     var b = boite || depuisInstantane(inst);
     var lAdmin = b && Array.isArray(b.inscriptionsAdmin) ? b.inscriptionsAdmin.length : null;
     return [
-      { id: 'messages', l: 'Messages non lus', n: b ? (b.nonLus || 0) : null, s: b && b.nonLusAlertes ? '+ ' + b.nonLusAlertes + ' alerte(s)' : 'toutes les apps' },
+      { id: 'messages', l: 'Messages non lus', n: b ? (b.nonLus || 0) : null, s: b && b.nonLusAlertes ? '+ ' + b.nonLusAlertes + ' alerte(s) automatique(s), pas des personnes' : 'toutes les apps' },
       { id: 'inscriptions', l: 'Inscriptions en attente', n: b ? (b.inscriptions || []).length : null, s: 'CMCteams' },
       { id: 'codes', l: 'Codes à valider', n: b ? (b.codes || []).length : null, s: 'appareil inconnu' },
       { id: 'sansWhatsapp', l: 'Comptes en attente de leur mail', n: lAdmin, s: 's\'ouvrent seuls au clic · ou ouvre/refuse ici', cache: !b || lAdmin === null },
@@ -393,7 +393,7 @@
     var pNl = document.createElement('span'); pNl.setAttribute('data-va', 'boite'); pNl.className = 'lien-info';
     pNl.textContent = D.nonLus ? D.nonLus + ' message(s) non lu(s)' : 'Aucun message non lu';
     var pCo = document.createElement('span'); pCo.setAttribute('data-va', '#presence'); pCo.className = 'lien-info';
-    pCo.textContent = (D.connectes || 0) + ' personne(s) connectée(s)';
+    pCo.textContent = D.connectes ? D.connectes + ' autre(s) personne(s) en ligne' : 'Toi seul en ligne';
     p.textContent = ''; p.appendChild(pNl); p.appendChild(document.createTextNode(' · ')); p.appendChild(pCo);
     z.appendChild(p);
     var srcs = document.createElement('div'); srcs.className = 'srcs';
@@ -512,7 +512,7 @@
     var trancher = (val('inscriptions') || 0) + (val('codes') || 0) + (val('sansWhatsapp') || 0);
     var badge = { personnes: trancher, messages: val('messages') || 0, commerce: val('livrer') || 0 };
     var txt = {
-      personnes: b ? (trancher ? trancher + ' à trancher · ' : '') + (b.connectes || 0) + ' connecté(s)' : null,
+      personnes: b ? (trancher ? trancher + ' à trancher · ' : '') + (b.connectes ? b.connectes + ' autre(s) en ligne' : 'Toi seul en ligne') : null,   /* 23.10 Kevin : « 0 connecté(s) » alors qu'il est connecté → le chiffre compte les AUTRES */
       messages: b ? (b.nonLus ? b.nonLus + ' non lu(s)' : 'Tout est lu') : null,
       commerce: val('livrer') != null ? (val('livrer') ? val('livrer') + ' vente(s) à livrer' : 'Rien à livrer') : null
     };

@@ -1,0 +1,41 @@
+name: Secours — lien d'accès admin pour un appareil (chiffré pour celui qui le demande)
+
+# 23.10.2026 (Kevin bloqué sur son iPhone : clé Face ID effacée, code admin oublié, Lenovo muet).
+# Le robot se connecte en admin avec l'empreinte déjà en secret, demande au domaine un lien d'appareil (usage UNIQUE, 10 min),
+# et ne l'imprime QUE chiffré avec la clé publique donnée au lancement : le journal public ne montre qu'un bloc illisible.
+# Seul celui qui a lancé le robot (la session Claude de Kevin) a la clé privée ; il envoie le lien dans la boîte de Kevin.
+# À la main / API uniquement — jamais de cron.
+
+on:
+  workflow_dispatch:
+    inputs:
+      cle:
+        description: "Clé publique RSA (PEM en base64) de celui qui recevra le lien"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lien-secours-admin
+  cancel-in-progress: false
+
+jobs:
+  lien:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5
+    steps:
+      - name: "Lien d'appareil chiffré (rien de lisible dans le journal)"
+        env:
+          H: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          CLE: ${{ inputs.cle }}
+        shell: bash -euo pipefail {0}
+        run: |
+          echo "$CLE" | base64 -d > pub.pem
+          openssl pkey -pubin -in pub.pem -noout
+          curl -sS -c j.txt -o /dev/null -X POST https://kd-mc.com/__admin/login -H 'content-type: application/json' -H 'origin: https://kd-mc.com' -d "{\"hash\":\"$H\"}"
+          R=$(curl -sS -b j.txt -X POST https://kd-mc.com/__admin/lien-appareil -H 'origin: https://kd-mc.com')
+          U=$(printf '%s' "$R" | jq -r '.url // empty')
+          rm -f j.txt
+          if [ -z "$U" ]; then echo "ÉCHEC : $(printf '%s' "$R" | jq -c '{ok,reason}')"; exit 1; fi
+          echo "LIEN_CHIFFRE=$(printf '%s' "$U" | openssl pkeyutl -encrypt -pubin -inkey pub.pem -pkeyopt rsa_padding_mode:oaep | base64 -w0)"

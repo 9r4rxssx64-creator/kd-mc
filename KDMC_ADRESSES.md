@@ -6,6 +6,20 @@
 > **Dernière mesure réelle : 22.10.2026** (HTTPS depuis une session, une requête par adresse).
 > 🔒 401 = la porte demande un compte (normal : « aucune consultation sans compte »), pas une panne.
 
+## 🧪 Staging (environnement de TEST) — mesuré le 23.10.2026
+
+**Il n'existe qu'UN seul environnement de test : « staging ». Il n'y a PAS de « dev »** (dev.kd-mc.com, test.kd-mc.com, apex-chat-staging.kd-mc.com… : aucun DNS).
+
+| Adresse | Rôle | Mesure |
+|---|---|---|
+| https://apex-chat-api-staging.9r4rxssx64.workers.dev/ | **Apex Chat de TEST (page + API)** — base `staging-apex-chat`, bandeau « STAGING », inscription par numéro de test + code `000000` (ne marche que là). **C'est ICI qu'on travaille.** | 200 · `/api/health` 200 (1.1.346) |
+| https://staging.kd-mc.com | Porte d'entrée du test (admin seul, noindex) : une page avec le bouton vers l'adresse ci-dessus. Ne contient aucune appli. | 200 (la porte) |
+
+- Autres apps (Arbre, Lingua, Bee, boutiques, CMCteams…) : **pas de version de test** — on les essaie sur leur adresse habituelle, en lecture seule.
+- Pas de SSO du domaine / Face ID, pas de SMS, pas de push, pas de crons au staging ; appels en direct seulement.
+- Remise à zéro + preuve « aucune trace » : robot public `staging-apex-chat-donnees.yml` (actions `reset`, `aucune-trace`, `cycle`). Redéployer : `deploy-apex-chat-staging.yml`.
+- Ressources : D1 `staging-apex-chat` (655bac27-c95d-4fb5-8fb4-b5dc90328678), KV `staging-ACCOUNTS`, R2 `apex-chat-media-staging`.
+
 ## 🖥️ Les apps du domaine (mesuré le 22.10.2026)
 
 | Adresse | Ce que c'est | Mesure |
@@ -53,6 +67,40 @@ Les apps appellent les workers par leur adresse `*.9r4rxssx64.workers.dev` (comp
 | `apex-push-worker` | répond (401 : normal) |
 | `apex-secrets-proxy` | répond 200 à la racine (signalé par l'audit du 22.10, point 3 : à fermer) |
 | `apex-v13-backend` · `apex-vault-svc` | `error code: 1042` (Cloudflare n'exécute pas le worker à cette adresse) — à vérifier par la session qui a la clé Cloudflare, sans conclure ici |
+
+## ⚙️ Tous les workers du compte principal (liste Cloudflare + mesure réelle, 23.10.2026) — 29
+
+Adresse de chaque worker : `https://<nom>.9r4rxssx64.workers.dev` · racine `/` puis `/health` (401/403/404 à la racine = normal, la porte ou « route inconnue »).
+
+| Worker | Rôle | Racine · /health |
+|---|---|---|
+| `apex-chat-api` | API d'Apex Chat (PRODUCTION) | 404 · 200 |
+| `apex-chat-api-staging` | API + page d'Apex Chat de TEST | 200 · 200 |
+| `apex-push-worker` | Notifications push | 401 · 200 |
+| `apex-auth-worker` | Authentification d'Apex | 404 · 200 |
+| `apex-secrets-proxy` | Proxy de secrets (racine ouverte : point 3 de l'audit 22.10 laissé exprès) | 200 · 200 |
+| `apex-depot-relais` | Relais de lecture du dépôt public | 403 · 403 |
+| `kdmc-router` | Le routeur : sert TOUTES les adresses `*.kd-mc.com` | 302 · 302 |
+| `kdmc-access` | Accès / porte du domaine | 401 · 200 |
+| `kdmc-apis` | APIs partagées | 401 · 200 |
+| `kdmc-mail` | Mails de confirmation d'inscription | 404 · 200 |
+| `kdmc-outlook` | Réglages / boîte Outlook | 200 · 200 |
+| `kdmc-rag` | Mémoire intelligente (RAG) | 200 · 200 |
+| `kdmc-vente` | Caisse des boutiques | 404 · 200 |
+| `kdmc-social` | Réseaux sociaux | 401 · 200 |
+| `kdmc-uptime` | Surveillance (racine sans réponse en 8 s, /health 200) | — · 200 |
+| `kdmc-clone` | Clonage de sites (Apex) | 401 · 200 |
+| `kdmc-monaco` · `kdmc-live` | Monaco / direct (rôle d'après le nom) | 200 · 200 / 404 · 200 |
+| `kdmc-ais` · `kdmc-ais-proxy` | Suivi de bateaux (AIS) | 404 · 200 / 404 · 404 |
+| `kdmc-crea-ai` · `kdmc-crea-famille` | Créa Studio / famille | 401 · 200 / 405 · 405 |
+| `kdmc-balances` | Soldes | 404 · 200 |
+| `coffre-r2` | Coffre-fort (R2) | 401 · 200 |
+| `cmc-parser-proxy` | Lecture des PDF de planning | 401 · 401 |
+| `ld-printify-order` · `ld-gemini-proxy` | La Détente (commandes, IA) | 200 · 404 / 200 · 200 |
+| `wm-brief` · `wm-quotes` | World Monitor | 404 · 200 |
+
+- `apex-v13-backend` et `apex-vault-svc` **n'existent pas** dans le compte (la liste Cloudflare ne les contient pas : « error code: 1042 » = jamais déployés). Ne pas les appeler.
+- Plus aucun worker sur l'ancien compte Cloudflare (`*.desarzens-kevin.workers.dev` éteint).
 
 > Ajouter une app = l'ajouter dans `services/kdmc-router/wrangler.toml` ET dans ce tableau, dans le même commit
 > (garde `tests/portail-adresses.test.mjs` pour le portail). Remesurer : `curl -s -o /dev/null -w '%{http_code}' https://<adresse>/`.

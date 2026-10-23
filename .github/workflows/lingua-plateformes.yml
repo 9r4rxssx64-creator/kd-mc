@@ -25,21 +25,28 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Installer Chromium, WebKit et Firefox
+      - name: Installer Chromium, WebKit et Firefox un par un (cause lisible, un moteur absent n'empêche pas les autres)
         # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
-        # 22.10 : le téléchargement des paquets système s'est figé 20 min (run 39797477531) : limite de 7 min par essai, 2 essais.
-        timeout-minutes: 16
+        # 22-23.10 : l'installation en bloc s'est figée ou a échoué 3 fois sur 5 (réseau du serveur, journal illisible) : un moteur à la fois, 2 essais de 5 min,
+        # la fin du journal d'erreur remonte en annotation ; les moteurs installés sont passés au robot (ENGINES), Chromium est exigé.
+        timeout-minutes: 18
         run: |
           npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
-          for essai in 1 2; do
-            timeout 420 ./node_modules/.bin/playwright install --with-deps chromium webkit firefox && exit 0
-            echo "::warning title=lingua-plateformes::installation des navigateurs : essai $essai trop long ou en échec"
+          OK=""
+          for moteur in chromium webkit firefox; do
+            for essai in 1 2; do
+              if timeout 300 ./node_modules/.bin/playwright install --with-deps "$moteur" > "/tmp/install-$moteur.log" 2>&1; then OK="${OK:+$OK,}$moteur"; break; fi
+              fin=$(tail -n 3 "/tmp/install-$moteur.log" | tr '\n' ' ' | cut -c1-300)
+              echo "::warning title=lingua-plateformes::installation $moteur essai $essai en échec : $fin"
+            done
           done
-          exit 1
+          echo "Moteurs installés : $OK"
+          case ",$OK," in *,chromium,*) ;; *) echo "::error title=lingua-plateformes::Chromium n'a pas pu être installé"; exit 1;; esac
+          echo "ENGINES_OK=$OK" >> "$GITHUB_ENV"
 
       - name: La matrice d'appareils (iPhone, Android, tablettes, portables, grand écran)
         timeout-minutes: 14   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles
         env:
-          ENGINES: chromium,webkit,firefox
+          ENGINES: ${{ env.ENGINES_OK }}
           EXIGE_PLAYWRIGHT: "1"
         run: node tools/plateformes/verif-lingua-plateformes.mjs

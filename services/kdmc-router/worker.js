@@ -1693,7 +1693,7 @@ function _wavDepuisPcm(pcm, freq) {
 }
 const GEMINI_TTS_MODELE = 'gemini-2.5-flash-preview-tts';
 const GEMINI_VOIX = { alloy: 'Kore', nova: 'Aoede', shimmer: 'Leda', echo: 'Puck', fable: 'Charon', onyx: 'Orus' };
-async function voixGemini(env, texte, voix, consigne, cleCache) {
+async function voixGemini(env, texte, voix, consigne, cleCache, cors) {
   try {
     if (!env || !env.GEMINI_API_KEY) return null;
     const rr = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_TTS_MODELE + ':generateContent?key=' + env.GEMINI_API_KEY, {
@@ -1722,8 +1722,9 @@ async function voixGemini(env, texte, voix, consigne, cleCache) {
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
     const buf = _wavDepuisPcm(u8.buffer, freq);
     if (!buf || buf.byteLength < 1024) return null;
-    try { if (cleCache) await env.ACCOUNTS.put(cleCache, buf, { expirationTtl: 60 * 60 * 24 * 400 }); } catch (_) { /* cache best-effort */ }
-    return new Response(buf, { status: 200, headers: { 'content-type': 'audio/wav', 'cache-control': 'public, max-age=31536000, immutable', 'x-voix': 'gemini-gratuite' } });
+    /* 23.10 : cache du bord d'abord (0 écriture KV : le plafond de 1 000/jour sature), KV seulement si le bord refuse */
+    try { if (cleCache && !(await ecrireCacheVoix(cleCache, buf))) await env.ACCOUNTS.put(cleCache, buf, { expirationTtl: 60 * 60 * 24 * 400 }); } catch (_) { /* cache best-effort */ }
+    return new Response(buf, { status: 200, headers: Object.assign({ 'content-type': 'audio/wav', 'cache-control': 'public, max-age=31536000, immutable', 'x-voix': 'gemini-gratuite' }, cors || {}) });
   } catch (_) { return null; }
 }
 
@@ -2489,6 +2490,22 @@ async function handleLingua(request, url, env) {
          est SÉPARÉ (le moteur entre dans la clé), donc écouter le gratuit ne
          remplace jamais la voix normale de personne. */
       const moteurDemande = String(url.searchParams.get('m') || '');
+      /* 🆓 SECOURS GRATUIT SANS LIMITE DE LANGUE (Kevin 23.10 : « regarde les voix aussi que l'on ne soit pas limité, ajoute si besoin »).
+         La voix gratuite de Cloudflare (MeloTTS) ne dit que fr, en, es, zh : pour l'italien, l'allemand, le portugais, le russe, le japonais…
+         elle rend `null` et l'app retombait sur la voix du téléphone, dès que Google (Chirp) ou OpenAI ne répondait pas. Gemini TTS (palier gratuit,
+         déjà configuré, parle toutes ces langues sans qu'on la lui dise) prend le relais : cache du bord d'abord, plafond par appareil, puis
+         la voix du téléphone en dernier. Jamais de facture : aucune clé payante n'est touchée. */
+      const geminiSecours = async () => {
+        if (!env.GEMINI_API_KEY) return null;
+        const gkey = 'ltts:' + (await hashOf('gemini:' + voice + ':' + style + ':' + text));
+        try {
+          const gc = (await lireCacheVoix(gkey)) || (await env.ACCOUNTS.get(gkey, 'arrayBuffer'));
+          if (gc) return new Response(gc, { status: 200, headers: Object.assign({ 'content-type': 'audio/wav', 'cache-control': 'public, max-age=31536000, immutable', 'x-voix': 'gemini-gratuite' }, cors) });
+        } catch (_) { /* cache best-effort */ }
+        if (!(await souslePlafond(env, 'gemini', request, 60, 3600, true))) return null;
+        return await voixGemini(env, text, voice, HD_CONSIGNE, gkey, cors);
+      };
+      const voixGratuiteOuGemini = async (cleP) => (await voixGratuite(env, text, cleP, cors, url.searchParams.get('l'))) || (await geminiSecours());
       if (moteurDemande === 'gemini') {
         const gkey = 'ltts:' + (await hashOf('gemini:' + voice + ':' + style + ':' + text));
         const gc = await env.ACCOUNTS.get(gkey, 'arrayBuffer');
@@ -2524,8 +2541,8 @@ async function handleLingua(request, url, env) {
         if (moteurDemande === 'chirp') return JL({ ok: false, reason: 'chirp_indisponible', cause: diag.cause || 'inconnue' });
       }
       if (gratuitSeul) {
-        if (!(await souslePlafond(env, 'gratuite', request, 60, 3600, true))) return JL({ ok: false, reason: 'plafond_atteint' });
-        const g = await voixGratuite(env, text, '', cors, url.searchParams.get('l'));
+        if (!(await souslePlafond(env, 'gratuite', request, 60, 3600, true))) return (await geminiSecours()) || JL({ ok: false, reason: 'plafond_atteint' });
+        const g = await voixGratuiteOuGemini('');
         return g || JL({ ok: false, reason: 'gratuite_indisponible' });
       }
       const ckey = await cle(modele);
@@ -2537,7 +2554,7 @@ async function handleLingua(request, url, env) {
          (mesuré : 200 voix payées). Au-delà, la voix gratuite prend le relais — jamais de silence. */
       const peutPayer = !!env.OPEN_AI_API_KEY && (await peutPayerVoix());
       if (!peutPayer) {
-        const g = await voixGratuite(env, text, ckey, cors, url.searchParams.get('l'));
+        const g = await voixGratuiteOuGemini(ckey);
         if (g) return g;
         return JL({ ok: false, reason: env.OPEN_AI_API_KEY ? 'plafond_atteint' : 'tts_absent' }); // fail-open (200) → repli navigateur
       }
@@ -2554,7 +2571,7 @@ async function handleLingua(request, url, env) {
       let mUse = modele, rr = await synth(mUse);
       if (!rr.ok && mUse === HD_MODELE) { mUse = 'tts-1'; rr = await synth(mUse); } // repli honnête, jamais de silence
       if (!rr.ok) {
-        const g = await voixGratuite(env, text, ckey, cors, url.searchParams.get('l'));
+        const g = await voixGratuiteOuGemini(ckey);
         if (g) return g;
         return JL({ ok: false, reason: 'tts_err', status: rr.status }); // fail-open (200)
       }

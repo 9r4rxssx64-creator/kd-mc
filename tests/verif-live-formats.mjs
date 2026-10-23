@@ -49,7 +49,7 @@ async function connecter(page, base) {
 
 /* Les mesures de mise en page, exécutées DANS la page (rien de lu n'en sort : des nombres). */
 const MESURES = () => {
-  const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity !== 0; };
+  const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.right > 0 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity !== 0; };
   const cibles = [...document.querySelectorAll('button, a[href], [onclick], input:not([type=hidden]), select, textarea, [role=button], [role=tab]')].filter((e) => !e.disabled && !e.closest('[hidden]') && vis(e));
   const petitsBoutons = cibles.filter((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height) < 44; }).length;
   /* quels éléments : balise + classe + taille seulement (jamais le texte : il peut porter un nom de personne) */

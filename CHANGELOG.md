@@ -58,6 +58,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Trouvé en vrai navigateur : à la RÉOUVERTURE (session gardée), l'appareil ne publiait jamais sa clé → corrigé.
 - Preuves : vitest 2267 verts, couverture 100 % `crypto-core` ; vrai Chromium 3 appareils `runtime-cle-par-appareil.mjs` 8/8 (1/8 avec la 1.1.342). Leçon 722. Limites : anciens messages restent illisibles ; médias et groupes = phase 2.
 
+## CMCteams v9.982 (2026-10-23 — les boutons de l'accueil se touchent au doigt)
+- 14 zones de l'accueil admin étaient sous 44 px (mesuré au robot réel : 🔍 et ⌘ en 30 px, le point de synchro en 10 px, la météo en 18 px, « IA ON » / « Admin » en 40 px, « Importer », « Sauvegarder », « 1 en ligne », le badge de version…). Elles font maintenant au moins 44 px ; seule la zone de toucher grandit, pas l'apparence (le point de synchro reste un petit point).
+
 ## CMCteams v9.981 (2026-10-22 — la sortie « ← Portail » est dans la barre du haut)
 - Un lien « ← Portail » (ou ⌂ quand la flèche Retour est là) dans la barre du haut, 44 px : la pastille du routeur, qui recouvrait la bannière du pit boss quand l'accueil s'ouvrait tard, se retire dès que le lien est là.
 

@@ -263,6 +263,7 @@
   "tests/verify-chevauchements-iphone.mjs",
   "tests/verify-cloudflare-analytics-couper.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",
+  "tests/verify-cmc-zones-tactiles.mjs",
   "tests/verify-cmcteams-invite.mjs",
   "tests/verify-coffre-sobre.mjs",
   "tests/verify-comptes-inventaire.mjs",

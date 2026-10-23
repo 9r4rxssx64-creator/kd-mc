@@ -12390,6 +12390,7 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - Lenovo non allumé : la mission reste au pont ET une ligne sur `KEVIN_ACTIONS_TODO.md`, sans attendre ni boucler.
 - Vérifier « comme Kevin » = mission PC.
 - Écrit aussi dans `.claude/rules/pont-lenovo-manipulations.md` (chargé par toute session) ; message « toutes » au pont et au registre des sessions ; garde `test:pont-lenovo-regle`.
+- **23.10.2026 — relance à chaque passage** : Kevin « il faut que tu relances le Lenovo sur toutes les tâches que tu en attends, à chaque fois. Et toutes tes branches pareil ». À chaque lecture du pont / « pont » : lister ses missions sans réponse chez `pc-config` / `arbre-pc`, relancer (courte, en nombres), mettre à jour `taches`, finir par « Relancé : … (n° …) » ; Lenovo éteint = relancer quand même, jamais de boucle d'attente. Diffusé à toutes les branches (pont n° 513) ; garde `test:pont-lenovo-regle`.
 
 ## 🌳 RÈGLE ABSOLUE — ARBRE : TOUTE SA FAMILLE D'OFFICE, UN AFFICHAGE SANS EFFORT, DES TEXTES TOUJOURS JUSTES, RIEN QUI SE PERDE ENTRE APPAREILS — ET J'EFFACE MES TRACES DE TEST À CHAQUE FOIS (Kevin 2026-10-21, ABSOLUE, TOUTES LES BRANCHES)
 

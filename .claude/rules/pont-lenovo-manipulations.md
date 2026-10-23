@@ -5,3 +5,4 @@
 - Vérifier « comme Kevin » (Finances, Messages, admin) est une mission PC : son Chrome est connecté, le robot du cloud ne l'est pas.
 - Finir la livraison par « Donné au pont : … / Reste à Kevin (code, mot de passe, oui) : … ».
 - Garde : `npm run test:pont-lenovo-regle`.
+- Relancer le Lenovo à CHAQUE passage (Kevin 23.10.2026 : « il faut que tu relances le Lenovo sur toutes les tâches que tu en attends, à chaque fois. Et toutes tes branches pareil ») : à chaque lecture du pont ou « pont » de Kevin, lister SES missions sans réponse, envoyer une relance courte (ce qui manque, en nombres), mettre à jour `taches`, et finir par « Relancé : … (n° …) ». Lenovo éteint : relancer quand même, sans boucle d'attente.

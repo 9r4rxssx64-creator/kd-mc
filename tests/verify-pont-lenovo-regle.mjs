@@ -7,6 +7,7 @@ const regle = lire('.claude/rules/pont-lenovo-manipulations.md');
 t(/pont/i.test(regle) && /Lenovo/.test(regle) && /pc-config/.test(regle) && /arbre-pc/.test(regle), 'la règle nomme le pont, le Lenovo et les deux sessions PC');
 t(/mot de passe/i.test(regle) && /paiement/i.test(regle) && /Jamais de cl/i.test(regle), 'la règle dit ce que Kevin garde seul et interdit les clés dans le pont');
 t(/pas toujours allumé/i.test(regle) && /KEVIN_ACTIONS_TODO/.test(regle), 'la règle prévoit le Lenovo éteint (reste au pont + une ligne chez Kevin)');
+t(/Relancer le Lenovo à CHAQUE passage/.test(regle) && /Relancé : /.test(regle) && /relance à chaque passage/.test(lire('CLAUDE-HISTOIRE.md')), 'la règle « relancer le Lenovo à chaque passage » est écrite (règle + histoire)');
 t(/LES MANIPULATIONS VONT AU PONT/.test(lire('CLAUDE-HISTOIRE.md')), 'la règle est dans CLAUDE-HISTOIRE.md');
 t(/LES MANIPULATIONS VONT AU PONT/.test(lire('CLAUDE.md')), 'la règle est dans l\'index CLAUDE.md (claude-md:index relancé)');
 t(/pont-lenovo-manipulations/.test(lire('tools/pont/README.md')), 'tools/pont/README.md renvoie à la règle');

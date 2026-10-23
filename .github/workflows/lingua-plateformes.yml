@@ -25,14 +25,13 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Installer Chromium, WebKit et Firefox (navigateurs, puis bibliothèques système, puis vérification de ce qui se lance)
+      - name: Installer Chromium, WebKit et Firefox (téléchargement, lancement, bibliothèques seulement pour ceux qui ne démarrent pas)
         # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
-        # 23.10, cause LUE dans les annotations (run 40005190242) : mon délai tuait `apt` en plein vol, le verrou dpkg restait pris et TOUS les essais suivants
-        # échouaient. Donc : (1) les navigateurs se téléchargent sans apt, avec délai ; (2) les bibliothèques système en UNE fois, apt réessaie seul
-        # (Acquire::Retries) et attend le verrou (DPkg::Lock::Timeout), jamais tué ; (3) on lance chaque moteur pour savoir lesquels marchent vraiment.
-        timeout-minutes: 18
+        # 23.10, runs 40005190242 puis 40006199277 : `--with-deps` / `install-deps` (apt, miroir azure lent) a mangé 18 min ou laissé le verrou dpkg pris (apt tourne en ROOT :
+        # un `timeout` d'utilisateur ne peut pas le tuer). Donc : (1) télécharger les navigateurs (pas d'apt) ; (2) essayer de LANCER chaque moteur tel quel ;
+        # (3) seulement pour ceux qui ne démarrent pas, installer leurs bibliothèques sous `sudo timeout` (root tue root) ; (4) relancer pour savoir ce qui marche.
+        timeout-minutes: 16
         run: |
-          sudo sh -c 'printf "Acquire::Retries \"5\";\nAcquire::http::Timeout \"30\";\nDPkg::Lock::Timeout \"300\";\n" > /etc/apt/apt.conf.d/80-robot'
           npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
           for moteur in chromium webkit firefox; do
             for essai in 1 2; do
@@ -40,9 +39,17 @@ jobs:
               echo "::warning title=lingua-plateformes::téléchargement $moteur essai $essai en échec : $(tail -n 2 "/tmp/dl-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
             done
           done
-          ./node_modules/.bin/playwright install-deps chromium webkit firefox > /tmp/deps.log 2>&1 || echo "::warning title=lingua-plateformes::bibliothèques système en échec : $(tail -n 3 /tmp/deps.log | tr '\n' ' ' | cut -c1-300)"
-          OK=$(node -e "(async()=>{const p=require('playwright');const ok=[];for(const m of ['chromium','webkit','firefox']){try{const b=await p[m].launch();await b.close();ok.push(m);}catch(e){console.error('::warning title=lingua-plateformes::'+m+' ne se lance pas : '+String(e.message).split('\n')[0].slice(0,200));}}console.log(ok.join(','));})()")
+          lancer() { node -e "(async()=>{const p=require('playwright');try{const b=await p['$1'].launch();await b.close();process.exit(0);}catch(e){console.error(String(e.message).split('\n')[0].slice(0,200));process.exit(1);}})()" 2>/tmp/lance.log; }
+          OK=""
+          for moteur in chromium webkit firefox; do
+            if ! lancer "$moteur"; then
+              echo "::warning title=lingua-plateformes::$moteur ne démarre pas tel quel ($(cat /tmp/lance.log | cut -c1-160)) : installation de ses bibliothèques (6 min au plus)"
+              sudo timeout -k 20 360 env "PATH=$PATH" ./node_modules/.bin/playwright install-deps "$moteur" > "/tmp/deps-$moteur.log" 2>&1 || echo "::warning title=lingua-plateformes::bibliothèques $moteur incomplètes : $(tail -n 2 "/tmp/deps-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
+            fi
+            if lancer "$moteur"; then OK="${OK:+$OK,}$moteur"; else echo "::warning title=lingua-plateformes::$moteur ne se lance pas : $(cat /tmp/lance.log | cut -c1-200)"; fi
+          done
           echo "Moteurs qui se lancent : $OK"
+          echo "::notice title=lingua-plateformes::moteurs qui se lancent : $OK"
           case ",$OK," in *,chromium,*) ;; *) echo "::error title=lingua-plateformes::Chromium ne se lance pas"; exit 1;; esac
           echo "ENGINES_OK=$OK" >> "$GITHUB_ENV"
 

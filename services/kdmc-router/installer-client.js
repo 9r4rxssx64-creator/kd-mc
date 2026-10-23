@@ -33,6 +33,17 @@ export const INSTALLER_JS = String.raw`(function () {
             .catch(function () { b.disabled = false; b.textContent = membre ? '👁 Vue membre' : '👑 Vue admin'; });
         };
         document.body.appendChild(b);
+        /* 24.10 (capture de Kevin, admin v2.7.13) : le badge de version est aussi en bas à gauche — dans l'app installée ils se chevauchaient.
+           Le bouton se pose AU-DESSUS de tout ce qui occupe déjà son coin (badge chargé plus tard : on revérifie). */
+        var degager = function () {
+          var bas = 8, autres = document.querySelectorAll('#kdmc-version-badge');
+          for (var k = 0; k < autres.length; k++) {
+            var o = autres[k].getBoundingClientRect(), m = b.getBoundingClientRect();
+            if (o.width && o.left < m.right && o.right > m.left) bas = Math.max(bas, Math.round(window.innerHeight - o.top + 8));
+          }
+          b.style.bottom = bas > 8 ? bas + 'px' : 'calc(env(safe-area-inset-bottom,0px) + 8px)';   /* au-dessus d'un voisin : sa hauteur mesurée inclut déjà la zone de sécurité */
+        };
+        degager(); setTimeout(degager, 800); setTimeout(degager, 3000); window.addEventListener('resize', degager);
         /* 23.10 soir (Kevin : « Tableau KDMC a disparu… je ne suis pas connecté en admin… il était censé y avoir un bouton admin partout ») :
            le marqueur dure 1 an, la session admin moins. Le bouton affichait « 👑 Vue admin » alors que l'admin avait expiré, puis disparaissait.
            Il demande maintenant l'état VRAI au domaine (1 requête, appareils de Kevin seulement) ; admin expiré → « 🔑 Connexion admin »

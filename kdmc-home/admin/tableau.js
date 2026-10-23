@@ -477,6 +477,10 @@
       if (i && j && j.genere) i.textContent = 'Toutes les apps du domaine. Version relevée dans le dépôt le ' + j.genere.split('-').reverse().join('.') + ' (la bulle de chaque app dit la version en direct).';
       versHash();
     });
+    lireChiffres();
+  }
+  /* les chiffres seuls (santé des services, coûts OpenAI) : relus sans toucher aux tuiles ni à la position dans la page */
+  function lireChiffres() {
     lireJson('/CMCteams/tools/health/workers-status.json').then(function (j) {
       var el = document.getElementById('tb-sante'); if (!el) return;
       if (!j || !j.workers) { el.textContent = 'Santé des services : relevé indisponible pour l\'instant.'; return; }
@@ -579,6 +583,8 @@
        (mesuré : un 2e whoami en série avant même de lire ses données, 1,5 s de plus sur réseau mobile). Le serveur garde son verrou. */
     if (global.kdmcCommerce && global.kdmcCommerce.monter) global.kdmcCommerce.monter(document.getElementById('commerce-app'), s);
     lireAnnexes();
+    /* 24.10 : versions, santé des services et coûts OpenAI étaient lus une seule fois — relus toutes les 5 min (page visible) */
+    setInterval(function () { if (document.visibilityState === 'visible') lireChiffres(); }, 300000);
     window.addEventListener('hashchange', versHash);
     versHash();
   }

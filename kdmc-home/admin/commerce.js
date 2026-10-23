@@ -429,6 +429,25 @@
   }
   function recharge() { lireLive().then(function (j) { LIVE = j; affiche(null); publie(j); }).catch(function (e) { affiche(String(e.message || e)); publie(null); }); }
 
+  /* 24.10 (Kevin : « vérifie que les infos se mettent à jour en temps réel sur cette page ») : la caisse n'était lue QU'UNE fois à
+     l'ouverture — « Ventes à livrer » restait figé. Relecture discrète toutes les 60 s (page visible) et au retour sur la page ;
+     le compteur suit toujours, le bloc Commerce n'est redessiné que si quelque chose a changé ET que Kevin n'est pas en train d'y écrire. */
+  var SUIVI = null, EMP = '';
+  function relireDiscret() {
+    if (document.visibilityState !== 'visible' || !app) return;
+    lireLive().then(function (j) {
+      var e = JSON.stringify(j); if (e === EMP) return; EMP = e;
+      LIVE = j; publie(j);
+      var a = document.activeElement;
+      if (!(a && app.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) affiche(null);
+    }).catch(function () { /* hors ligne : on garde le dernier relevé, la prochaine relecture réessaie */ });
+  }
+  function suivre() {
+    if (SUIVI) return;
+    SUIVI = setInterval(relireDiscret, 60000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') relireDiscret(); });
+  }
+
   /* `deja` (10.10, réactivité) : la session que le tableau unique vient de vérifier — pas de 2e whoami. Les données « construit »
      (commerce-data.json) et la caisse sont lues EN MÊME TEMPS (avant : données → puis caisse, en série). */
   function boot(deja) {
@@ -440,7 +459,7 @@
       return fetch('commerce-data.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
         .then(function (d) {
           DATA = d; affiche('lecture en cours…');
-          liveP.then(function (x) { if (x.j) { LIVE = x.j; affiche(null); publie(x.j); } else { affiche(String((x.e && x.e.message) || x.e)); publie(null); } });
+          liveP.then(function (x) { if (x.j) { LIVE = x.j; EMP = JSON.stringify(x.j); affiche(null); publie(x.j); } else { affiche(String((x.e && x.e.message) || x.e)); publie(null); } suivre(); });
         })
         .catch(function (e) { app.innerHTML = '<div class="msg">Données du tableau introuvables (' + esc(e.message) + ') — relance la génération (npm run commerce:data).</div>'; });
     }).catch(function () { deny(null); });

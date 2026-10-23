@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.346 (2026-10-23 — boutons assez grands au doigt, mesurés dans un vrai navigateur)
+- Mesuré par `pc-connecteurs` puis par moi (Chromium format iPhone 390×844, Apex Chat de test) : le lien « ← KDMC » (retour au portail) faisait 71×23 px sur CHAQUE onglet, le bouton 🔍 de la liste 40 px de large, le champ de recherche 41 px de haut. Tous à 44 px minimum maintenant.
+- Vérifié aussi : le code SMS n'apparaît à l'écran que si `ALLOW_TEST_OTP` est vrai (staging) ; la production l'a à "false" et répond 502 sans fuite.
+- Preuves : `tests/unit/chats-cibles-44.test.js` (3 rouges sur l'ancienne page) ; vrai Chromium 3 appareils 14/14 + groupes 10/10. Leçon 754.
+
 ## Staging v0.2.0 — une seule adresse officielle (2026-10-23)
 - La page https://staging.kd-mc.com (admin seul) dit où tester quoi : bouton vers l'Apex Chat de test, « il n'y a pas de dev », les autres apps n'ont pas de version de test. Elle ne promet plus « achats de test » ni d'application sur cette adresse. Garde `test:staging-worker` étendue (lien, mention « pas de dev », version).
 

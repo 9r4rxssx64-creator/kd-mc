@@ -139,11 +139,16 @@ describe('POST /api/ia/chat (admin) — gratuit d\'abord, Anthropic en dernier s
     const r2 = await worker.fetch(makeReq('POST', '/api/ia/chat', { messages: [{ role: 'user', content: 'bonjour' }] }, tok), env);
     expect(r2.status).toBe(503);
     const j2 = await r2.json();
-    /* gratuits d'abord (Qwen puis Groq), Anthropic en DERNIER */
+    /* gratuits d'abord (Qwen puis Groq), Anthropic en dernier SECOURS PAYANT ; depuis #5094 (23.10) un « dernier recours » gratuit
+       (cf-rapide, marqué recours) passe encore après, pour qu'une question ne reste jamais sans réponse. */
     const tried = j2.tried.map((t) => t.provider);
     expect(tried.slice(0, 2)).toEqual(['qwen', 'groq']);
-    expect(tried[tried.length - 1]).toBe('anthropic');
-    expect(j2.tried[tried.length - 1].error).toMatch(/529/);
+    const iA = tried.indexOf('anthropic');
+    expect(iA).toBeGreaterThan(1);
+    expect(j2.tried[iA].error).toMatch(/529/);
+    /* rien de payant n'est essayé APRÈS Anthropic ; ce qui suit est le recours gratuit */
+    expect(tried.slice(iA + 1).every((p) => p === 'cf-rapide')).toBe(true);
+    expect(j2.tried.slice(iA + 1).every((t) => t.recours === true)).toBe(true);
   });
 });
 

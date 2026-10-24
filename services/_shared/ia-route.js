@@ -576,7 +576,9 @@ export async function routeText(env, opts) {
   if (o.dernierRecours !== false) {
     const poR = () => Object.assign({}, o, { finMs, timeoutMs: Math.min(o.timeoutMs, finMs ? Math.max(0, finMs - Date.now()) : o.timeoutMs) });
     if (env && env.AI && (!finMs || finMs - Date.now() >= 2000)) {
-      try { const r = await callCfRapide(env, messages, poR()); tried.push({ provider: 'cf-rapide', ok: true, recours: true }); return { ok: true, text: r.text, provider: 'qwen', model: r.model, domain, tried, recours: 'cf-rapide' }; }
+      /* 24.10 (studio-crea) : l'étiquette dit QUI a répondu — ce dernier recours est un petit modèle Workers AI (Llama…), PAS Qwen.
+         Avant, `provider: 'qwen'` donnait des réponses signées « conference:qwen/llama-3.3-70b… » : une IA mal nommée (vérité, rien de faux). */
+      try { const r = await callCfRapide(env, messages, poR()); tried.push({ provider: 'cf-rapide', ok: true, recours: true }); return { ok: true, text: r.text, provider: 'cf-rapide', model: r.model, domain, tried, recours: 'cf-rapide' }; }
       catch (e) { tried.push({ provider: 'cf-rapide', error: String((e && e.message) || e).slice(0, 160), recours: true }); }
     }
     for (const t of tried.filter((x) => x.skipped && /^en pause/.test(x.skipped) && FREE_PROVIDERS.indexOf(x.provider) >= 0 && x.provider !== 'qwen')) {

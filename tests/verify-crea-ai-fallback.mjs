@@ -64,7 +64,8 @@ chk(r.status === 200 && /TITRE/.test(j.lyrics || ''), `paroles produites malgré
 /* v9.9 : le label nomme désormais le MODÈLE exact (`cloudflare:@cf/…`) — plus
    honnête que « cloudflare » tout court, et indispensable depuis l'ajout de Qwen
    (Kevin doit voir SI c'est Qwen ou Llama qui a répondu). On exige donc les deux. */
-chk(/^cloudflare:@cf\//.test(j.provider || ''), `la réponse dit honnêtement quelle IA ET quel modèle ont servi (provider=${j.provider})`);
+/* 24.10 : la conférence (routage commun) peut répondre d'abord ; son dernier recours Workers AI s'appelle « cf-rapide » (un Llama, pas Qwen) */
+chk(/^(cloudflare:@cf\/|conference:(cloudflare|cf-rapide)\/)/.test(j.provider || ''), `la réponse dit honnêtement quelle IA ET quel modèle ont servi (provider=${j.provider})`);
 chk(/gemini_429/.test(j.fallback || ''), `la cause exacte de la bascule est indiquée (${String(j.fallback).slice(0, 40)})`);
 
 // ── 2) Gemini EN PANNE → Workers AI écrit la partition (même bavarde) ────────
@@ -72,7 +73,7 @@ r = await post('/compose', { style: 'pop', mood: 'joyeux' }, env);
 j = await r.json();
 chk(r.status === 200 && j.score && Array.isArray(j.score.melody), `partition produite malgré la panne Gemini (HTTP ${r.status})`);
 chk(j.score && j.score.bpm === 108 && j.score.progression.length === 4, 'partition complète (tempo + accords + mélodie)');
-chk(/^cloudflare:@cf\//.test(j.provider || ''), `partition attribuée à la bonne IA, modèle nommé (provider=${j.provider})`);
+chk(/^(cloudflare:@cf\/|conference:(cloudflare|cf-rapide)\/)/.test(j.provider || ''), `partition attribuée à la bonne IA, modèle nommé (provider=${j.provider})`);
 
 // ── 3) La voix passe par Workers AI ──────────────────────────────────────────
 r = await post('/voice', { text: 'on chante tous ensemble', lang: 'fr' }, env);
@@ -84,7 +85,7 @@ chk(audio.byteLength > 200, `vrai fichier audio renvoyé (${audio.byteLength} oc
 env = { AI: fakeAI() };                       // pas de clé, pas de Replicate
 r = await post('/lyrics', { theme: 'test', style: 'pop' }, env);
 j = await r.json();
-chk(r.status === 200 && /^cloudflare:/.test(j.provider || ''), `sans clé Gemini, l'app marche quand même (HTTP ${r.status})`);
+chk(r.status === 200 && /^(cloudflare:|conference:(cloudflare|cf-rapide)\/)/.test(j.provider || ''), `sans clé Gemini, l'app marche quand même (HTTP ${r.status}, provider=${j.provider})`);
 r = await worker.fetch(new Request('https://x/health', { headers: { origin: 'https://kd-mc.com' } }), env);
 j = await r.json();
 chk(j.ok === true && j.configured === true && j.cloudflare === true, 'l\'état de santé annonce bien la 2ᵉ IA disponible');
@@ -93,7 +94,7 @@ chk(j.ok === true && j.configured === true && j.cloudflare === true, 'l\'état d
 env = { GEMINI_API_KEY: 'fake', AI: fakeAI({ textDown: true }) };
 r = await post('/compose', { style: 'pop' }, env);
 j = await r.json();
-chk(r.status === 502 && /gemini_429/.test(j.error || '') && /cloudflare_/.test(j.error || ''),
+chk(r.status === 502 && /gemini_429/.test(j.error || '') && /(cloudflare_|qwen_|cf-rapide_)/.test(j.error || ''),   /* 24.10 : la conférence nomme ses voix (qwen_…, cf-rapide_…) */
   `si toutes les IA tombent, l'erreur nomme CHACUNE avec sa cause (${String(j.error).slice(0, 70)})`);
 
 // ── 6) TOUTES les IA gratuites : la 1re en panne, une AUTRE prend le relais ───

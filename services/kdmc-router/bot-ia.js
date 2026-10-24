@@ -196,6 +196,17 @@ export function essaiFantome(essai, flotte, now) {
    Un robot PAPIER arrêté ne produit plus aucune mesure : on le relance (il repart à 10 000 $ virtuels).
    Les freins eux-mêmes ne sont PAS touchés. L'arrêt d'urgence BOT_KILL n'est jamais relancé. */
 export const RELANCE_ARRET_MS = 12 * 3600e3;
+/* LE DÉPLOIEMENT QUI TOURNE VRAIMENT (24.10 : l'IA était AVEUGLE depuis le 8.10). Depuis que les robots sont reliés
+   au dépôt, chaque fusion sur `main` crée chez Railway un déploiement « SKIPPED » (rien à reconstruire, aucun journal).
+   Lire seulement le plus récent tombait sur ce déploiement vide : plus aucun capital, « aucune mesure du robot depuis
+   48 h », essais annulés à répétition, relevés D1 sans les robots papier. On prend le plus récent qui a VRAIMENT tourné. */
+export const DEPLOIEMENTS_IGNORES = ['SKIPPED', 'REMOVED', 'REMOVING', 'WAITING', 'NEEDS_APPROVAL', 'QUEUED', 'INITIALIZING', 'BUILDING'];
+export function deploiementActif(edges) {
+  const l = Array.isArray(edges) ? edges : [];
+  for (const e of l) { const n = e && e.node; if (n && n.id && !DEPLOIEMENTS_IGNORES.includes(String(n.status))) return n; }
+  return null;
+}
+
 export function robotArrete(logs, statut) {
   /* 7.10 : testnet Binance en 502 au démarrage → 4 robots papier « CRASHED » (Railway abandonne après
      5 essais en 1 minute). Un robot planté est un robot arrêté : on le relance aussi. */

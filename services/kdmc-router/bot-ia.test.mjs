@@ -171,5 +171,13 @@ rel = ia.robotsARelancer(fl, { bot: 'crypto-bot-p1' }, { 'crypto-bot-p3': T0 - 3
 dit(rel.length === 0, 'pas le robot en essai (l\'arbitre s\'en charge), et pas deux relances en moins de 12 h');
 dit(/ARRÊTÉ par son frein/.test(ia.construirePrompt('', [{ name: 'crypto-bot-p1', equity: 7132, arrete: 'plafond' }], {}, []).prompt), 'l\'IA est prévenue qu\'un robot était arrêté');
 
+console.log("\n=== 11. Le déploiement qui tourne vraiment (l'IA était aveugle depuis le 8.10) ===");
+const ed = (...l) => l.map(([id, status]) => ({ node: { id, status } }));
+dit((ia.deploiementActif(ed(['skip', 'SKIPPED'], ['vrai', 'SUCCESS'], ['vieux', 'REMOVED'])) || {}).id === 'vrai', 'un déploiement SKIPPED (fusion sans rapport, aucun journal) est ignoré : on lit le SUCCESS dessous');
+dit((ia.deploiementActif(ed(['a', 'SKIPPED'], ['b', 'SKIPPED'], ['c', 'SKIPPED'], ['vrai', 'SUCCESS'])) || {}).id === 'vrai', 'même avec 3 SKIPPED d\'affilée (3 fusions de suite)');
+dit((ia.deploiementActif(ed(['neuf', 'BUILDING'], ['vrai', 'SUCCESS'])) || {}).id === 'vrai', 'un nouveau déploiement en construction n\'a pas encore de journal : on garde celui qui tourne');
+dit((ia.deploiementActif(ed(['skip', 'SKIPPED'], ['plante', 'CRASHED'], ['vieux', 'REMOVED'])) || {}).id === 'plante', 'un robot planté reste visible (CRASHED) pour être relancé');
+dit(ia.deploiementActif(ed(['skip', 'SKIPPED'])) === null && ia.deploiementActif([]) === null && ia.deploiementActif(undefined) === null, 'rien qui ait tourné → vide, jamais un faux déploiement');
+
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

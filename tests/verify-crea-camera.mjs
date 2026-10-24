@@ -124,23 +124,34 @@ await page.evaluate(() => {
     return S.apply(this, arguments);
   };
 });
-await page.evaluate(() => window.Cam.startVideo());
-await page.waitForTimeout(1600);
-await page.evaluate(() => window.Cam.stopVideo());
-// on attend que la vidéo soit VRAIMENT écrite (elle l'est en tâche de fond) —
-// une attente fixe rendait ce test instable sans que l'app ait le moindre défaut ;
-// 30 s : sur une machine chargée (barrière complète), l'encodeur peut être lent
-await page.waitForFunction(async (n) => (await window.Mine.list()).length > n, avantV, { timeout: 30000 })
-  .catch(() => {});
-const vid = await page.evaluate(async () => {
-  const l = await window.Mine.list();
-  const v = l.find(o => o.kind === 'video') || l[0];
-  return { n: l.length, kind: v.kind, size: v.blob.size, mr: window.__mr.join(' | '),
-    hint: ((document.querySelector('#cam .hint, #camHint') || {}).textContent || '').slice(0, 90) };
-});
+// 24.10 — le diagnostic a parlé : un rouge sur ~20 = « data 0 | stop » → l'encodeur de Chromium
+// headless n'a produit AUCUN octet en 1,6 s (l'app dit alors, à raison, « Vidéo vide, réessaie »).
+// Ce n'est pas l'app : on refait exactement ce que ferait Kevin (réessayer UNE fois) et on
+// garde le journal des deux essais dans le libellé — un 0 octet deux fois de suite reste rouge.
+let vid = null; const essais = [];
+for (let essai = 1; essai <= 2 && !(vid && vid.n > avantV); essai++) {
+  await page.evaluate(() => { window.__mr = []; });
+  await page.evaluate(() => window.Cam.startVideo());
+  await page.waitForTimeout(1600);
+  await page.evaluate(() => window.Cam.stopVideo());
+  // on attend que la vidéo soit VRAIMENT écrite (elle l'est en tâche de fond) —
+  // une attente fixe rendait ce test instable sans que l'app ait le moindre défaut ;
+  // 30 s : sur une machine chargée (barrière complète), l'encodeur peut être lent
+  await page.waitForFunction(async (n) => (await window.Mine.list()).length > n, avantV, { timeout: 30000 })
+    .catch(() => {});
+  vid = await page.evaluate(async () => {
+    const l = await window.Mine.list();
+    const v = l.find(o => o.kind === 'video') || l[0];
+    return { n: l.length, kind: v.kind, size: v.blob.size, mr: window.__mr.join(' | '),
+      hint: ((document.querySelector('#cam .hint, #camHint') || {}).textContent || '').slice(0, 90) };
+  });
+  essais.push(`essai ${essai} : [${vid.mr}] · « ${vid.hint} »`);
+  if (!(vid.n > avantV)) await page.waitForTimeout(800);
+}
 chk(vid.n > avantV && vid.kind === 'video' && vid.size > 3000,
-  `filmer produit une vraie vidéo rangée (${Math.round(vid.size / 1024)} Ko, galerie ${avantV} → ${vid.n})`
-  + (vid.n > avantV ? '' : ` — DIAGNOSTIC enregistreur : [${vid.mr}] · message affiché : « ${vid.hint} »`));
+  `filmer produit une vraie vidéo rangée (${Math.round(vid.size / 1024)} Ko, galerie ${avantV} → ${vid.n}${essais.length > 1 ? ', au 2e essai' : ''})`
+  + (vid.n > avantV ? '' : ` — DIAGNOSTIC enregistreur : ${essais.join(' ‖ ')}`));
+if (essais.length > 1) console.log('  ℹ️ 1er essai à 0 octet (encodeur headless) : ' + essais[0]);
 
 // 5b) v9.18.2 — une ERREUR d'encodeur ne rend plus le bouton muet pour toujours :
 //     la cause est dite, le bouton est libéré, et ce qui était déjà filmé est rangé.

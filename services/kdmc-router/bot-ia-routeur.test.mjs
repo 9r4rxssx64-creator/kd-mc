@@ -295,5 +295,53 @@ const rlc2 = stA.journal.filter((e) => e.type === 'relance');
 dit(rlc2.length === 1 && rlc2[0].bot === 'crypto-bot-p5' && /planté/.test(rlc2[0].raison) && mutations.some((q) => /serviceInstanceRedeploy\(environmentId: "EN", serviceId: "P5"\)/.test(q)), 'p5 CRASHED → relancé, au journal (« ' + ((rlc2[0] || {}).raison || '').slice(0, 60) + ' »)');
 globalThis.fetch = logsOrig;
 
+console.log('\n=== 15. Fusion sans rapport (déploiement SKIPPED en tête) : l\'IA voit quand même les capitaux ===');
+const fetchAvant15 = globalThis.fetch;
+globalThis.fetch = async (input, init) => {
+  const q = JSON.parse((init && init.body) || '{}').query || '';
+  if (String(typeof input === 'string' ? input : input.url).includes('backboard.railway.com')) {
+    if (/deployments\(/.test(q) && !/deploymentLogs/.test(q)) {
+      const out = parAlias(q, 'deployments', (args) => { const sv = (args.match(/serviceId: "([A-Z0-9]+)"/) || [])[1];
+        return { edges: [{ node: { id: 'D-' + sv + '-SKIP', status: 'SKIPPED', createdAt: '2026-10-24T10:00:00Z' } }, { node: { id: 'D-' + sv, status: 'SUCCESS', createdAt: '2026-10-08T18:12:00Z' } }] }; });
+      return j({ data: out });
+    }
+    if (/deploymentLogs/.test(q)) {
+      const out = parAlias(q, 'deploymentLogs', (args) => { const id = (args.match(/deploymentId: "([^"]+)"/) || [])[1] || ''; if (/-SKIP$/.test(id)) return [];
+        const sv = id.replace(/^D-/, ''); return [{ message: 'BTC/USDT HOLD | prix=60000.00 | equity=' + (EQUITE[sv] || 10000) + '.00 | rien' }]; });
+      return j({ data: out });
+    }
+  }
+  return fetchAvant15(input, init);
+};
+const db15 = db; env.BOT_DB = db15; db15._s.prepare('DELETE FROM releves').run(); db15._s.prepare('DELETE FROM reveils').run();   /* même base que § 9 : ses tables existent déjà (botDbPret) */
+store.set('bot:ia', JSON.stringify({ mode: 'auto', journal: [], enCours: null, derniereDecision: Date.now() }));
+mutations = [];
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+const rel15 = db15._s.prepare("SELECT nom, e FROM releves WHERE nom LIKE 'crypto-bot-p%' ORDER BY nom").all();
+dit(rel15.length === 5 && rel15.every((x) => x.e > 0), 'les 5 robots papier ont leur capital au relevé D1 malgré le déploiement SKIPPED (' + rel15.map((x) => x.nom.slice(-2) + '=' + x.e).join(' ') + ')');
+const ecrireEtat15 = (o) => db15._s.prepare("INSERT OR REPLACE INTO etat (k, v, t) VALUES ('ia', ?1, ?2)").run(JSON.stringify(o), Date.now());
+ecrireEtat15({ mode: 'auto', journal: [], derniereDecision: Date.now() - 100 * 3600e3,
+  enCours: { bot: 'crypto-bot-p2', debut: Date.now() - 20 * 3600e3, btc0: 60000, set: { EMA_SLOW: '30' }, avant: { EMA_SLOW: null },
+    equite0: { 'crypto-bot-p2': 10000, 'crypto-bot-p1': 10000, 'crypto-bot-p3': 10000, 'crypto-bot-p4': 10000, 'crypto-bot-p5': 10000 },
+    depl0: { 'crypto-bot-p2': 'D-ANCIEN', 'crypto-bot-p1': 'D-P1', 'crypto-bot-p3': 'D-P3', 'crypto-bot-p4': 'D-P4', 'crypto-bot-p5': 'D-P5' } } });
+mutations = []; EQUITE.P2 = 9800; EQUITE.P1 = 10100; EQUITE.P3 = 10100; EQUITE.P4 = 10100; EQUITE.P5 = 10100;
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } });
+dit(r.b && r.b.action === 'verdict' && /annuler/.test(r.b.detail) && !/pas encore de mesure|aucune mesure/.test(r.b.detail), 'l\'arbitre rend un vrai verdict (il lit le capital du robot en essai) au lieu de « pas encore de mesure » : ' + ((r.b && r.b.detail) || '').slice(0, 60));
+EQUITE.P2 = 9500; EQUITE.P1 = 10300; EQUITE.P3 = 10100; EQUITE.P4 = 10000; EQUITE.P5 = 10050;
+globalThis.fetch = fetchAvant15;
+
+console.log('\n=== 16. Un réveil qui ne peut pas démarrer le DIT dans le journal D1 ===');
+const lignes16 = () => db15._s.prepare("SELECT action, detail FROM reveils WHERE action IN ('bloque','cle_refusee') ORDER BY id").all();
+const sansRailway = Object.assign({}, env, { RAILWAY_TOKEN: '' });
+const resp16 = await mod.fetch(REQ('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': cleReveil } }), sansRailway, ctxW);
+let l16 = lignes16();
+dit(resp16.status === 200 && l16.length === 1 && l16[0].action === 'bloque' && /RAILWAY_TOKEN/.test(l16[0].detail), 'clé Railway absente → ligne « bloque » au journal (« ' + ((l16[0] || {}).detail || '').slice(0, 50) + ' »)');
+r = await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': 'a'.repeat(64) } });
+l16 = lignes16();
+dit(r.s === 403 && l16.filter((x) => x.action === 'cle_refusee').length === 1 && /KDMC_ADMIN_PIN_SHA256/.test(l16[l16.length - 1].detail), 'clé de réveil refusée → 403 ET une ligne « cle_refusee » qui nomme le secret en cause');
+for (let i = 0; i < 5; i++) await appel('/__bot/ia/tick', { method: 'POST', headers: { 'x-bot-ia-key': 'b'.repeat(64) } });
+dit(lignes16().filter((x) => x.action === 'cle_refusee').length === 1, '6 refus de suite → UNE seule ligne (un inconnu qui frappe ne remplit pas la base)');
+delete env.BOT_DB;
+
 console.log(`\n${ok} OK · ${ko} échec(s)`);
 process.exit(ko ? 1 : 0);

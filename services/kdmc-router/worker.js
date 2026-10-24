@@ -5598,6 +5598,22 @@ async function iaJournaliserReveil(env, origine, res) {
     ]);
   } catch { /* le journal de vérification ne bloque jamais l'IA */ }
 }
+/* Une ligne au journal D1 pour un réveil qui n'a pas pu démarrer (sans appel réseau). `pasPlusDe` : au plus une
+   ligne de ce genre par période (un inconnu qui frappe à la porte ne remplit pas la base). */
+async function iaNoterReveil(env, origine, action, detail, pasPlusDe) {
+  try {
+    const db = await botDb(env); if (!db) return;
+    const t = Date.now();
+    if (pasPlusDe) {
+      const der = await db.prepare('SELECT MAX(t) AS t FROM reveils WHERE action = ?1').bind(action).first();
+      if (der && der.t && t - Number(der.t) < pasPlusDe) return;
+    }
+    await db.batch([
+      db.prepare('INSERT INTO reveils (t, origine, action, detail, sources) VALUES (?1, ?2, ?3, ?4, ?5)').bind(t, origine, action, String(detail || '').slice(0, 600), null),
+      db.prepare('DELETE FROM reveils WHERE id <= (SELECT MAX(id) FROM reveils) - 2000'),
+    ]);
+  } catch { /* le journal ne bloque jamais rien */ }
+}
 async function iaTickJournalise(env, ctx, origine, force) {
   let res;
   try { res = await iaTick(env, ctx, origine, force); } catch (e) { res = { ok: false, action: 'erreur', detail: String((e && e.message) || e).slice(0, 300) }; }
@@ -5654,10 +5670,10 @@ async function botFleetStats(env, ctx, names) {
   const avec = svcs.filter((x) => x.svc);
   const out = new Map(svcs.filter((x) => !x.svc).map((x) => [x.name, { name: x.name, status: 'absent' }]));
   if (avec.length) {
-    const q1 = avec.map((x, i) => `d${i}: deployments(first: 1, input: { projectId: "${ctx.projectId}", serviceId: "${x.svc.id}", environmentId: "${ctx.environmentId}" }) { edges { node { id status createdAt } } }`).join(' ');
+    const q1 = avec.map((x, i) => `d${i}: deployments(first: 8, input: { projectId: "${ctx.projectId}", serviceId: "${x.svc.id}", environmentId: "${ctx.environmentId}" }) { edges { node { id status createdAt } } }`).join(' ');
     const dp = await railGql(env, `query { ${q1} }`);
     const data = (dp.j || {}).data || {};
-    const nodes = avec.map((x, i) => ({ x, node: (((data['d' + i] || { edges: [] }).edges || [])[0] || {}).node }));
+    const nodes = avec.map((x, i) => ({ x, node: IA.deploiementActif((data['d' + i] || { edges: [] }).edges) }));
     const avecNode = nodes.filter((n) => n.node);
     nodes.filter((n) => !n.node).forEach((n) => out.set(n.x.name, { name: n.x.name, svcId: n.x.svc.id, status: 'aucun_deploiement' }));
     if (avecNode.length) {
@@ -6367,10 +6383,14 @@ async function handleBot(request, url, env) {
      temps constant. Sans clé valide → 403, et rien d'autre n'est accessible par ce chemin. */
   if (url.pathname === '/__bot/ia/tick' && request.method === 'POST' && request.headers.get('x-bot-ia-key')) {
     const attendue = await iaCleReveil(env);
-    if (!attendue || !egalTempsConstant(request.headers.get('x-bot-ia-key'), attendue)) return J({ ok: false, reason: 'cle_reveil_invalide' }, null, 403);
-    if (!env.RAILWAY_TOKEN) return J({ ok: false, reason: 'railway_token_absent' });
+    if (!attendue || !egalTempsConstant(request.headers.get('x-bot-ia-key'), attendue)) {
+      await iaNoterReveil(env, 'cron', 'cle_refusee', attendue ? 'la clé de réveil envoyée par le cron ne correspond pas au secret du routeur (KDMC_ADMIN_PIN_SHA256 différent entre kdmc-outlook et kdmc-router)' : 'KDMC_ADMIN_PIN_SHA256 absent du routeur', 6 * 3600e3);
+      return J({ ok: false, reason: 'cle_reveil_invalide' }, null, 403);
+    }
+    /* 24.10 : ces deux sorties ne laissaient AUCUNE trace — le journal D1 se taisait sans dire pourquoi. */
+    if (!env.RAILWAY_TOKEN) { await iaNoterReveil(env, 'cron', 'bloque', 'clé Railway absente du routeur (RAILWAY_TOKEN)'); return J({ ok: false, reason: 'railway_token_absent' }); }
     const ctxR = await botCtx(env);
-    if (ctxR.err) return J({ ok: false, reason: ctxR.err });
+    if (ctxR.err) { await iaNoterReveil(env, 'cron', 'bloque', ctxR.err + ' — ' + String(ctxR.detail || '').slice(0, 300)); return J({ ok: false, reason: ctxR.err }); }
     return J(await iaTickJournalise(env, ctxR, 'cron', false));
   }
   const me = await adminSession(request, env);

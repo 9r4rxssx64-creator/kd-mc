@@ -84,7 +84,7 @@ r = await post('/lyrics', { theme: 'un soir d\'ete', style: 'pop', moteur: 'qwen
 j = await r.json();
 chk(r.status === 200 && /Llama/.test(j.lyrics || ''),
   `4. Qwen muet → un autre moteur prend le relais, la chanson sort quand même (HTTP ${r.status})`);
-chk(/^cloudflare:@cf\/(meta|google|mistralai)\//.test(j.provider || ''),
+chk(/^(cloudflare:@cf\/(meta|google|mistralai)\/|conference:cf-rapide\/)/.test(j.provider || ''),   /* 24.10 : via la conférence, le dernier recours Workers AI se nomme cf-rapide (pas « qwen ») */
   `4. et la réponse dit lequel a réellement répondu (provider=${j.provider})`);
 
 /* --- 5. un moteur inventé par le client est ignoré ------------------------- */

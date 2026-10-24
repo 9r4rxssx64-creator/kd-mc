@@ -15,7 +15,7 @@
       "maj": "2026-10-24",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "24.10 13h50 : pont relu jusqu au 854 (règles 806 Firecrawl, 809 file unique, 852 geste vérifié + lien) ; tâche 26 reprise : robot Lighthouse d Apex corrigé (artefact périmé de mai 2026 → mesure du jour + vrais seuils), garde test:lighthouse-robot"
+      "note": "24.10 21h45 : mission 927 faite (Lighthouse Apex 391 perf 63/97, rouges sourcés → apex-cloud 971) ; pont relu jusqu au 965"
     },
     "cmcteams": {
       "titre": "CMCteams",

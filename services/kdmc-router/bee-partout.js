@@ -98,7 +98,15 @@ export function partout() {
       if (actuelle === 0) return;                                  // déjà libre : on ne bouge pas (pas de saut inutile)
       if (meilleure.cote !== place.cote || meilleure.bas !== place.bas) { place = meilleure; taille(); }
     }
-    function replacer() { choisirPlace(); setTimeout(choisirPlace, 1200); setTimeout(choisirPlace, 3500); setTimeout(choisirPlace, 8000); }
+    function replacer() { choisirPlace(); setTimeout(choisirPlace, 1200); setTimeout(choisirPlace, 3500); setTimeout(choisirPlace, 8000); veiller(); }
+    /* LES CONTRÔLES QUI ARRIVENT TARD (Kevin 24.10, Chrome du Lenovo sur Apex AI : « Aller en bas » et « Installer l'application » apparaissent après la pose et passent sous le rond) : on revérifie toutes les 4 s tant que la page est visible
+       et à chaque défilement ; choisirPlace() ne bouge QUE si le rond recouvre vraiment un contrôle visible (jamais de saut inutile) et ne fait rien quand le chat est ouvert. */
+    var veille = 0, defile = 0;
+    function veiller() {
+      if (veille) return;
+      veille = setInterval(function () { if (!document.hidden) choisirPlace(); }, 4000);
+      window.addEventListener('scroll', function () { clearTimeout(defile); defile = setTimeout(choisirPlace, 350); }, true);
+    }
     function contexte() {
       try {
         cadre.contentWindow.postMessage({ kdmcBee: 1, t: 'contexte', app: String(location.hostname).split('.')[0] || 'domaine', titre: String(document.title || '').slice(0, 120), chemin: String(location.pathname || '/').slice(0, 120) }, location.origin);
@@ -120,7 +128,7 @@ export function partout() {
         if (d.t === 'pret') { cadre.style.display = 'block'; taille(); contexte(); replacer(); }
         else if (d.t === 'ouvert') { ouvert = true; taille(); }
         else if (d.t === 'ferme') { ouvert = false; taille(); choisirPlace(); }
-        else if (d.t === 'cache') { try { cadre.parentNode.removeChild(cadre); } catch (x) { /* déjà parti */ } cadre = null; }
+        else if (d.t === 'cache') { try { cadre.parentNode.removeChild(cadre); } catch (x) { /* déjà parti */ } cadre = null; if (veille) { clearInterval(veille); veille = 0; } }
       });
       window.addEventListener('resize', function () { taille(); choisirPlace(); });
       (document.body || document.documentElement).appendChild(cadre);

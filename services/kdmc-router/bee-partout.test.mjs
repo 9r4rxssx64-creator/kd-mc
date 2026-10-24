@@ -90,6 +90,7 @@ ok(rj.status === 200 && /javascript/.test(rj.headers.get('content-type')) && val
 ok(!/innerHTML|document\.write|eval\(|new Function|<style|setAttribute\('style'|https?:\/\/|\.src\s*=\s*['"]http/.test(js), '2b. autonome : aucun innerHTML, aucun <style>, aucun attribut style, aucune adresse extérieure (les CSP des apps le laissent passer)');
 ok(!/KDMC_SSO_SECRET|secret|PIN_SHA|424242|Bearer [A-Za-z0-9]{12,}/i.test(js), '2c. aucun secret dans le script (il est public ; il ne nomme que la CLÉ de stockage du jeton, jamais sa valeur)');
 ok(/window\.top !== window\.self/.test(js) && /kdmc_k=1/.test(js) && /\/__javis\/qui/.test(js) && /e\.origin !== location\.origin/.test(js) && /e\.source !== cadre\.contentWindow/.test(js), '2d. jamais dans un cadre ; marqueur ; demande « est-ce Kevin ? » ; ne croit QUE les messages de son propre cadre de sa propre origine');
+ok(/function veiller\(\)/.test(js) && /setInterval\(function \(\) \{ if \(!document\.hidden\) choisirPlace\(\); \}, 4000\)/.test(js) && /addEventListener\('scroll'/.test(js), '2d2. les contrôles qui arrivent TARD (bouton « Installer », « Aller en bas ») : le rond revérifie sa place toutes les 4 s (page visible) et à chaque défilement');
 ok(/12 \* 3600e3/.test(js), '2e. un « non » est retenu 12 h : un visiteur ordinaire ne coûte jamais plus d\'une requête par demi-journée');
 
 /* ───────── 3. le cadre ───────── */

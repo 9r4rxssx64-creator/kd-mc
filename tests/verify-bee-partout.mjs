@@ -308,6 +308,13 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
   await dors(1800);
   const c0 = await cadreVisible(n.page);
   chk(c0 && c0.right === 8 && c0.bottom >= 80 && c0.bottom <= 100, `une page sans barre fixe : Bee reste en bas à droite, au-dessus du bouton ✉️ (${JSON.stringify(c0 && { right: c0.right, bottom: c0.bottom })})`);
+  /* UN CONTRÔLE QUI ARRIVE TARD (Kevin 24.10, Apex AI : « Aller en bas » / « Installer l'application » apparaissent après la pose) : un bouton fixe posé PILE sous le rond, 10 s après → Bee s'écarte toute seule (≤ 8 s), sans toucher la page */
+  await dors(9000);                                           // les passes de pose (1,2 s · 3,5 s · 8 s) sont terminées : seule la veille peut encore agir
+  const cb = await cadreVisible(n.page);
+  await n.page.evaluate((b) => { const e = document.createElement('button'); e.id = 'tard'; e.textContent = 'Installer'; e.style.cssText = 'position:fixed;right:8px;bottom:' + b + 'px;width:92px;height:92px;z-index:1'; document.body.appendChild(e); }, cb.bottom);
+  await dors(6500);
+  const ap = await n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), r = document.getElementById('tard').getBoundingClientRect(); return { rec: Math.min(f.right, r.right) - Math.max(f.left, r.left) > 2 && Math.min(f.bottom, r.bottom) - Math.max(f.top, r.top) > 2, f: [Math.round(f.left), Math.round(f.top)] }; });
+  chk(ap.rec === false, `un bouton fixe apparu 9 s après la pose, juste sous le rond : Bee s'écarte seule en moins de 7 s (rond en ${ap.f.join(',')})`);
   await n.ctx.close();
 }
 

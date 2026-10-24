@@ -4,6 +4,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+
 ## CMCteams v9.988 — les 4 derniers refus 401 au démarrage (2026-10-24)
 - Le robot public voyait encore 4 refus sur la v9.987 : les drapeaux `cmc_ecritures_actif` et `cmc_secret_actif` (lus sans jeton), et la file « à envoyer » gardée sur l'appareil (`cmc_pw`, `ax_admin_profile`) rejouée au démarrage. Maintenant : les drapeaux ne se lisent qu'avec un jeton ; la file attend la fin de la connexion (puis part toute seule) ; le flux en direct et sa sonde ne démarrent qu'après (un événement « online » les lançait sans jeton).
 - Modules partagés `nr5e.js` / `heures.js` (copie exacte dans la light) : `regler()` ne lit plus qu'une fois que l'appli dit « connexion finie » (option `pret`) ; CMCteams relit elle-même NR/5e et heures juste après la connexion.

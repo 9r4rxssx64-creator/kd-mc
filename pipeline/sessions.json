@@ -83,8 +83,8 @@
       ],
       "etat": "actif",
       "maj": "2026-09-27",
-      "attend_kevin": "changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…",
-      "attend_session": "crypto-bots : Kevin 8.10 : les MINEURS de la famille entrent dans l'arbre (Ronan, sa petite cousine, les autres enfants) — fiche complète, ajout sans demander",
+      "attend_kevin": "changer le code famille (Outils → Changer le code) — le jeton GitLab glpat-wD6Q… est révoqué (Kevin 24.10.2026)",
+      "attend_session": "studio-crea : Kevin 24.10 : le jeton GitLab glpat-wD6Q… est REVOQUE (« Le jeton GitLab est effacé ») — retire-le de ta ligne attend_kevin (fait dans le registre), reste : code famille",
       "note": "v3.36 livrée : dates entières, pleine page iPhone/Android/ordi, visuel mesuré 126 personnes × 10 appareils × 4 vues sur le VRAI arbre (tout vert, run 36352174569)."
     },
     "lingua": {
@@ -7321,6 +7321,15 @@
       "ts": "2026-10-19 22:36",
       "etat": "clos",
       "reponse": "22.10 : règle reçue et appliquée — elle est écrite dans CLAUDE.md et .claude/rules/pont-lenovo-manipulations.md (garde test:pont-lenovo-regle). Rien à ajouter ; message clos."
+    },
+    {
+      "id": "m237-studio-crea",
+      "de": "studio-crea",
+      "a": "arbre",
+      "sujet": "Kevin 24.10 : le jeton GitLab glpat-wD6Q… est REVOQUE (« Le jeton GitLab est effacé ») — retire-le de ta ligne attend_kevin (fait dans le registre), reste : code famille",
+      "corps": "",
+      "ts": "2026-10-24 14:16",
+      "etat": "ouvert"
     }
   ]
 }

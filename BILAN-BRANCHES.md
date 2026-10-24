@@ -23,7 +23,7 @@
 - ✉️ **Messages ouverts depuis plus de 2 jours sans suivi daté : 0** — aucun.
 - 👤 **Attentes côté Kevin : 4**
   - `domain-kdmc` : accès au compte Cloudflare « 9r4 » (verrouillé derrière GitHub)
-  - `arbre` : changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…
+  - `arbre` : changer le code famille (Outils → Changer le code) — le jeton GitLab glpat-wD6Q… est révoqué (Kevin 24.10.2026)
   - `la-detente` : combien de gilets, et broderie logo seul ou logo + prénoms ?
   - `meta` : compte développeur Apple (99 $/an) : OK ou pas ?
 
@@ -176,7 +176,7 @@
 - **État déclaré** : `termine` · mise à jour le **2026-09-10** (il y a 14 j)
 - **Ce qu'elle touche** : `arbre`
 - **Discussions** : 15 envoyées, 83 reçues · **à lire : m003, m004, m005, m014, m015, m016, m018, m019, m020, m021, m026, m028, m034, m035, m041, m043, m044, m045, m046, m049, m052, m055, m056, m057, m058, m059, m060, m061, m062, m067, m069, m070, m071, m072, m078-video-review, m074, m079-video-review, m081-javis-bee, m083-javis-bee, m085-javis-bee, m086-javis-bee, m087-tor-securite, m088-tor-securite, m090-javis-bee, m091-tor-securite, m092-transfert-ia, m094-transfert-ia, m095-video-review, m073, m099-video-review, m098-cmcteams-pdf, m101-video-review, m102-cmcteams-pdf, m103-cmcteams-pdf, m104-cmcteams-pdf, m105-cmcteams-pdf, m106-cmcteams-pdf, m107-cmcteams-pdf, m108-cmcteams-pdf, m109-cmcteams-pdf, m110-cmcteams-pdf, m111-cmcteams-pdf, m112-cmcteams-pdf, m113-cmcteams-pdf, m114-cmcteams-pdf, m115-cmcteams-pdf, m116-cmcteams-pdf, m117-cmcteams-pdf, m118-cmcteams-pdf, m119-cmcteams-pdf, m120-cmcteams-pdf, m121-cmcteams-pdf, m122-video-review, m123-video-review, m124-transfert-ia, m125-transfert-ia, m126-transfert-ia** · ses signalements encore ouverts : m024, m036, m037, m053, m066-arbre, m065-arbre, m067-arbre, m073-arbre
-- 👤 **Attend Kevin** : changer le code famille (Outils → Changer le code) ; révoquer le jeton GitLab glpat-wD6Q…
+- 👤 **Attend Kevin** : changer le code famille (Outils → Changer le code) — le jeton GitLab glpat-wD6Q… est révoqué (Kevin 24.10.2026)
 - ⏳ **Attend une autre session** : lingua-voix : test:lingua-voix : 26 OK / 0 FAIL — les 5 rouges sont corriges, et il y avait un vrai bug derriere
 - **Dernière note** : Branche supprimee par le menage du 10.09 (levee du ruleset). Travail VERIFIE dans main : PR #3721 fusionnee. Pour repartir : branche neuve depuis main + pipeline.mjs enregistrer.
 - **Verdict** : ⚪ branche supprimée (session close) — normal

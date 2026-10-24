@@ -27,4 +27,11 @@ describe('Gist : plus besoin de recoller le jeton pour savoir', () => {
     expect(boot).toMatch(/const envoi = await apexGithubGistBackup\.pushSiDu\(\)/);
     expect(boot).toMatch(/envoi\.fait[\s\S]*phraseGist\(\)[\s\S]*toast\.(success|warn)/);
   });
+
+  it('389 : plus de texte périmé « Firebase rules require auth », et le lien du jeton ne laisse plus un grand vide', () => {
+    expect(coffre).not.toContain('Firebase rules require auth');
+    const bloc = coffre.slice(coffre.indexOf('const gistNowBtn'), coffre.indexOf("const qrBackupBtn"));
+    expect(bloc).toMatch(/display:block;min-height:44px;line-height:1\.4/);
+    expect(bloc).not.toContain('line-height:44px');
+  });
 });

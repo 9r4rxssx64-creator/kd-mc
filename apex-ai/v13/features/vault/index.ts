@@ -724,7 +724,7 @@ export function render(rootEl: HTMLElement): void {
 
       <section style="margin-top:18px;padding:14px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px">
         <h3 style="margin:0 0 10px;color:var(--ax-gold);font-size:12px;text-transform:uppercase;letter-spacing:0.08em;font-weight:700">💾 Backup & Restore</h3>
-        <p style="margin:0 0 10px;color:rgba(255,255,255,0.7);font-size:12px;line-height:1.5">⚠️ Sauvegarde TES clés AVANT tout reinstall PWA. Firebase rules require auth = ton backup auto Firebase ne marche pas.</p>
+        <p style="margin:0 0 10px;color:rgba(255,255,255,0.7);font-size:12px;line-height:1.5">Sauvegarde tes clés AVANT de réinstaller l'app : le bouton « Sauvegarder sur GitHub maintenant » les envoie chiffrées, et la copie Firebase se fait toute seule dès que tu es connecté.</p>
         <div class="ax-gs-7">
           <button id="ax-vault-export"
             style="padding:10px 16px;background:rgba(106,138,255,0.15);color:var(--ax-blue);border:1px solid rgba(106,138,255,0.3);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px">📥 Exporter (JSON)</button>
@@ -1568,7 +1568,7 @@ function attachHandlers(rootEl: HTMLElement): void {
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             a.textContent = ' → Créer un nouveau jeton (une seule fois, puis le coller dans le chat)';
-            a.style.cssText = 'color:var(--ax-gold);display:inline-block;min-height:44px;line-height:44px';
+            a.style.cssText = 'color:var(--ax-gold);display:block;min-height:44px;line-height:1.4;padding:12px 0';
             gistEtat.appendChild(a);
           }
         } catch (err: unknown) {

@@ -30,6 +30,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Adresses officielles : staging + 29 workers (2026-10-23)
 - `KDMC_ADRESSES.md` : section « Staging » (une seule adresse de test pour Apex Chat, la porte staging.kd-mc.com, pas de « dev ») et tableau des 29 workers du compte principal avec rôle et mesure réelle (racine, /health). `apex-v13-backend` et `apex-vault-svc` n'existent pas.
 
+## Apex AI v13.4.389 (2026-10-24 — Coffre : texte à jour et lien du jeton lisible)
+- Le texte de « Backup & Restore » ne dit plus que la copie Firebase ne marche pas (elle marche, Firebase est reconnecté). Le lien « Créer un nouveau jeton » ne laisse plus un grand vide (bloc, interligne 1,4, 44 px de haut). Preuve : `tests/unit/coffre-gist-bouton.test.ts` 4/4, rouge sans le correctif ; 12 587 tests verts.
+
 ## Apex AI v13.4.388 (2026-10-23 — plus besoin de recoller le jeton GitHub : un bouton du Coffre envoie la sauvegarde et dit le résultat)
 - Kevin a perdu la valeur de son jeton (GitHub ne la remontre jamais). Apex AI l'a déjà : Coffre › 💾 Backup & Restore › « ☁️ Sauvegarder sur GitHub maintenant » envoie la sauvegarde chiffrée et affiche « faite N clé(s) » ou « non faite : cause ». Si GitHub REFUSE le jeton, le lien de création prérempli apparaît ; sinon rien à refaire.
 - Au démarrage, l'envoi quotidien annonce son résultat (bulle) au lieu de rester muet.

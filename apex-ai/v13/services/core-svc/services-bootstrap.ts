@@ -614,9 +614,10 @@ export async function bootstrapServices(uid: string | null): Promise<readonly In
               const envoi = await apexGithubGistBackup.pushSiDu();
               /* 23.10.2026 : Kevin n'a pas à rouvrir son jeton — le résultat s'affiche tout seul, une fois par envoi réel. */
               if (envoi.fait) {
-                const { phraseGist } = await import('../vault/apex-github-gist-backup.js');
+                const { phraseGist, jetonAChanger } = await import('../vault/apex-github-gist-backup.js');
                 const phrase = phraseGist();
-                if (phrase) {
+                /* Une panne passagère de GitHub (« indisponible », réseau) ne fait pas de bruit : l'envoi est retenté dans l'heure ; seul un jeton refusé se dit (pont 831). */
+                if (phrase && (envoi.ok || jetonAChanger(envoi.erreur))) {
                   const { toast } = await import('../../ui/toast.js');
                   if (envoi.ok) toast.success(phrase, { duration: 10000 });
                   else toast.warn(phrase, { duration: 12000 });

@@ -42,7 +42,8 @@ function majBandeau(): void {
   b.id = 'ax-vue-membre-bandeau';
   b.setAttribute('role', 'status');
   b.textContent = '👁 Vue membre simulée : abonné au maximum, achats simulés';
-  b.style.cssText = 'position:fixed;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);z-index:99999;padding:10px 14px;min-height:44px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;text-align:center;font-size:13px;font-weight:600;border-radius:12px;background:#1d3b8b;color:#fff;border:1px solid #6a8aff;pointer-events:none';
+  /* Petite pastille EN HAUT, au milieu, sans toucher aux clics : le bas de l'écran porte la barre d'onglets (Kevin 24.10, pont 831 : une barre bleue en bas la recouvrait). */
+  b.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 2px);left:50%;transform:translateX(-50%);z-index:99999;max-width:min(62vw,420px);padding:3px 10px;box-sizing:border-box;text-align:center;font-size:11px;line-height:1.3;font-weight:600;border-radius:999px;background:#1d3b8b;color:#fff;border:1px solid #6a8aff;pointer-events:none';
   document.body.appendChild(b);
 }
 

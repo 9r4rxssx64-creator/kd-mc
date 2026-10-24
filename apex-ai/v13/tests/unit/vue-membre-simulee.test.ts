@@ -47,4 +47,18 @@ describe('vue membre simulée', () => {
     expect((caisse[1]!.headers as Record<string, string>).authorization).toBe('Bearer T');
     expect((await acheterEnSimulation('../x', f)).ok).toBe(false);
   });
+
+  it('le bandeau est une pastille EN HAUT qui ne capte aucun clic : il ne recouvre plus la barre d’onglets du bas (pont 831)', async () => {
+    await rafraichirVueMembre((async () => rep({ simulation: true, apercu: 'membre' })) as unknown as typeof fetch);
+    const st = document.getElementById('ax-vue-membre-bandeau')!.style;
+    expect(st.top).toContain('safe-area-inset-top');
+    expect(st.bottom).toBe('');
+    expect(st.pointerEvents).toBe('none');
+  });
+
+  it('une panne passagère de GitHub au démarrage ne fait pas de bulle ; un jeton refusé, si', async () => {
+    const fs = await import('node:fs');
+    const boot = fs.readFileSync(`${process.cwd()}/services/core-svc/services-bootstrap.ts`, 'utf8');
+    expect(boot).toMatch(/phrase && \(envoi\.ok \|\| jetonAChanger\(envoi\.erreur\)\)/);
+  });
 });

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.988 — les 4 derniers refus 401 au démarrage (2026-10-24)
+- Le robot public voyait encore 4 refus sur la v9.987 : les drapeaux `cmc_ecritures_actif` et `cmc_secret_actif` (lus sans jeton), et la file « à envoyer » gardée sur l'appareil (`cmc_pw`, `ax_admin_profile`) rejouée au démarrage. Maintenant : les drapeaux ne se lisent qu'avec un jeton ; la file attend la fin de la connexion (puis part toute seule) ; le flux en direct et sa sonde ne démarrent qu'après (un événement « online » les lançait sans jeton).
+- Modules partagés `nr5e.js` / `heures.js` (copie exacte dans la light) : `regler()` ne lit plus qu'une fois que l'appli dit « connexion finie » (option `pret`) ; CMCteams relit elle-même NR/5e et heures juste après la connexion.
+- Garde `test:cmc-ecritures-apres-jeton` rendu réaliste (jeton lent 2,5 s, file pré-posée, événement « online ») : SABOTAGE=1 et 2 rougissent, ils retrouvent exactement les 4 refus du robot. `verify-audit-cmcteams-8-10` mis à jour (la v9.987 l'avait rendu rouge sur main : motif de `fbInit`).
+
 ## CMCteams v9.987 + light v1.113 — plus aucun refus 401 au démarrage (2026-10-23)
 - Mesuré par le Lenovo dans le Chrome de Kevin : 8 refus 401 sur CMCteams, 2 sur la light. Cause CMCteams : 5 écritures (cmc_presence, cmc_chefs_t, cmc_pw, cmc_reg, cmc_events) partaient AVANT le jeton, étaient refusées, comptaient comme panne et ouvraient le disjoncteur (« Firebase temporairement indisponible », écritures en file 60 s) ; elles attendent maintenant la fin de la connexion (reprise de secours à 8 s) et un refus de droits (401/403) ne compte plus comme panne. Cause light : `NR5E.regler` / `HEURES.regler` lisaient avant le jeton ; le démarrage les relit une fois le jeton là.
 - Autre source des refus : `cmcRestoreFromAll` relisait chaque clé manquante sur Firebase SANS jeton (12 refus 401 sur un appareil au stockage vide, cmc_timings, cmc_exchanges, cmc_day_notes, cmc_templates…) : chemin mort depuis que les règles exigent un compte ; supprimé (le flux en direct remet déjà ces clés avec ses filtres).

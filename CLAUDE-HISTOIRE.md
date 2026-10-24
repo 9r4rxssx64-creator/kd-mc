@@ -12450,4 +12450,5 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - **Ce que Kevin fait de lui-même sans qu'on le lui rappelle** (photographier un acte à son arrivée, donner la photo) n'est pas une tâche : on ne l'écrit pas dans ses listes.
 - Réponses courtes : seulement ce qui reste, trié par urgence, avec « Fait / Reste ». Un oui/non se pose en une phrase, sans lien.
 - Écrit aussi dans `.claude/rules/demandes-a-kevin.md` (chargé par toute session) ; garde `test:demandes-a-kevin-regle`.
+- **24.10.2026, précision** : « Laisse les branches de l'arbre s'occuper de l'arbre. » Chaque branche pose elle-même à Kevin les questions et gestes de son terrain ; une autre branche ne les relaie pas (j'avais redemandé les questions de famille de l'arbre et interrogé arbre-cloud : annulé, pont n° 859).
 

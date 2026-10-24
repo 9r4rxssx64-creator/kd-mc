@@ -4,3 +4,4 @@
 - Chaque geste = un lien qui ouvre DIRECTEMENT le bon endroit + 1 à 3 touches + ce qu'il verra quand c'est bon. Lien vérifié ; s'il est derrière sa connexion, le dire.
 - Ce que Kevin fait de lui-même (photographier un acte à l'arrivée et nous le donner) n'est pas une tâche : ne pas l'écrire dans ses listes. Un oui/non se pose en une phrase.
 - Finir par « Fait / Reste » : seulement ce qui reste, trié par urgence. Garde : `npm run test:demandes-a-kevin-regle`.
+- Chaque branche pose ELLE-MÊME à Kevin les questions et gestes de SON terrain (arbre = arbre-cloud / arbre-pc, Apex = apex-cloud…). Je ne relaie pas, je ne reformule pas et je ne réinterroge pas pour elles (Kevin 24.10 : « Laisse les branches de l'arbre s'occuper de l'arbre »).

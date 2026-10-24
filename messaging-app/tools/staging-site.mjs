@@ -18,6 +18,8 @@ const BANDEAU = '<div style="position:fixed;left:0;bottom:0;z-index:2147483647;p
 
 export function adapter(nom, contenu) {
   let t = contenu.split(HOTE_PROD).join(HOTE_STAGING);
+  /* 24.10 (studio-crea, pont 800) : le badge de version est un script de kd-mc.com (/CMCteams/tools/shared/…) : sur workers.dev il répondait 404. Le bandeau STAGING suffit. */
+  if (nom === 'index.html') t = t.replace(/<script>\(function\(\)\{if\(window\.Capacitor\)return;var s=document\.createElement\("script"\);s\.src='\/CMCteams\/tools\/shared\/version-badge-pwa\.js';[\s\S]*?<\/script>/, '');
   if (nom === 'index.html') t = t.replace('</body>', BANDEAU + '</body>');
   if (nom === 'robots.txt') t = 'User-agent: *\nDisallow: /\n';
   return t;

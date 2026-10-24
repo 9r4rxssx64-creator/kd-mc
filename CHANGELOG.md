@@ -30,6 +30,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Adresses officielles : staging + 29 workers (2026-10-23)
 - `KDMC_ADRESSES.md` : section « Staging » (une seule adresse de test pour Apex Chat, la porte staging.kd-mc.com, pas de « dev ») et tableau des 29 workers du compte principal avec rôle et mesure réelle (racine, /health). `apex-v13-backend` et `apex-vault-svc` n'existent pas.
 
+## Staging d'Apex Chat — page sans requête en échec (2026-10-24)
+- La page de test n'appelle plus le badge de version de kd-mc.com (il répondait 404 sur workers.dev). Preuve : `tests/verify-staging-worker.mjs` 31/31, rouge sans le correctif.
+
 ## Apex AI v13.4.390 (2026-10-24 — vue membre simulée : abonné au maximum)
 - Quand Kevin ouvre Apex AI en « 👁 Vue membre », l'app le traite comme abonné au meilleur forfait, affiche un bandeau « Vue membre simulée : abonné au maximum, achats simulés » et sait faire un achat simulé (accès 24 h, 0 €, jamais compté). Les champs ne viennent que du domaine, à l'admin prouvé. Preuve : `tests/unit/vue-membre-simulee.test.ts` 4/4 (rouge sans la règle) ; 12 591 tests verts.
 

@@ -49,6 +49,7 @@ try {
   ok(restes.length === 0, `aucun fichier de la page ne vise l'API de production (${restes.length} reste)`);
   ok(lire(join(dossier, 'index.html')).includes(HOTE_STAGING), "la page vise l'API de staging (aussi dans la politique de sécurité)");
   ok(/STAGING/.test(lire(join(dossier, 'index.html'))), 'bandeau STAGING visible');
+  ok(!lire(join(dossier, 'index.html')).includes('version-badge-pwa'), "aucun appel au badge de version de kd-mc.com (il répondait 404 sur workers.dev, pont 800)");
   ok(/Disallow: \//.test(lire(join(dossier, 'robots.txt'))), 'robots.txt : tout interdit');
   /* discriminant : une page non adaptée est vue comme fautive */
   ok(adapter('lib/x.js', `fetch("https://${HOTE_PROD}/api")`).includes(HOTE_PROD) === false, "l'adaptateur remplace l'adresse (sinon la page de staging écrirait en production)");

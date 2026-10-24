@@ -463,6 +463,35 @@ async function handleArbre(request, url, env) {
     return J({ ok: true, savedAt, count });
   }
 
+  /* ESPACE PRIVÉ DE KEVIN (24.10.2026 : « les informations sensibles, surtout celles des vivants, en privé pour moi ; tout le reste public »).
+     Un tiroir à part (KV `arbre:prive`), JAMAIS dans la seed ni dans /__arbre/seed : ni le code famille ni un compte ordinaire ne le lisent.
+     Lecture et écriture : ADMIN seulement (Face ID ou code admin), même barrière que la publication. Bornes : 800 Ko, 2000 informations. */
+  if (path === '/__arbre/prive') {
+    const me = await adminSession(request, env);
+    if (!me) return J({ ok: false, reason: 'admin_seulement' }, null, 403);
+    if (request.method === 'GET') {
+      let items = [];
+      try { const d = JSON.parse((await env.ACCOUNTS.get('arbre:prive')) || '{}'); items = Array.isArray(d.items) ? d.items : []; } catch { items = []; }
+      return J({ ok: true, items });
+    }
+    if (request.method === 'PUT') {
+      let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'bad_json' }); }
+      if (!Array.isArray(b.items) || b.items.length > 2000) return J({ ok: false, reason: 'items_invalides' });
+      const CERT = ['sur', 'a_verifier', 'douteux'];
+      const txt = (v, n) => String(v == null ? '' : v).slice(0, n);
+      const items = b.items.map((x) => ({
+        id: txt(x && x.id, 60), personne: txt(x && x.personne, 80), texte: txt(x && x.texte, 1500), categorie: txt(x && x.categorie, 40),
+        certitude: CERT.indexOf(x && x.certitude) >= 0 ? x.certitude : 'a_verifier', source: txt(x && x.source, 300), url: /^https?:\/\//i.test(String(x && x.url || '')) ? txt(x.url, 500) : '',
+        date: txt(x && x.date, 20), valide: x && x.valide === true,
+      })).filter((x) => x.id && x.personne && x.texte);
+      const s = JSON.stringify({ items, savedAt: Date.now() });
+      if (s.length > 800 * 1024) return J({ ok: false, reason: 'trop_gros' });
+      await env.ACCOUNTS.put('arbre:prive', s);
+      return J({ ok: true, count: items.length });
+    }
+    return J({ ok: false, reason: 'methode' }, null, 405);
+  }
+
   if (path === '/__arbre/unlock' && request.method === 'POST') {
     const ipHash = await sha256Hex((request.headers.get('CF-Connecting-IP') || '') + '|arbre-ul');
     const wait = await rlBlocked(env, ipHash);

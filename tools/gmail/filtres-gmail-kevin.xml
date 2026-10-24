@@ -1,92 +1,130 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <feed xmlns='http://www.w3.org/2005/Atom' xmlns:apps='http://schemas.google.com/apps/2006'>
-  <title>Filtres Gmail — Kevin DESARZENS (tri auto)</title>
+  <title>Filtres Gmail — Kevin DESARZENS (tri auto, généré par tools/gmail/generer-tri.mjs)</title>
 
-  <!-- 🔐 Sécurité & Comptes — LABEL + reste en réception (codes de connexion à voir vite) -->
+  <!-- 🔐 Sécurité & Comptes — libellé + reste en réception (1) -->
   <entry>
     <category term='filter'></category>
-    <title>Securite</title>
+    <title>Securite 1</title>
     <content></content>
-    <apps:property name='from' value='accounts.google.com OR notify.cloudflare.com OR idp.vonage.com OR nordaccount.com OR obsidian.md OR noreply-findmydevice@google.com OR google-noreply@google.com OR subito.it'/>
+    <apps:property name='from' value='accounts.google.com OR giphy.com OR google-noreply@google.com OR idp.vonage.com OR nasa.gov OR nordaccount.com OR noreply-findmydevice@google.com OR notify.cloudflare.com OR obsidian.md OR subito.it'/>
     <apps:property name='label' value='🔐 Sécurité &amp; Comptes'/>
     <apps:property name='sizeOperator' value='s_sl'/>
     <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
-  <!-- 🏦 Banque & Finance — LABEL + reste en réception (important) -->
+  <!-- 🏦 Banque & Finance — libellé + reste en réception (1) -->
   <entry>
     <category term='filter'></category>
-    <title>Banque</title>
+    <title>Banque 1</title>
     <content></content>
-    <apps:property name='from' value='paypal.fr OR stripe.com OR link.com'/>
+    <apps:property name='from' value='communications.paypal.com OR link.com OR paypal.fr OR stripe.com'/>
     <apps:property name='label' value='🏦 Banque &amp; Finance'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
-  <!-- 💳 Factures & Paiements — LABEL + reste en réception (important) -->
+  <!-- 💳 Factures & Paiements — libellé + reste en réception (1) -->
   <entry>
     <category term='filter'></category>
-    <title>Factures</title>
+    <title>Factures 1</title>
     <content></content>
-    <apps:property name='from' value='invoice+statements@mail.anthropic.com OR payments-noreply@google.com'/>
+    <apps:property name='from' value='invoice+statements@mail.anthropic.com OR payments-noreply@google.com OR yellowglass.fr'/>
     <apps:property name='label' value='💳 Factures &amp; Paiements'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
-  <!-- 📑 Administratif & Impôts — LABEL + reste en réception (perso/important) -->
+  <!-- 📑 Administratif & Impôts — libellé + reste en réception (1) -->
   <entry>
     <category term='filter'></category>
-    <title>Administratif</title>
+    <title>Administratif 1</title>
     <content></content>
-    <apps:property name='from' value='support@mail.anthropic.com OR feedback@anthropic.com OR feedback+noreply@anthropic.com OR kevind@monaco.mc OR sbm.mc'/>
+    <apps:property name='from' value='feedback+noreply@anthropic.com OR feedback@anthropic.com OR reseau-franceparebrise.fr OR sbm.mc OR speedparebrise13.fr OR support@mail.anthropic.com'/>
     <apps:property name='label' value='📑 Administratif &amp; Impôts'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
-  <!-- 🛍️ Boutiques Printify — LABEL + reste en réception (business) -->
+  <!-- 🛍️ Boutiques Printify — libellé + reste en réception (1) -->
   <entry>
     <category term='filter'></category>
-    <title>Boutiques</title>
+    <title>Printify 1</title>
     <content></content>
-    <apps:property name='from' value='tpop.com OR printify.com'/>
+    <apps:property name='from' value='marketing.printify.com OR printify.com OR tpop.com'/>
     <apps:property name='label' value='🛍️ Boutiques Printify'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
-  <!-- 🛠️ Outils & SaaS — LABEL + ARCHIVE auto (sort de la réception) -->
+  <!-- 🛠️ Outils & SaaS — libellé + archivé (1) -->
   <entry>
     <category term='filter'></category>
-    <title>Outils</title>
+    <title>Outils 1</title>
     <content></content>
-    <apps:property name='from' value='tm.openai.com OR email.openai.com OR email.claude.com OR x.ai OR emails.mistral.ai OR googleaistudio-noreply@google.com OR mail.perplexity.ai OR sentry.io OR getsentry.com OR netlify.com OR lovable.dev OR eraser.io OR jam.dev OR mixpanel.com OR airtable.com OR surveymonkey.com OR em.surveymonkey.com OR t.outbound.surveymonkey.com OR notify.vonage.com OR finnhub.io OR adobe.com OR synthesize.bio OR myclaw.ai OR linear.app OR pexels.com OR openlegi.fr OR datasite.com OR wix.com OR googledev-noreply@google.com OR firebase-no-reply@google.com OR firebase-noreply@google.com OR googleplay-noreply@google.com'/>
+    <apps:property name='from' value='adobe.com OR airtable.com OR asana.com OR cdata.com OR cerebras.ai OR community.pexels.com OR datasite.com OR em.surveymonkey.com OR em1.cloudflare.com OR email.anthropic.com OR email.claude.com OR email.openai.com OR emails.mistral.ai OR emails.wix.com OR eraser.io OR fathom.video OR finnhub.io OR firebase-no-reply@google.com OR firebase-noreply@google.com OR getsentry.com OR googleaistudio-noreply@google.com OR googledev-noreply@google.com OR googleplay-noreply@google.com OR groq.co OR jam.dev OR linear.app OR lovable.dev OR mail.manus.im OR mail.perplexity.ai OR md.getsentry.com OR metricool.com OR mg.gitlab.com OR mixpanel.com OR moonshot.kimi.ai OR myclaw.ai OR netlify.com OR news.manus.im OR notify.vonage.com OR openlegi.fr OR pexels.com OR platform.datasite.com OR sc.mail.deepseek.com OR send.synthesize.bio OR sentry.io OR surveymonkey.com OR synthesize.bio'/>
     <apps:property name='label' value='🛠️ Outils &amp; SaaS'/>
     <apps:property name='shouldArchive' value='true'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
-  <!-- 📰 Newsletters & Veille — LABEL + ARCHIVE auto -->
+  <!-- 🛠️ Outils & SaaS — libellé + archivé (2) -->
   <entry>
     <category term='filter'></category>
-    <title>Newsletters</title>
+    <title>Outils 2</title>
     <content></content>
-    <apps:property name='from' value='mail.consensus.app'/>
+    <apps:property name='from' value='t.outbound.surveymonkey.com OR tm.openai.com OR updates.linear.app OR wix.com OR x.ai'/>
+    <apps:property name='label' value='🛠️ Outils &amp; SaaS'/>
+    <apps:property name='shouldArchive' value='true'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
+  </entry>
+
+  <!-- 📰 Newsletters & Veille — libellé + archivé (1) -->
+  <entry>
+    <category term='filter'></category>
+    <title>Newsletters 1</title>
+    <content></content>
+    <apps:property name='from' value='aisecret.us OR mail.consensus.app OR motionapp.com OR send.zapier.com'/>
     <apps:property name='label' value='📰 Newsletters &amp; Veille'/>
     <apps:property name='shouldArchive' value='true'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
-  <!-- 📣 Promotions & Pubs — LABEL + ARCHIVE auto -->
+  <!-- 📣 Promotions & Pubs — libellé + archivé (1) -->
   <entry>
     <category term='filter'></category>
-    <title>Promotions</title>
+    <title>Promotions 1</title>
     <content></content>
-    <apps:property name='from' value='wps.com OR superhuman.com OR make.com'/>
+    <apps:property name='from' value='apollo.io OR cerebras.net OR era.app OR exa.ai OR hello.webflow.com OR mail.apollo.io OR mail.gitlab.com OR make.com OR news.paypal.com OR superhuman.com OR supermetrics.com OR tavily.com OR wps.com'/>
     <apps:property name='label' value='📣 Promotions &amp; Pubs'/>
     <apps:property name='shouldArchive' value='true'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
-  <!-- 📱 Réseaux sociaux — LABEL + ARCHIVE auto -->
+  <!-- 📱 Réseaux sociaux — libellé + archivé (1) -->
   <entry>
     <category term='filter'></category>
-    <title>Reseaux sociaux</title>
+    <title>Reseaux 1</title>
     <content></content>
-    <apps:property name='from' value='google-maps-noreply@google.com'/>
+    <apps:property name='from' value='google-maps-noreply@google.com OR youtube.com'/>
     <apps:property name='label' value='📱 Réseaux sociaux'/>
     <apps:property name='shouldArchive' value='true'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
   </entry>
 
+  <!-- 🌉 Pont — par le sujet -->
+  <entry>
+    <category term='filter'></category>
+    <title>Pont</title>
+    <content></content>
+    <apps:property name='subject' value='[PONT→CLOUD]'/>
+    <apps:property name='label' value='🌉 Pont'/>
+    <apps:property name='sizeOperator' value='s_sl'/>
+    <apps:property name='sizeUnit' value='s_smb'/>
+  </entry>
 </feed>

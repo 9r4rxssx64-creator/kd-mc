@@ -1,0 +1,178 @@
+{
+  "_lisez_moi": "Source unique du tri Gmail de Kevin. Domaines ou adresses d entreprises seulement (dépôt public) — jamais une personne. Après modification : node tools/gmail/generer-tri.mjs",
+  "libelles": {
+    "🔐 Sécurité & Comptes": {
+      "titre": "Securite",
+      "archiver": false
+    },
+    "🏦 Banque & Finance": {
+      "titre": "Banque",
+      "archiver": false
+    },
+    "💳 Factures & Paiements": {
+      "titre": "Factures",
+      "archiver": false
+    },
+    "📑 Administratif & Impôts": {
+      "titre": "Administratif",
+      "archiver": false
+    },
+    "🛍️ Boutiques Printify": {
+      "titre": "Printify",
+      "archiver": false
+    },
+    "🛠️ Outils & SaaS": {
+      "titre": "Outils",
+      "archiver": true
+    },
+    "📰 Newsletters & Veille": {
+      "titre": "Newsletters",
+      "archiver": true
+    },
+    "📣 Promotions & Pubs": {
+      "titre": "Promotions",
+      "archiver": true
+    },
+    "📱 Réseaux sociaux": {
+      "titre": "Reseaux",
+      "archiver": true
+    }
+  },
+  "sujets": [
+    {
+      "titre": "Pont",
+      "sujet": "[PONT→CLOUD]",
+      "libelle": "🌉 Pont"
+    }
+  ],
+  "secours": [
+    {
+      "recherche": "subject:(code OR connexion OR \"sign-in\" OR \"sign in\" OR verification OR vérification OR \"mot de passe\" OR password OR sécurité OR security OR \"new login\" OR \"nouvel appareil\")",
+      "libelle": "🔐 Sécurité & Comptes",
+      "archiver": false
+    },
+    {
+      "recherche": "subject:(facture OR invoice OR receipt OR reçu OR paiement OR payment)",
+      "libelle": "💳 Factures & Paiements",
+      "archiver": false
+    },
+    {
+      "recherche": "category:promotions",
+      "libelle": "📣 Promotions & Pubs",
+      "archiver": true
+    },
+    {
+      "recherche": "category:social",
+      "libelle": "📱 Réseaux sociaux",
+      "archiver": false
+    },
+    {
+      "recherche": "category:forums",
+      "libelle": "📰 Newsletters & Veille",
+      "archiver": false
+    },
+    {
+      "recherche": "category:updates",
+      "libelle": "🛠️ Outils & SaaS",
+      "archiver": false
+    }
+  ],
+  "expediteurs": {
+    "accounts.google.com": "🔐 Sécurité & Comptes",
+    "adobe.com": "🛠️ Outils & SaaS",
+    "airtable.com": "🛠️ Outils & SaaS",
+    "aisecret.us": "📰 Newsletters & Veille",
+    "apollo.io": "📣 Promotions & Pubs",
+    "asana.com": "🛠️ Outils & SaaS",
+    "cdata.com": "🛠️ Outils & SaaS",
+    "cerebras.ai": "🛠️ Outils & SaaS",
+    "cerebras.net": "📣 Promotions & Pubs",
+    "communications.paypal.com": "🏦 Banque & Finance",
+    "community.pexels.com": "🛠️ Outils & SaaS",
+    "datasite.com": "🛠️ Outils & SaaS",
+    "em.surveymonkey.com": "🛠️ Outils & SaaS",
+    "em1.cloudflare.com": "🛠️ Outils & SaaS",
+    "email.anthropic.com": "🛠️ Outils & SaaS",
+    "email.claude.com": "🛠️ Outils & SaaS",
+    "email.openai.com": "🛠️ Outils & SaaS",
+    "emails.mistral.ai": "🛠️ Outils & SaaS",
+    "emails.wix.com": "🛠️ Outils & SaaS",
+    "era.app": "📣 Promotions & Pubs",
+    "eraser.io": "🛠️ Outils & SaaS",
+    "exa.ai": "📣 Promotions & Pubs",
+    "fathom.video": "🛠️ Outils & SaaS",
+    "feedback@anthropic.com": "📑 Administratif & Impôts",
+    "feedback+noreply@anthropic.com": "📑 Administratif & Impôts",
+    "finnhub.io": "🛠️ Outils & SaaS",
+    "firebase-no-reply@google.com": "🛠️ Outils & SaaS",
+    "firebase-noreply@google.com": "🛠️ Outils & SaaS",
+    "getsentry.com": "🛠️ Outils & SaaS",
+    "giphy.com": "🔐 Sécurité & Comptes",
+    "google-maps-noreply@google.com": "📱 Réseaux sociaux",
+    "google-noreply@google.com": "🔐 Sécurité & Comptes",
+    "googleaistudio-noreply@google.com": "🛠️ Outils & SaaS",
+    "googledev-noreply@google.com": "🛠️ Outils & SaaS",
+    "googleplay-noreply@google.com": "🛠️ Outils & SaaS",
+    "groq.co": "🛠️ Outils & SaaS",
+    "hello.webflow.com": "📣 Promotions & Pubs",
+    "idp.vonage.com": "🔐 Sécurité & Comptes",
+    "invoice+statements@mail.anthropic.com": "💳 Factures & Paiements",
+    "jam.dev": "🛠️ Outils & SaaS",
+    "linear.app": "🛠️ Outils & SaaS",
+    "link.com": "🏦 Banque & Finance",
+    "lovable.dev": "🛠️ Outils & SaaS",
+    "mail.apollo.io": "📣 Promotions & Pubs",
+    "mail.consensus.app": "📰 Newsletters & Veille",
+    "mail.gitlab.com": "📣 Promotions & Pubs",
+    "mail.manus.im": "🛠️ Outils & SaaS",
+    "mail.perplexity.ai": "🛠️ Outils & SaaS",
+    "make.com": "📣 Promotions & Pubs",
+    "marketing.printify.com": "🛍️ Boutiques Printify",
+    "md.getsentry.com": "🛠️ Outils & SaaS",
+    "metricool.com": "🛠️ Outils & SaaS",
+    "mg.gitlab.com": "🛠️ Outils & SaaS",
+    "mixpanel.com": "🛠️ Outils & SaaS",
+    "moonshot.kimi.ai": "🛠️ Outils & SaaS",
+    "motionapp.com": "📰 Newsletters & Veille",
+    "myclaw.ai": "🛠️ Outils & SaaS",
+    "nasa.gov": "🔐 Sécurité & Comptes",
+    "netlify.com": "🛠️ Outils & SaaS",
+    "news.manus.im": "🛠️ Outils & SaaS",
+    "news.paypal.com": "📣 Promotions & Pubs",
+    "nordaccount.com": "🔐 Sécurité & Comptes",
+    "noreply-findmydevice@google.com": "🔐 Sécurité & Comptes",
+    "notify.cloudflare.com": "🔐 Sécurité & Comptes",
+    "notify.vonage.com": "🛠️ Outils & SaaS",
+    "obsidian.md": "🔐 Sécurité & Comptes",
+    "openlegi.fr": "🛠️ Outils & SaaS",
+    "payments-noreply@google.com": "💳 Factures & Paiements",
+    "paypal.fr": "🏦 Banque & Finance",
+    "pexels.com": "🛠️ Outils & SaaS",
+    "platform.datasite.com": "🛠️ Outils & SaaS",
+    "printify.com": "🛍️ Boutiques Printify",
+    "reseau-franceparebrise.fr": "📑 Administratif & Impôts",
+    "sbm.mc": "📑 Administratif & Impôts",
+    "sc.mail.deepseek.com": "🛠️ Outils & SaaS",
+    "send.synthesize.bio": "🛠️ Outils & SaaS",
+    "send.zapier.com": "📰 Newsletters & Veille",
+    "sentry.io": "🛠️ Outils & SaaS",
+    "speedparebrise13.fr": "📑 Administratif & Impôts",
+    "stripe.com": "🏦 Banque & Finance",
+    "subito.it": "🔐 Sécurité & Comptes",
+    "superhuman.com": "📣 Promotions & Pubs",
+    "supermetrics.com": "📣 Promotions & Pubs",
+    "support@mail.anthropic.com": "📑 Administratif & Impôts",
+    "surveymonkey.com": "🛠️ Outils & SaaS",
+    "synthesize.bio": "🛠️ Outils & SaaS",
+    "t.outbound.surveymonkey.com": "🛠️ Outils & SaaS",
+    "tavily.com": "📣 Promotions & Pubs",
+    "tm.openai.com": "🛠️ Outils & SaaS",
+    "tpop.com": "🛍️ Boutiques Printify",
+    "updates.linear.app": "🛠️ Outils & SaaS",
+    "wix.com": "🛠️ Outils & SaaS",
+    "wps.com": "📣 Promotions & Pubs",
+    "x.ai": "🛠️ Outils & SaaS",
+    "yellowglass.fr": "💳 Factures & Paiements",
+    "youtube.com": "📱 Réseaux sociaux"
+  }
+}

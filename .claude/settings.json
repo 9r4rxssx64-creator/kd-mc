@@ -105,7 +105,26 @@
       "mcp__GitHub",
       "mcp__Claude_Code_Remote",
       "mcp__Google_Drive",
-      "mcp__Google_Calendar"
+      "mcp__Google_Calendar",
+      "Agent",
+      "Skill",
+      "ToolSearch",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskList",
+      "TaskGet",
+      "Monitor",
+      "SendMessage",
+      "ListAgents",
+      "ReadNotifications",
+      "SendUserFile",
+      "Artifact",
+      "ArtifactData",
+      "ArtifactComments",
+      "mcp__Google_Sheets",
+      "mcp__Google_Docs",
+      "mcp__Context7",
+      "mcp__Malwarebytes"
     ]
   }
 }

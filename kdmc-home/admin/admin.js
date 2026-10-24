@@ -62,7 +62,7 @@
       + card('💬', 'Apex Chat — Admin', 'Users, connexions, sentinelles', 'https://apex-chat.kd-mc.com/')
       + card('📊', 'Boutiques — Dashboard', 'Commandes, produits, finances', 'https://dashboard.kd-mc.com/')
       + card('💶', 'OpenAI — ce qui consomme', 'Chiffres reels + ecouter la voix gratuite', '/admin/openai.html')
-      + card('🩺', 'Santé des workers', 'État live de tous les services', 'https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/health/workers-status.json')
+      + card('🩺', 'Santé des workers', 'État live de tous les services', 'https://kdmc-uptime.9r4rxssx64.workers.dev/')
       + '</div>'
       /* Deux pages d'administration du domaine n'etaient citees NULLE PART dans l'admin :
          on y arrivait seulement par le portail. Une fonction qu'on ne voit pas n'existe

@@ -32,7 +32,7 @@
     'https://shops.kd-mc.com/la-detente/studio.html': 'commerce', 'https://chez-lolo.kd-mc.com/studio.html': 'commerce',
     'https://admin.kd-mc.com/': 'personnes',
     'https://apex-ai.kd-mc.com/': 'ia', 'https://javis.kd-mc.com/': 'ia', 'https://bot.kd-mc.com/': 'ia',
-    'https://github.com/9r4rxssx64-creator/cmcteams/blob/main/tools/health/workers-status.json': 'ia',
+    'https://kdmc-uptime.9r4rxssx64.workers.dev/': 'ia',
     '/admin/openai.html': 'couts',
     '/liens/': 'reglages', 'https://autorisations.kd-mc.com/': 'reglages', 'https://coffre.kd-mc.com/': 'reglages',
     /* 23.10 : les 7 tuiles ajoutées (« qu'il ne m'en manque pas ») */
@@ -224,7 +224,7 @@
     C('messages').innerHTML = '<div id="tb-messages"><p class="info">Lecture de la boîte…</p></div><button class="grosbtn" id="tb-boite" type="button">📬 Ouvrir la boîte — lire et répondre</button><div class="grid" id="tuiles-messages"></div>';   /* 23.10 : sans cette grille, la tuile « Messages employés » disparaissait (Lenovo, pont 589) */
     C('commerce').innerHTML = '<div id="commerce-app"></div><h2 class="cat">🔗 Mes pages de vente & boutiques</h2><div class="grid" id="tuiles-commerce"></div>';
     C('apps').innerHTML = '<p class="info" id="tb-versions-info">Toutes les apps du domaine. La version affichée est celle du dépôt.</p><div class="grid" id="tuiles-apps"></div>';
-    C('ia').innerHTML = '<p class="info lien-info" id="tb-sante" data-va="https://github.com/9r4rxssx64-creator/cmcteams/actions">Santé des services : lecture…</p><div class="grid" id="tuiles-ia"></div>';
+    C('ia').innerHTML = '<p class="info lien-info" id="tb-sante" data-va="https://kdmc-uptime.9r4rxssx64.workers.dev/">Santé des services : lecture…</p><div class="grid" id="tuiles-ia"></div>';
     C('couts').innerHTML = '<p class="info lien-info" id="tb-openai" data-va="/admin/openai.html">OpenAI : lecture…</p><p class="info">Règle : tout reste <b>gratuit</b> ; rien de payant ne s\'allume sans ton accord.</p><div class="grid" id="tuiles-couts"></div>';
     C('reglages').innerHTML = '<div class="grid" id="tuiles-reglages"></div>';
   }
@@ -468,6 +468,7 @@
     q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var f = r.querySelector('button'); if (f) f.click(); } });
   }
 
+  var SANTE = 'https://kdmc-uptime.9r4rxssx64.workers.dev/';
   function lireJson(url) { return fetch(url, { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }); }
 
   function lireAnnexes() {
@@ -481,13 +482,17 @@
   }
   /* les chiffres seuls (santé des services, coûts OpenAI) : relus sans toucher aux tuiles ni à la position dans la page */
   function lireChiffres() {
-    lireJson('/CMCteams/tools/health/workers-status.json').then(function (j) {
+    /* 24.10 (pont 970) : l'ancien fichier workers-status.json n'était plus relevé depuis le 14.08 et n'était pas servi (404 chez Kevin).
+       Source EN DIRECT : la surveillance kdmc-uptime (34 services, passage toutes les 2 h par le cron de kdmc-outlook ; sans clé elle ne
+       donne que des NOMBRES — total, en ligne, en panne — jamais la liste des services). */
+    fetch(SANTE, { cache: 'no-store', credentials: 'omit' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (j) {
       var el = document.getElementById('tb-sante'); if (!el) return;
-      if (!j || !j.workers) { el.textContent = 'Santé des services : relevé indisponible pour l\'instant.'; return; }
-      var w = Object.keys(j.workers), up = w.filter(function (k) { return j.workers[k].up; }).length;
-      var age = j.checked_at ? Math.floor((Date.now() - new Date(j.checked_at).getTime()) / 864e5) : null;
-      el.textContent = (up === w.length && !(age > 2) ? '✅ ' : '⚠️ ') + up + '/' + w.length + ' services en ligne'
-        + (j.checked_at ? ' · relevé le ' + new Date(j.checked_at).toLocaleDateString('fr-FR') : '') + (age != null && age > 2 ? ' — ⚠️ relevé ancien (' + age + ' j)' : '');
+      if (!j || !j.ok || typeof j.total !== 'number') { el.textContent = 'Santé des services : relevé indisponible pour l\'instant.'; return; }
+      var heures = j.ts ? (Date.now() - new Date(j.ts).getTime()) / 36e5 : null, vieux = heures != null && heures > 3;
+      el.textContent = (j.en_panne === 0 && !vieux ? '✅ ' : '⚠️ ') + j.en_ligne + '/' + j.total + ' services en ligne'
+        + (j.en_panne ? ' · ' + j.en_panne + ' en panne' : '')
+        + (j.ts ? ' · relevé à ' + new Date(j.ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '')
+        + (vieux ? ' — ⚠️ relevé ancien (' + Math.floor(heures) + ' h)' : '');
     });
     fetch('/__lingua/depense', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
       var el = document.getElementById('tb-openai'); if (!el) return;

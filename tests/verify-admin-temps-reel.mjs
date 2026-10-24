@@ -8,7 +8,9 @@
  *  T3. la relecture ne redessine pas le bloc Commerce pendant que Kevin y écrit (champ gardé).
  *  T4. « Santé des services » est relue (5 min) sans ramener la page en haut.
  *  T5. le bouton « 👑 Vue admin » ne recouvre pas le badge de version (iPhone app installée, 390×844).
- * SABOTAGE : `ADMIN_DIR=<ancien dossier admin>` → T2 rouge ; `INSTALLER=<ancien installer-client.js>` → T5 rouge.
+ *  T6. (24.10, pont 970 : 401 de la caisse chez Kevin) sans laissez-passer rangé, la page demande le pass au domaine et l'envoie à la caisse.
+ *  T7. (24.10, pont 970 : 404 workers-status.json) « Santé des services » lit la surveillance en direct (kdmc-uptime) et en affiche les nombres.
+ * SABOTAGE : `ADMIN_DIR=<ancien dossier admin>` → T2, T6, T7 rouges ; `INSTALLER=<ancien installer-client.js>` → T5 rouge.
  * Lancer : npm run test:admin-temps-reel
  */
 import { createServer } from 'node:http';
@@ -22,7 +24,7 @@ const OUTILS = new URL('../tools/', import.meta.url).pathname;
 const { INSTALLER_JS } = await import(process.env.INSTALLER ? 'file://' + process.env.INSTALLER : '../services/kdmc-router/installer-client.js');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
-const etat = { livrer: 0, nonLus: 0, sante: 0 };
+const etat = { livrer: 0, nonLus: 0, sante: 0, authCaisse: [] };
 const srv = createServer(async (req, res) => {
   const url = req.url.split('?')[0];
   try {
@@ -30,11 +32,7 @@ const srv = createServer(async (req, res) => {
     if (url === '/kdmc-sso.js') { res.writeHead(200, { 'content-type': 'text/javascript' });   /* session admin vérifiée simulée (le domaine est testé ailleurs) */
       return res.end("window.kdmcSSO={whoami:function(){return Promise.resolve({uid:'kdmc_admin',name:'Kevin',admin:true,verified:true});},token:function(){return '';},consumeHashToken:function(){}};"); }
     if (url === '/__installer/installer.js') { res.writeHead(200, { 'content-type': 'text/javascript' }); return res.end(INSTALLER_JS); }
-    if (url === '/CMCteams/tools/health/workers-status.json') {
-      etat.sante++;
-      res.writeHead(200, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify({ checked_at: new Date().toISOString(), workers: { a: { up: true }, b: { up: etat.sante > 1 } } }));
-    }
+    if (url === '/__sso/pass') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end('{"ok":true,"token":"pass-de-test"}'); }
     let f;
     if (url.startsWith('/CMCteams/tools/')) f = join(OUTILS, normalize(url.slice('/CMCteams/tools/'.length)));
     else if (url.startsWith('/admin/')) f = join(ADMIN, normalize(url.slice('/admin/'.length) || 'index.html'));
@@ -59,12 +57,15 @@ const erreurs = []; p.on('pageerror', e => erreurs.push(String(e)));
 if (process.env.DEBUG) { p.on('console', m => console.log('console:', m.text().slice(0, 200))); p.on('response', r => { if (r.status() >= 400) console.log('http', r.status(), r.url()); }); }
 
 /* La caisse (autre domaine) : ses chiffres viennent de `etat`, comme la vraie qui change quand une commande arrive. */
-await p.route('https://kdmc-vente.9r4rxssx64.workers.dev/**', r => r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+/* La surveillance (autre domaine) : nombres seulement, comme la vraie sans clé. */
+await p.route('https://kdmc-uptime.9r4rxssx64.workers.dev/**', r => { etat.sante++; return r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
+  body: JSON.stringify({ ok: true, ts: new Date().toISOString(), total: 34, en_ligne: 34, en_panne: 0 }) }); });
+await p.route('https://kdmc-vente.9r4rxssx64.workers.dev/**', r => { etat.authCaisse.push(r.request().headers().authorization || ''); return r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' },
   body: JSON.stringify({ ok: true, quand: new Date().toISOString(), admin: 'Kevin', produits: [], workflows: [],
     ventes: { n: 0, ca: 0, parProduit: {}, parSource: {}, parMois: {}, dernieres: [], tronque: false },
     file: { n: etat.livrer, demandes: Array.from({ length: etat.livrer }, (_, i) => ({ id: 'd' + i, produit: 'kit-ia', email: 'x@x.fr', methode: 'revolut', etat: 'en_attente', ts_iso: new Date().toISOString() })) },
     club: { actifs: 0, expirent14j: 0, relances: 0, abonnes_total: 0 }, contenu: {}, base_detail: null,
-    config: { paypal_webhook: false, paypal_recherche: false, email_code: true, contenu_prive: true, commandes: false } }) }));
+    config: { paypal_webhook: false, paypal_recherche: false, email_code: true, contenu_prive: true, commandes: false } }) }); });
 await p.route('**/__lingua/depense', r => r.fulfill({ contentType: 'application/json', body: '{"ok":true,"totalVoix":0,"totalAppels":0}' }));
 /* Boîte simulée (le domaine est testé ailleurs) ; app installée = badge de version tout en bas. */
 await p.addInitScript(() => {
@@ -79,6 +80,9 @@ await p.clock.runFor(3000);
 if (process.env.DEBUG) console.log('APP:', (await p.evaluate(() => document.getElementById('app').innerHTML)).slice(0, 600));
 const cpt = id => p.evaluate(i => { const e = document.querySelector('[data-compteur="' + i + '"] .n'); return e ? e.textContent : null; }, id);
 
+ok('T6. sans pass rangé : la caisse reçoit le laissez-passer demandé au domaine', etat.authCaisse.length > 0 && etat.authCaisse.every(a => a === 'Bearer pass-de-test'), JSON.stringify(etat.authCaisse.slice(0, 3)));
+const sante = await p.evaluate(() => { const e = document.getElementById('tb-sante'); return e ? e.textContent : ''; });
+ok('T7. « Santé des services » = la surveillance en direct (34/34)', /34\/34 services en ligne/.test(sante) && etat.sante >= 1, sante);
 ok('au départ : Messages non lus = 0, Ventes à livrer = 0', (await cpt('messages')) === '0' && (await cpt('livrer')) === '0', (await cpt('messages')) + ' / ' + (await cpt('livrer')));
 
 await p.evaluate(() => { window.__nonLus = 3; });

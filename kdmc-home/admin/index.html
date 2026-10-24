@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<!-- connect-src : la caisse (kdmc-vente) pour la section Commerce, comme commerce.html. media-src : rien (pas de son ici). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://kdmc-vente.9r4rxssx64.workers.dev; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests" />
+<!-- connect-src : la caisse (kdmc-vente) pour la section Commerce, comme commerce.html ; la surveillance (kdmc-uptime) pour « Santé des services » (nombres seulement). media-src : rien (pas de son ici). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://kdmc-vente.9r4rxssx64.workers.dev https://kdmc-uptime.9r4rxssx64.workers.dev; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests" />
 <title>KDMC — Tableau de bord admin</title>
 <meta name="robots" content="noindex,nofollow" />
 <meta name="theme-color" content="#0b1409" />
-<link rel="stylesheet" href="/design-system.css?v=2.7.14" />
+<link rel="stylesheet" href="/design-system.css?v=2.7.15" />
 <link rel="stylesheet" href="/kdmc-boite.css?v=2.0.5" />
-<link rel="stylesheet" href="commerce.css?v=2.7.14" />
-<link rel="stylesheet" href="tableau.css?v=2.7.14" />
+<link rel="stylesheet" href="commerce.css?v=2.7.15" />
+<link rel="stylesheet" href="tableau.css?v=2.7.15" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -126,10 +126,10 @@
   </div>
   <script src="/kdmc-sso.js"></script>
   <script src="/kdmc-boite.js?v=2.0.10"></script>
-  <script src="admin.js?v=2.7.14"></script>
-  <script src="commerce.js?v=2.7.14"></script>
-  <script src="tableau.js?v=2.7.14"></script>
+  <script src="admin.js?v=2.7.15"></script>
+  <script src="commerce.js?v=2.7.15"></script>
+  <script src="tableau.js?v=2.7.15"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.14" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.15" data-color="#c9a227" defer></script>
 </body>
 </html>

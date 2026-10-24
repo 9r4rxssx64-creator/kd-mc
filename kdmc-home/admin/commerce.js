@@ -325,10 +325,30 @@
     app.innerHTML = '<div class="msg">🔒 <b>Accès administrateur</b><br><br>' + diag + '<br><br>Connecte-toi sur <a href="/" style="color:var(--gold)">kd-mc.com</a> avec Face ID (compte Kevin).</div>';
   }
   function toast(t) { var el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el); setTimeout(function () { el.remove(); }, 4500); }
-  function bearer() { var t = global.kdmcSSO && global.kdmcSSO.token ? global.kdmcSSO.token() : ''; return t ? { Authorization: 'Bearer ' + t } : {}; }
+  /* 24.10 (mesuré par le Lenovo dans le Chrome admin de Kevin, pont 970) : la caisse répondait 401 — la page n'a souvent AUCUN
+     laissez-passer rangé (Kevin entre en admin par le cookie du domaine, pas par un lien qui pose le pass). On demande donc le pass au
+     domaine (/__sso/pass, cookie) quand il manque, et on en redemande un neuf une fois si la caisse refuse (pass expiré, autre appareil). */
+  var PASS = null;
+  function jeton(frais) {
+    var t = !frais && global.kdmcSSO && global.kdmcSSO.token ? global.kdmcSSO.token() : '';
+    if (t) return Promise.resolve(t);
+    if (frais || !PASS) {
+      PASS = fetch('/__sso/pass', { credentials: 'include', cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (p) { var v = p && p.ok && p.token ? p.token : ''; if (!v) PASS = null; return v; })
+        .catch(function () { PASS = null; return ''; });
+    }
+    return PASS;
+  }
+  function appelCaisse(chemin, opts) {
+    var avec = function (t) { var o = Object.assign({ cache: 'no-store' }, opts || {}); o.headers = Object.assign({}, (opts && opts.headers) || {}, t ? { Authorization: 'Bearer ' + t } : {}); return fetch(CAISSE + chemin, o); };
+    return jeton().then(avec).then(function (r) {
+      return r.status === 401 ? jeton(true).then(function (t2) { return t2 ? avec(t2) : r; }) : r;
+    });
+  }
 
   function lireLive() {
-    return fetch(CAISSE + '/admin/tableau', { headers: bearer(), cache: 'no-store' })
+    return appelCaisse('/admin/tableau')
       .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.ok) throw new Error((j && (j.detail || j.error)) || ('HTTP ' + r.status)); return j; }); });
   }
   function affiche(err) {
@@ -337,7 +357,7 @@
     var ig = document.getElementById('inv-go');
     if (ig) ig.addEventListener('click', function () {
       ig.disabled = true; ig.textContent = '…';
-      fetch(CAISSE + '/admin/inviter', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()),
+      appelCaisse('/admin/inviter', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ produit: document.getElementById('inv-produit').value, pour: document.getElementById('inv-pour').value }) })
         .then(function (r) { return r.json(); })
         .then(function (j) {
@@ -360,7 +380,7 @@
         var refuser = b.hasAttribute('data-refuser'), id = b.getAttribute(refuser ? 'data-refuser' : 'data-valider');
         if (refuser && !confirm('Refuser cette demande ? Rien ne sera livré.')) return;
         b.disabled = true; b.textContent = '…';
-        fetch(CAISSE + '/admin/valider', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()), body: JSON.stringify(refuser ? { demande: id, refuser: true } : { demande: id }) })
+        appelCaisse('/admin/valider', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(refuser ? { demande: id, refuser: true } : { demande: id }) })
           .then(function (r) { return r.json(); })
           .then(function (j) { toast(j.ok ? (refuser ? 'Demande refusée.' : 'Livré : code ' + j.code + (j.email_envoye ? ' (e-mail envoyé)' : ' (e-mail non envoyé — à transmettre)')) : 'Échec : ' + (j.detail || j.error)); recharge(); })
           .catch(function (e) { toast('Réseau : ' + e.message); b.disabled = false; });
@@ -373,7 +393,7 @@
         var abandon = b.hasAttribute('data-abandon'), ref = b.getAttribute(abandon ? 'data-abandon' : 'data-livrer');
         if (!confirm(abandon ? 'Retirer le panier ' + ref + ' ? Rien ne sera livré.' : 'Tu as bien reçu le paiement de ' + ref + ' sur PayPal ? L\'accès part par e-mail.')) return;
         b.disabled = true; b.textContent = '…';
-        fetch(CAISSE + '/admin/livrer-panier', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()), body: JSON.stringify(abandon ? { ref: ref, abandonner: true } : { ref: ref }) })
+        appelCaisse('/admin/livrer-panier', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(abandon ? { ref: ref, abandonner: true } : { ref: ref }) })
           .then(function (r) { return r.json(); })
           .then(function (j) {
             toast(j.ok
@@ -388,7 +408,7 @@
       b.addEventListener('click', function () {
         if (!confirm('Envoyer un e-mail de relance aux paniers abandonnés ? Un seul par panier, jamais deux.')) return;
         b.disabled = true; b.textContent = '…';
-        fetch(CAISSE + '/admin/relancer', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()), body: JSON.stringify({ heures: 2 }) })
+        appelCaisse('/admin/relancer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ heures: 2 }) })
           .then(function (r) { return r.json(); })
           .then(function (j) { toast(j.ok ? (j.envoyees + ' relance(s) envoyée(s)' + (j.echecs ? ', ' + j.echecs + ' échec(s)' : '')) : 'Refusé : ' + (j.detail || j.error)); recharge(); })
           .catch(function (e) { toast('Réseau : ' + e.message); b.disabled = false; b.textContent = 'Relancer'; });
@@ -405,7 +425,7 @@
           iban: iban, bic: (document.getElementById('bicIn') || {}).value || '',
           titulaire: (document.getElementById('titulaireIn') || {}).value || '',
         };
-        fetch(CAISSE + '/admin/reglages', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()), body: JSON.stringify(corps) })
+        appelCaisse('/admin/reglages', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(corps) })
           .then(function (r) { return r.json(); })
           .then(function (j) {
             toast(j.ok ? (effacer ? 'IBAN retiré.' : 'IBAN enregistré : ' + j.banque.iban) : 'Refusé : ' + (j.detail || j.error));
@@ -420,7 +440,7 @@
         app.querySelectorAll('select[data-wf="' + id + '"]').forEach(function (s) { inputs[s.getAttribute('data-champ')] = s.value; });
         if (!confirm('Lancer « ' + id + ' » sur main' + (Object.keys(inputs).length ? ' avec ' + JSON.stringify(inputs) : '') + ' ?')) return;
         b.disabled = true; b.textContent = '…';
-        fetch(CAISSE + '/admin/lancer', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, bearer()), body: JSON.stringify({ workflow: id, inputs: inputs }) })
+        appelCaisse('/admin/lancer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ workflow: id, inputs: inputs }) })
           .then(function (r) { return r.json(); })
           .then(function (j) { toast(j.ok ? 'Lancé — le journal apparaît sur GitHub dans quelques secondes.' : 'Refusé : ' + (j.detail || j.error)); setTimeout(recharge, 4000); })
           .catch(function (e) { toast('Réseau : ' + e.message); b.disabled = false; b.textContent = 'Lancer'; });

@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 230 règles — le texte de Kevin, une par une
+## 📜 Les 231 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1008,6 +1008,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🔎 RÈGLE ABSOLUE — ARBRE : CHERCHER PHOTOS, PRESSE, GUERRE ET DOCUMENTS POUR TOUT LE MONDE, PARTOUT, ET REPARTIR SUR TOUTE NOUVELLE FAMILLE À CHAQUE NOUVEAU NOM (Kevin 2026-10-22, ABSOLUE, TOUTES LES BRANCHES)
 **Bee v1.22 (22.10.2026, javis-bee)** — Ce que Bee sait faire n'a pas changé ; ce qui change : posée sur une autre app, sur un téléphone en paysage (Galaxy S9+ mesuré), toucher Bee l'ouvre et la […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-chercher-photos-presse-guerre-et-documents-pour-tout-le-monde-partout-et-repartir-sur-toute-nouvelle-famille-à-chaque-nouveau-nom-kevin-2026-10-22-absolue-toutes-les-branches)
+
+### 🖱️ RÈGLE ABSOLUE — QUAND JE DEMANDE UN GESTE À KEVIN : JE VÉRIFIE D'ABORD QUE CE N'EST PAS DÉJÀ FAIT, PUIS JE LUI DONNE LE LIEN CLIQUABLE EXACT, EN UN CLIC AU MINIMUM (Kevin 2026-10-24, ABSOLUE, TOUTES LES BRANCHES)
+**« Quand tu me dis un geste de ta main, je veux toujours les actions cliquables avec l'endroit, un clic. Minimum. »** puis **« Renseigne-toi et vérifie toujours les infos ou ce que tu me […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-quand-je-demande-un-geste-à-kevin-je-vérifie-dabord-que-ce-nest-pas-déjà-fait-puis-je-lui-donne-le-lien-cliquable-exact-en-un-clic-au-minimum-kevin-2026-10-24-absolue-toutes-les-branches)
 
 ---
 

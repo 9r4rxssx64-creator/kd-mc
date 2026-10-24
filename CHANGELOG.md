@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.989 + light v1.114 — les derniers refus 401 mesurés dans le Chrome de Kevin, et deux zones tactiles (2026-10-24)
+- Lenovo (n° 704, v9.988) : 4 refus 401 sur CMCteams (`cmc_prive_actif` ×1, `ax_admin_profile` ×3), 0 sur la light ; zones < 44 px : lien « Aller au contenu » (239×39, ×2) et la pastille « Messages pit boss » (rond avec un chiffre).
+- `ax_admin_profile` / `ax_admin_kevin` ne sont plus envoyés à Firebase (les règles n'acceptent que les clés `cmc_*` / `ax_cmc_*` : refus garanti à chaque ouverture) ; la file « à envoyer » les oublie aussi. Lecture du drapeau de la fiche privée, de la présence de la light, et envois NR/5e et heures : plus rien ne part avant la fin de la connexion (CMCteams : `_fbAuthSettled` ; light : `_fbFini`). Lien d'évitement et pastille pit boss : 44 px.
+- Garde `test:cmc-ecritures-apres-jeton` : modules partagés enfin chargés (le serveur du test les ratait), règle `$key` des règles Firebase simulée, 4 sabotages rouges ; garde `test:cmc-zones-tactiles` : lien d'évitement + pastille mesurés (son sabotage était périmé depuis v9.986, remis d'aplomb).
 
 ## CMCteams v9.988 — les 4 derniers refus 401 au démarrage (2026-10-24)
 - Le robot public voyait encore 4 refus sur la v9.987 : les drapeaux `cmc_ecritures_actif` et `cmc_secret_actif` (lus sans jeton), et la file « à envoyer » gardée sur l'appareil (`cmc_pw`, `ax_admin_profile`) rejouée au démarrage. Maintenant : les drapeaux ne se lisent qu'avec un jeton ; la file attend la fin de la connexion (puis part toute seule) ; le flux en direct et sa sonde ne démarrent qu'après (un événement « online » les lançait sans jeton).

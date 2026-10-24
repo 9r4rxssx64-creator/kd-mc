@@ -101,19 +101,27 @@ jobs:
               out.push("- " + k.slice(11) + (min != null ? " ≥ " + min : "") + (niveau === "warn" ? " (warn)" : ""));
             }
             out.push("");
-            let manifest = [];
-            try { manifest = JSON.parse(fs.readFileSync(".lighthouseci/manifest.json", "utf8")); } catch (e) {}
-            if (!manifest.length) {
-              out.push("⚠️ Aucune mesure du jour dans .lighthouseci/ : rien à afficher (le robot n a pas mesuré).");
+            // Prouvé par le run 40099928754 (24.10) : avec la cible « temporary-public-storage », lhci
+            // n écrit PAS de manifest.json — seulement les rapports lhr-*.json. On lit donc les rapports.
+            let rapports = [];
+            try {
+              rapports = fs.readdirSync(".lighthouseci").filter((f) => /^lhr-.*\.json$/.test(f)).sort()
+                .map((f) => JSON.parse(fs.readFileSync(".lighthouseci/" + f, "utf8")));
+            } catch (e) {}
+            if (!rapports.length) {
+              out.push("⚠️ Aucune mesure du jour dans .lighthouseci/ (aucun lhr-*.json) : rien à afficher (le robot n a pas mesuré).");
             } else {
-              out.push("Scores MESURÉS aujourd hui (" + manifest.length + " passage(s), mobile) :", "");
-              out.push("| passage | perf | accessibilité | bonnes pratiques | seo | pwa |", "|---|---|---|---|---|---|");
-              manifest.forEach((m, i) => {
-                const s = m.summary || {};
-                const pc = (x) => (x == null ? "—" : Math.round(x * 100));
-                out.push("| " + (i + 1) + (m.isRepresentativeRun ? " (représentatif)" : "") + " | " + pc(s.performance) + " | " + pc(s.accessibility) + " | " + pc(s["best-practices"]) + " | " + pc(s.seo) + " | " + pc(s.pwa) + " |");
+              out.push("Scores MESURÉS aujourd hui (" + rapports.length + " passage(s), " + (rapports[0].configSettings || {}).formFactor + ", version mesurée = " + (rapports[0].finalDisplayedUrl || "?") + ") :", "");
+              out.push("| passage | mesuré à | perf | accessibilité | bonnes pratiques | seo | LCP | TBT |", "|---|---|---|---|---|---|---|---|");
+              rapports.forEach((r, i) => {
+                const c = r.categories || {}, a = r.audits || {};
+                const pc = (k) => (c[k] && c[k].score != null ? Math.round(c[k].score * 100) : "—");
+                const dv = (k) => (a[k] && a[k].displayValue) || "—";
+                out.push("| " + (i + 1) + " | " + String(r.fetchTime || "").slice(0, 16).replace("T", " ") + " | " + pc("performance") + " | " + pc("accessibility") + " | " + pc("best-practices") + " | " + pc("seo") + " | " + dv("largest-contentful-paint") + " | " + dv("total-blocking-time") + " |");
               });
             }
             out.push("", "Rapports JSON du jour archivés dans l artefact (30 jours).");
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");
+            const texte = out.join("\n") + "\n";
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, texte);
+            process.stdout.write(texte); // aussi dans le journal : lisible par l API, pas seulement dans la page du run
           '

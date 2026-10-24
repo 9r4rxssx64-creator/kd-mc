@@ -19,7 +19,7 @@ if (SABOTAGE) {
     .replace(/\n\s+include-hidden-files: true/, '')
     .replace(/path: apex-ai\/v13\/\.lighthouseci\//, 'path: |\n            apex-ai/v13/.lighthouseci/\n            apex-ai/v13/lighthouse-*.json')
     .replace(/lighthouse\.config\.json", "utf8"\)/, 'x", "utf8")')
-    .replace(/\.lighthouseci\/manifest\.json/, 'rien');
+    .replace(/\/\^lhr-\.\*\\\.json\$\//, '/^rien$/');
 }
 
 const upload = (() => {
@@ -39,7 +39,10 @@ t(/include-hidden-files:\s*true/.test(upload), 'elle pose include-hidden-files: 
 t(!/lighthouse-\*\.json/.test(upload), 'elle n\'archive PLUS les vieux lighthouse-*.json figés dans le dépôt (mesure de mai 2026)');
 t(/lighthouse\.config\.json", "utf8"\)/.test(summary), 'le résumé lit les seuils dans lighthouse.config.json (plus de « ≥ 90 » écrit à la main)');
 t(!/echo "- Performance ≥ 90"/.test(summary), 'aucun seuil écrit en dur dans le résumé');
-t(/\.lighthouseci\/manifest\.json/.test(summary), 'le résumé imprime les scores MESURÉS du jour (manifest.json de lhci)');
+// 24.10, run de preuve 40099928754 : avec la cible « temporary-public-storage », lhci n'écrit PAS de manifest.json
+// (seulement lhr-*.json) — un résumé qui lirait le manifest dirait « n'a pas mesuré » alors que la mesure est là.
+t(/\/\^lhr-\.\*\\\.json\$\//.test(summary) && !/manifest\.json", "utf8"\)/.test(summary), 'le résumé imprime les scores MESURÉS du jour en lisant les rapports lhr-*.json (pas un manifest.json que lhci n\'écrit pas)');
+t(/process\.stdout\.write\(texte\)/.test(summary), 'le résumé est aussi écrit dans le journal du run (lisible par l\'API, preuve possible depuis une session)');
 t(/n a pas mesuré|Aucune mesure du jour/.test(summary), 'sans mesure du jour, le résumé le dit au lieu d\'afficher un vieux score');
 
 console.log(`\n${ok} OK / ${ko} échec(s)` + (SABOTAGE ? ` — attendu : rouge` : ''));

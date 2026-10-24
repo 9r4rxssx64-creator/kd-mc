@@ -298,6 +298,9 @@ export async function bootstrapServices(uid: string | null): Promise<readonly In
     /* Commerce : pre-load plans + facturation cache */
     safeInit('commerce', async () => {
       const { commerce } = await import('../integrations/commerce.js');
+      /* Vue membre simulée (tâche 56) : le domaine ne le dit qu'à l'admin prouvé. */
+      const { rafraichirVueMembre } = await import('../integrations/vue-membre.js');
+      await rafraichirVueMembre();
       if (uid) commerce.getEffectivePlan(uid);
     }),
 

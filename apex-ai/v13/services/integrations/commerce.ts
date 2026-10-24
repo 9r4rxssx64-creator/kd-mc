@@ -16,6 +16,7 @@
  * Kevin admin → bypass illimité tous plans.
  */
 
+import { vueMembreActive } from './vue-membre.js';
 import { events } from '../../core/events.js';
 import { logger } from '../../core/logger.js';
 import { store } from '../../core/store.js';
@@ -62,6 +63,8 @@ class Commerce {
    */
   getEffectivePlan(uid: string | null): Plan {
     if (!uid) return 'free';
+    /* Vue membre simulée (tâche 56, 24.10) : abonné au maximum, avant même le droit admin. */
+    if (vueMembreActive()) return 'business';
     const isAdmin = store.get('isAdmin');
     if (isAdmin) return 'admin';
     if (!this.isEnabled()) return 'admin';

@@ -1339,6 +1339,8 @@ export function empreinteAppareil(ua) {
   const u = String(ua || '');
   return /iPhone|iPod/.test(u) ? 'iphone' : /iPad|Macintosh.*Mobile/.test(u) ? 'ipad' : /Android/.test(u) ? 'android' : /Windows/.test(u) ? 'windows' : /Macintosh|Mac OS/.test(u) ? 'mac' : /Linux|X11/.test(u) ? 'linux' : 'autre';
 }
+/* famille d'appareil écrite dans un pass (champ d) — lue SEULEMENT après que ssoRaisonRefus a vérifié la signature */
+function passAppareil(tok) { try { const p = String(tok).split('.')[0]; const bin = b64urlToStr(p); const d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)))); return typeof d.d === 'string' ? d.d.slice(0, 12) : ''; } catch { return ''; } }
 const appareilDe = (request) => empreinteAppareil(request && request.headers && request.headers.get ? request.headers.get('user-agent') : '');
 async function ssoSign(secret, uid, name, cgu, verified, codeProuve, appareil, extra) {
   /* v=1 → identité FORTE (prouvée par passkey/Face ID). v=0 → faible (nom+code
@@ -3774,7 +3776,13 @@ async function handleSso(request, url, env, ctx) {
       else if (choix.cookie && parEnTete) { rep.token = choix.tok; rep.remplace = true; }
       return J(rep, estAdmin ? MARQUEUR : cookieNeuf);   /* admin prouvé : le marqueur « c'est Kevin » (Bee partout, 17.10) ; les autres comptes n'en reçoivent jamais */
     }
-    { const tok = ssoToken(request); return J(tok ? { ok: false, reason: 'pass_refuse', cause: await ssoRaisonRefus(secret, tok, request) } : { ok: false }); }   /* pass présenté mais refusé : on dit pourquoi (motif court) */
+    { const tok = ssoToken(request); if (!tok) return J({ ok: false });
+      const cause = await ssoRaisonRefus(secret, tok, request);
+      /* 24.10 (tâche 60 : « appareil » chez le robot d'inscription, coupable introuvable dans les journaux) : on dit QUELLES familles d'appareil
+         ne collent pas (« iphone », « linux »… — jamais l'agent complet, rien de personnel) et D'OÙ vient le pass (cookie ou en-tête). */
+      const rep = { ok: false, reason: 'pass_refuse', cause };
+      if (cause === 'appareil') { rep.pass_appareil = passAppareil(tok); rep.requete_appareil = appareilDe(request); rep.source = request.headers.get('authorization') || request.headers.get('x-kdmc-sso') ? 'en-tete' : 'cookie'; }
+      return J(rep); }   /* pass présenté mais refusé : on dit pourquoi (motif court) */
   }
 
   /* ===== WebAuthn (passkey / Face ID) — fait du domaine un IdP à identité FORTE ===== */

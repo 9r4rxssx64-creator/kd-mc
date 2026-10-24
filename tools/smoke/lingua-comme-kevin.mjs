@@ -380,6 +380,27 @@ try {
     await onglet('Accueil'); await attends(600);
   }
 
+  /* 9aa. compte jetable : les VOIX de toutes les langues sur le VRAI domaine (mission 443 du Lenovo, rendue automatique) — depuis la page, comme l'app :
+     un son (audio/*, > 1000 octets) et un moteur annoncé (x-voix) pour chacune des 13 langues ; 2e lecture = cache. Aucune écriture sur un compte. */
+  if (JETABLE && !RAPIDE) {
+    const VOIX = [['it-IT', 'Buongiorno, come stai oggi ?'], ['de-DE', 'Guten Morgen, wie geht es dir ?'], ['pt-BR', 'Bom dia, tudo bem ?'], ['nl-NL', 'Goedemorgen, hoe gaat het ?'],
+      ['pl-PL', 'Dzień dobry, jak się masz ?'], ['ru-RU', 'Доброе утро, как дела ?'], ['uk-UA', 'Доброго ранку, як справи ?'], ['cs-CZ', 'Dobré ráno, jak se máš ?'],
+      ['ar-XA', 'صباح الخير، كيف حالك ؟'], ['ja-JP', 'おはようございます'], ['ko-KR', '좋은 아침입니다'], ['fr-FR', 'Bonjour tout le monde'], ['en-US', 'Hello everyone']];
+    const rv = await page.evaluate(async (liste) => {
+      const out = [];
+      for (const [l, t] of liste) {
+        try { const r = await fetch('/__lingua/tts?v=nova&gratuit=1&l=' + encodeURIComponent(l) + '&t=' + encodeURIComponent(t + ' ' + Date.now().toString(36).slice(-4))); const ct = r.headers.get('content-type') || ''; const buf = ct.startsWith('audio/') ? (await r.arrayBuffer()).byteLength : 0;
+          let raison = ''; if (!ct.startsWith('audio/')) { try { raison = String((await r.json()).reason || ''); } catch (e) { raison = 'non-audio'; } }
+          out.push({ l, st: r.status, voix: r.headers.get('x-voix') || '', ct: ct.slice(0, 20), octets: buf, raison }); } catch (e) { out.push({ l, st: 0, voix: '', octets: 0, raison: String(e.message || e).slice(0, 40) }); }
+      }
+      return out;
+    }, VOIX).catch(() => []);
+    const bonnes = rv.filter((x) => x.st === 200 && x.octets > 1000 && /google-chirp3hd|gemini-gratuite|gratuite|openai|^$/.test(x.voix || ''));
+    const moteurs = {}; for (const x of rv) { const k = x.voix || (x.octets > 1000 ? 'standard' : 'AUCUN(' + x.raison + ')'); moteurs[k] = (moteurs[k] || 0) + 1; }
+    chk(rv.length === VOIX.length && bonnes.length === VOIX.length, `voix : ${bonnes.length}/${VOIX.length} langues rendent un vrai son sur le domaine (moteurs : ${JSON.stringify(moteurs)})`,
+      rv.filter((x) => !(x.st === 200 && x.octets > 1000)).map((x) => x.l + ':' + (x.raison || x.st)).join(' '));
+  }
+
   /* 9b. compte jetable : coach, réouvertures (service worker), hors-ligne, largeurs 375 / 390 px */
   if (JETABLE && !RAPIDE) {
     await fermerModales(); await onglet('Coach'); await attends(1200);

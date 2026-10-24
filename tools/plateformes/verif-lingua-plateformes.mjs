@@ -117,7 +117,7 @@ async function scenarioA(moteur, ap) {
   });
   /* rien ne recouvre un onglet : l'élément qui reçoit le doigt au centre est l'onglet lui-même */
   out.recouverts = await p.evaluate(() => [...document.querySelectorAll('.tabbar .tab')].filter((t) => { const q = t.getBoundingClientRect(); if (!q.width || !q.height) return false; const e = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !(e && (e === t || t.contains(e))); }).map((t) => (t.textContent || '').trim().slice(0, 10)));
-  const vus = new Set(); const muets = []; const debordent = [];
+  const vus = new Set(); const muets = []; const debordent = []; const petitesCibles = [];
   const largeur = () => p.evaluate(() => document.documentElement.scrollWidth - Math.round(window.visualViewport ? visualViewport.width : innerWidth)).catch(() => 0);
   for (let i = 0; i < ONGLETS.length; i++) {
     const nomOnglet = await p.evaluate((k) => ((document.querySelectorAll('.tabbar .tab')[k] || {}).textContent || '').trim(), i);
@@ -126,8 +126,12 @@ async function scenarioA(moteur, ap) {
     const t = await texte(p); const act = await actif(p);
     if (!a || !act || t.length < 30) muets.push(ONGLETS[i]); else vus.add(t.slice(0, 160));
     if ((await largeur()) > 2) debordent.push(ONGLETS[i]);
+    /* zones de toucher < 44 px (mission 958 du Lenovo) : exceptions voulues = l'étiquette de version de la barre (.tab-ver) et les cases à cocher (leur étiquette entière est la cible) */
+    const petites = await p.evaluate(() => { const o = []; document.querySelectorAll('a[href],button,select,textarea,input:not([type=checkbox]),[role=button],.tab').forEach((e) => { const q = e.getBoundingClientRect(), st = getComputedStyle(e);
+      if (!q.width || !q.height || st.visibility === 'hidden' || st.display === 'none' || st.pointerEvents === 'none' || e.classList.contains('tab-ver')) return; if (Math.min(q.width, q.height) < 43.5) o.push((e.tagName + '.' + (typeof e.className === 'string' ? e.className.split(' ')[0] : '') + ' ' + Math.round(q.width) + 'x' + Math.round(q.height))); }); return o; }).catch(() => []);
+    petites.forEach((x) => { if (!petitesCibles.includes(ONGLETS[i] + ':' + x)) petitesCibles.push(ONGLETS[i] + ':' + x); });
   }
-  out.muets = muets; out.distincts = vus.size; out.debordent = debordent;
+  out.muets = muets; out.distincts = vus.size; out.debordent = debordent; out.petitesCibles = petitesCibles;
   /* La vraie vie + une leçon */
   await appuyer(p, touch, 0); await p.waitForTimeout(600);
   out.vie = await p.evaluate(async () => {
@@ -209,6 +213,7 @@ for (const ap of MATRICE) {
     ok(A.muets.length === 0 && A.distincts >= 5, `${tag} : les 6 onglets répondent au ${touch ? 'toucher' : 'clic'} et changent d'écran (${A.distincts} écrans distincts${A.muets.length ? ', MUETS : ' + A.muets.join(',') : ''})`);
     if (touch) ok(g.minCote >= 40, `${tag} : onglets ≥ 40 px au toucher (${Math.round(g.minCote)})`);
     if (g.W >= 340 && g.W <= 520) ok(g.hautPetit >= 43, `${tag} : drapeau, cercle et avatar de la barre du haut ≥ 44 px (${g.hautPetit} px)`);
+    if (g.W >= 340 && g.W <= 520) ok(A.petitesCibles.length === 0, `${tag} : aucune zone de toucher < 44 px sur les 6 écrans (hors étiquette de version et cases à cocher)` + (A.petitesCibles.length ? ' — ' + A.petitesCibles.slice(0, 5).join(' | ') : ''));
     ok(g.version, `${tag} : la version est dans la barre`);
     ok(g.portail, `${tag} : « Portail » est dans la barre`);
     ok(g.cartes >= 6, `${tag} : cartes de l'accueil ${g.cartes}/7`);

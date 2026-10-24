@@ -18,7 +18,7 @@
 - **Décision finale du 24.10.2026 (Kevin : « tu décides, workers.dev ou pas c'est pas grave, sécurisé et fonctionnel »)** : on garde ces DEUX adresses, rien d'autre. L'appli n'est PAS servie sous `staging.kd-mc.com` : cela exigerait de modifier le routeur central du domaine (une erreur coupe toutes les apps) pour un gain seulement visuel, et le test réel y demanderait la session admin de Kevin. L'appli de test ne contient aucune donnée réelle (base à part, ni SMS, ni push, ni cron, ni SSO). Annule `pont 624, 639, 723 (partie « servir sous kd-mc.com »), 743`. Message du pont n° 757.
 - Autres apps (Arbre, Lingua, Bee, boutiques, CMCteams…) : **pas de version de test** — on les essaie sur leur adresse habituelle, en lecture seule.
 - Pas de SSO du domaine / Face ID, pas de SMS, pas de push, pas de crons au staging ; appels en direct seulement.
-- Remise à zéro + preuve « aucune trace » : robot public `staging-apex-chat-donnees.yml` (actions `reset`, `aucune-trace`, `cycle`). Redéployer : `deploy-apex-chat-staging.yml`.
+- Remise à zéro + preuve « aucune trace » : robot public `staging-apex-chat-donnees.yml` (actions `reset`, `aucune-trace`, `cycle`, et `stockage-compter` / `stockage-nettoyer` pour le bucket R2 et le KV de test). Redéployer : `deploy-apex-chat-staging.yml`.
 - Ressources : D1 `staging-apex-chat` (655bac27-c95d-4fb5-8fb4-b5dc90328678), KV `staging-ACCOUNTS`, R2 `apex-chat-media-staging`.
 
 ## 🖥️ Les apps du domaine (mesuré le 22.10.2026)

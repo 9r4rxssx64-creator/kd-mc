@@ -30,6 +30,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Adresses officielles : staging + 29 workers (2026-10-23)
 - `KDMC_ADRESSES.md` : section « Staging » (une seule adresse de test pour Apex Chat, la porte staging.kd-mc.com, pas de « dev ») et tableau des 29 workers du compte principal avec rôle et mesure réelle (racine, /health). `apex-v13-backend` et `apex-vault-svc` n'existent pas.
 
+## Staging d'Apex Chat — nettoyage du stockage de test (2026-10-24)
+- Nouvelle action du robot public : `stockage-compter` (nombres) et `stockage-nettoyer` (vide le bucket R2 et le KV de TEST, relit, doit dire 0 / 0). Les ressources de production sont refusées avant tout appel. Preuve : `tests/verify-staging-stockage.mjs` 12/12, rouge sans la garde.
+
 ## Apex AI v13.4.389 (2026-10-24 — Coffre : texte à jour et lien du jeton lisible)
 - Le texte de « Backup & Restore » ne dit plus que la copie Firebase ne marche pas (elle marche, Firebase est reconnecté). Le lien « Créer un nouveau jeton » ne laisse plus un grand vide (bloc, interligne 1,4, 44 px de haut). Preuve : `tests/unit/coffre-gist-bouton.test.ts` 4/4, rouge sans le correctif ; 12 587 tests verts.
 

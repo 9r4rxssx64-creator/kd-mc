@@ -244,7 +244,41 @@
       .catch(function () { return false; });
   }
 
+  /* VUE MEMBRE SIMULÉE (Kevin 23.10.2026) : l'admin en vue membre voit la boutique comme un abonné max et peut « acheter » sans payer.
+     Le domaine seul dit si c'est le cas (whoami simulation:true, donné uniquement à l'admin prouvé) ; la caisse revérifie elle-même. */
+  var SIMU = false;
+  if (/(^|\.)kd-mc\.com$/.test(location.hostname)) fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    if (!(j && j.ok && j.simulation === true && j.apercu === 'membre')) return;
+    SIMU = true;
+    var b = document.createElement('p'); b.setAttribute('data-simulation', '1'); b.setAttribute('role', 'status');
+    b.style.cssText = 'position:sticky;top:0;z-index:50;margin:0;padding:12px 16px;background:#1d4ed8;color:#fff;font:600 15px/1.4 system-ui,sans-serif;text-align:center';
+    b.textContent = '👁 Vue membre simulée : tu es abonné au maximum. Tes achats ici sont simulés — rien n\u2019est payé.';
+    document.body.insertBefore(b, document.body.firstChild);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-produit][data-caisse]'), function (btn) { texte(btn, '🎁 Acheter (simulé)'); });
+  }).catch(function () { /* hors du domaine : boutique normale */ });
+
+  function achatSimule(btn) {
+    var produit = btn.getAttribute('data-produit');
+    var bloc = btn.closest ? btn.closest('.encart, .carte') : null;
+    var avis = bloc && bloc.querySelector('[data-caisse-avis]');
+    var dis = function (t) { if (avis) { texte(avis, t); avis.hidden = !t; } };
+    var ancien = btn.textContent; btn.disabled = true; texte(btn, 'Achat simulé…');
+    fetch('/__sso/pass', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.json(); })
+      .then(function (p) {
+        if (!p || !p.ok || !p.token) throw new Error('session du domaine introuvable');
+        return fetch(API + '/caisse/simulation', { method: 'POST', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + p.token }, body: JSON.stringify({ produit: produit }) });
+      })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.ok && d.code) dis('🎁 Achat simulé réussi — rien n\u2019a été payé. Ton accès (24 h) : ' + d.code + '. Il s\u2019utilise comme un vrai, dans « J\u2019ai déjà un code ».');
+        else dis('Achat simulé refusé (' + ((d && (d.detail || d.error)) || 'erreur') + '). Repasse en vue membre avec le bouton 👑/👁.');
+      })
+      .catch(function (e) { dis('Achat simulé impossible : ' + String(e.message || e)); })
+      .finally(function () { btn.disabled = false; texte(btn, ancien); });
+  }
+
   function ouvreCaisse(btn) {
+    if (SIMU) { achatSimule(btn); return; }
     var produit = btn.getAttribute('data-produit');
     var moyen = btn.getAttribute('data-moyen') || 'paypal';
     var bloc = btn.closest ? btn.closest('.encart, .carte') : null;

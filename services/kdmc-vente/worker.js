@@ -671,6 +671,25 @@ async function requireAdmin(req) {
   }
 }
 
+/* ── VUE MEMBRE SIMULÉE (Kevin 23.10.2026 : « pas connecté admin, tu simules que je suis abonné avec les meilleurs abonnements, je peux
+   acheter etc. si je veux, comme ça on simule ») — le routeur ne renvoie `simulation:true` + `apercu:"membre"` QU'À l'admin prouvé qui a
+   basculé en vue membre (cookie kdmc_vue) ; un membre qui fabrique le cookie n'obtient rien (garde routeur vue-admin.test.mjs). */
+export async function requireSimulation(req, lireWhoami) {
+  const auth = req.headers.get('Authorization') || '';
+  if (!/^Bearer\s+\S/.test(auth)) return { ok: false, status: 401, detail: 'pass SSO manquant', step: 'simu_header' };
+  try {
+    const entetes = { Authorization: auth }; const ua = req.headers.get('user-agent'); if (ua) entetes['user-agent'] = ua;
+    const j = await lireWhoami(entetes);
+    if (!j || !j.ok) return { ok: false, status: 401, detail: 'session invalide', step: 'simu_session' };
+    if (j.simulation !== true || j.apercu !== 'membre') return { ok: false, status: 403, detail: 'réservé à la vue membre simulée de l\'admin', step: 'simu_refus' };
+    return { ok: true, name: j.name };
+  } catch (e) {
+    return { ok: false, status: 502, detail: String((e && e.message) || e).slice(0, 120), step: 'simu_exc' };
+  }
+}
+const whoamiDomaine = async (entetes) => { const r = await fetch('https://kd-mc.com/__sso/whoami', { headers: entetes, cache: 'no-store' }); return r.ok ? r.json() : null; };
+const TTL_SIMULATION = 86400;   /* un accès simulé vit 24 h, n'est jamais compté comme une vente, ne part par aucun e-mail */
+
 /* ── Contenu payant (D1) ─────────────────────────────────────────────────
    Table `contenu` (produit, id, ordre, titre, html, gratuit, maj). Le HTML est
    rédigé par nous, jamais par un client : il est servi tel quel. Sans binding
@@ -751,7 +770,7 @@ async function lireVentes(env) {
   for (const nom of noms) {
     const v = await env.VENTES.get(nom);
     if (!v) continue;
-    try { fiches.push(JSON.parse(v)); } catch (_) { /* fiche illisible : ignorée, on ne casse pas le tableau */ }
+    try { const f = JSON.parse(v); if (!(f && f.simulation)) fiches.push(f); } catch (_) { /* fiche illisible : ignorée, on ne casse pas le tableau */ }   /* un achat simulé n'est jamais une vente */
   }
   return { ...agregeVentes(fiches), tronque };
 }
@@ -941,6 +960,20 @@ export default {
         ts: Date.now(), ts_iso: new Date().toISOString(),
       }), { expirationTtl: TTL_CMD });
       return json({ ok: true, ref, approbation: cmd.approbation }, 200, origin);
+    }
+
+    /* --- CAISSE : achat SIMULÉ (vue membre de l'admin) — rien de payé, rien de compté, accès réel 24 h pour voir l'app comme un abonné --- */
+    if (p === '/caisse/simulation' && req.method === 'POST') {
+      const g = await requireSimulation(req, whoamiDomaine);
+      if (!g.ok) return json({ ok: false, error: 'simulation_refusee', detail: g.detail, step: g.step }, g.status, origin);
+      let b; try { b = await req.json(); } catch (e) { b = {}; }
+      const produitId = String((b && b.produit) || '');
+      const produit = PRODUITS[produitId];
+      if (!produit) return json({ ok: false, error: 'produit_inconnu', detail: produitId, step: 'simu_produit' }, 400, origin);
+      const code = nouveauCode();
+      await env.VENTES.put('code:' + code, JSON.stringify({ produit: produitId, email: null, source: 'simulation', simulation: true, ts: Date.now(), ts_iso: new Date().toISOString(),
+        expire_iso: new Date(Date.now() + TTL_SIMULATION * 1000).toISOString() }), { expirationTtl: TTL_SIMULATION });
+      return json({ ok: true, simulation: true, code, produit: produitId, livre: produit.livre, montant: 0, detail: 'achat simulé : rien n\'a été payé, accès valable 24 h' }, 200, origin);
     }
 
     /* --- CAISSE : l'intention (PayPal perso, sans clé) -------------------- */

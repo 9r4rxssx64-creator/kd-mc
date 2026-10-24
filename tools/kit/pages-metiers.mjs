@@ -21,7 +21,7 @@ export const SOURCE = join(RACINE, 'tools', 'kit', 'metiers.json');
 export const DOSSIER = join(RACINE, 'shops', 'kit-ia', 'pour');
 export const SITEMAP = join(RACINE, 'shops', 'sitemap.xml');
 export const BASE = 'https://kit.kd-mc.com/pour/';
-export const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src https://kdmc-vente.9r4rxssx64.workers.dev; object-src 'none'; base-uri 'self'; form-action 'none'";
+export const CSP = "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://kdmc-vente.9r4rxssx64.workers.dev; object-src 'none'; base-uri 'self'; form-action 'none'";
 const REPERE_DEBUT = '<!-- kit-ia/pour : généré par tools/kit/pages-metiers.mjs, ne pas éditer à la main -->';
 const REPERE_FIN = '<!-- /kit-ia/pour -->';
 

@@ -12,7 +12,7 @@ let simu = true;
 const srv = createServer(async (q, r) => {
   const u = q.url.split('?')[0];
   if (u === '/__sso/whoami') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end(JSON.stringify(simu ? { ok: true, admin: false, apercu: 'membre', abonnement: 'max', simulation: true } : { ok: true, admin: false })); }
-  if (u === '/__sso/pass') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end('{"ok":true,"token":"PASS-ESSAI"}'); }
+  if (u === '/__sso/pass') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end('{"ok":true,"token":"PASS-ESSAI","vue":"TICKET-VUE"}'); }
   try { const f = u === '/kit.js' ? KITJS : join(RACINE, u === '/' ? 'bureau.html' : u); const b = await readFile(f); r.writeHead(200, { 'content-type': extname(f) === '.js' ? 'text/javascript' : 'text/html; charset=utf-8' }); r.end(b); } catch { r.writeHead(404).end(); }
 });
 await new Promise(ok => srv.listen(0, '127.0.0.1', ok)); const LOCAL = 'http://127.0.0.1:' + srv.address().port; const BASE = 'https://kit.kd-mc.com';
@@ -21,7 +21,7 @@ const b = await chromium.launch();
 async function essai() {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true }); const p = await ctx.newPage();
   const caisse = []; const err = []; p.on('pageerror', e => err.push(String(e)));
-  await p.route('https://kdmc-vente.9r4rxssx64.workers.dev/**', rt => { const rq = rt.request(); caisse.push({ url: rq.url(), auth: rq.headers()['authorization'] || '' });
+  await p.route('https://kdmc-vente.9r4rxssx64.workers.dev/**', rt => { const rq = rt.request(); caisse.push({ url: rq.url(), auth: rq.headers()['authorization'] || '', vue: rq.headers()['x-kdmc-vue'] || '' });
     const chemin = new URL(rq.url()).pathname;
     rt.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'Authorization, Content-Type' }, body: chemin === '/caisse/simulation' ? '{"ok":true,"simulation":true,"code":"SIMU-1234","montant":0}' : '{"ok":false}' }); });
   await p.route('https://kit.kd-mc.com/**', async rt => { const u = new URL(rt.request().url()); const rep = await fetch(LOCAL + u.pathname); rt.fulfill({ status: rep.status, headers: { 'content-type': rep.headers.get('content-type') || 'text/html' }, body: Buffer.from(await rep.arrayBuffer()) }); });
@@ -36,7 +36,7 @@ async function essai() {
   const appelSim = caisse.find(c => c.url.endsWith('/caisse/simulation'));
   const appelVrai = caisse.filter(c => /\/caisse\/(intention|commande)/.test(c.url)).length;
   const avis = await p.evaluate(() => Array.from(document.querySelectorAll('[data-caisse-avis]')).map(e => e.textContent).join(' '));
-  ok('S2. un toucher → caisse simulée avec le pass du domaine, 0 appel à la vraie caisse, code affiché', !!appelSim && appelSim.auth === 'Bearer PASS-ESSAI' && appelVrai === 0 && avis.includes('SIMU-1234'), JSON.stringify({ appelSim, appelVrai, avis: avis.slice(0, 80) }));
+  ok('S2. un toucher → caisse simulée avec le pass du domaine, 0 appel à la vraie caisse, code affiché', !!appelSim && appelSim.auth === 'Bearer PASS-ESSAI' && appelSim.vue === 'TICKET-VUE' && appelVrai === 0 && avis.includes('SIMU-1234'), JSON.stringify({ appelSim, appelVrai, avis: avis.slice(0, 80) }));
   ok('aucune erreur JavaScript (vue membre)', err.length === 0, err.join(' | '));
   await ctx.close(); }
 simu = false;

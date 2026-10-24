@@ -266,7 +266,8 @@
     fetch('/__sso/pass', { credentials: 'include', cache: 'no-store' }).then(function (r) { return r.json(); })
       .then(function (p) {
         if (!p || !p.ok || !p.token) throw new Error('session du domaine introuvable');
-        return fetch(API + '/caisse/simulation', { method: 'POST', headers: { 'content-type': 'application/json', Authorization: 'Bearer ' + p.token }, body: JSON.stringify({ produit: produit }) });
+        var h = { 'content-type': 'application/json', Authorization: 'Bearer ' + p.token }; if (p.vue) h['X-Kdmc-Vue'] = p.vue;   /* ticket de vue membre signé par le domaine */
+        return fetch(API + '/caisse/simulation', { method: 'POST', headers: h, body: JSON.stringify({ produit: produit }) });
       })
       .then(function (r) { return r.json(); })
       .then(function (d) {

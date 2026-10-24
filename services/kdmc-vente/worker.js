@@ -142,7 +142,7 @@ function cors(origin) {
   return {
     'Access-Control-Allow-Origin': ok ? origin : ALLOW_ORIGINS[0],
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Kdmc-Vue',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };
@@ -679,6 +679,7 @@ export async function requireSimulation(req, lireWhoami) {
   if (!/^Bearer\s+\S/.test(auth)) return { ok: false, status: 401, detail: 'pass SSO manquant', step: 'simu_header' };
   try {
     const entetes = { Authorization: auth }; const ua = req.headers.get('user-agent'); if (ua) entetes['user-agent'] = ua;
+    const vue = req.headers.get('x-kdmc-vue'); if (vue) entetes['x-kdmc-vue'] = vue;   /* 24.10 : ticket de vue membre (la caisse ne voit pas le cookie du domaine) */
     const j = await lireWhoami(entetes);
     if (!j || !j.ok) return { ok: false, status: 401, detail: 'session invalide', step: 'simu_session' };
     if (j.simulation !== true || j.apercu !== 'membre') return { ok: false, status: 403, detail: 'réservé à la vue membre simulée de l\'admin', step: 'simu_refus' };

@@ -64,6 +64,20 @@ const who = async (c) => JSON.parse((await va('https://cmcteams.kd-mc.com/__sso/
 { const j = await who(kevin); ok(j.ok && j.admin === true && !j.apercu, 'ADMIN sans vue membre : admin:true'); }
 { const j = await who(kevin + '; kdmc_vue=membre'); ok(j.ok && j.admin === false && j.apercu === 'membre' && j.abonnement === 'max' && j.simulation === true, 'ADMIN en vue membre : admin:false, apercu membre, abonnement max (simulé)  ' + JSON.stringify({ a: j.admin, p: j.apercu, ab: j.abonnement })); }
 { const j = await who(anne + '; kdmc_vue=membre'); ok(j.ok && j.admin === false && !j.apercu && !j.abonnement, 'MEMBRE avec cookie fabriqué : rien de plus (ni apercu ni abonnement)'); }
+/* 3b — 24.10 (pont 780 : achat simulé refusé en vrai) : la CAISSE (hors domaine) ne voit pas le cookie kdmc_vue → /__sso/pass rend un ticket signé
+   que la page transmet ; whoami l'accepte en en-tête x-kdmc-vue, pour l'admin prouvé SEULEMENT. */
+const passDe = async (c) => JSON.parse((await va('https://kit.kd-mc.com/__sso/pass', { cookie: c }, { method: 'GET' })).t);
+const whoH = async (h) => JSON.parse((await va('https://kit.kd-mc.com/__sso/whoami', h, { method: 'GET' })).t);
+{ const p = await passDe(kevin + '; kdmc_vue=membre'); ok(p.ok && typeof p.vue === 'string' && p.vue.includes('.'), 'ADMIN en vue membre : /__sso/pass rend un ticket de vue  ' + JSON.stringify({ ok: p.ok, vue: !!p.vue }));
+  const j = await whoH({ cookie: kevin, 'x-kdmc-vue': p.vue });
+  ok(j.ok && j.admin === false && j.apercu === 'membre' && j.simulation === true, 'ticket transmis SANS cookie de vue (cas de la caisse) : whoami voit la vue membre');
+  const j2 = await whoH({ cookie: anne, 'x-kdmc-vue': p.vue });
+  ok(j2.ok && !j2.apercu && !j2.simulation, 'le ticket de Kevin présenté par un MEMBRE : rien (lié à l\'uid et à l\'admin prouvé)');
+  const faux = p.vue.slice(0, -2) + (p.vue.slice(-2) === 'AA' ? 'BB' : 'AA');
+  const j3 = await whoH({ cookie: kevin, 'x-kdmc-vue': faux });
+  ok(j3.ok && j3.admin === true && !j3.apercu, 'ticket falsifié : refusé, Kevin reste admin'); }
+{ const p = await passDe(kevin); ok(p.ok && !p.vue, 'ADMIN en vue admin : aucun ticket de vue'); }
+{ const p = await passDe(anne + '; kdmc_vue=membre'); const j = await whoH({ cookie: anne, 'x-kdmc-vue': p.vue || '' }); ok(!j.apercu && !j.simulation, 'MEMBRE avec cookie fabriqué : son ticket ne lui donne rien'); }
 { const r = await post({ mode: 'admin' }, { cookie: kevin + '; kdmc_vue=membre' }); ok(r.st === 200 && /kdmc_vue=;/.test(r.cookie) && /Max-Age=0/.test(r.cookie), 'ADMIN → retour en vue admin (cookie effacé)'); }
 
 /* 4 — déconnexion et bouton */

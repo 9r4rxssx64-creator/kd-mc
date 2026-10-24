@@ -1564,6 +1564,25 @@ function pkKey(uid) { return 'pk:' + (ADMIN_UIDS.indexOf(uid) >= 0 ? CANON_UID :
 /* Vue membre de l'admin (23.10) : un simple cookie d'AFFICHAGE, jamais une preuve. */
 const VUE_COOKIE = 'kdmc_vue';
 export function vueMembre(request) { return /(?:^|;\s*)kdmc_vue=membre(?:;|$)/.test((request && request.headers && request.headers.get('cookie')) || ''); }
+/* 24.10 (pont 780 : l'achat simulé refusé en vrai) : un service HORS du domaine (la caisse, *.workers.dev) ne reçoit pas le cookie kdmc_vue.
+   /__sso/pass rend alors, en vue membre, un ticket signé (10 min, lié à l'uid) que la page transmet ; whoami l'accepte en en-tête
+   `x-kdmc-vue`. Comme le cookie, il ne descend que : il ne fait rien pour qui n'est pas déjà l'admin prouvé. */
+const VUE_TICKET_MS = 10 * 60 * 1000;
+export async function vueTicketSign(secret, uid) {
+  const p = b64urlStr(JSON.stringify({ u: String(uid || ''), v: 'membre', exp: Date.now() + VUE_TICKET_MS }));
+  return p + '.' + (await ssoHmac(secret, p));
+}
+export async function vueTicketOk(secret, request, uid) {
+  const tok = (request && request.headers && request.headers.get('x-kdmc-vue')) || '';
+  if (!tok || tok.indexOf('.') < 0 || !uid) return false;
+  const dot = tok.indexOf('.'); const p = tok.slice(0, dot); const sig = tok.slice(dot + 1);
+  const expect = await ssoHmac(secret, p);
+  if (sig.length !== expect.length) return false;
+  let diff = 0; for (let i = 0; i < sig.length; i++) diff |= sig.charCodeAt(i) ^ expect.charCodeAt(i);
+  if (diff !== 0) return false;
+  let d; try { d = JSON.parse(b64urlToStr(p)); } catch { return false; }
+  return !!(d && d.v === 'membre' && d.u === String(uid) && d.exp > Date.now());
+}
 function J(o, setCookie, status) {
   const h = new Headers({ 'content-type': 'application/json', 'cache-control': 'no-store', 'x-kdmc-sso': '1', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' });
   for (const c of Array.isArray(setCookie) ? setCookie : (setCookie ? [setCookie] : [])) h.append('set-cookie', c);
@@ -3749,7 +3768,7 @@ async function handleSso(request, url, env, ctx) {
          pas connecté admin, tu simules que je suis abonné avec les meilleurs abonnements »). L'admin PROUVÉ qui a choisi « vue membre »
          (cookie kdmc_vue=membre, posé par /__admin/vue) est vu par TOUTES les apps comme un membre : admin:false. Seulement vers le BAS :
          le cookie ne donne jamais rien à quelqu'un qui n'est pas déjà admin prouvé. Les portes admin du serveur restent ouvertes (retour en 1 clic). */
-      if (estAdmin && vueMembre(request)) { rep.admin = false; rep.apercu = 'membre'; rep.abonnement = 'max'; rep.simulation = true; }
+      if (estAdmin && (vueMembre(request) || await vueTicketOk(secret, request, s.uid))) { rep.admin = false; rep.apercu = 'membre'; rep.abonnement = 'max'; rep.simulation = true; }
       /* L'app a envoyé un vieux laissez-passer et le cookie prouvé l'a emporté : on lui rend le bon, pour
          qu'elle remplace celui de sa mémoire (même exposition que /__sso/pass). */
       else if (choix.cookie && parEnTete) { rep.token = choix.tok; rep.remplace = true; }
@@ -4255,7 +4274,7 @@ async function handleSso(request, url, env, ctx) {
     const g = adminGrantTok(request);
     const gOk = (await grantValide(env, secret, g)) ? g : '';
     /* `porte` (8.10) : l'enveloppe signée, 90 s, que /__sso/entrer accepte — le grant admin ne voyage plus en clair dans l'adresse */
-    return J({ ok: true, token: t, grant: gOk, porte: await porteSign(secret, t, gOk) });
+    return J({ ok: true, token: t, grant: gOk, porte: await porteSign(secret, t, gOk), vue: vueMembre(request) ? await vueTicketSign(secret, s.uid) : undefined });
   }
   if (path === '/__sso/entrer' && request.method === 'GET') {
     /* 8.10 (revue extérieure, P1) : le grant admin (12 h d'admin à qui le tient) passait en clair dans l'adresse (`g=`), donc dans les

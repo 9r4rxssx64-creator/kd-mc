@@ -15,6 +15,7 @@
 | https://apex-chat-api-staging.9r4rxssx64.workers.dev/ | **Apex Chat de TEST (page + API)** — base `staging-apex-chat`, bandeau « STAGING », inscription par numéro de test + code `000000` (ne marche que là). **C'est ICI qu'on travaille.** | 200 · `/api/health` 200 (1.1.346) |
 | https://staging.kd-mc.com | Porte d'entrée du test (admin seul, noindex) : une page avec le bouton vers l'adresse ci-dessus. Ne contient aucune appli. | 200 (la porte) |
 
+- **Décision finale du 24.10.2026 (Kevin : « tu décides, workers.dev ou pas c'est pas grave, sécurisé et fonctionnel »)** : on garde ces DEUX adresses, rien d'autre. L'appli n'est PAS servie sous `staging.kd-mc.com` : cela exigerait de modifier le routeur central du domaine (une erreur coupe toutes les apps) pour un gain seulement visuel, et le test réel y demanderait la session admin de Kevin. L'appli de test ne contient aucune donnée réelle (base à part, ni SMS, ni push, ni cron, ni SSO). Annule `pont 624, 639, 723 (partie « servir sous kd-mc.com »), 743`. Message du pont n° 757.
 - Autres apps (Arbre, Lingua, Bee, boutiques, CMCteams…) : **pas de version de test** — on les essaie sur leur adresse habituelle, en lecture seule.
 - Pas de SSO du domaine / Face ID, pas de SMS, pas de push, pas de crons au staging ; appels en direct seulement.
 - Remise à zéro + preuve « aucune trace » : robot public `staging-apex-chat-donnees.yml` (actions `reset`, `aucune-trace`, `cycle`). Redéployer : `deploy-apex-chat-staging.yml`.

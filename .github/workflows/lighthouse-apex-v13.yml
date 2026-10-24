@@ -68,27 +68,52 @@ jobs:
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
+      # 24.10.2026 (studio-crea, tâche 26 du pont) : l'artefact du run 40000661325 ne contenait QUE les deux
+      # fichiers `lighthouse-v13.3.73*.json` figés dans le dépôt (mesure du 8 MAI 2026, 99/100), et PAS la
+      # mesure fraîche du jour (`.lighthouseci/`, 51/100 en mobile) : `upload-artifact` ignore les dossiers
+      # cachés tant que `include-hidden-files` n'est pas posé. Qui lisait l'artefact lisait un vieux score.
+      # → on n'archive que la mesure du jour, et le résumé imprime les VRAIS scores et les VRAIS seuils.
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse-reports-${{ github.sha }}
-          path: |
-            apex-ai/v13/.lighthouseci/
-            apex-ai/v13/lighthouse-*.json
+          path: apex-ai/v13/.lighthouseci/
+          include-hidden-files: true
           retention-days: 30
           if-no-files-found: warn
 
       - name: Summary
         if: always()
+        working-directory: apex-ai/v13
         run: |
-          echo "## 🚦 Lighthouse CI Apex v13" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Seuils requis (lighthouse.config.json) :" >> $GITHUB_STEP_SUMMARY
-          echo "- Performance ≥ 90" >> $GITHUB_STEP_SUMMARY
-          echo "- Accessibility ≥ 95" >> $GITHUB_STEP_SUMMARY
-          echo "- Best Practices ≥ 95" >> $GITHUB_STEP_SUMMARY
-          echo "- SEO ≥ 90" >> $GITHUB_STEP_SUMMARY
-          echo "- PWA ≥ 90 (warn)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Rapports JSON archivés dans artifacts (retention 30j)." >> $GITHUB_STEP_SUMMARY
+          node -e '
+            const fs = require("fs");
+            const out = [];
+            out.push("## 🚦 Lighthouse CI Apex v13", "");
+            const cfg = JSON.parse(fs.readFileSync("lighthouse.config.json", "utf8")).ci || {};
+            const asserts = (cfg.assert || {}).assertions || {};
+            out.push("Seuils requis (lus dans lighthouse.config.json) :");
+            for (const [k, v] of Object.entries(asserts)) {
+              if (!k.startsWith("categories:")) continue;
+              const [niveau, opts] = Array.isArray(v) ? v : [v, {}];
+              const min = opts && opts.minScore != null ? Math.round(opts.minScore * 100) : null;
+              out.push("- " + k.slice(11) + (min != null ? " ≥ " + min : "") + (niveau === "warn" ? " (warn)" : ""));
+            }
+            out.push("");
+            let manifest = [];
+            try { manifest = JSON.parse(fs.readFileSync(".lighthouseci/manifest.json", "utf8")); } catch (e) {}
+            if (!manifest.length) {
+              out.push("⚠️ Aucune mesure du jour dans .lighthouseci/ : rien à afficher (le robot n a pas mesuré).");
+            } else {
+              out.push("Scores MESURÉS aujourd hui (" + manifest.length + " passage(s), mobile) :", "");
+              out.push("| passage | perf | accessibilité | bonnes pratiques | seo | pwa |", "|---|---|---|---|---|---|");
+              manifest.forEach((m, i) => {
+                const s = m.summary || {};
+                const pc = (x) => (x == null ? "—" : Math.round(x * 100));
+                out.push("| " + (i + 1) + (m.isRepresentativeRun ? " (représentatif)" : "") + " | " + pc(s.performance) + " | " + pc(s.accessibility) + " | " + pc(s["best-practices"]) + " | " + pc(s.seo) + " | " + pc(s.pwa) + " |");
+              });
+            }
+            out.push("", "Rapports JSON du jour archivés dans l artefact (30 jours).");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, out.join("\n") + "\n");
+          '

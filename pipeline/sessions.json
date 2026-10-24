@@ -15,7 +15,7 @@
       "maj": "2026-10-24",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "24.10 : pont D1 lu (201), étiquette cf-rapide corrigée dans ia-route, caméra Studio stable, studio.kd-mc.com v9.18.6 vérifié réel"
+      "note": "24.10 13h50 : pont relu jusqu au 854 (règles 806 Firecrawl, 809 file unique, 852 geste vérifié + lien) ; tâche 26 reprise : robot Lighthouse d Apex corrigé (artefact périmé de mai 2026 → mesure du jour + vrais seuils), garde test:lighthouse-robot"
     },
     "cmcteams": {
       "titre": "CMCteams",

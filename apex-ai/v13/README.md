@@ -167,7 +167,7 @@ Dernière cascade audit subagents externes parallèles (5 angles indépendants) 
 
 **Total : 197/200**. Reste polish v13.3.82 (aria-labels exhaustifs, vRGPDAdmin UI, Lighthouse CI mesurable, axe a11y workflow, README enrichi).
 
-Rapport complet : `apex-ai/v13/lighthouse-v13.3.73.json` + `a11y-baseline.json` + artifacts CI.
+Rapport complet : les deux fichiers `apex-ai/v13/lighthouse-v13.3.73*.json` sont la mesure du **8 mai 2026** (performance 99) — **périmée**. La mesure du jour vit dans l'artefact du robot public `Lighthouse CI Apex v13` (`.lighthouseci/`, résumé du run avec les vrais scores et les vrais seuils) ; `a11y-baseline.json` pareil (robot `Axe A11y Apex v13`). Mesuré le 23.10.2026 (run 40000661325, Apex 13.4.385, mobile) : performance **51**, accessibilité 100, bonnes pratiques 93, SEO 100 ; LCP 7,9 s, TBT 940 ms. Garde : `npm run test:lighthouse-robot`.
 
 ---
 

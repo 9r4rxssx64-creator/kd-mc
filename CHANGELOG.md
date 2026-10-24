@@ -30,6 +30,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Adresses officielles : staging + 29 workers (2026-10-23)
 - `KDMC_ADRESSES.md` : section « Staging » (une seule adresse de test pour Apex Chat, la porte staging.kd-mc.com, pas de « dev ») et tableau des 29 workers du compte principal avec rôle et mesure réelle (racine, /health). `apex-v13-backend` et `apex-vault-svc` n'existent pas.
 
+## Apex Chat v1.1.347 (2026-10-24 — le service worker ne relaie plus l'identité du domaine)
+- Les appels `/__sso/…` (qui es-tu, laissez-passer, entrée) sont faits par le navigateur lui-même, plus par le service worker : un agent différent faisait refuser le laissez-passer lié à l'appareil, et la fenêtre « Installer » ne s'ouvrait pas chez le robot d'inscription. Preuve : `tests/unit/sw-laisse-le-navigateur-identite.test.js` 3/3 (rouge sans le correctif) ; 2 285 tests verts.
+
 ## Apex AI v13.4.391 (2026-10-24 — le bandeau « vue membre » ne cache plus les onglets)
 - Vu par le Lenovo dans le Chrome de Kevin : la barre bleue en bas recouvrait les onglets (Chat, Dash, Admin, Coffre…). Elle devient une petite pastille en haut, centrée, qui ne capte aucun clic. Et une panne passagère de GitHub au démarrage ne fait plus de bulle orange : seul un jeton refusé se dit. Preuve : `tests/unit/vue-membre-simulee.test.ts` 6/6 (rouge avec l'ancien bandeau) ; 12 593 tests verts.
 

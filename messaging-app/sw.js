@@ -42,6 +42,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  /* Identité du domaine (/__sso/…) : le navigateur la demande lui-même, le service worker ne s'en mêle pas (tâche 60). */
+  if (handlers.laisserLeNavigateur(event.request, self.location.origin)) return;
   event.respondWith(handlers.handleFetch(event, deps));
 });
 

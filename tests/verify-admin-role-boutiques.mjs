@@ -75,6 +75,9 @@ const etat = (uid) => p.evaluate((u) => {
 const avec = await etat('essai_avec'), sans = await etat('essai_sans');
 ok('R1. case « 🛍 Gère les boutiques » sur la fiche', !!(avec && avec.existe && sans && sans.existe && /Gère les boutiques/.test(sans.libelle)), sans ? sans.libelle.slice(0, 60) : 'bloc « Où elle peut aller » absent');
 ok('R2. cochée si le domaine donne le rôle, décochée sinon', !!(avec && avec.coche && sans && !sans.coche));
+await p.evaluate(() => { location.hash = '#personnes/comptes'; }); await p.waitForTimeout(800);
+const lisible = await p.evaluate(() => { const bx = document.querySelector('details.acces[data-uid="essai_sans"]'); if (bx) { bx.open = true; const f = bx.closest('details.fiche'); if (f) f.open = true; } const c = document.querySelector('details.acces[data-uid="essai_sans"] input[data-role="shops"]'); const l = c && c.closest('label'); const d = l && l.querySelector('.d'); if (!d) return null; const lr = l.getBoundingClientRect(), dr = d.getBoundingClientRect(), cr = c.getBoundingClientRect(); if (!dr.width) return { vide: true }; const lib = l.querySelector(".rolelib"); return { sous: !!lib && dr.top > lib.getBoundingClientRect().top + 8 && (dr.left - cr.left) < 60, gauche: Math.round(dr.left - cr.left), dansCadre: dr.right <= lr.right + 1 }; });
+ok('R6. (capture de Kevin, 25.10) l\'explication est SOUS le titre, pas en colonne à côté', !!(lisible && lisible.sous && lisible.dansCadre), JSON.stringify(lisible));
 ok('R4. le résumé dit « 🛍 boutiques » pour qui a le rôle', !!(avec && /🛍 boutiques/.test(avec.resume) && sans && !/boutiques/.test(sans.resume)));
 
 async function enregistrer(uid, cocher) {

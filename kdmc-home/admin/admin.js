@@ -330,7 +330,8 @@
       /* Le rôle « shops » (25.10, pont 1044) : sans cette case, il n'y avait aucun écran pour voir ni poser le droit qui ouvre
          l'admin de Chez Lolo, La Détente, Sourcing et le tableau des boutiques. Le domaine l'exige en plus du code prouvé. */
       + '<label class="accradio"><input type="checkbox" data-role="shops"' + (roles.indexOf('shops') >= 0 ? ' checked' : '')
-      + '> 🛍 Gère les boutiques <span class="d">(Chez Lolo, La Détente, Sourcing, Tableau)</span></label>'
+      /* 25.10 (capture iPhone de Kevin) : le titre et l'explication étaient deux colonnes serrées ; l'explication passe SOUS le titre */
+      + '> <span class="rolelib">🛍 Gère les boutiques<span class="d" style="display:block">Chez Lolo, La Détente, Sourcing, Tableau</span></span></label>'
       + '<details class="sousbloc"><summary>🚫 Fermer une application précise</summary>'
       + '<div class="d">Marche même si la personne a accès à tout le domaine.</div>'
       + '<div class="chips">' + APPS_LISTE.map(function (x) { return chip(a.uid, 'bloque', x, bloque.indexOf(x) >= 0); }).join('') + '</div>'

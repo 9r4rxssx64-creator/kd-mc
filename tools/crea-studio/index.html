@@ -41,7 +41,7 @@
   #topbar .logo b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
   .spacer{flex:1}
   .tbtn{
-    min-width:40px;height:40px;padding:0 12px;border-radius:12px;background:var(--card2);
+    min-width:44px;height:44px;padding:0 12px;border-radius:12px;background:var(--card2);
     border:1px solid var(--line);font-weight:600;font-size:13px;display:inline-flex;
     align-items:center;justify-content:center;gap:6px
   }
@@ -210,7 +210,7 @@
      défile, donc n'importe quel bouton peut passer sous lui. Il laisse donc
      traverser les appuis (pointer-events:none) — mesuré : sinon la case
      « réglages seulement ici » devenait intouchable au bas du panneau. */
-  #vbadge{position:fixed;left:8px;bottom:calc(64px + var(--safeb));z-index:40;font-size:10px;
+  #vbadge{position:fixed;left:8px;bottom:calc(var(--navh,64px) + var(--safeb));z-index:40;font-size:10px;
     padding:3px 8px;border-radius:20px;background:rgba(0,0,0,.55);border:1px solid var(--line);
     color:var(--gold2);opacity:.8;font-weight:700;pointer-events:none}
 
@@ -330,6 +330,15 @@
   .stickergrid{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;max-height:120px;overflow-y:auto;justify-content:center}
   .stickergrid button{width:44px;height:44px;border-radius:11px;background:var(--card);border:1px solid var(--line);font-size:24px;display:flex;align-items:center;justify-content:center}
   .stickergrid button:active{transform:scale(.9);background:var(--card2)}
+  /* 25.10 (toutes les plateformes, mesuré par tools/plateformes/verif-studio-plateformes.mjs) :
+     sur un téléphone, 3 studios de la barre du bas (Famille, Mes créations, Magie) et 8 styles sur 12
+     de la galerie du Cartoon étaient HORS ÉCRAN (barres à défilement caché) → la barre passe sur deux
+     rangées sous 520 px, la galerie s'enroule ; la pastille suit la hauteur réelle de la barre (--navh). */
+  @media (max-width:520px){
+    #bnav{flex-wrap:wrap;overflow-x:hidden}
+    #bnav button{flex:1 0 20%;min-width:0}
+  }
+  #animStyles{flex-wrap:wrap;overflow-x:visible}
 </style>
 </head>
 <body>
@@ -1083,8 +1092,11 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.20.0';
+var APP_VER='v9.21.0';
 document.getElementById('vbadge').textContent=APP_VER;
+/* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
+function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}
+majNavH();window.addEventListener('resize',majNavH);setTimeout(majNavH,300);
 
 /* ---------- utils ---------- */
 function $(id){return document.getElementById(id)}

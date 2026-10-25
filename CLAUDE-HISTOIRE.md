@@ -12461,3 +12461,7 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - L'arbre prend l'écran : barres, zoom et mini-carte sont rangés derrière un bouton ☰ en bas au centre (avec 👁, ⛶, 📌 « garder ouvertes »), s'effacent pendant un glissé/pincé et se referment quand on touche l'arbre. Couverture de l'arbre : 0,7 à 4,8 % selon l'appareil.
 - Garde : `node tools/arbre/verify-focus-famille.mjs` (chaque personne, 6 appareils ; `ARBRE_DB=<export>` = vraie base en lecture seule) + `npm run test:arbre-focus-commandes` (dans test:ci). Détail : `.claude/rules/arbre-affichage-donnees.md`, LESSONS 737.
 
+
+## 🗺️ RÈGLE ABSOLUE — TOUT LE DOMAINE DE KEVIN EST MON TERRAIN : JE LE CONNAIS, JE LE NOTE, JE LE TESTE EN ENTIER, TOUTES BRANCHES, PRÉSENTES ET FUTURES (Kevin 2026-10-25, ABSOLUE)
+« Voici tout mon domaine. Note tout et rappelle-toi. Pareil pour toutes les autres branches et les futures. »
+- Source des apps : `kdmc-home/apps.json` ; liste vue par Kevin, éléments flottants (abeille, « Vue admin », version) qui ne doivent rien cacher, élément commun corrigé une seule fois au fichier partagé et annoncé au pont : tout est dans `.claude/rules/domaine-complet.md`.

@@ -4,9 +4,10 @@
  * - les icônes du manifeste se trouvent (le manifeste est servi depuis /assets/json/ : « ./assets/icons/… » donnait 404) ;
  * - les sentinelles (30 services externes sondés) ne démarrent pas pendant le premier affichage.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
+const RACINE = process.cwd();
 const lire = (f: string): string => readFileSync(`${process.cwd()}/${f}`, 'utf8');
 
 describe('démarrage silencieux', () => {
@@ -27,7 +28,9 @@ describe('démarrage silencieux', () => {
     const m = JSON.parse(lire(f)) as { icons: Array<{ src: string }>; shortcuts?: Array<{ icons?: Array<{ src: string }> }> };
     const toutes = [...m.icons, ...(m.shortcuts ?? []).flatMap((s) => s.icons ?? [])].map((i) => i.src);
     expect(toutes.length).toBeGreaterThanOrEqual(4);
-    expect(toutes.every((s) => s.startsWith('/assets/icons/'))).toBe(true);
+    // publicDir = 'assets' : assets/icons/X est servi à /icons/X (v13.4.393 : /assets/icons/ donnait 404 en ligne)
+    expect(toutes.every((s) => s.startsWith('/icons/'))).toBe(true);
+    for (const s of toutes) expect(existsSync(`${RACINE}/assets/${s.slice(1)}`)).toBe(true);
     }
   });
 

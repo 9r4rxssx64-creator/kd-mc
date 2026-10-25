@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 232 règles — le texte de Kevin, une par une
+## 📜 Les 233 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1016,6 +1016,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🌳 RÈGLE ABSOLUE — ARBRE : TOUCHER UNE PERSONNE = TOUTE SA FAMILLE NETTE DU PLUS BAS AU PLUS HAUT, LE RESTE PRESQUE TRANSPARENT ET RÉGLABLE ; L'ARBRE PREND L'ÉCRAN ET LES COMMANDES SE RANGENT (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
 **« Vérifie pour chaque personne en réel. Quand on clique sur une personne doit apparaître toute sa famille du plus bas au plus haut et le reste en transparent presque, moins visible. Bouton de […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-toucher-une-personne-toute-sa-famille-nette-du-plus-bas-au-plus-haut-le-reste-presque-transparent-et-réglable-larbre-prend-lécran-et-les-commandes-se-rangent-kevin-2026-10-25-absolue-toutes-les-branches)
+
+### 🗺️ RÈGLE ABSOLUE — TOUT LE DOMAINE DE KEVIN EST MON TERRAIN : JE LE CONNAIS, JE LE NOTE, JE LE TESTE EN ENTIER, TOUTES BRANCHES, PRÉSENTES ET FUTURES (Kevin 2026-10-25, ABSOLUE)
+« Voici tout mon domaine. Note tout et rappelle-toi. Pareil pour toutes les autres branches et les futures. »
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tout-le-domaine-de-kevin-est-mon-terrain-je-le-connais-je-le-note-je-le-teste-en-entier-toutes-branches-présentes-et-futures-kevin-2026-10-25-absolue)
 
 ---
 

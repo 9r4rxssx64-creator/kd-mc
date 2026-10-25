@@ -199,6 +199,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .adm-row:last-child{border-bottom:none}
 .hero{background-image:linear-gradient(90deg,rgba(14,16,18,.94),rgba(14,16,18,.55) 58%,rgba(14,16,18,.18)),url('img/hero.png');background-size:cover;background-position:right center;background-repeat:no-repeat}
 .promobar{background:linear-gradient(90deg,#3a0f12,#dc2626,#3a0f12);color:#fff;font-size:12.5px;font-weight:600;text-align:center;padding:8px 34px;position:relative}.promobar .x{position:absolute;right:10px;top:50%;transform:translateY(-50%);opacity:.85;cursor:pointer;font-size:14px}.card-img{position:relative}.badge-stack{position:absolute;top:8px;left:8px;z-index:2;display:flex;flex-direction:column;gap:4px;align-items:flex-start}.card-badge.badge-new{background:#16a34a;color:#fff}.card-badge.badge-top{background:#f59e0b;color:#111}.card-badge.badge-aop{background:#7c3aed;color:#fff}.card-badge.badge-bio{background:#15803d;color:#fff}.card-wish{position:absolute;top:8px;right:8px;z-index:3;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;font-size:15px;border:none;cursor:pointer;transition:.15s;line-height:1}.card-wish:hover{background:rgba(0,0,0,.78);transform:scale(1.12)}.sizebtn{min-width:48px;padding:11px 12px;border-radius:var(--rs);border:1px solid var(--border);background:var(--bg);color:var(--text);font-weight:700;cursor:pointer;transition:.12s}.sizebtn:hover{border-color:var(--p)}.sizebtn.on{background:var(--p);border-color:var(--p);color:#fff}.ship-prog{height:7px;border-radius:100px;background:var(--border);overflow:hidden}.ship-prog>i{display:block;height:100%;background:linear-gradient(90deg,#16a34a,#22c55e);transition:width .3s}.reassure{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:18px 0 4px}.reassure>div{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--muted)}.cfilter{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:18px}.cfilter .sw2{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);cursor:pointer;padding:0}.cfilter .sw2.on{border-color:#fff;box-shadow:0 0 0 2px var(--p)}
+/* 25.10 (passage 2 du Lenovo) : chaque lien et bouton se touche au doigt (≥ 44 px), y compris pied de page, fil d'Ariane et bandeau cookies */
+.footer a{min-height:44px;display:flex;align-items:center;padding:0}
+.footer-bottom a,.cookie a,.pdp nav a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;justify-content:center}
+.filter-pill,.cookie-btns button,#nlEmail,#nlEmail+button{min-height:44px;min-width:44px}
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Store","name":"La Détente — Textile entre amis","description":"Vêtements personnalisés au motif AR15 + cœur rouge : tir, précision, chasse, ball-trap. T-shirts, sweats, polos, casquettes. Designs personnalisables.","url":"https://shops.kd-mc.com/la-detente/","image":"https://shops.kd-mc.com/la-detente/img/og.png","address":{"@type":"PostalAddress","addressLocality":"Monaco","addressCountry":"MC"},"priceRange":"€€","paymentAccepted":"PayPal, Revolut, Virement bancaire"}</script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
@@ -1316,7 +1320,7 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.27"
+        data-version="v1.53.28"
         data-color="#e8b830"
         defer></script>
 

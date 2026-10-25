@@ -263,6 +263,10 @@ input,select,textarea{font-size:16px}
 .hdr{padding-top:env(safe-area-inset-top)}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.nav-item:focus-visible,.card:focus-visible{outline:2px solid var(--p);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* 25.10 (passage 2 du Lenovo : 17 cibles < 44 px) : chaque lien et bouton se touche au doigt (≥ 44 px), y compris pied de page et bandeau cookies */
+.footer a{min-height:44px;display:flex;align-items:center;padding:0}
+.footer-bottom a,.cookie a{display:inline-flex;align-items:center;min-height:44px;min-width:44px;justify-content:center}
+.filter-pill,.cookie-btns button,#nlEmail,#nlEmail+button{min-height:44px;min-width:44px}
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Store","name":"CHEZ LOLO","description":"La boutique multi-univers de Lolo : textile, cosmétiques, goodies & accessoires. Livraison Monaco & France.","url":"https://chez-lolo.kd-mc.com/","image":"https://chez-lolo.kd-mc.com/img/og.png?ignore=crop","address":{"@type":"PostalAddress","addressLocality":"Monaco","addressCountry":"MC"},"priceRange":"€€","paymentAccepted":"PayPal, Revolut, Virement bancaire"}</script>
 <!-- async (10.10, réactivité) : utilisé seulement à l'envoi d'un message (garde « typeof emailjs ») ; en « defer » il retenait la fin du chargement derrière jsdelivr. -->
@@ -280,7 +284,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <!-- <script>!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=i;ttq._t=ttq._t||{};ttq._t[e+"_"+n]=1;var o=document.createElement("script");o.type="text/javascript";o.async=!0;o.src=i+"?sdkid="+e+"&lib="+t;var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load('XXXXXXXXX');ttq.page()}(window,document,'ttq')</script> -->
 </head>
 <body>
-<a href="https://kd-mc.com/" aria-label="Retour au portail KDMC" style="position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:10px;z-index:99999;background:rgba(10,10,12,.72);color:#fff;text-decoration:none;padding:7px 13px;border-radius:999px;font:600 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;border:1px solid rgba(255,255,255,.22);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)">← KDMC</a>
+<a href="https://kd-mc.com/" aria-label="Retour au portail KDMC" style="position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:10px;z-index:99999;background:rgba(10,10,12,.72);color:#fff;text-decoration:none;padding:7px 13px;min-height:44px;display:inline-flex;align-items:center;border-radius:999px;font:600 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;border:1px solid rgba(255,255,255,.22);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)">← KDMC</a>
 <div id="app"></div>
 <div class="cart-backdrop" id="cartBg" onclick="toggleCart()"></div>
 <div class="cart-overlay" id="cartPanel">
@@ -1014,7 +1018,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.21"
+        data-version="v2.0.22"
         data-color="#e8b830"
         defer></script>
 

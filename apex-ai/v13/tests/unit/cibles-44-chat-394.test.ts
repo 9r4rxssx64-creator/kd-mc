@@ -28,4 +28,10 @@ describe('chat : cibles tactiles ≥ 44 px', () => {
     expect(fab).toMatch(/width: 44px;\s*height: 44px;/);
     expect(fab).not.toMatch(/scale\(0\.92\)/);
   });
+  it('lien « ← KDMC » (v13.4.395, Lenovo 1103 : 85×36) : 44 px de haut', () => {
+    const html = lire('index.html');
+    const lien = html.slice(html.indexOf('aria-label="Retour au portail KDMC"'), html.indexOf('← KDMC</a>'));
+    expect(lien).toMatch(/min-height:44px/);
+    expect(lien).not.toMatch(/padding:11px 14px/);
+  });
 });

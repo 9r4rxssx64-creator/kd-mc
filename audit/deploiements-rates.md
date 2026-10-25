@@ -7,6 +7,29 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy Apex Chat (Cloudflare Workers) — 25/10/2026 16:46 UTC
+
+- **Branche** : `main` · **Commit** : `0a04fa4e` · **Run** : `40212867385`
+- **Ce qui a lâché** : Deploy Cloudflare Workers + Infra › Apply D1 migrations (journal _migrations — chaque fichier une seule fois), Cause lisible d'un déploiement refusé par Cloudflare
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/40212867385
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m# échec : ses autres instructions n'étaient jamais appliquées), migrations de données^[[0m
+^[[36;1m# rejouées, et un échec n'arrêtait pas les suivantes. Désormais le moteur^[[0m
+^[[36;1m# chaque fichier UNE fois, dans l'ordre, arrêt au premier vrai échec (le worker n'est^[[0m
+##[warning]wrangler d1 essai 1/3 :   "error": {
+##[warning]wrangler d1 essai 2/3 :   "error": {
+^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/d1/database/afee673e-83e9-4ae3-a578-96fabbfdd023/query) failed.^[[0m
+  Your account has exceeded D1's free tier daily row read limit. Upgrade to a paid plan or wait until tomorrow (midnight UTC) to continue. See ^[[4mhttps://developers.cloudflare.com/d1/platform/limits/^[[0m for more details. [code: 7500]
+##[error]Process completed with exit code 1.
+Deploy Cloudflare Workers + Infra	Cause lisible d'un déploiement refusé par Cloudflare	﻿2026-10-25T16:45:45.8218092Z ##[group]Run set -u
+^[[36;1mif [ -z "$f" ]; then echo "::error title=wrangler::aucun journal wrangler trouvé"; exit 0; fi^[[0m
+^[[36;1mgrep -iE '✘|\[ERROR\]|error:|code: ?[0-9]{4,}|exceed|limit' "$f" | grep -viE 'authorization|bearer|token' \^[[0m
+^[[36;1m  | sed -E 's/[0-9a-f]{32}/***/g' | cut -c1-300 | head -12 | while IFS= read -r l; do echo "::error title=wrangler::$l"; done^[[0m
+##[error]Process completed with exit code 2.
+```
+
 ## ❌ Deploy Apex Chat (Cloudflare Workers) — 25/10/2026 16:43 UTC
 
 - **Branche** : `main` · **Commit** : `0a04fa4e` · **Run** : `40212861269`
@@ -542,17 +565,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

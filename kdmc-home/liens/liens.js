@@ -1,8 +1,7 @@
 /* KDMC APEX — Centre de contrôle (liens 1-clic, par famille). v1.3.0
    Réservé Kevin / Lolo. Tout est fail-open (anti-lockout, règles #81/#98).
    Aucun secret ici : uniquement des liens vers TES tableaux de bord.
-   + Recherche instantanée + pastilles d'état des workers (lit le JSON de
-     santé committé chaque jour : /CMCteams/tools/health/workers-status.json). */
+   + Recherche instantanée + état des services en direct (surveillance kdmc-uptime, nombres seulement). */
 (function () {
   'use strict';
 
@@ -12,7 +11,7 @@
   var CF = 'https://dash.cloudflare.com/?to=/:account';
   var WK = function (name) { return 'https://' + name + '.9r4rxssx64.workers.dev'; };
   var FB = 'https://console.firebase.google.com/project';
-  var HEALTH_URL = '/CMCteams/tools/health/workers-status.json';
+  var HEALTH_URL = 'https://kdmc-uptime.9r4rxssx64.workers.dev/';
   var BAL_URL = 'https://kdmc-balances.9r4rxssx64.workers.dev/balances';
 
   /* ---- Données : familles de liens ---- */
@@ -272,46 +271,25 @@
     return n;
   }
 
-  /* ---- Pastilles d'état des workers (lit le JSON committé, même-origine) ---- */
+  /* ---- État des services : la surveillance EN DIRECT (25.10.2026) ----
+     L'ancien JSON committé (workers-status.json) n'était plus relevé depuis le 14.08 et n'était pas servi : aucune pastille ne
+     s'affichait. kdmc-uptime (34 services, passage toutes les 2 h par le cron de kdmc-outlook) ne donne, sans clé, que des NOMBRES :
+     on affiche donc un résumé sous la carte « santé », jamais une pastille par service qu'on ne connaît pas (honnête). */
   function applyHealth() {
-    fetch(HEALTH_URL, { cache: 'no-store' }).then(function (r) {
+    fetch(HEALTH_URL, { cache: 'no-store', credentials: 'omit' }).then(function (r) {
       return r.ok ? r.json() : null;
     }).then(function (j) {
-      if (!j || !j.workers) return;
-      // map host-prefix -> up
-      var up = {};
-      Object.keys(j.workers).forEach(function (k) {
-        var w = j.workers[k];
-        var m = String(w.url || '').match(/https?:\/\/([^.\/]+)/);
-        if (m) up[m[1]] = !!w.up;
-      });
-      var chips = document.querySelectorAll('#ctl .chip[data-host]');
-      var seen = 0, ok = 0;
-      chips.forEach(function (a) {
-        var host = a.getAttribute('data-host');
-        if (!(host in up)) return; // pas surveillé → pas de pastille (honnête)
-        seen++; if (up[host]) ok++;
-        var dot = up[host] ? '🟢 ' : '🔴 ';
-        if (a.textContent.indexOf('🟢') < 0 && a.textContent.indexOf('🔴') < 0) {
-          a.textContent = dot + a.textContent;
-        }
-        a.classList.add(up[host] ? 'up' : 'down');
-      });
-      // résumé sous la carte santé
+      if (!j || !j.ok || typeof j.total !== 'number') return;
       var card = document.querySelector('#ctl .chip[data-host]');
-      if (card && seen) {
-        var box = card.closest('.multi');
-        if (box && !box.querySelector('.hsum')) {
-          var when = j.checked_at ? new Date(j.checked_at) : null;
-          var ago = when ? Math.round((Date.now() - when.getTime()) / 3600000) : null;
-          var s = document.createElement('div');
-          s.className = 'hsum';
-          s.textContent = '🟢 ' + ok + '/' + seen + ' en ligne' +
-            (ago != null ? ' · contrôle il y a ' + ago + ' h' : '');
-          box.appendChild(s);
-        }
-      }
-    }).catch(function () { /* JSON indispo → aucune pastille, jamais d'erreur visible */ });
+      var box = card && card.closest('.multi');
+      if (!box) return;
+      var s = box.querySelector('.hsum');
+      if (!s) { s = document.createElement('div'); s.className = 'hsum'; box.appendChild(s); }
+      var heures = j.ts ? (Date.now() - new Date(j.ts).getTime()) / 36e5 : null;
+      s.textContent = (j.en_panne ? '🔴 ' : '🟢 ') + j.en_ligne + '/' + j.total + ' services en ligne'
+        + (j.en_panne ? ' · ' + j.en_panne + ' en panne' : '')
+        + (heures != null ? ' · contrôle il y a ' + (heures < 1 ? 'moins d\'1 h' : Math.floor(heures) + ' h') : '');
+    }).catch(function () { /* surveillance injoignable → pas de résumé, jamais d'erreur visible */ });
   }
 
   /* ---- Soldes (admin) : worker isolé, gated SSO. N'affiche QUE de vrais chiffres. ---- */

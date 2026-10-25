@@ -371,6 +371,7 @@ async function handleDeces(request, url) {
    - GET  /__arbre/status             → {code:bool, seed:bool, count, savedAt} — aucun secret
    FAIL-OPEN côté app : l'app garde son contrôle local (empreinte mémorisée sur l'appareil)
    si le domaine est muet. FAIL-CLOSED ici : sans empreinte publiée → « code_non_publie ». */
+const ARBRE_PREFS_OK = ['arbre_voix', 'arbre_transp', 'arbre_ctl_pin', 'arbre_mini', 'arbre_viewstyle2', 'arbre_fam', 'arbre_listfam', 'arbre_liens', 'arbre_viewer', 'arbre_barre_masquee', 'arbre_vue_epingle'];   /* liste fermée des réglages synchronisés par compte (voir /__arbre/prefs) */
 const ARBRE_HEX64 = /^[a-f0-9]{64}$/;
 const ARBRE_MEDIA_MAX = 8 * 1024 * 1024;   /* 8 Mo par image : une photo réduite fait ~0,4 Mo ; un scan PDF reste sous la limite */
 function hexEq(a, b) {
@@ -488,6 +489,41 @@ async function handleArbre(request, url, env) {
       if (s.length > 800 * 1024) return J({ ok: false, reason: 'trop_gros' });
       await env.ACCOUNTS.put('arbre:prive', s);
       return J({ ok: true, count: items.length });
+    }
+    return J({ ok: false, reason: 'methode' }, null, 405);
+  }
+
+  /* RÉGLAGES PAR COMPTE (Kevin 25.10.2026 : « quand un compte fait des réglages — voix, affichage… — on sauvegarde, et pareil à la prochaine connexion, chaque choix pour chacun »).
+     KV `arbre:prefs:<uid>` : seulement des choix d'affichage / de voix de la LISTE FERMÉE ci-dessous (jamais le code, jamais une donnée de la famille).
+     Lecture et écriture : la session du domaine de CE compte (son uid, compte non révoqué) ; personne ne lit les réglages d'un autre. Bornes : 40 clés, 600 caractères chacune. */
+  if (path === '/__arbre/prefs') {
+    const org = request.headers.get('origin');
+    if (org && !ssoOriginOk(org, url.host)) return J({ ok: false, reason: 'origine refusée' }, null, 403);
+    const sec = env.KDMC_SSO_SECRET;
+    const ses = sec ? await ssoVerify(sec, ssoToken(request), request) : null;
+    if (!ses || !ses.uid) return J({ ok: false, reason: 'session' }, null, 401);
+    const fiche = await accGet(env, ses.uid);
+    if (!fiche || revoked(fiche, ses)) return J({ ok: false, reason: 'compte' }, null, 403);
+    const cleKv = 'arbre:prefs:' + String(ses.uid).slice(0, 80);
+    if (request.method === 'GET') {
+      let d = {}; try { d = JSON.parse((await env.ACCOUNTS.get(cleKv)) || '{}') || {}; } catch { d = {}; }
+      return J({ ok: true, prefs: d.prefs && typeof d.prefs === 'object' ? d.prefs : {}, ts: +d.ts || 0 });
+    }
+    if (request.method === 'PUT') {
+      let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'bad_json' }); }
+      const src = b && b.prefs && typeof b.prefs === 'object' && !Array.isArray(b.prefs) ? b.prefs : null;
+      if (!src) return J({ ok: false, reason: 'prefs_invalides' });
+      const out = {};
+      for (const k of Object.keys(src)) {
+        if (ARBRE_PREFS_OK.indexOf(k) < 0) continue;
+        const v = src[k]; if (v === null) { out[k] = null; continue; }
+        if (typeof v !== 'string' || v.length > 600) continue;
+        out[k] = v;
+      }
+      if (Object.keys(out).length > 40) return J({ ok: false, reason: 'trop_de_cles' });
+      const ts = Date.now();
+      await env.ACCOUNTS.put(cleKv, JSON.stringify({ prefs: out, ts }));
+      return J({ ok: true, ts, count: Object.keys(out).length });
     }
     return J({ ok: false, reason: 'methode' }, null, 405);
   }

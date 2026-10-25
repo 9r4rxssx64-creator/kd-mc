@@ -1,35 +1,30 @@
 {
-  "le": "2026-09-27T20:32:03.381Z",
-  "echecs": 0,
+  "le": "2026-10-25T01:30:22.610Z",
+  "echecs": 3,
   "surfaces": [
     {
       "nom": "Portail kd-mc.com",
       "hote": "kd-mc.com",
       "servie": true,
-      "version_depot": "v1.0.37",
-      "version_servie": "v1.0.37",
-      "tuiles": 39,
+      "version_depot": "v1.0.85",
+      "version_servie": "v1.0.85",
+      "tuiles": 41,
       "absentes": 0
     },
     {
       "nom": "Vitrine boutiques",
       "hote": "shops.kd-mc.com",
       "servie": true,
-      "version_depot": "v1.0.3",
-      "version_servie": "v1.0.3",
+      "version_depot": "v1.0.4",
+      "version_servie": null,
       "tuiles": 10,
-      "absentes": 0
+      "absentes": 10
     }
   ],
-  "tuiles_total": 49,
-  "tuiles_absentes_en_ligne": 0,
+  "tuiles_total": 51,
+  "tuiles_absentes_en_ligne": 10,
   "destinations_mortes": 0,
-  "destinations_total": 41,
+  "destinations_total": 43,
   "destinations_derriere_porte": 8,
-  "tuiles_en_construction": 8,
-  "javis": {
-    "hote": "javis.kd-mc.com",
-    "octets_en_ligne": 80183,
-    "octets_depot": 81152
-  }
+  "tuiles_en_construction": 8
 }

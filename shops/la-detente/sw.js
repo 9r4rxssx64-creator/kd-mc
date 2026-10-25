@@ -3,7 +3,7 @@
 function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.preloadResponse) return Promise.resolve(ev.preloadResponse).then(function (r) { return r || fetch(rq, opt); }, function () { return fetch(rq, opt); }); return fetch(rq, opt); }
 /* KDMC Shops — Service Worker La Détente. MAJ auto forcée : network-first pour les
    pages (toujours la dernière version en ligne), cache-first pour les assets, fallback offline. */
-var CACHE='kdmc-la-detente-v1.53.26';
+var CACHE='kdmc-la-detente-v1.53.27';
 var PRE=['./','studio.html','bibliotheque.html','/CMCteams/shops/legal/cgv.html'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(PRE).catch(function(){})}));self.skipWaiting()});
 self.addEventListener('activate',function(e){ try { if (self.registration && self.registration.navigationPreload) e.waitUntil(self.registration.navigationPreload.enable().catch(function () {})); } catch (x) { /* pas de pré-chargement */ }e.waitUntil(caches.keys().then(function(ks){return Promise.all(ks.filter(function(k){return k!==CACHE&&(k.indexOf('kdmc-la-detente-')===0||k==='kdmc-v1')}).map(function(k){return caches.delete(k)}))}));self.clients.claim()});

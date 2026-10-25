@@ -26,3 +26,6 @@ Aucun secret dans la base (ni code, ni clé, ni empreinte) ; pas de données de 
 
 ## Règle de Kevin (20.10.2026) : les manipulations vont ICI, le Lenovo les fait
 Voir `.claude/rules/pont-lenovo-manipulations.md` : avant d'écrire « Kevin doit faire X », poser la mission au pont (`pc-config` / `arbre-pc`). Kevin ne garde que mot de passe, code, paiement, décision irréversible.
+
+## Réveil en un clic (25.10.2026) — table `reveils`
+`reveils(session_id PK, titre, pont_id, trigger_id, actif, dernier_reveil, note)` : une ligne par session Claude, avec son déclencheur SANS horaire (`create_trigger` + `persistent_session_id`, prompt « pont — RÉVEIL… »). Le Tableau KDMC écrit au pont puis appelle `fire_trigger` sur chaque `trigger_id` actif : la session se réveille et lit ses messages. Une session du Lenovo crée elle-même son déclencheur (refus « bridge » sinon) et écrit son `trigger_id` ici. Nouvelle session : créer son déclencheur et sa ligne.

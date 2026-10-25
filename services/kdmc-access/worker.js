@@ -222,6 +222,13 @@ async function sessionAdmin(request, env) {
   return !!(s && s.admin && s.verified);
 }
 // ── GET /history : agrégé par personne (PIN admin EN EN-TÊTE, OU session vérifiée de l'admin) ──
+/* Les comptes JETABLES des robots de contrôle (supprimés du domaine à la fin de chaque passage) : leurs connexions restent écrites dans le
+   journal Firebase, mais ne s'affichent plus ni ne comptent (personnes, connexions). Même liste fermée que tools/smoke/supprimer-compte-test.mjs,
+   plus les NOMS que ces robots se donnent (« Temps ReelA… », « Parcours Robot… »). Jamais une vraie personne : préfixes et noms de robots seulement. */
+export const UID_TEST = /^(kdmc_)?(testparcours-|testmail-|testvitesse-|testdecoupe-|testsecours-|testrapide-|testlot-|testlecture-|testfinal-|testcache-|testpass-|testsecurite-|testinscription-|parcours-robot|tempsreel)/i;
+export const NOM_TEST = /^\s*(temps\s*reel|parcours\s*robot|robot\s+(de\s+)?(test|contr[oô]le))/i;
+export function estCompteDeTest(e) { return UID_TEST.test(String((e && e.uid) || '')) || NOM_TEST.test(String((e && e.name) || '')); }
+
 async function handleHistory(request, env, origin) {
   const pin = (request.headers.get('x-apex-pin') || '').toLowerCase().trim();
   const expected = String(env.APEX_ADMIN_PIN_SHA256 || '').toLowerCase().trim();
@@ -246,6 +253,7 @@ async function handleHistory(request, env, origin) {
   const people = {};
   for (const e of events) {
     if (!e || typeof e !== 'object') continue;
+    if (estCompteDeTest(e)) continue;   // 25.10 (Kevin : « il y a encore des traces ») : les robots n'apparaissent jamais dans « Qui se connecte »
     const key = (e.uid || e.name || 'anon').toString();
     let p = people[key];
     if (!p) p = people[key] = { key, name: e.name || key, uid: e.uid || '', apps: {}, devices: {}, tiers: {}, firstSeen: e.ts, lastSeen: e.ts, count: 0, recent: [] };
@@ -266,7 +274,7 @@ async function handleHistory(request, env, origin) {
     p.devicesList = Object.keys(p.devices);
     return p;
   }).sort((a, b) => b.lastSeen - a.lastSeen);
-  return json({ ok: true, people: list, totalPeople: list.length, totalEvents: events.length, ts: now }, 200, origin);
+  return json({ ok: true, people: list, totalPeople: list.length, totalEvents: events.filter((e) => !estCompteDeTest(e)).length, ts: now }, 200, origin);
 }
 
 /* 🔒 AUCUNE CONSULTATION SANS COMPTE, NULLE PART (Kevin 3.10.2026) — appliquée ICI le 15.10.2026.

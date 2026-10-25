@@ -509,3 +509,12 @@ test('Bee sur l\'admin : /__javis/* est relayé tel quel au domaine (méthode, c
     assert.equal(vus.length, 0, 'ni Face ID, ni connexion admin, ni coffre ne passent par ce relais');
   } finally { globalThis.fetch = orig; }
 });
+
+// 25.10.2026 (Kevin, capture de admin.kd-mc.com : « Il y a encore des traces ») — les comptes jetables des robots ne s'affichent plus.
+import { estCompteDeTest } from './worker.js';
+test('comptes de test des robots : jamais dans « Qui se connecte », jamais une vraie personne', () => {
+  for (const e of [{ name: 'Temps ReelCsltmj' }, { name: 'Temps ReelBequhw' }, { name: 'Parcours Robot Abc' }, { uid: 'testparcours-x1' }, { uid: 'kdmc_testmail-y' }, { uid: 'parcours-robot-3' }])
+    assert.equal(estCompteDeTest(e), true, JSON.stringify(e));
+  for (const e of [{ name: 'Marc SCHWIETZER', uid: 'kdmc_m' }, { name: 'kevin Desarzens', uid: 'kdmc_admin' }, { name: 'Laurence', uid: 'laurence' }, { name: 'Robert Temps' }, { name: 'Tempête Reel' }])
+    assert.equal(estCompteDeTest(e), false, JSON.stringify(e));
+});

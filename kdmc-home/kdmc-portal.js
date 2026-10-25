@@ -500,11 +500,17 @@
       var enrolledHere = credMatch || (_ssVerified && pk.length > 0);
       /* quand on ne connaît pas le credId exact mais qu'il n'y a qu'UNE clé, c'est celle-ci */
       var soleHere = !credMatch && _ssVerified && pk.length === 1;
+      /* 25.10 (capture Kevin) : jamais d'identifiant technique à l'écran ; l'appareil courant est nommé d'après son navigateur */
+      function _ssNomAppareil() {
+        var u = navigator.userAgent || '', os = /iPhone/.test(u) ? 'iPhone' : /iPad/.test(u) ? 'iPad' : /Android/.test(u) ? 'Android' : /Mac OS/.test(u) ? 'Mac' : /Windows/.test(u) ? 'Windows' : 'Cet appareil';
+        var nav = /Edg\//.test(u) ? 'Edge' : /Chrome|CriOS/.test(u) ? 'Chrome' : /Firefox|FxiOS/.test(u) ? 'Firefox' : /Safari/.test(u) ? 'Safari' : '';
+        return os + (nav ? ' · ' + nav : '');
+      }
       var rows = pk.length
         ? pk.map(function (k) {
           var here = (mine && mine.indexOf(k.id) === 0) || soleHere;
           /* 22.10 (Kevin : « j'ai pas autant d'appareils ») : le nom de l'appareil (iPhone · Safari…) pris à l'inscription ; les anciennes clés, sans nom, disent « ancien appareil » */
-          return '<div class="ss-row"><span>🔑 ' + (k.label ? esc(k.label) : 'Ancien appareil <code>' + esc(k.id) + '…</code>')
+          return '<div class="ss-row"><span>🔑 ' + (k.label ? esc(k.label) : (here ? esc(_ssNomAppareil()) + ' <span class="ss-mut">(ancien enrôlement)</span>' : 'Ancien appareil <span class="ss-mut">(sans nom)</span>'))
             + (here ? '<span class="ss-here"> · cet appareil ✓</span>' : '')
             + '<span class="ss-mut"> — ajouté ' + esc(_ago(k.created)) + (k.last ? ', utilisé ' + esc(_ago(k.last)) : '') + '</span></span>'
             + '<button class="ss-del" data-pk="' + esc(k.id) + '" type="button">Retirer</button></div>';

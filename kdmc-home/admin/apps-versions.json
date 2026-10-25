@@ -4,11 +4,11 @@
  "apps": {
   "kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.86"
+   "version": "v1.0.87"
   },
   "www.kd-mc.com": {
    "page": "kdmc-home/index.html",
-   "version": "v1.0.86"
+   "version": "v1.0.87"
   },
   "cmcteams.kd-mc.com": {
    "page": "index.html",

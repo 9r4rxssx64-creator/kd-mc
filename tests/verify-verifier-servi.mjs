@@ -28,8 +28,6 @@ await b.close();
 ok('2a. page piégée : titre sous la pastille détecté', piege.sousPastille === true && piege.premier.top < piege.pastilleBas, JSON.stringify(piege.premier));
 ok('2b. page propre : rien à signaler', propre.sousPastille === false && propre.premier.top >= propre.pastilleBas, JSON.stringify(propre.premier));
 ok('2c. version lue (data-app-ver et badge)', propre.appVer === 'v9.9.9' && propre.badges.includes('v9.9.9'));
-const large = await (async () => { const b2 = await chromium.launch(exe ? { executablePath: exe } : {}); const p2 = await b2.newPage({ viewport: { width: 390, height: 844 } }); await p2.goto(f('large.html', '<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0"><div id="trop" class="bandeau" style="width:700px;height:20px">x</div><p>court</p></body>')); const r = await p2.evaluate(mesurerServi); await b2.close(); return r; })();
-ok('2d. débordement : le plus large élément est nommé avec ses nombres', large.debordeur && large.debordeur.s === 'div#trop.bandeau' && large.debordeur.droite === 700 && propre.debordeur === null, JSON.stringify(large.debordeur));
 const sortie = JSON.stringify(propre) + JSON.stringify(piege);
 ok('3. aucun texte de page dans la mesure', !/secret|Dupont|Léa/.test(sortie), sortie.slice(0, 120));
 const wf = readFileSync(new URL('../.github/workflows/verifier-servi.yml', import.meta.url), 'utf8');

@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v0.11.15 -->
+<!-- v0.11.16 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -110,7 +110,7 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
   .btn:active{transform:translateY(1px);box-shadow:0 3px 10px -6px rgba(14,136,201,.5)}
   .btn.ghost{background:rgba(24,55,83,.55);color:var(--txt);border:1px solid var(--line2);box-shadow:none;font-weight:700}
   .btn.ghost:active{background:rgba(24,55,83,.8)}
-  .btn.sm{min-height:40px;padding:9px 13px;font-size:13px;width:auto;border-radius:10px}
+  .btn.sm{min-height:44px;padding:9px 13px;font-size:13px;width:auto;border-radius:10px}
   .btn.bad{background:linear-gradient(135deg,#f0674d,#c23a26);color:#fff;box-shadow:0 8px 20px -8px rgba(192,58,38,.5)}
   .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--line2);background:rgba(8,19,31,.6)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
@@ -249,7 +249,7 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
   .pill,.chipzone{transition:border-color .15s}
   ::-webkit-scrollbar{width:0;height:0}
   /* ---- bouton thème (☀️/🌙) ---- */
-  #themeBtn{flex:0 0 auto;width:40px;height:40px;border-radius:12px;border:1px solid var(--line2);
+  #themeBtn{flex:0 0 auto;width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);
     background:rgba(24,55,83,.55);color:var(--txt);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;
     transition:transform .12s,background .15s}
   #themeBtn:active{transform:scale(.92)}
@@ -333,7 +333,7 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
 </div>
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
-        data-project="poolrobot" data-version="v0.11.15" data-color="#39c2ff" defer></script>
+        data-project="poolrobot" data-version="v0.11.16" data-color="#39c2ff" defer></script>
 <script>
 "use strict";
 /* ============ PoolPilot — Beatbot+ companion (v0.2.0) ============
@@ -341,7 +341,7 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
    Couche stratégie/cartographie/analytics AUTOUR du robot.
    Pré-réglé pour Kevin : AquaSense 2 Ultra + Waterair Céline 7 (haricot).
 ================================================================= */
-var APP_VER="v0.11.15";
+var APP_VER="v0.11.16";
 function $(s,el){return (el||document).querySelector(s)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function lg(k,d){try{var v=localStorage.getItem("pr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}

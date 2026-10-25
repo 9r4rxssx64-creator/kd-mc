@@ -121,7 +121,7 @@ a{color:var(--gold)}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:0 0 auto;font-family:system-ui,sans-serif;font-size:13px;padding:9px 15px;border-radius:30px;
-   background:var(--chip);color:var(--ink);border:1px solid transparent;white-space:nowrap;min-height:40px;display:flex;align-items:center;gap:6px}
+   background:var(--chip);color:var(--ink);border:1px solid transparent;white-space:nowrap;min-height:44px;display:flex;align-items:center;gap:6px}
 .chip.on{background:var(--gold);color:#22200f;border-color:var(--gold);font-weight:600}
 
 /* family grid */
@@ -712,7 +712,7 @@ function renderHome(){
     h+='<div style="padding:6px 16px"><button class="fam row dial" onclick="go(\'lexique\')"><span class="ic">🗣️</span><span class="nm">U parlà d\'ê cœuxe — le parler des plats<span class="n">'+DATA.dialectes.length+' mots en munegascu, niçard &amp; ligure · sourcés</span></span></button></div>';
   }
   h+='<div style="padding:6px 16px"><a class="fam row papier" href="imprimer.html"><span class="ic">🖨️</span><span class="nm">Livre papier<span class="n">Tout le livre à imprimer ou enregistrer en PDF</span></span></a></div>';
-  h+='<div style="text-align:center;padding:4px 24px 30px" class="ui"><button onclick="go(\'sources\')" style="color:var(--gold);font-size:13px;letter-spacing:.05em;text-transform:uppercase">Sources &amp; bibliographie ›</button></div>';
+  h+='<div style="text-align:center;padding:4px 24px 30px" class="ui"><button onclick="go(\'sources\')" style="min-height:44px;color:var(--gold);font-size:13px;letter-spacing:.05em;text-transform:uppercase">Sources &amp; bibliographie ›</button></div>';
   APP.innerHTML=h;
 }
 
@@ -1081,4 +1081,4 @@ render(); // build behind cover
 kdmcWhoami(); // connexion sécurisée par le domaine (fail-open)
 </script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="cuisine" data-version="v1.0.2" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="cuisine" data-version="v1.0.3" data-color="#c9a227" defer></script>

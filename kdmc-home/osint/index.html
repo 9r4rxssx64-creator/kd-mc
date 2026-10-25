@@ -42,7 +42,7 @@ a.back{color:var(--blue);font-size:13px;text-decoration:none;border:1px solid va
 .cat h3 .n{color:var(--dim);font-weight:400;font-size:12px}
 .cat h3 .lv{font-size:10px;color:var(--live);border:1px solid #2b5a44;background:#0e2018;border-radius:999px;padding:2px 7px;letter-spacing:.06em}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:9px}
-a.tool{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;text-decoration:none;color:var(--txt);transition:border-color .12s,transform .12s;-webkit-tap-highlight-color:transparent}
+a.tool{display:block;min-height:44px;box-sizing:border-box;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;text-decoration:none;color:var(--txt);transition:border-color .12s,transform .12s;-webkit-tap-highlight-color:transparent}
 a.tool:hover,a.tool:focus{border-color:var(--blue);transform:translateY(-2px)}
 a.tool .t{font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:6px}
 a.tool .t .arr{color:var(--dim);font-size:12px}
@@ -53,6 +53,9 @@ a.tool .no{font-size:11px;color:var(--warn);margin-top:4px;line-height:1.35}
 .ver{position:fixed;left:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);font-size:10px;color:#6b7fa6;background:#0a1220cc;border:1px solid var(--line);border-radius:8px;padding:3px 7px;cursor:pointer;z-index:900}
 .leaflet-container{background:#0a101e}
 @media (max-width:520px){.grid{grid-template-columns:1fr 1fr}a.tool .h{display:none}}
+/* Cibles ≥ 44 px (contrôle réel 970, 25.10) */
+.leaflet-bar a{width:44px !important;height:44px !important;line-height:44px !important}
+a[href="https://globe.adsb.lol/"],a[href="https://www.windy.com/-Webcams/webcams"]{display:inline-flex;align-items:center;min-height:44px}
 </style>
 </head>
 <body>
@@ -353,6 +356,6 @@ document.addEventListener("visibilitychange",function(){if(document.visibilitySt
 /* MAJ auto force (leçon #102) : badge cliquable = échappatoire garantie */
 $("ver").onclick=function(){if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});});if(window.caches&&caches.keys)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});location.replace(location.pathname+"?_force_upd_"+Date.now());};
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="osint" data-version="v2.7" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="osint" data-version="v2.8" data-color="#c9a227" defer></script>
 </body>
 </html>

@@ -262,6 +262,7 @@
   "tests/verify-chefs-equipe.mjs",
   "tests/verify-chemins-domaine.mjs",
   "tests/verify-chevauchements-iphone.mjs",
+  "tests/verify-cibles-44-apps.mjs",
   "tests/verify-cloudflare-analytics-couper.mjs",
   "tests/verify-cmc-ecritures-apres-jeton.mjs",
   "tests/verify-cmc-ia-gratuite.mjs",

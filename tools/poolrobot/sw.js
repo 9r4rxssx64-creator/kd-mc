@@ -2,7 +2,7 @@
    fetch(req) dans le service worker perdait le cookie du domaine → « Connexion au domaine requise » à la réouverture. Repli : fetch. */
 function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.preloadResponse) return Promise.resolve(ev.preloadResponse).then(function (r) { return r || fetch(rq, opt); }, function () { return fetch(rq, opt); }); return fetch(rq, opt); }
 /* PoolPilot SW — network-first, offline fallback. Skip version-check URLs. */
-var CACHE="poolpilot-v0.11.15";
+var CACHE="poolpilot-v0.11.16";
 var ASSETS=["./","./index.html","./manifest.json","./icon.svg","./icon-180.png","./icon-512.png"];
 self.addEventListener("install",function(e){
   self.skipWaiting();

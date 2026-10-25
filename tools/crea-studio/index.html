@@ -481,8 +481,9 @@
         <div class="sliders" id="stickerSliders"></div>
       </div>
       <div id="photoCartoon" class="hidden">
-        <div class="hint">Choisis un <b>style</b> — chaque vignette montre <b>ta</b> photo. Un tap et c'est appliqué.</div>
+        <div class="hint">Choisis un <b>style</b> — chaque vignette montre <b>ta</b> photo. Un tap : aperçu immédiat, puis la <b>version IA</b> (qualité studio) remplace l'aperçu en 15 à 40 s.</div>
         <div class="presets" id="cartoonStyles"></div>
+        <div class="hint hidden" id="cartoonIaEtat"></div>
         <details style="padding:2px 14px 0">
           <summary class="hint" style="cursor:pointer">🎚️ Réglages fins (facultatif)</summary>
           <div class="sliders" id="cartoonSliders"></div>
@@ -641,8 +642,10 @@
         <div class="big">✏️</div>
         <h2>Studio Cartoon</h2>
         <p>Dessin animé image par image type Toon Boom / FlipaClip : pelure d'oignon, pinceaux, lecture fluide, export vidéo animée.</p>
-        <button class="bigbtn" onclick="Anim.start()">🎨 Nouvelle animation</button>
-        <button class="bigbtn ghost" onclick="Anim.fromPhoto()">🖼️ Partir d'une image</button>
+        <div class="hint">Style du cartoon IA pour une photo importée :</div>
+        <div class="toolrow" id="animStyles" style="justify-content:center"></div>
+        <button class="bigbtn" onclick="Anim.fromPhoto()">🖼️ Partir d'une photo (cartoon IA)</button>
+        <button class="bigbtn ghost" onclick="Anim.start()">🎨 Nouvelle animation (page blanche)</button>
       </div>
       <canvas class="viewer hidden" id="animCanvas"></canvas>
     </div>
@@ -670,7 +673,7 @@
       <div class="empty" id="aividEmpty">
         <div class="big">🕺</div>
         <h2>Danse IA</h2>
-        <p>Mets une photo → l'IA crée une petite vidéo où le sujet bouge / danse, façon vidéos virales du moment (comme Viggle / Kling / Hailuo).</p>
+        <p>Mets une photo → l'IA la fait <b>vivre</b> (le mouvement de la scène continue : un animal qui court, un saut, un cavalier…) ou la fait danser. Montage en fondu, gratuit, dans ton téléphone.</p>
         <button class="bigbtn" onclick="AiVid.pick()">📂 Choisir une photo</button>
         <button class="bigbtn ghost" onclick="AiVid.camera()">📷 Prendre une photo</button>
       </div>
@@ -1080,7 +1083,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.18.6';
+var APP_VER='v9.19.0';
 document.getElementById('vbadge').textContent=APP_VER;
 
 /* ---------- utils ---------- */
@@ -3038,19 +3041,55 @@ var Photo=(function(){
       }
     });
   }
+  /* 25.10.2026 (Kevin : « le rendu est vraiment dégueulasse… qualité professionnelle
+     commerciale ») : un tap sur un style = l'IA D'ABORD. Le filtre local n'est plus
+     qu'un APERÇU immédiat (le temps que l'IA dessine, 15-40 s) et le secours hors
+     ligne. Quand la version IA arrive, elle REMPLACE l'aperçu — sauf si Kevin a
+     changé de style entre-temps (compteur `iaReq`). */
+  var iaReq=0;
   function appliqueStyle(id){
     if(!loaded){toast('Ouvre une photo d\'abord');return;}
     cartoonP.style=id;
     var st=styleCartoon(id);
-    toast('Style ' + st.nom + '…',700);
+    toast('Style ' + st.nom + '… aperçu, puis version IA',900);
     setTimeout(function(){
       sctx.drawImage(originalCanvas,0,0);            /* on repart TOUJOURS de la photo d'origine :
                                                        sinon essayer 3 styles empilait 3 traitements */
       cartoonize(srcCanvas,sctx,cartoonP);
       adj=defaultAdjust();curPreset='';fx='none';
       buildSliders();buildFilters();buildCartoonStyles();render();
-      toast(st.emoji+' '+st.nom+' appliqué',1500);
+      cartoonIA(id);
     },20);
+  }
+  /* L'IA dessine le style depuis la PHOTO D'ORIGINE (jamais depuis l'aperçu local) et
+     remplace l'image quand elle arrive. Sans compte / hors ligne / IA en panne : on le DIT
+     et l'aperçu reste (jamais « appliqué » en douce). */
+  function cartoonIA(id){
+    var st=styleCartoon(id),req=++iaReq;
+    var lng=Math.max(originalCanvas.width,originalCanvas.height),ds=Math.min(1024/lng,1);
+    var tmp=document.createElement('canvas');tmp.width=Math.max(1,Math.round(originalCanvas.width*ds));tmp.height=Math.max(1,Math.round(originalCanvas.height*ds));
+    tmp.getContext('2d').drawImage(originalCanvas,0,0,tmp.width,tmp.height);
+    var dataUrl=tmp.toDataURL('image/jpeg',0.9);
+    var badge=$('cartoonIaEtat');if(badge){badge.textContent='🤖 L\'IA dessine « '+st.nom+' »… (15 à 40 s)';badge.classList.remove('hidden');}
+    var ctrl,to=setTimeout(function(){if(ctrl)try{ctrl.abort();}catch(e){}},70000);
+    try{ctrl=new AbortController();}catch(e){}
+    aiFetch('/cartoon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl,style:id}),signal:ctrl?ctrl.signal:undefined})
+      .then(function(r){var ct=r.headers.get('content-type')||'';if(!r.ok||ct.indexOf('image')<0){return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});}
+        return r.blob().then(function(b){return {blob:b,who:r.headers.get('x-crea-provider')||''};});})
+      .then(function(res){clearTimeout(to);if(req!==iaReq)return;
+        var img=new Image();img.onload=function(){
+          if(req!==iaReq)return;
+          srcCanvas.width=img.naturalWidth||img.width;srcCanvas.height=img.naturalHeight||img.height;
+          sctx.clearRect(0,0,srcCanvas.width,srcCanvas.height);sctx.drawImage(img,0,0);
+          adj=defaultAdjust();curPreset='';fx='none';fitView();buildSliders();buildFilters();render();
+          Credit.ok();var who=aiWho(res.who);
+          if(badge){badge.textContent='✨ Version IA appliquée'+(who?' ('+who+')':'');}
+          toast('✨ '+st.emoji+' '+st.nom+' — version IA appliquée'+(who?' · '+who:''),2200);URL.revokeObjectURL(img.src);
+        };img.onerror=function(){if(badge)badge.textContent='⚠️ Image IA illisible — aperçu rapide gardé';};img.src=URL.createObjectURL(res.blob);})
+      .catch(function(e){clearTimeout(to);if(req!==iaReq)return;
+        var m=aiErrMsg(e,' L\'aperçu rapide reste affiché.');
+        if(badge)badge.textContent='⚠️ '+m.t;
+        toast(m.t,m.ms);});
   }
   function buildFilters(){
     var c=$('photoFilters');c.innerHTML='';
@@ -3448,7 +3487,9 @@ var Photo=(function(){
     }
     var ctrl,to=setTimeout(function(){if(ctrl)try{ctrl.abort();}catch(e){}},65000);
     try{ctrl=new AbortController();}catch(e){}
-    aiFetch('/'+kind,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl}),signal:ctrl?ctrl.signal:undefined})
+    /* Le cartoon porte TOUJOURS le style choisi (galerie) : le service a une consigne par style (25.10). */
+    var corps={image:dataUrl};if(kind==='cartoon')corps.style=cartoonP.style;if(opts.body)Object.keys(opts.body).forEach(function(k){corps[k]=opts.body[k];});
+    aiFetch('/'+kind,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corps),signal:ctrl?ctrl.signal:undefined})
       .then(function(r){var ct=r.headers.get('content-type')||'';if(!r.ok||ct.indexOf('image')<0){return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});}return r.blob();})
       .then(function(blob){var img=new Image();img.onload=function(){clearTimeout(to);
         srcCanvas.width=img.naturalWidth||img.width;srcCanvas.height=img.naturalHeight||img.height;
@@ -3590,6 +3631,8 @@ var Photo=(function(){
     },
     _styles:function(){return CARTOON_STYLES.map(function(x){return x.id;});},
     _styleCourant:function(){return cartoonP.style;},
+    appliqueStyle:appliqueStyle,
+    cartoonIA:function(){if(!loaded){toast('Ouvre une photo d\'abord');return;}cartoonIA(cartoonP.style);},
     style:function(id){appliqueStyle(id);},
     cartoonize:function(){
       if(!loaded)return;toast('Cartoonisation…',800);
@@ -5258,17 +5301,56 @@ var Anim=(function(){
     setTool('draw');
   }
 
+  /* 25.10.2026 — Kevin : « Le rendu est vraiment dégueulasse ». Il avait raison : une photo
+     importée ici passait par le FILTRE LOCAL (aplats + trait), jamais par l'IA. Maintenant :
+     l'IA dessine le cartoon (service crea-ai : Gemini, puis Workers AI en secours), dans le
+     style choisi ci-dessous ; le filtre local n'est que le secours hors ligne, et on le DIT. */
+  var animStyle='cartoon';
+  function buildAnimStyles(){
+    var c=$('animStyles');if(!c||!window.CARTOON_STYLES)return;c.innerHTML='';
+    CARTOON_STYLES.forEach(function(st){
+      var b=document.createElement('button');b.className='chip'+(st.id===animStyle?' on':'');
+      b.innerHTML='<span class="ic">'+st.emoji+'</span>'+st.nom;
+      b.onclick=function(){animStyle=st.id;c.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on');});b.classList.add('on');};
+      c.appendChild(b);
+    });
+  }
+  function importerIA(img,fini){
+    var MAX=1024,sc=Math.min(MAX/img.width,MAX/img.height,1);
+    var t=document.createElement('canvas');t.width=Math.max(1,Math.round(img.width*sc));t.height=Math.max(1,Math.round(img.height*sc));
+    t.getContext('2d').drawImage(img,0,0,t.width,t.height);
+    var st=(window.styleCartoon?styleCartoon(animStyle):{nom:animStyle,emoji:'🖍️'});
+    aiShow('🤖 L\'IA dessine ton cartoon « '+st.nom+' »… (15 à 40 s)');
+    var ctrl,to=setTimeout(function(){if(ctrl)try{ctrl.abort();}catch(e){}},70000);
+    try{ctrl=new AbortController();}catch(e){}
+    aiFetch('/cartoon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:t.toDataURL('image/jpeg',0.9),style:animStyle}),signal:ctrl?ctrl.signal:undefined})
+      .then(function(r){var ct=r.headers.get('content-type')||'';if(!r.ok||ct.indexOf('image')<0){return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});}
+        return r.blob().then(function(b){return {blob:b,who:r.headers.get('x-crea-provider')||''};});})
+      .then(function(res){clearTimeout(to);var im=new Image();im.onload=function(){
+          var c=document.createElement('canvas');c.width=im.naturalWidth||im.width;c.height=im.naturalHeight||im.height;c.getContext('2d').drawImage(im,0,0);
+          aiHide();URL.revokeObjectURL(im.src);fini(c,'ia',aiWho(res.who));
+        };im.onerror=function(){aiHide();fini(null,'illisible');};im.src=URL.createObjectURL(res.blob);})
+      .catch(function(e){clearTimeout(to);aiHide();fini(null,String((e&&e.message)||e));});
+  }
   return {
-    init:function(){},
+    init:function(){buildAnimStyles();},
     start:function(){startApp(null);toast('Nouvelle animation 🎨',1200);},
     fromPhoto:function(){$('fileImgAnim').click();},
+    _style:function(){return animStyle;},
+    _setStyle:function(id){animStyle=id;buildAnimStyles();},
     _fromImage:function(file){
       var img=new Image();img.onload=function(){
-        var c=document.createElement('canvas');c.width=img.width;c.height=img.height;c.getContext('2d').drawImage(img,0,0);
-        // cartoonize the base to trace over
-        /* on utilise le style choisi dans le Studio Photo (par défaut « Cartoon ») */
-        cartoonize(c,c.getContext('2d',{willReadFrequently:true}),{style:(window.Photo&&Photo._styleCourant&&Photo._styleCourant())||'cartoon'});
-        startApp(c);toast('Image importée (trace par-dessus)',1600);URL.revokeObjectURL(img.src);
+        importerIA(img,function(c,comment,who){
+          if(c){startApp(c);toast('✨ Cartoon IA « '+styleCartoon(animStyle).nom+' » prêt'+(who?' · '+who:'')+' — trace par-dessus ou exporte',2400);}
+          else{
+            /* Secours hors ligne / sans compte : le filtre local, ANNONCÉ comme tel. */
+            var l=document.createElement('canvas');l.width=img.width;l.height=img.height;l.getContext('2d').drawImage(img,0,0);
+            try{cartoonize(l,l.getContext('2d',{willReadFrequently:true}),{style:animStyle});}catch(e){}
+            startApp(l);
+            var m=aiErrMsg(comment,' Version rapide (hors IA) affichée.');toast(m.t,Math.max(m.ms,3200));
+          }
+          URL.revokeObjectURL(img.src);
+        });
       };img.src=URL.createObjectURL(file);
     },
     addFrame:function(){
@@ -5346,7 +5428,14 @@ var AiVid=(function(){
     return (String(u).indexOf('blob:')===0) ? fetch(u).then(function(r){return r.blob();})
       : aiFetch('/proxy?url='+encodeURIComponent(u)).then(function(r){return r.blob();});
   }
+  /* 25.10.2026 — « Faire vivre la photo » (Kevin : « je voulais créer une vidéo avec la photo
+     où la personne fait du rodéo sur le sanglier ») : l'IA continue le MOUVEMENT visible dans
+     la photo (mode `motion` du service : un instant par image), et le montage enchaîne les
+     images en FONDU avec un léger travelling — plus un diaporama de poses. C'est le premier
+     choix : il marche pour n'importe quelle scène (animal, sport, enfant, voiture…). */
   var VIBES=[
+    {id:'vivre',emoji:'🎞️',label:'Faire vivre la photo',mode:'motion',n:6,prompt:'continue the natural motion visible in this photo'},
+    {id:'vivre_cartoon',emoji:'🖍️',label:'Vivante en cartoon',mode:'motion',n:6,style:'cartoon',prompt:'continue the natural motion visible in this photo'},
     {id:'dance',emoji:'🕺',label:'Danse',prompt:'dancing happily, funny energetic full-body dance, lively motion, trending tiktok style'},
     {id:'floss',emoji:'🌀',label:'Floss',prompt:'doing the floss dance, arms swinging quickly side to side, funny'},
     {id:'robot',emoji:'🤖',label:'Robot',prompt:'doing the robot dance, stiff mechanical funny movements'},
@@ -5373,17 +5462,19 @@ var AiVid=(function(){
     if(!photoData){toast('Choisis une photo d\'abord');return;}
     var v=VIBES.find(function(x){return x.id===vibe;});var extra=$('aiPrompt').value.trim();
     var prompt=(v?v.prompt:'')+(extra?(', '+extra):'');
+    var mode=(v&&v.mode)||'dance',nImg=(v&&v.n)||5;
     busy=true;out=null;$('aiGenBtn').disabled=true;startTs=Date.now();
     img.classList.remove('hidden');vid.classList.add('hidden');
-    /* 1) D'ABORD LA VOIE GRATUITE : l'IA dessine les poses de danse, la vidéo est
-          montée ici dans le téléphone. Aucun crédit, aucune carte. */
-    hint('⏳ L\'IA dessine les poses de danse… (gratuit, ~30-60 s) 🕺');
-    aiFetch('/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,prompt:prompt,n:5})})
+    /* 1) D'ABORD LA VOIE GRATUITE : l'IA dessine les images (poses de danse, ou instants du
+          mouvement), la vidéo est montée ici dans le téléphone. Aucun crédit, aucune carte. */
+    hint(mode==='motion'?'⏳ L\'IA dessine '+nImg+' instants du mouvement… (gratuit, ~40-90 s) 🎞️':'⏳ L\'IA dessine les poses de danse… (gratuit, ~30-60 s) 🕺');
+    var corps={image:photoData,prompt:prompt,n:nImg,mode:mode};if(v&&v.style)corps.style=v.style;
+    aiFetch('/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corps)})
       .then(function(r){return r.json();})
       .then(function(j){
         if(!j||!j.frames||j.frames.length<2)throw new Error((j&&(j.message||j.error))||'frames_failed');
-        hint('🎬 Montage de la vidéo… ('+j.frames.length+' poses)');
-        return buildDanceVideo(j.frames).then(function(blob){
+        hint('🎬 Montage de la vidéo… ('+j.frames.length+' images'+(j.provider?' · '+aiWho(j.provider):'')+')');
+        return buildDanceVideo(j.frames,{smooth:mode==='motion'}).then(function(blob){
           if(freeBlobUrl)URL.revokeObjectURL(freeBlobUrl);
           freeBlobUrl=URL.createObjectURL(blob);
           done(freeBlobUrl);
@@ -5400,7 +5491,11 @@ var AiVid=(function(){
   }
   /* Monte les poses IA en vidéo qui danse, dans le navigateur (aller-retour +
      petit rebond rythmé = effet « danse » des vidéos tendance). 100% local. */
-  function buildDanceVideo(urls){
+  /* `opts.smooth` (mode « faire vivre ») : les instants s'enchaînent en FONDU (pas de
+     coupe sèche), avec un lent travelling avant — c'est ce qui donne l'impression de vidéo
+     et non de diaporama. La danse garde son rebond rythmé (rien ne régresse). */
+  function buildDanceVideo(urls,opts){
+    opts=opts||{};
     return new Promise(function(resolve,reject){
       var imgs=[],loaded=0,failed=0;
       urls.forEach(function(u,i){var im=new Image();im.onload=function(){imgs[i]=im;if(++loaded+failed===urls.length)start();};
@@ -5414,8 +5509,9 @@ var AiVid=(function(){
         /* ordre aller-retour : 1,2,3,…,n,…,3,2 → boucle fluide sans saut */
         var order=[];for(var i=0;i<imgs.length;i++)order.push(i);
         for(var k=imgs.length-2;k>0;k--)order.push(k);
-        var HOLD=130;                               /* ms par pose (~7,7 im/s) */
-        var CYCLE=order.length*HOLD, TOTAL=Math.max(4800,Math.min(9000,CYCLE*3));
+        var smooth=!!opts.smooth;
+        var HOLD=smooth?380:130;                    /* ms par image : 380 (fondu) ou 130 (danse, ~7,7 im/s) */
+        var CYCLE=order.length*HOLD, TOTAL=Math.max(4800,Math.min(smooth?12000:9000,CYCLE*(smooth?2:3)));
         var mime=pickVideoMime();
         var rec;try{rec=new MediaRecorder(cv.captureStream(30),mime?{mimeType:mime,videoBitsPerSecond:6000000}:undefined);}
         catch(e){reject(new Error('recorder_unavailable'));return;}
@@ -5423,17 +5519,26 @@ var AiVid=(function(){
         rec.onstop=function(){var b=new Blob(chunks,{type:mime||'video/webm'});
           if(b.size)resolve(b);else reject(new Error('empty_video'));};
         var t0=performance.now(),done2=false;
+        function dessine(im,s,tilt,alpha){
+          cx.save();cx.globalAlpha=alpha;cx.translate(w/2,hh/2);cx.rotate(tilt);cx.scale(s,s);
+          cx.drawImage(im,-w/2,-hh/2,w,hh);cx.restore();
+        }
         function draw(){
           var el=performance.now()-t0;
           if(el>=TOTAL){if(!done2){done2=true;try{rec.stop();}catch(e){}}return;}
-          var idx=order[Math.floor(el/HOLD)%order.length];
-          var im=imgs[idx];
-          /* petit rebond + balancement : donne le rythme de la danse */
-          var ph=(el/HOLD),bounce=Math.abs(Math.sin(ph*Math.PI))*0.018,tilt=Math.sin(ph*Math.PI)*0.012;
-          var s=1.02+bounce;
+          var pos=el/HOLD,i0=Math.floor(pos)%order.length,f=pos-Math.floor(pos);
           cx.fillStyle='#000';cx.fillRect(0,0,w,hh);
-          cx.save();cx.translate(w/2,hh/2);cx.rotate(tilt);cx.scale(s,s);
-          cx.drawImage(im,-w/2,-hh/2,w,hh);cx.restore();
+          if(smooth){
+            /* fondu enchaîné (ease in-out) + travelling avant très lent (1,00 → 1,06 sur le clip) */
+            var i1=(i0+1)%order.length,ease=f*f*(3-2*f);
+            var s=1+0.06*(el/TOTAL);
+            dessine(imgs[order[i0]],s,0,1);
+            dessine(imgs[order[i1]],s,0,ease);
+          }else{
+            /* petit rebond + balancement : donne le rythme de la danse */
+            var bounce=Math.abs(Math.sin(pos*Math.PI))*0.018,tilt=Math.sin(pos*Math.PI)*0.012;
+            dessine(imgs[order[i0]],1.02+bounce,tilt,1);
+          }
           requestAnimationFrame(draw);
         }
         rec.start(200);requestAnimationFrame(draw);
@@ -5553,7 +5658,8 @@ var AiVid=(function(){
       }); };
     });
   }
-  return {init:buildVibes,pick:function(){$('fileAiPhoto').click();},camera:function(){$('fileAiPhotoCam').click();},_load:loadPhoto,generate:generate,_mux:muxMusic,
+  return {init:buildVibes,pick:function(){$('fileAiPhoto').click();},camera:function(){$('fileAiPhotoCam').click();},_load:loadPhoto,generate:generate,
+    _setVibe:function(id){vibe=id;buildVibes();},_vibes:function(){return VIBES.map(function(v){return {id:v.id,mode:v.mode||'dance',n:v.n||5,style:v.style||null};});},_mux:muxMusic,
     pickRef:function(){if(!photoData){toast('Charge d\'abord ta photo');return;}$('fileDanceRef').click();},_ref:refVideo,
     export:function(){if(out)save(out);else toast('Génère d\'abord une vidéo');}};
 })();

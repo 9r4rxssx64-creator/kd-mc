@@ -147,6 +147,36 @@ const PROMPTS = {
   cartoon: 'Redraw this photo in a vivid cartoon / animated-movie style. Keep the SAME subject, same pose, same composition and same framing. Bold clean outlines, flat vibrant colors, cel shading, expressive but faithful. No text, no watermark, no border.',
   enhance: 'Enhance this photo: sharper details, cleaner lighting, better contrast and natural colors, reduce noise and blur. Keep the subject, pose, framing and composition EXACTLY the same. Photorealistic result. No text, no watermark.'
 };
+/* ---------------- 🖍️ CARTOON IA — une GALERIE de styles, pas un seul (Kevin 25.10.2026 :
+   « Le rendu est vraiment dégueulasse… qualité professionnelle commerciale »).
+   Avant : le Studio Cartoon appliquait un FILTRE LOCAL (aplats + trait) et l'IA n'était
+   qu'un bouton discret du Studio Photo. Maintenant l'IA (Gemini image, gratuite ; Workers AI
+   img2img en secours) est le chemin PRINCIPAL, et chaque style du client a sa consigne. Les
+   identifiants sont CEUX du client (CARTOON_STYLES de tools/crea-studio/index.html). */
+const KEEP_SUBJECT = ' Keep the SAME subject(s), same pose, same composition, same framing and the same background layout — this must stay recognizably the same scene and the same person/animal. No text, no watermark, no border, no extra characters.';
+const CARTOON_IA = {
+  cartoon: 'Redraw this photo as a high-end 2D animated-movie still: bold clean ink outlines, flat vibrant colours with soft cel shading, simplified but expressive shapes, cinematic lighting, professional animation-studio quality.',
+  anime: 'Redraw this photo in modern Japanese anime style (Makoto Shinkai / Studio Ghibli feature-film quality): clean line art, expressive eyes, soft cel shading, vivid saturated colours, painterly detailed background with light bokeh.',
+  bd: 'Redraw this photo as a European comic-book (bande dessinée, ligne claire) panel: thick confident black ink outlines, flat bright colours, subtle halftone dots in the shadows, dynamic composition, printed-comic look.',
+  toon3d: 'Redraw this photo as a charming 3D animated-movie render (Pixar / Disney / DreamWorks quality): soft rounded stylised features, big expressive eyes, subsurface-scattering skin, detailed fur/hair, cinematic three-point lighting, shallow depth of field, rendered in high-end 3D.',
+  peinture: 'Repaint this photo as an expressive oil painting on canvas: visible thick brush strokes, impasto texture, rich warm palette, painterly light, museum quality.',
+  popart: 'Redraw this photo as 1960s pop art (Warhol / Lichtenstein): thick black outlines, flat bold limited palette (magenta, yellow, cyan, cream), Ben-Day dots in the mid-tones, high contrast, iconic poster look.',
+  noir: 'Redraw this photo as a dramatic black-and-white film-noir illustration: deep blacks, clean whites, hard side lighting, bold ink shadows, graphic novel quality.',
+  encre: 'Redraw this photo as a black ink drawing: confident pen lines, cross-hatching for shadows, white paper background, hand-drawn illustration quality.',
+  croquis: 'Redraw this photo as a pencil sketch by a professional illustrator: graphite lines, soft shading, visible paper grain, loose but accurate drawing.',
+  gravure: 'Redraw this photo as a vintage copper-plate engraving: fine parallel line hatching, strong contrast, old-print look, monochrome.',
+  neon: 'Redraw this photo as a neon-glow line illustration: glowing cyan/magenta/violet neon outlines on a dark background, soft light bloom, synthwave poster quality.',
+  sticker: 'Turn this photo into a glossy die-cut sticker illustration: simplified cute cartoon shapes, thick white sticker border, bold clean outlines, flat bright colours, kawaii style.',
+  ghibli: 'Redraw this photo as a hand-painted Studio Ghibli film frame: soft watercolour-like backgrounds, gentle warm light, delicate line work, nostalgic and peaceful atmosphere.',
+  pixel: 'Redraw this photo as detailed 32-bit pixel art: crisp visible pixels, limited palette with dithering, retro video-game sprite scene.',
+  aquarelle: 'Repaint this photo as a delicate watercolour painting: translucent washes, soft bleeding edges, white paper showing through, light pencil underdrawing.',
+  clay: 'Rebuild this photo as a claymation / stop-motion scene: everything modelled in plasticine with fingerprints and soft rounded shapes, miniature set, studio lighting, Aardman style.'
+};
+function promptCartoon(style, extra) {
+  const base = CARTOON_IA[String(style || '').toLowerCase()] || CARTOON_IA.cartoon;
+  const e = extra ? ' ' + String(extra).slice(0, 200) + '.' : '';
+  return base + e + KEEP_SUBJECT;
+}
 /* ---------------- ✨ MAGIE IA : transformations 1-clic (reverse-engineering des
    apps virales : AI Mirror, ToonApp, AI Catch, Donna IA Musique, AI Music) ------- */
 const KEEP_FACE = ' Keep the SAME person and a clearly recognizable face (same features, same hair colour). Photorealistic quality where relevant. No text, no watermark, no border.';
@@ -218,6 +248,30 @@ function dancePrompt(pose, extra) {
     + (extra ? 'Style/mood: ' + extra + '. ' : '')
     + 'Keep the exact same person, same face, same clothes, same background and same camera framing — only the body pose changes. '
     + 'Photorealistic, natural anatomy, full body visible if possible. No text, no watermark, no border.';
+}
+/* ---------------- 🎞️ FAIRE VIVRE LA PHOTO (Kevin 25.10.2026 : « je voulais créer une vidéo avec
+   la photo où la personne fait du rodéo sur le sanglier ») ----------------
+   Les poses de DANSE ne conviennent qu'à une personne debout. Ici l'IA continue le MOUVEMENT
+   déjà visible dans la photo (animal qui court, cavalier qui rebondit, cheveux, vêtements) :
+   une image par instant, que le téléphone enchaîne ensuite en fondu. Chaque instant décrit un
+   PETIT changement : trop grand = l'IA réinvente la scène, trop petit = rien ne bouge. */
+const MOTION_PHASES = [
+  'a split second BEFORE this photo: the motion is slightly less advanced (limbs, stride, hair and clothes a little behind this frame)',
+  'the exact instant of this photo, redrawn faithfully',
+  'a split second AFTER this photo: the motion is slightly more advanced (next part of the stride or gesture, hair and clothes following)',
+  'two split seconds after: the motion continues naturally, body weight shifted, limbs further along the movement',
+  'three split seconds after: the movement reaches its next peak (e.g. legs fully extended, body at the top of a bounce, expression intensified)',
+  'four split seconds after: the movement settles into the following phase (opposite limbs forward, body coming down), still full of energy',
+  'five split seconds after: the motion keeps going, slightly closer to the camera, clothes and hair streaming',
+  'six split seconds after: the action continues at full speed, dynamic but natural'
+];
+function motionPrompt(phase, extra, style) {
+  return 'This is one frame of a short video. Draw the SAME scene ' + phase + '. '
+    + 'Continue the natural motion that is visible in the photo (running, riding, bouncing, jumping, waving…). '
+    + (extra ? 'Guidance: ' + String(extra).slice(0, 200) + '. ' : '')
+    + 'Keep the exact same subject(s), same faces, same clothes, same colours, same background and the SAME camera framing and zoom — only the pose/motion changes slightly between frames. '
+    + (style ? 'Render it ' + String(CARTOON_IA[style] || '').replace(/^Redraw this photo as |^Redraw this photo in |^Repaint this photo as |^Turn this photo into |^Rebuild this photo as /, 'as ') + ' ' : 'Photorealistic, consistent lighting. ')
+    + 'No text, no watermark, no border.';
 }
 
 /* ---------------- Fournisseur 1 : Google Gemini (GRATUIT) ---------------- */
@@ -316,6 +370,35 @@ async function cfImage(env, prompt) {
     } catch (e) { errs.push(model.split('/').pop() + ':' + String((e && e.message) || e).slice(0, 60)); }
   }
   throw new Error('cf_' + errs.join(' ; ').slice(0, 240));
+}
+/* Workers AI IMAGE → IMAGE (gratuit, même compte, aucune clé) : 2e moteur du cartoon quand
+   Gemini refuse ou est à court (25.10.2026). Stable Diffusion part de LA photo (strength =
+   ce qu'on laisse l'IA changer) : moins fin que Gemini, mais ce n'est plus jamais le filtre
+   local. L'image est envoyée en octets (tableau de nombres, format attendu par le binding). */
+const CF_IMG2IMG_MODELS = [
+  { model: '@cf/runwayml/stable-diffusion-v1-5-img2img', input: (p, bytes) => ({ prompt: p, image: Array.from(bytes), strength: 0.62, num_steps: 20, guidance: 7.5 }) },
+  { model: '@cf/stabilityai/stable-diffusion-xl-base-1.0', input: (p, bytes) => ({ prompt: p, image: Array.from(bytes), strength: 0.6, num_steps: 20 }) }
+];
+async function cfImg2Img(env, prompt, imgDataUrl) {
+  if (!env.AI) throw new Error('cf_no_binding');
+  const p = parseDataUrl(imgDataUrl);
+  if (!p) throw new Error('bad_image_data');
+  const bytes = b64ToBytes(p.b64);
+  const errs = [];
+  for (const c of CF_IMG2IMG_MODELS) {
+    try {
+      const r = await env.AI.run(c.model, c.input(String(prompt).slice(0, 1800), bytes));
+      let u = null;
+      if (r instanceof ReadableStream) u = new Uint8Array(await new Response(r).arrayBuffer());
+      else if (r instanceof ArrayBuffer) u = new Uint8Array(r);
+      else if (r instanceof Uint8Array) u = r;
+      else if (r && typeof r.image === 'string' && r.image.length > 100) return { mime: 'image/png', b64: r.image, provider: 'cloudflare:' + c.model.split('/').pop() };
+      if (u && u.length > 500) { let s = ''; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+        return { mime: 'image/png', b64: btoa(s), provider: 'cloudflare:' + c.model.split('/').pop() }; }
+      errs.push(c.model.split('/').pop() + ':vide');
+    } catch (e) { errs.push(c.model.split('/').pop() + ':' + String((e && e.message) || e).slice(0, 60)); }
+  }
+  throw new Error('cf_img2img_' + errs.join(' ; ').slice(0, 240));
 }
 /* Plusieurs modèles candidats, essayés dans l'ordre. Un seul modèle figé =
    une dépréciation (vécu : llama-3.1-8b retiré le 2026-05-30) casse la feature
@@ -733,14 +816,26 @@ async function editToDataUrl(model, version, image, prompt, token, maxMs, pasMs)
 }
 
 /* ---------------- Chaîne : gratuit d'abord, payant en secours ---------------- */
-async function editImageChain(env, kind, imgDataUrl, h) {
+async function editImageChain(env, kind, imgDataUrl, h, opts) {
   const errs = [];
+  opts = opts || {};
+  /* Le cartoon a une consigne PAR STYLE (galerie du client) ; les autres gardent leur consigne. */
+  const prompt = kind === 'cartoon' ? promptCartoon(opts.style, opts.extra) : PROMPTS[kind];
+  const entetes = (prov) => Object.assign({ 'x-crea-provider': prov }, kind === 'cartoon' ? { 'x-crea-style': (CARTOON_IA[String(opts.style || '').toLowerCase()] ? String(opts.style).toLowerCase() : 'cartoon') } : {}, h);
   /* 1. Gemini (gratuit) */
   try {
-    const g = await geminiImage(env, PROMPTS[kind], imgDataUrl);
-    return imgResponse(g.mime, g.b64, Object.assign({ 'x-crea-provider': g.provider }, h));
+    const g = await geminiImage(env, prompt, imgDataUrl);
+    return imgResponse(g.mime, g.b64, entetes(g.provider));
   } catch (e) { errs.push(String((e && e.message) || e)); }
-  /* 2. Replicate (payant — seulement si l'interrupteur BEE_SECOURS_PAYANT est à 1) */
+  /* 2. Workers AI image→image (gratuit, aucune clé) — pour le cartoon : on part de la photo.
+        Le détourage et l'amélioration n'ont pas d'équivalent fidèle ici (SD réinventerait). */
+  if (kind === 'cartoon') {
+    try {
+      const c = await cfImg2Img(env, prompt, imgDataUrl);
+      return imgResponse(c.mime, c.b64, entetes(c.provider));
+    } catch (e) { errs.push(String((e && e.message) || e)); }
+  }
+  /* 3. Replicate (payant — seulement si l'interrupteur BEE_SECOURS_PAYANT est à 1) */
   const token = jetonReplicate(env);
   if (token) {
     const m = MODELS[kind];
@@ -1108,10 +1203,13 @@ export default {
     if (url.pathname === '/frames') {
       if (badImage(image)) return json({ error: 'bad_image' }, h, 400);
       const extra = (body && typeof body.prompt === 'string') ? body.prompt.slice(0, 200) : '';
-      const mode = (body && body.mode) === 'sing' ? 'sing' : 'dance';
-      const n = Math.max(2, Math.min(8, parseInt((body && body.n), 10) || (mode === 'sing' ? 3 : 5)));
-      const poses = mode === 'sing' ? SING_POSES.slice(0, n) : DANCE_POSES.slice(0, n);
-      const texte = (p) => (mode === 'sing' ? singPrompt(p) : dancePrompt(p, extra));
+      const mode = (body && body.mode) === 'sing' ? 'sing' : (body && body.mode) === 'motion' ? 'motion' : 'dance';
+      /* `style` (facultatif) : les images sont rendues dans un style de la galerie cartoon
+         (vidéo cartoon) ; sans style, photoréaliste comme avant. */
+      const styleF = (body && typeof body.style === 'string' && CARTOON_IA[body.style.toLowerCase()]) ? body.style.toLowerCase() : '';
+      const n = Math.max(2, Math.min(8, parseInt((body && body.n), 10) || (mode === 'sing' ? 3 : mode === 'motion' ? 6 : 5)));
+      const poses = mode === 'sing' ? SING_POSES.slice(0, n) : mode === 'motion' ? MOTION_PHASES.slice(0, n) : DANCE_POSES.slice(0, n);
+      const texte = (p) => (mode === 'sing' ? singPrompt(p) : mode === 'motion' ? motionPrompt(p, extra, styleF) : dancePrompt(p, extra) + (styleF ? ' Render it in this style: ' + CARTOON_IA[styleF] : ''));
       const frames = [];
       const errs = [];
       let provider = 'gemini';
@@ -1182,7 +1280,7 @@ export default {
           message: "Je n'ai pas pu fabriquer les poses à partir de ta photo. "
             + 'Je préfère te le dire plutôt que de te rendre quelqu\'un d\'autre.' }, h, 502);
       }
-      return json({ frames, provider, asked: n, got: frames.length, errors: errs.slice(0, 2) }, h);
+      return json({ frames, provider, mode, style: styleF || null, asked: n, got: frames.length, errors: errs.slice(0, 2) }, h);
     }
 
     // --- lancement génération vidéo Replicate (payant) : interrupteur BEE_SECOURS_PAYANT=1 obligatoire ---
@@ -1211,7 +1309,11 @@ export default {
     const kind = url.pathname === '/cartoon' ? 'cartoon' : url.pathname === '/enhance' ? 'enhance' : url.pathname === '/cutout' ? 'cutout' : '';
     if (!kind) return json({ error: 'unknown_endpoint' }, h, 404);
     if (badImage(image)) return json({ error: 'bad_image' }, h, 400);
-    try { return await editImageChain(env, kind, image, h); }
+    const optsEdit = kind === 'cartoon' ? {
+      style: (body && typeof body.style === 'string') ? body.style.slice(0, 24) : '',
+      extra: (body && typeof body.prompt === 'string') ? body.prompt.slice(0, 200) : ''
+    } : {};
+    try { return await editImageChain(env, kind, image, h, optsEdit); }
     catch (e) { return json({ error: String((e && e.message) || e) }, h, 502); }
   }
 };

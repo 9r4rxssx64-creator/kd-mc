@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-24",
+  "maj": "2026-10-25",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -12,10 +12,10 @@
         "services/kdmc-crea-ai"
       ],
       "etat": "actif",
-      "maj": "2026-10-24",
+      "maj": "2026-10-25",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "24.10 21h45 : mission 927 faite (Lighthouse Apex 391 perf 63/97, rouges sourcés → apex-cloud 971) ; pont relu jusqu au 965"
+      "note": "25.10 : Kevin « rendu dégueulasse » → Studio créa v9.19.0 : cartoon par l IA d abord (16 styles, Workers AI img2img en secours), vidéo « faire vivre la photo » (mode motion + fondu) ; gardes test:crea-cartoon-styles / test:crea-cartoon-ia"
     },
     "cmcteams": {
       "titre": "CMCteams",

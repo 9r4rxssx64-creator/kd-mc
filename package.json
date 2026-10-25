@@ -404,7 +404,7 @@
     "test:affichage-detecteur": "node tests/verify-affichage-detecteur.mjs",
     "verif:affichage-domaine": "node tools/plateformes/verif-affichage-domaine.mjs",
     "test:encoche-portes": "node services/kdmc-router/encoche-pages.test.mjs",
-    "test:admin-role-boutiques": "node tests/verify-admin-role-boutiques.mjs"
+    "test:admin-role-boutiques": "node tests/verify-admin-role-boutiques.mjs && AVEC_PASS=1 node tests/verify-admin-role-boutiques.mjs"
   },
   "repository": {
     "type": "git",

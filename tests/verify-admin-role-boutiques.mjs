@@ -6,7 +6,9 @@
  *  R2. la case est cochée quand le domaine dit que la personne a le rôle, décochée sinon ;
  *  R3. « Enregistrer » envoie `roles:["shops"]` au domaine quand on coche, `roles:[]` quand on décoche ;
  *  R4. le résumé de la ligne dit « 🛍 boutiques » ; R5. 0 erreur JavaScript.
- * SABOTAGE : `ADMIN_DIR=<ancien dossier admin>` → R1–R4 rouges.   Lancer : npm run test:admin-role-boutiques
+ * AVEC_PASS=1 (pont 1077, 25.10) : premier chargement sans laissez-passer (403 puis /__admin/grant), comme chez Kevin — la liste des apps doit
+ *  être relue, sinon aucune fiche n'a « Où elle peut aller ». test:ci lance les deux scénarios.
+ * SABOTAGE : `ADMIN_DIR=<ancien dossier admin>` → R1–R4 rouges (v2.7.15 : sans case ; v2.7.16 : rouge sous AVEC_PASS=1).   Lancer : npm run test:admin-role-boutiques
  */
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -24,12 +26,16 @@ const comptes = [
   { uid: 'essai_sans', name: 'Essai Sans-Role', created: maintenant - 9e6, last_seen: maintenant - 2000, portee: 'domaine', acces: [], bloque: [], roles: [], cgu_at: maintenant },
 ];
 const envois = [];
+const AVEC_PASS = process.env.AVEC_PASS === '1'; /* chez Kevin : sans laissez-passer, le domaine répond 403 tant que /__admin/grant n'a pas répondu */
+const GRANT = 'pass-de-test';
 const json = (res, o) => { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(o)); };
 const srv = createServer(async (req, res) => {
   const url = req.url.split('?')[0];
   try {
     if (url === '/kdmc-sso.js') { res.writeHead(200, { 'content-type': 'text/javascript' });
       return res.end("window.kdmcSSO={whoami:function(){return Promise.resolve({uid:'kdmc_admin',name:'Kevin',admin:true,verified:true});},token:function(){return '';},consumeHashToken:function(){}};"); }
+    if (url === '/__admin/grant') return json(res, { ok: true, grant: GRANT });
+    if (AVEC_PASS && url.startsWith('/__admin/') && req.headers['x-kdmc-admin'] !== GRANT) { res.writeHead(403, { 'content-type': 'application/json' }); return res.end('{"ok":false,"reason":"need_admin_code"}'); }
     if (url === '/__admin/accounts') return json(res, { ok: true, accounts: comptes, kv: true, count: comptes.length });
     if (url === '/__admin/acces' && req.method === 'GET') return json(res, { ok: true, apps: ['portail', 'shops', 'cmcteams', 'arbre'] });
     if (url === '/__admin/acces' && req.method === 'POST') {
@@ -89,5 +95,6 @@ ok('R4b. après enregistrement, le résumé dit « 🛍 boutiques »', !!(apres 
 ok('R5. 0 erreur JavaScript', erreurs.length === 0, erreurs[0] || '');
 
 await b.close(); srv.close();
+console.log(AVEC_PASS ? '(scénario : premier chargement SANS laissez-passer, comme dans le Chrome de Kevin)' : '(scénario : laissez-passer déjà rangé)');
 console.log(ko ? '❌ rôle boutiques dans l\'admin : ' + ko + ' échec(s)' : '✅ rôle boutiques visible et posable dans l\'admin');
 process.exit(ko ? 1 : 0);

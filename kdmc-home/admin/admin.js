@@ -410,8 +410,10 @@
     return fetch('/__admin/acces', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
       .then(function (r) { return r.json(); })
       .then(function (j) { if (j && j.apps) APPS_LISTE = j.apps; })
-      .then(function () { return fermees; })
-      .catch(function () { /* fail-open */ });
+      /* 25.10 (pont 1077) : au premier chargement chez Kevin, cette lecture partait AVANT le laissez-passer admin (403) et la promesse
+         gardée en mémoire ne repartait jamais → aucune fiche n'avait « Où elle peut aller ». Liste vide = on relira au prochain chargement. */
+      .then(function () { if (!APPS_LISTE.length) _appsP = null; return fermees; })
+      .catch(function () { _appsP = null; /* fail-open */ });
   }
   /* ---- Fermer une ou plusieurs apps POUR TOUT LE MONDE (Kevin 13.10 : « je peux bloquer un ou plusieurs sites, général et individuel »).
      Général = ici (une liste pour tout le domaine, l'admin entre toujours) ; individuel = « 🚫 Fermer une application précise » sur chaque fiche. */

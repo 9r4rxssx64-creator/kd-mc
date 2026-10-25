@@ -12452,3 +12452,12 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - Écrit aussi dans `.claude/rules/demandes-a-kevin.md` (chargé par toute session) ; garde `test:demandes-a-kevin-regle`.
 - **24.10.2026, précision** : « Laisse les branches de l'arbre s'occuper de l'arbre. » Chaque branche pose elle-même à Kevin les questions et gestes de son terrain ; une autre branche ne les relaie pas (j'avais redemandé les questions de famille de l'arbre et interrogé arbre-cloud : annulé, pont n° 859).
 
+
+## 🌳 RÈGLE ABSOLUE — ARBRE : TOUCHER UNE PERSONNE = TOUTE SA FAMILLE NETTE DU PLUS BAS AU PLUS HAUT, LE RESTE PRESQUE TRANSPARENT ET RÉGLABLE ; L'ARBRE PREND L'ÉCRAN ET LES COMMANDES SE RANGENT (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
+
+**« Vérifie pour chaque personne en réel. Quand on clique sur une personne doit apparaître toute sa famille du plus bas au plus haut et le reste en transparent presque, moins visible. Bouton de transparence manuel aussi. Que l'arbre prenne tout l'écran. Le plus de visibilité possible sur tous appareils. Pour les commandes trouve une solution intelligente pour garder de la visibilité. »** — Kevin 2026-10-25
+
+- Mesuré sur la vraie base (384 personnes, lecture seule) : chaque personne, exactement sa famille nette (0 écart). Le reste passe de 26 % à **8 %**, réglable par 👁 (8 / 18 / 35 / 100 %, mémorisé).
+- L'arbre prend l'écran : barres, zoom et mini-carte sont rangés derrière un bouton ☰ en bas au centre (avec 👁, ⛶, 📌 « garder ouvertes »), s'effacent pendant un glissé/pincé et se referment quand on touche l'arbre. Couverture de l'arbre : 0,7 à 4,8 % selon l'appareil.
+- Garde : `node tools/arbre/verify-focus-famille.mjs` (chaque personne, 6 appareils ; `ARBRE_DB=<export>` = vraie base en lecture seule) + `npm run test:arbre-focus-commandes` (dans test:ci). Détail : `.claude/rules/arbre-affichage-donnees.md`, LESSONS 737.
+

@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 231 règles — le texte de Kevin, une par une
+## 📜 Les 232 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1012,6 +1012,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🖱️ RÈGLE ABSOLUE — QUAND JE DEMANDE UN GESTE À KEVIN : JE VÉRIFIE D'ABORD QUE CE N'EST PAS DÉJÀ FAIT, PUIS JE LUI DONNE LE LIEN CLIQUABLE EXACT, EN UN CLIC AU MINIMUM (Kevin 2026-10-24, ABSOLUE, TOUTES LES BRANCHES)
 **« Quand tu me dis un geste de ta main, je veux toujours les actions cliquables avec l'endroit, un clic. Minimum. »** puis **« Renseigne-toi et vérifie toujours les infos ou ce que tu me […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-quand-je-demande-un-geste-à-kevin-je-vérifie-dabord-que-ce-nest-pas-déjà-fait-puis-je-lui-donne-le-lien-cliquable-exact-en-un-clic-au-minimum-kevin-2026-10-24-absolue-toutes-les-branches)
+
+### 🌳 RÈGLE ABSOLUE — ARBRE : TOUCHER UNE PERSONNE = TOUTE SA FAMILLE NETTE DU PLUS BAS AU PLUS HAUT, LE RESTE PRESQUE TRANSPARENT ET RÉGLABLE ; L'ARBRE PREND L'ÉCRAN ET LES COMMANDES SE RANGENT (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
+**« Vérifie pour chaque personne en réel. Quand on clique sur une personne doit apparaître toute sa famille du plus bas au plus haut et le reste en transparent presque, moins visible. Bouton de […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-toucher-une-personne-toute-sa-famille-nette-du-plus-bas-au-plus-haut-le-reste-presque-transparent-et-réglable-larbre-prend-lécran-et-les-commandes-se-rangent-kevin-2026-10-25-absolue-toutes-les-branches)
 
 ---
 

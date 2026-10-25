@@ -2,7 +2,7 @@
    fetch(req) dans le service worker perdait le cookie du domaine → « Connexion au domaine requise » à la réouverture. Repli : fetch. */
 function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.preloadResponse) return Promise.resolve(ev.preloadResponse).then(function (r) { return r || fetch(rq, opt); }, function () { return fetch(rq, opt); }); return fetch(rq, opt); }
 /* KDMC Sourcing — Service Worker (network-first, anti-cache-bloqué iOS). */
-var CACHE_VERSION = 'kdmc-sourcing-v1.0.4';
+var CACHE_VERSION = 'kdmc-sourcing-v1.0.5';
 var ASSETS = ['index.html', 'supplier.html', 'sourcing.js', 'suppliers.json', 'manifest.json'];
 
 self.addEventListener('install', function (e) {

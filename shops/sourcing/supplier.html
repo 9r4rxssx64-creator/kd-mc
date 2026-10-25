@@ -21,9 +21,9 @@ input,select,textarea{font:inherit}
 .wrap{max-width:1180px;margin:0 auto;padding:0 14px}
 header.top{position:sticky;top:0;z-index:50;background:rgba(12,19,13,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top,0px) + 10px) 0 10px}
 .top-in{display:flex;align-items:center;gap:12px;max-width:1180px;margin:0 auto;padding:0 14px}
-.brand{font-weight:800;font-size:16px}.brand b{color:var(--gold)}
+.brand{font-weight:800;font-size:16px;display:inline-flex;align-items:center;min-height:44px}.brand b{color:var(--gold)}
 .spacer{flex:1}
-.btn{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:14px;min-height:40px;display:inline-flex;align-items:center;gap:7px}
+.btn{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:14px;min-height:44px;display:inline-flex;align-items:center;gap:7px}
 .btn:active{transform:translateY(1px)}
 .btn.gold{background:linear-gradient(135deg,#caa62b,#9c7d18);color:#1a1304;font-weight:700;border:none}
 .btn.green{background:var(--green);color:#04140a;font-weight:700;border:none}
@@ -214,6 +214,6 @@ function refreshSel(){
 function rm(id){ KDMCSourcing.removeFromSelection(id, function(){ refreshSel(); }); }
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 60); });
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-sourcing" data-version="v1.0.4" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-sourcing" data-version="v1.0.5" data-color="#c9a227" defer></script>
 </body>
 </html>

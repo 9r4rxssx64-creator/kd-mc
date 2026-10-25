@@ -229,6 +229,40 @@ for (const ap of MATRICE) {
     }
   }
 }
+/* D. CHAQUE LANGUE DE LINGUA (24.10) : un cours par langue, une vraie leçon ouverte — 0 erreur JavaScript, la page ne déborde pas (alphabets, arabe de droite à gauche,
+   chinois/japonais/coréen), la leçon affiche du texte. Un contexte neuf par langue ; un seul appareil (téléphone 390 px). Filtrer avec PLAT=Langues. */
+if (!filtre || filtre.test('Langues')) for (const moteur of Object.keys(lanceurs)) {
+  console.log(`\n== Chaque langue de Lingua — ${moteur} ==`);
+  let codes = [];
+  try { const c0 = await ouvrir(moteur, { vp: { width: 390, height: 844 }, tactile: moteur !== 'firefox' }, true); codes = await c0.p.evaluate(() => Object.keys(COURSES || {})).catch(() => []); await c0.ctx.close(); } catch (e) { ok(false, `langues/${moteur} : la liste des cours ne se lit pas — ${String(e.message).split('\n')[0].slice(0, 90)}`); continue; }
+  ok(codes.length >= 14, `langues/${moteur} : ${codes.length} cours dans Lingua (≥ 14 attendus)`);
+  for (const code of codes) {
+    const tag = `langue ${code}/${moteur}`;
+    try {
+      const br = lanceurs[moteur];
+      const ctx = await br.newContext({ viewport: { width: 390, height: 844 }, locale: 'fr-FR', serviceWorkers: 'block', hasTouch: moteur !== 'firefox', isMobile: false });
+      await ctx.route('**/*', (r) => (r.request().url().startsWith(base) ? r.continue() : r.abort()));
+      await ctx.addInitScript((c) => { if (sessionStorage.getItem('seed')) return; sessionStorage.setItem('seed', '1');
+        localStorage.setItem('lingua_g_accounts', JSON.stringify([{ id: 'k', name: 'Élève Test', avatar: '🦊', code: '', created: 1 }])); localStorage.setItem('lingua_g_current', JSON.stringify('k'));
+        localStorage.setItem('lingua_a_k_course', JSON.stringify(c)); localStorage.setItem('lingua_a_k_placeAsked', 'true'); localStorage.setItem('lingua_a_k_sound', 'false'); localStorage.setItem('lingua_a_k_voice', JSON.stringify('device')); }, code);
+      const pg = await ctx.newPage(); const err = [];
+      pg.on('pageerror', (e) => err.push(String(e.message).slice(0, 100)));
+      await pg.goto(base + '/', { waitUntil: 'domcontentloaded' });
+      for (let k = 0; k < 60; k++) { if (await pg.evaluate(() => document.querySelectorAll('.tabbar .tab').length >= 6).catch(() => false)) break; await pg.waitForTimeout(250); }
+      await pg.waitForTimeout(700);
+      const r = await pg.evaluate(async () => {
+        const deb = () => document.documentElement.scrollWidth - document.documentElement.clientWidth;
+        const o = { deb0: deb(), vie: !!document.querySelector('.vie-link') };
+        const l = document.querySelector('.vie-link'); if (l) { l.click(); await new Promise((r2) => setTimeout(r2, 500)); const le = document.querySelector('.vie-lecon'); if (le) { le.click(); await new Promise((r2) => setTimeout(r2, 1000)); } }
+        const corps = document.querySelector('.lesson-body');
+        o.lecon = !!corps; o.texte = corps ? (corps.innerText || '').trim().length : 0; o.deb1 = deb();
+        return o; }).catch((e) => ({ err: String(e.message).slice(0, 80) }));
+      await ctx.close();
+      ok(!r.err && err.length === 0 && r.deb0 <= 2 && r.deb1 <= 2 && (!r.vie || (r.lecon && r.texte > 5)), `${tag} : 0 erreur JS, pas de débordement, ${r.vie ? 'une leçon s\'ouvre avec du texte (' + r.texte + ' car.)' : 'accueil affiché (pas de « vraie vie » pour ce cours)'}`
+        + (r.err ? ' — ' + r.err : '') + (err.length ? ' — ' + err.slice(0, 2).join(' | ') : '') + (r.deb0 > 2 || r.deb1 > 2 ? ' — déborde ' + r.deb0 + '/' + r.deb1 + ' px' : ''));
+    } catch (e) { ok(false, `${tag} : ne s'ouvre pas — ${String(e.message).split('\n')[0].slice(0, 90)}`); }
+  }
+}
 for (const b of Object.values(lanceurs)) await b.close();
 srv.close();
 console.log(`\n${n - ko}/${n} contrôles OK` + (ko ? ` — ${ko} rouge(s) :\n  - ` + rouges.join('\n  - ') : ''));

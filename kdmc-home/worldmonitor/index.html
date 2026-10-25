@@ -76,7 +76,7 @@
   #globe{display:block; width:100%; height:auto; touch-action:pan-y}
   .toggles{display:flex; gap:7px; flex-wrap:wrap; padding:10px 12px; border-bottom:1px solid var(--line)}
   .tg{border:1px solid var(--line); background:rgba(255,255,255,.03); color:var(--dim); border-radius:20px;
-    padding:7px 12px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; min-height:34px}
+    padding:7px 12px; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; min-height:44px}
   .tg .i{width:9px;height:9px;border-radius:50%}
   .tg[aria-pressed="true"]{color:var(--txt); border-color:rgba(160,190,240,.45); background:rgba(120,160,240,.10)}
   .tg[aria-pressed="false"]{opacity:.5}
@@ -169,6 +169,11 @@
   .tgn{font-size:11px;font-weight:500;color:var(--dim);background:rgba(120,150,210,.14);border-radius:20px;padding:1px 8px}
   .tgwrap{display:flex;flex-wrap:wrap;gap:6px;padding:2px 10px 11px}
   #btnInstall{display:none}
+  /* Cibles tactiles ≥ 44 px (contrôle réel 970, 25.10) : sélecteur de vue et zoom de la carte */
+  .vswitch button{min-height:44px; min-width:44px}
+  #wmQ, #histDate, #osintQ{min-height:44px; box-sizing:border-box}
+  a.k{display:inline-flex; align-items:center; min-height:44px}
+  .leaflet-touch .leaflet-bar a, .leaflet-bar a{width:44px !important; height:44px !important; line-height:44px !important}
 </style>
 </head>
 <body>
@@ -176,7 +181,7 @@
   <header class="top">
     <a class="retour" href="https://kd-mc.com/">← Portail</a>
     <div class="logo"><span class="dot"></span> 🌍 WORLD&nbsp;MONITOR</div>
-    <div style="display:flex;align-items:center;gap:10px"><button id="btnInstall" class="tg" style="min-height:38px" title="Ajouter World Monitor à ton écran d'accueil">📲 Installer</button><button id="btnBrief" class="tg" style="min-height:38px" title="Résumé IA de la situation mondiale (généré toutes les 6 h : conflits, catastrophes, à surveiller)">🧠 Brief IA</button><div class="clock"><b id="utc">—</b><span id="local">—</span></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><button id="btnInstall" class="tg" style="min-height:38px" title="Ajouter World Monitor à ton écran d'accueil">📲 Installer</button><button id="btnBrief" class="tg" style="min-height:44px" title="Résumé IA de la situation mondiale (généré toutes les 6 h : conflits, catastrophes, à surveiller)">🧠 Brief IA</button><div class="clock"><b id="utc">—</b><span id="local">—</span></div></div>
   </header>
 
   <div class="grid">
@@ -190,7 +195,7 @@
         <div id="g3d" class="hidden" aria-label="Globe 3D navigable : relief et satellite, comme Google Earth"></div>
         <div id="wmSearch" style="display:flex;gap:6px;margin:8px 0 2px">
           <input id="wmQ" type="search" placeholder="🔍 Aller à… (ville, pays, lieu)" autocomplete="off" style="flex:1;min-width:0;background:rgba(10,16,30,.7);border:1px solid var(--line);border-radius:9px;color:var(--fg);padding:9px 12px;font:inherit;font-size:14px">
-          <button id="wmGo" class="tg" style="min-height:40px" title="Voler vers ce lieu">➜</button>
+          <button id="wmGo" class="tg" style="min-height:44px;min-width:44px;justify-content:center" title="Voler vers ce lieu">➜</button>
           <span id="wmQState" style="align-self:center;color:var(--dim);font-size:11px"></span>
         </div>
         <div class="toggles" id="toggles">
@@ -211,7 +216,7 @@
         <div id="histBar" style="display:flex;align-items:center;gap:8px;margin:6px 0 2px;font-size:12px;color:var(--dim);flex-wrap:wrap">
           <span title="Voir la Terre vue de l'espace à une date passée — satellite NASA VIIRS, jusqu'à ~10 ans en arrière">🕰️ Satellite dans le temps</span>
           <input id="histDate" type="date" style="background:rgba(10,16,30,.7);border:1px solid var(--line);border-radius:8px;color:var(--fg);padding:5px 8px;font:inherit;font-size:13px">
-          <button id="histNow" class="tg" style="min-height:34px" title="Revenir au temps réel">⏱️ Actuel</button>
+          <button id="histNow" class="tg" style="min-height:44px" title="Revenir au temps réel">⏱️ Actuel</button>
           <b id="histLbl" style="color:var(--fg)">⏱️ Temps réel</b>
         </div>
         <canvas id="globe" class="hidden" width="760" height="600" aria-label="Globe animé : séismes, feux, volcans, tempêtes, vols et ISS en direct"></canvas>
@@ -377,7 +382,7 @@
 
 <script>
 "use strict";
-var VER="v2.44";
+var VER="v2.45";
 document.getElementById("ver").textContent="World Monitor "+VER;
 document.getElementById("ver").onclick=function(){ try{location.replace(location.pathname+"?_v="+Date.now());}catch(e){location.reload();} };
 
@@ -1305,8 +1310,15 @@ function updateIssMap(){
 var _GDACS_TYPES={TC:"🌀 Cyclone",EQ:"🔴 Séisme majeur",FL:"🌊 Inondation",VO:"🌋 Volcan",DR:"🌵 Sécheresse",WF:"🔥 Feu de forêt",TS:"🌊 Tsunami"};
 async function loadGdacs(){
   try{
-    var j=await getJSON("https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP",12000);
-    var fs=(j&&j.features)||[];if(!_gdacsLayer)return;
+    /* GDACS exige UN type par demande (sans type : 400 « Eventtype is required », mesuré 25.10) ;
+       un type sans événement répond 404 → simplement vide. */
+    var rs=await Promise.allSettled(Object.keys(_GDACS_TYPES).filter(function(k){return k!=="TS";}).map(function(k){
+      var c=new AbortController(),t=setTimeout(function(){c.abort();},15000);
+      return fetch("https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP?eventtype="+k,{signal:c.signal,cache:"no-store"})
+        .then(function(r){if(r.status===404)return {features:[]};if(!r.ok)throw 0;return r.json();})
+        .finally(function(){clearTimeout(t);});}));
+    var fs=[];rs.forEach(function(r){if(r.status==="fulfilled"&&r.value&&r.value.features)fs=fs.concat(r.value.features);});
+    if(!_gdacsLayer||!rs.some(function(r){return r.status==="fulfilled";}))return; /* tout en échec : on garde l'affichage précédent */
     _gdacsLayer.clearLayers();var out=[];
     fs.forEach(function(f){
       var g=f.geometry,pr=f.properties||{};if(!g||!g.coordinates)return;
@@ -1887,6 +1899,6 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)fast
   })();
 })();
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.44" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.45" data-color="#c9a227" defer></script>
 </body>
 </html>

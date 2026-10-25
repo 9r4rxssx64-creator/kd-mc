@@ -7,6 +7,33 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy Apex Chat (Cloudflare Workers) — 25/10/2026 16:43 UTC
+
+- **Branche** : `main` · **Commit** : `0a04fa4e` · **Run** : `40212861269`
+- **Ce qui a lâché** : Deploy Cloudflare Workers + Infra › Apply D1 migrations (journal _migrations — chaque fichier une seule fois), Cause lisible d'un déploiement refusé par Cloudflare
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/40212861269
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m# échec : ses autres instructions n'étaient jamais appliquées), migrations de données^[[0m
+^[[36;1m# rejouées, et un échec n'arrêtait pas les suivantes. Désormais le moteur^[[0m
+^[[36;1m# chaque fichier UNE fois, dans l'ordre, arrêt au premier vrai échec (le worker n'est^[[0m
+##[warning]wrangler d1 essai 1/3 :   "error": {
+##[warning]wrangler d1 essai 2/3 :   "error": {
+ÉCHEC : {
+  "error": {
+    "text": "A request to the Cloudflare API (/accounts/***/d1/database/afee673e-83e9-4ae3-a578-96fabbfdd023/query) failed.",
+        "text": "Your account has exceeded D1's free tier daily row read limit. Upgrade to a paid plan or wait until tomorrow (midnight UTC) to continue. See https://developers.cloudflare.com/d1/platform/limits/ for more details. [code: 7500]"
+    "kind": "error",
+Command failed: wrangler d1 execute apex-chat-main --remote --json --command SELECT filename, checksum FROM _migrations
+##[error]Process completed with exit code 1.
+Deploy Cloudflare Workers + Infra	Cause lisible d'un déploiement refusé par Cloudflare	﻿2026-10-25T16:43:33.6378423Z ##[group]Run set -u
+^[[36;1mif [ -z "$f" ]; then echo "::error title=wrangler::aucun journal wrangler trouvé"; exit 0; fi^[[0m
+^[[36;1mgrep -iE '✘|\[ERROR\]|error:|code: ?[0-9]{4,}|exceed|limit' "$f" | grep -viE 'authorization|bearer|token' \^[[0m
+^[[36;1m  | sed -E 's/[0-9a-f]{32}/***/g' | cut -c1-300 | head -12 | while IFS= read -r l; do echo "::error title=wrangler::$l"; done^[[0m
+##[error]Process completed with exit code 2.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +555,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

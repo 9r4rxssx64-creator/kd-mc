@@ -40,6 +40,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Apex Chat v1.1.348 (2026-10-25 — les comptes de test des robots ne restent plus)
 - La purge de nuit (03:00) marque supprimées les lignes de test des robots (`temps-reel…`, `parcours-robot…`) venues du domaine, vieilles de plus d'une heure, jamais un admin. 25 lignes déjà purgées en prod. Preuve : `purge-comptes-de-test.test.js` 2/2, rouge en sabotant l'exclusion admin ou l'appel de 03:00 ; 2 287 tests verts. Leçon 769.
 
+## Apex AI v13.4.394 (2026-10-25 — les boutons du chat assez grands pour le doigt)
+- Micro, oreille, trombone et flèche « aller en bas » du chat : 44 px (avant 36 et 40). Mesuré avant/après dans un vrai Chromium à 1250 et 390 px. Preuve : `cibles-44-chat-394.test.ts` 3/3, rouge sous l'ancien CSS. Leçon 770.
+
 ## Apex AI v13.4.393 (2026-10-25 — les icônes d'installation, cette fois au bon endroit)
 - Les icônes du manifeste sont servies à `/icons/…` (et non `/assets/icons/…`, qui donnait 404 pour le Chrome connecté de Kevin). Deux icônes de raccourci inexistantes remplacées par l'icône 192. Preuve : `demarrage-silencieux-392.test.ts` 4/4, rouge en remettant l'ancien chemin ; chaque `src` du manifeste construit existe dans `apex-ai-v13/`. Leçon 766.
 

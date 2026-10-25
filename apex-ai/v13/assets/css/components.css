@@ -1909,7 +1909,8 @@ button, [role="button"], .ax-btn, .ax-btn-sm {
 #apex-root .ax-gs-355.ax-gs-355, .ax-gs-355.ax-gs-355 { margin:0 0 8px;font-size:14px; }
 #apex-root .ax-gs-356.ax-gs-356, .ax-gs-356.ax-gs-356.ax-gs-356 { width:100%;padding:14px;font-weight:700; }
 #apex-root .ax-gs-357.ax-gs-357, .ax-gs-357.ax-gs-357 { width:100%;padding:12px; }
-#apex-root .ax-gs-358.ax-gs-358, .ax-gs-358.ax-gs-358.ax-gs-358 { min-width:36px;width:36px;flex:0 0 36px; }
+/* 25.10 (Lenovo 1076) : 36 px de large < 44 px (cible tactile) ; la ligne passe à la suivante si besoin (form flex-wrap) */
+#apex-root .ax-gs-358.ax-gs-358, .ax-gs-358.ax-gs-358.ax-gs-358 { min-width:44px;width:44px;flex:0 0 44px; }
 #apex-root .ax-gs-359.ax-gs-359, .ax-gs-359.ax-gs-359 { display:none; }
 #apex-root .ax-gs-360.ax-gs-360, .ax-gs-360.ax-gs-360.ax-gs-360 { width:100%;text-align:left;padding:14px; }
 #apex-root .ax-gs-361.ax-gs-361, .ax-gs-361.ax-gs-361.ax-gs-361 { width:100%; }

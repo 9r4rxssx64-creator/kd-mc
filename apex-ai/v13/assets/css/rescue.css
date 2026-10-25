@@ -289,7 +289,11 @@ form input[type="text"] {
     font-size: 10px !important;
     min-height: 28px !important;
   }
-  .ax-chat-input .ax-btn-icon,
+  .ax-chat-input .ax-btn-icon {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    padding: 4px !important;
+  }
   .ax-icon-compact {
     min-width: 36px !important;
     min-height: 36px !important;

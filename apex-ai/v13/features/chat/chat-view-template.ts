@@ -215,8 +215,10 @@ export function buildChatShellHtml(opts: ChatShellOpts): string {
         position: absolute;
         right: 14px;
         bottom: 96px;
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
         border-radius: 50%;
         background: rgba(20,20,35,0.85);
         border: 1px solid rgba(232,184,48,0.35);
@@ -226,7 +228,7 @@ export function buildChatShellHtml(opts: ChatShellOpts): string {
         font-size: 16px;
         cursor: pointer;
         opacity: 0;
-        transform: translateY(8px) scale(0.92);
+        transform: translateY(8px);
         pointer-events: none;
         transition: all 180ms cubic-bezier(0.16,1,0.3,1);
         z-index: 40;

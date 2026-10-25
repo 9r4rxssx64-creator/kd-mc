@@ -27,6 +27,16 @@ ok('piège : page trop large repérée', m1.deborde > 400, String(m1.deborde));
 ok('piège : page sous l’encoche iPhone repérée', m1.encoche === true);
 await p.setContent(PROPRE); const m2 = await p.evaluate(mesurer, true);
 ok('page propre : 0 caché, 0 haut coupé, 0 débordement, encoche gérée, 0 bouton < 44 px', m2.cache === 0 && m2.haut === 0 && m2.deborde === 0 && m2.encoche === false && m2.petit === 0, JSON.stringify(m2));
+/* un message éphémère (toast) qui passe sur un bouton n'est pas compté comme « caché » (il part seul) ; une carte non plus */
+await p.setContent(`<!doctype html><title>t</title><button id="b" style="position:absolute;top:40px;left:10px;width:100px;height:50px">Ok</button><div class="toast show" style="position:absolute;top:30px;left:0;width:200px;height:80px;background:#000">Enregistré</div>`);
+const m5 = await p.evaluate(mesurer, true);
+ok('toast sur un bouton : compté à part, pas « caché »', m5.cache === 0 && m5.toast === 1, JSON.stringify([m5.cache, m5.toast]));
+/* iPhone en PAYSAGE : une page propre ne « déborde » pas (25.10 : faux +360 px quand on comparait à la largeur du portrait) */
+const pl = await (await b.newContext({ viewport: { width: 750, height: 342 }, screen: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+await pl.setContent(PROPRE); const m3 = await pl.evaluate(mesurer, true);
+ok('paysage : page propre = 0 débordement', m3.deborde === 0, String(m3.deborde));
+await pl.setContent(PIEGE); const m4 = await pl.evaluate(mesurer, true);
+ok('paysage : page piégée (900 px) = débordement vu', m4.deborde > 100, String(m4.deborde));
 /* exploration : les onglets sont trouvés, l'onglet ouvert et les boutons dangereux (supprimer, payer…) ne sont JAMAIS touchés ; la flèche retour se voit */
 await p.setContent(`<!doctype html><title>t</title><nav><button class="active">Accueil</button><button>Planning</button><button>Supprimer mon compte</button><a href="#fiche">Fiches</a></nav><main></main>`);
 const nb = await p.evaluate(candidatsNavigation);

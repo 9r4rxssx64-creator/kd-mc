@@ -4,10 +4,6 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
-## CMCteams v9.990 — les cases de « Mon planning » ne sont plus coupées à 375 px (2026-10-25)
-- Mon plancher de lisibilité de 12 px (v9.985) agrandissait aussi le texte des cases de « Mon planning » : à 375 px, « 12h30/19 | 🎓11-12h » était coupé (`test:seances-individuel` 28/0 avant, 26/2 après, mesuré). Les cases de cette grille (`[data-mpday]`) gardent leur densité, comme les tableaux ; la garde `test:cmc-zones-tactiles` les exclut pareil. Lien « ← Portail » : bordure au jeton de thème (la dette de thème repart à la baisse, baseline re-figée).
-- Garde `test:seed-remplace` : exigeait `parser du seed = version de l'app`, donc rouge à CHAQUE nouvelle version ; elle exige maintenant une version valide et pas plus récente que l'app (bouger le seed ferait remplacer les imports récents).
-
 ## CMCteams v9.989 + light v1.114 — les derniers refus 401 mesurés dans le Chrome de Kevin, et deux zones tactiles (2026-10-24)
 - Lenovo (n° 704, v9.988) : 4 refus 401 sur CMCteams (`cmc_prive_actif` ×1, `ax_admin_profile` ×3), 0 sur la light ; zones < 44 px : lien « Aller au contenu » (239×39, ×2) et la pastille « Messages pit boss » (rond avec un chiffre).
 - `ax_admin_profile` / `ax_admin_kevin` ne sont plus envoyés à Firebase (les règles n'acceptent que les clés `cmc_*` / `ax_cmc_*` : refus garanti à chaque ouverture) ; la file « à envoyer » les oublie aussi. Lecture du drapeau de la fiche privée, de la présence de la light, et envois NR/5e et heures : plus rien ne part avant la fin de la connexion (CMCteams : `_fbAuthSettled` ; light : `_fbFini`). Lien d'évitement et pastille pit boss : 44 px.

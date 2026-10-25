@@ -971,8 +971,7 @@ function clSaveNewProduct(){
 }
 /* boot */
 (function(){
- /* 25.10 (contrôle réel 970) : plus de lecture anonyme de shops_admin_v1/access au chargement (401 de la base, comme La Détente) ;
-    l'admin est reconnu par le domaine (/__sso/whoami ci-dessous). */
+ try{ldAuthSyncNow&&ldAuthSyncNow();}catch(_){}
  try{ldRequestPersist&&ldRequestPersist();}catch(_){}
  try{var u=new URLSearchParams(location.search);
    if(localStorage.getItem("ld_admin_trust")==="1"||localStorage.getItem("ld_admin")==="1"){localStorage.setItem("ld_admin_trust","1");LD_ADMIN=true;}
@@ -1022,7 +1021,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.20"
+        data-version="v2.0.19"
         data-color="#e8b830"
         defer></script>
 

@@ -45,6 +45,7 @@ export function mesurer(tel) {
     if (!e || !e.tagName) return '?';
     let s = e.tagName.toLowerCase();
     if (e.id) s += '#' + String(e.id).slice(0, 24);
+    if (e.tagName === 'IFRAME') { try { s += '[' + new URL(e.src, location.href).pathname.slice(0, 30) + ']'; } catch (_) { /* adresse illisible */ } }
     const c = typeof e.className === 'string' ? e.className.trim().split(/\s+/).filter(Boolean).slice(0, 2) : [];
     if (c.length) s += '.' + c.map((x) => x.slice(0, 18)).join('.');
     return s;
@@ -57,16 +58,21 @@ export function mesurer(tel) {
   };
   const cliquables = [...document.querySelectorAll('a[href], button, [role="button"], input:not([type="hidden"]), select, textarea, [onclick], summary')]
     .filter(visible);
-  const caches = [], petits = [];
+  const caches = [], petits = [], toasts = [];
   for (const e of cliquables) {
     const r = e.getBoundingClientRect();
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
     if (cx < 0 || cy < 0 || cx >= W || cy >= H) continue;          // hors de l'écran : pas jugé (défilement)
     const dessus = document.elementFromPoint(cx, cy);
     if (dessus && dessus !== e && !e.contains(dessus) && !dessus.contains(e)) {
-      /* un libellé / une icône d'un même bouton, ou un parent cliquable commun = pas un recouvrement */
+      /* pas un recouvrement : un libellé du même champ, un marqueur de carte sous les contrôles de la carte (normal) */
       const lab = dessus.closest && dessus.closest('label');
-      if (!(lab && (lab.contains(e) || (e.id && lab.htmlFor === e.id)))) caches.push(court(e) + ' ⟵ sous ' + court(dessus));
+      const carte = e.closest && e.closest('.leaflet-marker-pane, .leaflet-tile-pane, .leaflet-overlay-pane, .maplibregl-canvas-container');
+      const ephemere = dessus.closest && dessus.closest('[class*="toast"], [id*="toast"], [role="status"], [role="alert"]');
+      if (lab && (lab.contains(e) || (e.id && lab.htmlFor === e.id))) { /* même champ */ }
+      else if (carte) { /* marqueur / tuile de carte */ }
+      else if (ephemere) toasts.push(court(e));
+      else caches.push(court(e) + ' ⟵ sous ' + court(dessus));
     }
     if (tel && (r.width < 44 || r.height < 44) && e.tagName !== 'INPUT' && e.tagName !== 'TEXTAREA' && e.tagName !== 'SELECT') petits.push(court(e));
   }
@@ -75,6 +81,7 @@ export function mesurer(tel) {
   if ((scrollY || document.scrollingElement.scrollTop) < 2) {
     for (const e of document.body ? document.body.querySelectorAll('h1, h2, header, nav, [class*="head"], [class*="top"], button, a, img') : []) {
       if (!visible(e)) continue;
+      if (e.closest('.leaflet-container, .maplibregl-map') || /skip|sr-only|visually-hidden/i.test(typeof e.className === 'string' ? e.className : '')) continue;   // carte qui déborde exprès, lien « aller au contenu »
       const r = e.getBoundingClientRect();
       if (r.top < -4 && r.bottom > 0 && r.left < W && r.right > 0) haut.push(court(e) + ' (' + Math.round(r.top) + ' px)');
     }
@@ -85,14 +92,18 @@ export function mesurer(tel) {
   let safe = /safe-area-inset-top/.test(document.documentElement.outerHTML.slice(0, 200000));
   if (!safe) { for (const sh of document.styleSheets) { try { for (const r of sh.cssRules) { if (/safe-area-inset-top/.test(r.cssText)) { safe = true; break; } } } catch (_) { /* feuille d'un autre domaine */ } if (safe) break; } }
   const encoche = /viewport-fit\s*=\s*cover/.test(vp) && !safe;
+  /* largeur VRAIE de l'écran, en px CSS : un mobile qui « avale » une page trop large se dézoome (innerWidth grossit, l'échelle baisse) ;
+     largeur visible × échelle = la fenêtre d'origine, en portrait comme en paysage (25.10 : screen.width donnait un faux « +360 px » en paysage). */
+  const vv = window.visualViewport;
+  const LARG_ECRAN = vv ? Math.round(vv.width * vv.scale) : W;
   const largeur = Math.max(document.documentElement.scrollWidth, document.body ? document.body.scrollWidth : 0);
   return {
     titre: !!document.title,
-    cache: caches.length, cacheEx: caches.slice(0, 4),
+    cache: caches.length, cacheEx: caches.slice(0, 4), toast: toasts.length,
     haut: haut.length, hautEx: haut.slice(0, 3),
     /* sur téléphone, Chrome/Safari ÉLARGISSENT la page pour faire tenir un contenu trop large (innerWidth grossit, la page se dézoome) :
        on compare donc à la largeur de l'ÉCRAN, pas à innerWidth. */
-    deborde: largeur > Math.min(W, screen.width || W) + 2 ? largeur - Math.min(W, screen.width || W) : 0,
+    deborde: largeur > LARG_ECRAN + 2 ? largeur - LARG_ECRAN : 0,
     encoche,
     petit: petits.length, petitEx: petits.slice(0, 3),
     cliquables: cliquables.length,
@@ -169,13 +180,13 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
       else journal(`=== ${nom} [${moteur === bw ? 'webkit' : 'chromium'}] (${opts.viewport.width}×${opts.viewport.height}) — anonyme`);
       for (const h of hotes) {
         const js = [];
-        const onErr = (e) => js.push(String(e && e.message).slice(0, 80));
+        const onErr = (e) => js.push(String(e && e.message).replace(/["'«][^"'»]{12,}["'»]/g, '"…"').replace(/\S+@\S+/g, '…@…').replace(/\d{6,}/g, '…').slice(0, 70));
         page.on('pageerror', onErr);
         const t0 = Date.now(); let st = 0, m = null, err = '';
         try {
           const rep = await page.goto(url(h), { waitUntil: 'load', timeout: 30000 });
           st = rep ? rep.status() : 0;
-          await page.waitForTimeout(2500);                               // laisser les apps dessiner (écran de connexion, données)
+          await page.waitForTimeout(4500);                               // laisser les apps dessiner ET Bee se ranger (il se replace à 1,2 s puis 3,5 s)
           await page.evaluate(() => window.scrollTo(0, 0));
           m = await page.evaluate(mesurer, tel);
         } catch (e) { err = String(e && e.message).split('\n')[0].slice(0, 90); }
@@ -205,12 +216,13 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
             } catch (e) { /* un onglet qui ne se laisse pas toucher : compté comme mort */ explo.morts++; }
           }
         }
-        const ligne = { app: h, ecran: nom, admin, st, ms: Date.now() - t0, js: js.length, err, ...(m || {}), explo };
+        const ligne = { app: h, ecran: nom, admin, st, ms: Date.now() - t0, js: js.length, jsEx: [...new Set(js)].slice(0, 2), err, ...(m || {}), explo };
         res.push(ligne);
         const pb = m ? [m.cache && `${m.cache} caché(s)`, m.haut && `haut coupé ×${m.haut}`, tel && m.encoche && 'haut sous l\'encoche iPhone', m.deborde && `déborde +${m.deborde}px`, tel && m.petit && `${m.petit} < 44px`, js.length && `${js.length} err JS`].filter(Boolean) : [err || 'échec'];
         journal(`${pb.length ? '❌' : '✅'} ${h} · ${nom} · HTTP ${st} · ${ligne.ms} ms${pb.length ? ' · ' + pb.join(' · ') : ''}`);
         if (m && m.cache) journal('   ↳ caché : ' + m.cacheEx.join(' | '));
         if (m && m.haut) journal('   ↳ haut : ' + m.hautEx.join(' | '));
+        if (js.length) journal('   ↳ js : ' + [...new Set(js)].slice(0, 2).join(' | '));
         if (explo) journal(`   ↳ exploré : ${explo.touches} touché(s) · ${explo.morts} sans réaction · ${explo.sansRetour} page(s) sans retour · ${explo.cache} caché(s) · haut ${explo.haut} · déborde ${explo.deborde}${explo.ex.length ? ' · ' + explo.ex.join(' | ') : ''}`);
       }
       await ctx.close();
@@ -226,6 +238,7 @@ export function bilan(res) {
     if (r.encoche) a.encoche = true;
     if (r.explo) { a.morts = (a.morts || 0) + r.explo.morts; a.sansRetour = (a.sansRetour || 0) + r.explo.sansRetour; a.cache += r.explo.cache; a.haut += r.explo.haut; a.deborde = Math.max(a.deborde, r.explo.deborde); a.js += r.explo.js; for (const x of r.explo.ex) if (a.ex.size < 6) a.ex.add(x); }
     if (r.err && !a.err) a.err = r.err;
+    if (r.jsEx && r.jsEx.length && !a.jsEx) a.jsEx = r.jsEx;
     for (const x of [...(r.cacheEx || []).slice(0, 2).map((v) => 'caché ' + v), ...(r.hautEx || []).slice(0, 1).map((v) => 'haut ' + v)]) if (a.ex.size < 4) a.ex.add(x);
     a.cache += r.cache || 0; a.haut += r.haut || 0; a.deborde = Math.max(a.deborde, r.deborde || 0); a.js += r.js || 0;
     if (ECRANS.find((e) => e.nom === r.ecran)?.tel) a.petit = Math.max(a.petit, r.petit || 0);
@@ -243,7 +256,7 @@ if (process.argv[1] && process.argv[1].endsWith('verif-affichage-domaine.mjs')) 
   for (const [app, a] of Object.entries(B)) {
     const mauvais = a.cache || a.haut || a.deborde || a.js || a.encoche || a.morts || a.sansRetour || a.ecransKO.length;
     if (mauvais) ko++;
-    console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.morts ? ' · ' + a.morts + ' bouton(s) sans réaction' : ''}${a.sansRetour ? ' · ' + a.sansRetour + ' page(s) sans retour' : ''}${a.encoche ? ' · encoche iPhone' : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
+    console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.morts ? ' · ' + a.morts + ' bouton(s) sans réaction' : ''}${a.sansRetour ? ' · ' + a.sansRetour + ' page(s) sans retour' : ''}${a.encoche ? ' · encoche iPhone' : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.jsEx ? ' · js ex : ' + a.jsEx.join(' / ') : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
   }
   console.log(`\nℹ️ ${Object.keys(B).length} apps × ${ECRANS.length} écrans = ${res.length} pages ; ${ko} app(s) à corriger`);
   if (process.env.SORTIE) writeFileSync(process.env.SORTIE, JSON.stringify(res, null, 1));

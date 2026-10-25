@@ -5,7 +5,7 @@ function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.p
    Réseau d'abord (page 100% live), cache = repli hors-ligne du shell uniquement.
    Règle CLAUDE.md #39/#52 : JAMAIS intercepter ?_v= / _force_upd_ (version-check
    du badge partagé) ; le cross-origin (APIs live, tuiles) n'est PAS intercepté. */
-var CACHE_VERSION = "wm-v2.45";
+var CACHE_VERSION = "wm-v2.44";
 self.addEventListener("install", function (e) { self.skipWaiting(); });
 self.addEventListener("activate", function (e) { try { if (self.registration && self.registration.navigationPreload) e.waitUntil(self.registration.navigationPreload.enable().catch(function () {})); } catch (x) { /* pas de pré-chargement */ }
   e.waitUntil(caches.keys().then(function (ks) {

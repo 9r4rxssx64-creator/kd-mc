@@ -30,11 +30,11 @@ export const url = (h) => 'https://' + (h.includes('.') ? h : h + '.kd-mc.com') 
 
 export const ECRANS = [
   { nom: 'iphone-se', tel: true, ...devices['iPhone SE'] },
-  { nom: 'iphone-13', tel: true, ...devices['iPhone 13'] },
+  { nom: 'iphone-13', tel: true, explorer: true, ...devices['iPhone 13'] },
   { nom: 'iphone-paysage', tel: true, ...devices['iPhone 13 landscape'] },
   { nom: 'android', tel: true, ...devices['Pixel 7'] },
   { nom: 'tablette', tel: true, ...devices['iPad Mini'] },
-  { nom: 'portable', tel: false, viewport: { width: 1280, height: 720 } },
+  { nom: 'portable', tel: false, explorer: true, viewport: { width: 1280, height: 720 } },
   { nom: 'grand-ecran', tel: false, viewport: { width: 1440, height: 900 } },
 ];
 
@@ -99,6 +99,38 @@ export function mesurer(tel) {
   };
 }
 
+/* EXPLORATION (Kevin 25.10 : « va plus loin, réel aussi test ») : un niveau plus loin dans chaque app. Exécuté DANS la page :
+   les candidats = onglets, barres de navigation, menus (jamais un bouton qui envoie/supprime/achète : filtré par son libellé). */
+export function candidatsNavigation() {
+  const DANGER = /supprim|effac|envoy|valid|achet|pay|commander|déconnex|deconnex|logout|quitter|réinit|reinit|publier|signer|accepter|refuser|bloquer|bannir/i;
+  const vis = (e) => { const r = e.getBoundingClientRect(); const st = getComputedStyle(e); return r.width > 8 && r.height > 8 && st.visibility !== 'hidden' && st.display !== 'none' && r.top < innerHeight && r.bottom > 0; };
+  const sel = 'nav a, nav button, [role="tab"], [role="tablist"] > *, .tabs > *, .tab, .tabbar > *, .nav > *, .onglets > *, footer button, header button, [data-tab], [data-onglet], [data-va]';
+  const vus = new Set(), out = [];
+  /* pas de barre d'onglets : on prend les tuiles / boutons du contenu (portail, tableaux de bord) */
+  const repli = 'main a[href], main button, .grid a, .grid button, a.tile, .tile, .tuile, a.card, [class*="card"] a, section button';
+  const liste = [...document.querySelectorAll(sel)];
+  if (!liste.some(vis)) liste.push(...document.querySelectorAll(repli));
+  for (const e of liste) {
+    if (vus.has(e) || !vis(e)) continue; vus.add(e);
+    const lib = ((e.getAttribute('aria-label') || '') + ' ' + (e.textContent || '')).trim();
+    if (DANGER.test(lib)) continue;
+    /* l'onglet DÉJÀ ouvert ne change rien quand on le touche : ce n'est pas un bouton mort */
+    if (e.getAttribute('aria-selected') === 'true' || e.getAttribute('aria-current') || /(^|\s)(active|actif|on|sel|selected|courant)(\s|$)/.test(typeof e.className === 'string' ? e.className : '')) continue;
+    if (e.tagName === 'A' && e.href && new URL(e.href, location.href).host !== location.host) continue;   // on reste dans l'app
+    e.setAttribute('data-kdmc-explo', String(out.length));
+    out.push(out.length);
+    if (out.length >= 6) break;
+  }
+  return out.length;
+}
+export function aUnRetour() {
+  const RET = /^\s*(←|‹|⟵|◀|<|✕|×|✖)|retour|revenir|fermer|back|close/i;
+  return [...document.querySelectorAll('a, button, [role="button"]')].some((e) => {
+    const r = e.getBoundingClientRect(); if (r.width < 4 || r.height < 4 || r.top > innerHeight || r.bottom < 0) return false;
+    return RET.test((e.getAttribute('aria-label') || '') + ' ' + (e.getAttribute('title') || '') + ' ' + (e.textContent || '').trim().slice(0, 20));
+  });
+}
+
 async function connecterAdmin(page, hash) {
   await page.goto('https://kd-mc.com/sw.js', { waitUntil: 'domcontentloaded', timeout: 60000 });
   return page.evaluate(async (h) => {
@@ -126,7 +158,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
   const res = [];
   try {
     for (const ec of ecrans) {
-      const { nom, tel, ...opts } = ec;
+      const { nom, tel, explorer, ...opts } = ec;
       const moteur = bw && /iphone|tablette/.test(nom) ? bw : b;
       delete opts.defaultBrowserType;
       const ctx = await moteur.newContext({ ...opts });
@@ -148,12 +180,38 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
           m = await page.evaluate(mesurer, tel);
         } catch (e) { err = String(e && e.message).split('\n')[0].slice(0, 90); }
         page.off('pageerror', onErr);
-        const ligne = { app: h, ecran: nom, admin, st, ms: Date.now() - t0, js: js.length, err, ...(m || {}) };
+        /* un niveau plus loin (écrans « explorer ») : toucher chaque onglet/menu, remesurer, noter s'il a réagi et si un retour existe */
+        let explo = null;
+        if (m && ec.explorer) {
+          explo = { touches: 0, morts: 0, sansRetour: 0, cache: 0, haut: 0, deborde: 0, js: 0, ex: [] };
+          const n = await page.evaluate(candidatsNavigation).catch(() => 0);
+          for (let k = 0; k < n; k++) {
+            try {
+              const avant = await page.evaluate(() => location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length);
+              const cible = page.locator('[data-kdmc-explo="' + k + '"]').first();
+              if (!(await cible.count())) continue;
+              const jsAvant = js.length;
+              await cible.click({ timeout: 4000, trial: false });
+              await page.waitForTimeout(1200);
+              explo.touches++;
+              const apres = await page.evaluate(() => location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length);
+              if (apres === avant) { explo.morts++; if (explo.ex.length < 4) explo.ex.push('sans réaction : n°' + k); }
+              const m2 = await page.evaluate(mesurer, tel);
+              const changePage = apres.split('|')[0] !== avant.split('|')[0];
+              if (changePage && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après n°' + k); }
+              explo.cache += m2.cache; explo.haut += m2.haut; explo.deborde = Math.max(explo.deborde, m2.deborde); explo.js += js.length - jsAvant;
+              if (m2.cache && explo.ex.length < 4) explo.ex.push('caché après n°' + k + ' : ' + m2.cacheEx[0]);
+              if (changePage) { await page.goto(url(h), { waitUntil: 'load', timeout: 30000 }); await page.waitForTimeout(1500); await page.evaluate(candidatsNavigation); }
+            } catch (e) { /* un onglet qui ne se laisse pas toucher : compté comme mort */ explo.morts++; }
+          }
+        }
+        const ligne = { app: h, ecran: nom, admin, st, ms: Date.now() - t0, js: js.length, err, ...(m || {}), explo };
         res.push(ligne);
         const pb = m ? [m.cache && `${m.cache} caché(s)`, m.haut && `haut coupé ×${m.haut}`, tel && m.encoche && 'haut sous l\'encoche iPhone', m.deborde && `déborde +${m.deborde}px`, tel && m.petit && `${m.petit} < 44px`, js.length && `${js.length} err JS`].filter(Boolean) : [err || 'échec'];
         journal(`${pb.length ? '❌' : '✅'} ${h} · ${nom} · HTTP ${st} · ${ligne.ms} ms${pb.length ? ' · ' + pb.join(' · ') : ''}`);
         if (m && m.cache) journal('   ↳ caché : ' + m.cacheEx.join(' | '));
         if (m && m.haut) journal('   ↳ haut : ' + m.hautEx.join(' | '));
+        if (explo) journal(`   ↳ exploré : ${explo.touches} touché(s) · ${explo.morts} sans réaction · ${explo.sansRetour} page(s) sans retour · ${explo.cache} caché(s) · haut ${explo.haut} · déborde ${explo.deborde}${explo.ex.length ? ' · ' + explo.ex.join(' | ') : ''}`);
       }
       await ctx.close();
     }
@@ -166,6 +224,7 @@ export function bilan(res) {
   for (const r of res) {
     const a = (parApp[r.app] ||= { cache: 0, haut: 0, deborde: 0, petit: 0, js: 0, encoche: false, ecransKO: [], ex: new Set(), err: '' });
     if (r.encoche) a.encoche = true;
+    if (r.explo) { a.morts = (a.morts || 0) + r.explo.morts; a.sansRetour = (a.sansRetour || 0) + r.explo.sansRetour; a.cache += r.explo.cache; a.haut += r.explo.haut; a.deborde = Math.max(a.deborde, r.explo.deborde); a.js += r.explo.js; for (const x of r.explo.ex) if (a.ex.size < 6) a.ex.add(x); }
     if (r.err && !a.err) a.err = r.err;
     for (const x of [...(r.cacheEx || []).slice(0, 2).map((v) => 'caché ' + v), ...(r.hautEx || []).slice(0, 1).map((v) => 'haut ' + v)]) if (a.ex.size < 4) a.ex.add(x);
     a.cache += r.cache || 0; a.haut += r.haut || 0; a.deborde = Math.max(a.deborde, r.deborde || 0); a.js += r.js || 0;
@@ -182,9 +241,9 @@ if (process.argv[1] && process.argv[1].endsWith('verif-affichage-domaine.mjs')) 
   console.log('\n=== BILAN par app (cache = boutons recouverts, haut = haut coupé, deborde = px de trop, petit = max < 44 px sur téléphone) ===');
   let ko = 0;
   for (const [app, a] of Object.entries(B)) {
-    const mauvais = a.cache || a.haut || a.deborde || a.js || a.encoche || a.ecransKO.length;
+    const mauvais = a.cache || a.haut || a.deborde || a.js || a.encoche || a.morts || a.sansRetour || a.ecransKO.length;
     if (mauvais) ko++;
-    console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.encoche ? ' · encoche iPhone' : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
+    console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.morts ? ' · ' + a.morts + ' bouton(s) sans réaction' : ''}${a.sansRetour ? ' · ' + a.sansRetour + ' page(s) sans retour' : ''}${a.encoche ? ' · encoche iPhone' : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
   }
   console.log(`\nℹ️ ${Object.keys(B).length} apps × ${ECRANS.length} écrans = ${res.length} pages ; ${ko} app(s) à corriger`);
   if (process.env.SORTIE) writeFileSync(process.env.SORTIE, JSON.stringify(res, null, 1));

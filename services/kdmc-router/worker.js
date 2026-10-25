@@ -1050,7 +1050,7 @@ export function estPageCmcteams(texte) {
 /* Garde appliquée à une page HTML de l'hébergeur avant de la servir (hors cmcteams.kd-mc.com). */
 /* Page « introuvable » du domaine (en français, bouton vers l'espace) : repli d'hébergeur refusé, et adresse absente de la copie embarquée. */
 const PAGE_INTROUVABLE = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><title>Page introuvable — kd-mc.com</title>'
-    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}.c{max-width:340px}h1{font-size:19px;color:#f6d97a}a{display:inline-block;margin-top:14px;min-height:48px;line-height:48px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));text-align:center}.c{max-width:340px}h1{font-size:19px;color:#f6d97a}a{display:inline-block;margin-top:14px;min-height:48px;line-height:48px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
     + '<body><div class="c"><div style="font-size:44px">🧭</div><h1>Cette page n’existe pas ici</h1><p>L’adresse ouverte ne correspond à aucune page. Si c’est une icône de ton écran d’accueil, supprime-la et repose-la depuis l’app.</p><a href="https://kd-mc.com/">Aller à mon espace</a></div></body></html>';
 async function sansCmcteamsParAccident(res, host, chemin, request) {
   if (!res || res.status !== 200 || request.method !== 'GET') return res;
@@ -2171,7 +2171,7 @@ function porteCodePage(g, url, s) {
   const portail = 'https://kd-mc.com/?code=1&return=' + encodeURIComponent(url.href);
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
     + '<meta name="robots" content="noindex"><meta name="theme-color" content="#0b1409"><title>' + esc(g.nom) + ' — crée ton code</title>'
-    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));text-align:center}'
     + '.c{max-width:340px;width:100%}h1{font-size:19px;color:#f6d97a;margin:8px 0 6px}p{margin:0 0 14px;color:#cfd8cc}'
     + 'a.b{display:block;width:100%;box-sizing:border-box;margin-top:12px;min-height:50px;line-height:50px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
     + '<body><div class="c"><div style="font-size:44px">🔐</div><h1>' + esc(g.nom) + '</h1>'
@@ -2186,7 +2186,7 @@ function portePage(g, url) {
   const portail = 'https://kd-mc.com/?return=' + encodeURIComponent(url.href);
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
     + '<meta name="robots" content="noindex"><meta name="theme-color" content="#0b1409"><title>' + esc(g.nom) + ' — connexion</title>'
-    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));text-align:center}'
     + '.c{max-width:340px;width:100%}h1{font-size:19px;color:#f6d97a;margin:8px 0 6px}p{margin:0 0 14px;color:#cfd8cc;min-height:22px}'
     + 'button,a.b{display:block;width:100%;box-sizing:border-box;margin-top:12px;min-height:50px;line-height:50px;padding:0 20px;border:none;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer}'
     + 'button:disabled{opacity:.6}a.b.s{background:transparent;color:#f6d97a;border:1px solid rgba(232,184,48,.45);line-height:48px}</style></head>'
@@ -2265,7 +2265,7 @@ function ficheRefusee(g, raison) {
     : raison === 'refuse_admin' ? 'L\'administrateur n\'a pas validé ce compte.'
     : 'Ton compte n\'est pas encore ouvert sur cette application. Demande à l\'administrateur de l\'ouvrir.';
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>' + esc(g.nom) + ' — accès</title>'
-    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));text-align:center}'
     + '.c{max-width:340px}h1{font-size:19px;color:#f6d97a}a{display:inline-block;margin-top:14px;min-height:48px;line-height:48px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
     + '<body><div class="c"><div style="font-size:44px">🔒</div><h1>' + esc(g.nom) + '</h1><p>' + esc(msg) + '</p><a href="https://kd-mc.com/">Retour à mon espace</a></div></body></html>';
   return new Response(html, { status: 403, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'x-kdmc-porte': 'perimetre' } });
@@ -2281,7 +2281,7 @@ function lettres2(v) { return (String(v || '').match(/\p{L}/gu) || []).length >=
 function pageDemande(titre, texte, ok) {
   const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Rotaplan — ' + esc(titre) + '</title>'
-    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6f4ef;color:#1d1d1b;font:16px/1.55 -apple-system,sans-serif;padding:24px}'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f6f4ef;color:#1d1d1b;font:16px/1.55 -apple-system,sans-serif;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}'
     + '.c{max-width:420px;text-align:center}h1{font-size:22px}a{display:inline-block;margin-top:16px;min-height:48px;line-height:48px;padding:0 22px;border-radius:12px;background:#1d1d1b;color:#fff;text-decoration:none;font-weight:700}</style></head>'
     + '<body><div class="c"><div style="font-size:44px">' + (ok ? '✅' : '✍️') + '</div><h1>' + esc(titre) + '</h1><p>' + esc(texte) + '</p>'
     + '<a href="https://rotaplan.kd-mc.com/' + (ok ? '' : '#demander') + '">' + (ok ? 'Retour à Rotaplan' : 'Compléter ma demande') + '</a></div></body></html>';
@@ -6623,7 +6623,7 @@ function verrouAdminPage(o) {
   + 'err.textContent=auto?"Touche « Entrer avec Face ID », ou tape ton code.":"Face ID refusé ("+String((e&&e.message)||e).slice(0,80)+"). Réessaie ou tape ton code.";});}'
   + 'if(pkOk){fid.onclick=function(){faceId(false);};faceId(true);}else{fid.hidden=true;pin.focus();}';
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="' + o.theme + '"><title>' + o.titre + '</title>'
-  + '<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:' + o.fond + ';color:' + o.texte + ';font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px}'
+  + '<style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:' + o.fond + ';color:' + o.texte + ';font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}'
   + '.c{width:100%;max-width:340px;text-align:center}.lg{font-size:44px}h1{font-size:19px;margin:10px 0 4px}p{color:' + o.doux + ';font-size:14px;margin:0 0 18px}'
   + 'input{width:100%;background:' + o.champ + ';border:1px solid ' + o.bord + ';color:' + o.texte + ';border-radius:12px;padding:14px;font-size:20px;text-align:center;letter-spacing:6px}'
   + 'button,a.r{display:block;width:100%;min-height:50px;margin-top:12px;border-radius:12px;font-size:16px;font-weight:700;text-align:center;text-decoration:none;cursor:pointer}'

@@ -5,7 +5,7 @@
  * Lancer : npm run test:affichage-detecteur
  */
 import { chromium } from 'playwright';
-import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
+import { mesurer, candidatsNavigation, aUnRetour } from '../tools/plateformes/verif-affichage-domaine.mjs';
 
 const PIEGE = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>p</title>
 <style>body{margin:0;font:16px sans-serif} header{position:relative;top:-30px;height:60px;background:#333;color:#fff}
@@ -27,6 +27,14 @@ ok('piège : page trop large repérée', m1.deborde > 400, String(m1.deborde));
 ok('piège : page sous l’encoche iPhone repérée', m1.encoche === true);
 await p.setContent(PROPRE); const m2 = await p.evaluate(mesurer, true);
 ok('page propre : 0 caché, 0 haut coupé, 0 débordement, encoche gérée, 0 bouton < 44 px', m2.cache === 0 && m2.haut === 0 && m2.deborde === 0 && m2.encoche === false && m2.petit === 0, JSON.stringify(m2));
+/* exploration : les onglets sont trouvés, l'onglet ouvert et les boutons dangereux (supprimer, payer…) ne sont JAMAIS touchés ; la flèche retour se voit */
+await p.setContent(`<!doctype html><title>t</title><nav><button class="active">Accueil</button><button>Planning</button><button>Supprimer mon compte</button><a href="#fiche">Fiches</a></nav><main></main>`);
+const nb = await p.evaluate(candidatsNavigation);
+const marques = await p.evaluate(() => [...document.querySelectorAll('[data-kdmc-explo]')].map((e) => e.textContent.trim()));
+ok('exploration : 2 onglets à toucher (ni l’onglet ouvert, ni « Supprimer »)', nb === 2 && marques.join(',') === 'Planning,Fiches', JSON.stringify(marques));
+ok('flèche retour absente → vue absente', (await p.evaluate(aUnRetour)) === false);
+await p.setContent(`<!doctype html><title>t</title><header><a href="#">← Retour</a></header><h1>Fiche</h1>`);
+ok('flèche retour présente → vue', (await p.evaluate(aUnRetour)) === true);
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

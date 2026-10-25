@@ -81,7 +81,7 @@ const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&':
 function page({ emoji, titre, texte, bouton, lien, status = 200 }) {
   const html = '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
     + '<meta name="robots" content="noindex"><meta name="theme-color" content="#0b1409"><title>' + esc(titre) + ' — kd-mc.com</title>'
-    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:24px;text-align:center}'
+    + '<style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1409;color:#f3f0e6;font:15px/1.5 -apple-system,sans-serif;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));text-align:center}'
     + '.c{max-width:340px;width:100%}h1{font-size:19px;color:#f6d97a;margin:8px 0 6px}p{margin:0 0 14px;color:#cfd8cc}'
     + 'a.b{display:block;width:100%;box-sizing:border-box;margin-top:12px;min-height:50px;line-height:50px;padding:0 20px;border-radius:13px;background:#e8b830;color:#11160c;font-weight:700;text-decoration:none}</style></head>'
     + '<body><div class="c"><div style="font-size:44px">' + emoji + '</div><h1>' + esc(titre) + '</h1><p>' + esc(texte) + '</p>'

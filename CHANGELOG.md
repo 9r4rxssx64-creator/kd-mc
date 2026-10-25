@@ -33,6 +33,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Apex Chat v1.1.347 (2026-10-24 — le service worker ne relaie plus l'identité du domaine)
 - Les appels `/__sso/…` (qui es-tu, laissez-passer, entrée) sont faits par le navigateur lui-même, plus par le service worker : un agent différent faisait refuser le laissez-passer lié à l'appareil, et la fenêtre « Installer » ne s'ouvrait pas chez le robot d'inscription. Preuve : `tests/unit/sw-laisse-le-navigateur-identite.test.js` 3/3 (rouge sans le correctif) ; 2 285 tests verts.
 
+## Apex AI v13.4.392 (2026-10-25 — un démarrage silencieux, les icônes et Excel retrouvés)
+- Plus de demande de notification au chargement (elle attend un geste). Icônes du manifeste trouvées (404 corrigé). Les sentinelles attendent 20 s avant leurs sondes externes. Le générateur Excel charge une version de la bibliothèque qui existe (`xlsx@0.18.5`, l'ancienne adresse donnait 404). Preuve : `tests/unit/demarrage-silencieux-392.test.ts` 4/4, rouge en sabotant chaque point ; 12 597 tests verts. Leçon 761.
+
 ## Apex AI v13.4.391 (2026-10-24 — le bandeau « vue membre » ne cache plus les onglets)
 - Vu par le Lenovo dans le Chrome de Kevin : la barre bleue en bas recouvrait les onglets (Chat, Dash, Admin, Coffre…). Elle devient une petite pastille en haut, centrée, qui ne capte aucun clic. Et une panne passagère de GitHub au démarrage ne fait plus de bulle orange : seul un jeton refusé se dit. Preuve : `tests/unit/vue-membre-simulee.test.ts` 6/6 (rouge avec l'ancien bandeau) ; 12 593 tests verts.
 

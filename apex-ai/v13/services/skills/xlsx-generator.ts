@@ -7,7 +7,8 @@
 import { logger } from '../../core/logger.js';
 import { auditLog } from '../observability/audit-log.js';
 
-const XLSX_CDN = 'https://cdn.jsdelivr.net/npm/xlsx@0.20.3/dist/xlsx.full.min.js';
+/* v13.4.392 (pont 970/971) : xlsx@0.20.3 N'EXISTE PAS sur npm/jsDelivr (404 mesuré : le générateur Excel ne chargeait plus) — 0.20.x n'est publié que sur cdn.sheetjs.com, hors liste CSP ; 0.18.5 répond 200. On ÉCRIT des fichiers, on n'en lit pas d'inconnus. */
+const XLSX_CDN = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
 
 export type XlsxCellValue =
   | string

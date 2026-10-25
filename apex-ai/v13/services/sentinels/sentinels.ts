@@ -246,8 +246,10 @@ class SentinelsManager {
         }
       }
     };
-    /* Tick immédiat différé 2s (laisse les services autres se charger d'abord) */
-    setTimeout(tick, 2000);
+    /* Premier tick différé de 20 s (v13.4.392, pont 971) : les sentinelles sondent ~30 services externes (9 fournisseurs d'IA, GitHub…) ;
+     * à 2 s elles se battaient avec le premier affichage (TBT 1 280 ms, 84 erreurs console au chargement mesurées par Lighthouse).
+     * Kevin voit toujours les sentinelles sortir de « PENDING » en moins d'une demi-minute (règle 13.4.106). */
+    setTimeout(tick, 20_000);
     /* Vérifie chaque minute si une sentinelle doit run */
     this.runTimer = window.setInterval(tick, 60_000);
     /* Sprint 3 P0 : track interval pour cleanup possible (anti memory leak) */

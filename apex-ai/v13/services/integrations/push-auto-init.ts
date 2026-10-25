@@ -51,7 +51,6 @@ export interface PushInitStatus {
 export const DEFAULT_PUSH_WORKER_URL = 'https://apex-push-worker.9r4rxssx64.workers.dev';
 
 const HEARTBEAT_INTERVAL_MS = 6 * 60 * 60 * 1000; /* 6h */
-const FIRST_BOOT_DELAY_MS = 30_000; /* 30s : laisse user explorer avant prompt */
 
 class PushAutoInit {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
@@ -232,15 +231,11 @@ class PushAutoInit {
       return status;
     }
 
-    /* Permission default → attendre 30s pour ne pas spammer au boot brutal */
-    if (!opts.skipDelay) {
-      setTimeout(() => {
-        void this.requestPermissionAndSubscribe(uid);
-      }, FIRST_BOOT_DELAY_MS);
-      logger.info('push-auto-init', `Will request permission in ${FIRST_BOOT_DELAY_MS / 1000}s`);
-    } else {
-      void this.requestPermissionAndSubscribe(uid);
-    }
+    /* Permission default → AUCUNE demande automatique (v13.4.392, Lighthouse « notification-on-start » rouge, pont 971) :
+     * Notification.requestPermission() sans geste est ignoré par iOS (le plus gros usage) et jugé intrusif ailleurs.
+     * La demande part d'un geste de l'utilisateur (Onboarding, Réglages) via requestPermissionAndSubscribe. */
+    logger.info('push-auto-init', 'Permission par défaut — la demande attend un geste (Réglages / onboarding)');
+    void opts;
 
     return status;
   }

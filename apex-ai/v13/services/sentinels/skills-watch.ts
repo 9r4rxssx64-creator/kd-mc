@@ -33,7 +33,7 @@ const CDN_PROBES = [
   { lib: 'docxtemplater', url: 'https://cdn.jsdelivr.net/npm/docxtemplater@3.50.0/package.json' },
   { lib: 'pizzip', url: 'https://cdn.jsdelivr.net/npm/pizzip@3.1.6/package.json' },
   { lib: 'pptxgenjs', url: 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/package.json' },
-  { lib: 'xlsx', url: 'https://cdn.jsdelivr.net/npm/xlsx@0.20.3/package.json' },
+  { lib: 'xlsx', url: 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/package.json' },
   { lib: 'jspdf', url: 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/package.json' },
 ];
 

@@ -32,7 +32,7 @@ const RACINE = process.cwd();
 const lignes = [];
 const dire = (t) => { console.log(t); lignes.push(t); };
 let echecs = 0;
-const ok = (c, m, d) => { if (!c) echecs++; dire(`${c ? '✅' : '❌'} ${m}${!c && d ? ' — ' + String(d).slice(0, 300) : ''}`); };
+const ok = (c, m, d) => { if (!c) echecs++; dire(`${c ? '✅' : '❌'} ${m}${!c && d ? ' — ' + String(d).slice(0, 700) : ''}`); };
 const fin = (code) => {
   if (RESUME) { try { appendFileSync(RESUME, '## Vérification réelle de l\'IA du Studio créa (admin, vrai service)\n\n' + lignes.map((l) => '- ' + l).join('\n') + '\n'); } catch (_) { /* pas de résumé */ } }
   dire(code ? `=== VÉRIF STUDIO IA : ÉCHEC (${echecs} contrôle(s))` : '=== VÉRIF STUDIO IA : OK');
@@ -143,7 +143,7 @@ try {
         return { st: x.status, ct, ms, octets: b.size, dim, provider: x.headers.get('x-crea-provider') || '', style: x.headers.get('x-crea-style') || '', b64 };
       }
       const txt = await x.text(); let j = {}; try { j = JSON.parse(txt); } catch (_) { /* pas JSON */ }
-      return { st: x.status, ct, ms, json: j, txt: txt.slice(0, 300) };
+      return { st: x.status, ct, ms, json: j, txt: txt.slice(0, 900) };
     } catch (e) { return { st: 0, ms: Math.round(performance.now() - t0), err: String((e && e.message) || e) }; }
   }, { IA, PASS, chemin, corps });
 
@@ -160,23 +160,25 @@ try {
     x.fillStyle = '#e6dfc8'; x.fillRect(285, 420, 90, 110);
     x.fillStyle = '#2b2b2b'; x.fillRect(285, 525, 40, 70); x.fillRect(335, 525, 40, 70);
     x.strokeStyle = '#111'; x.lineWidth = 6; x.beginPath(); x.moveTo(300, 440); x.lineTo(200, 520); x.stroke();
-    return c.toDataURL('image/jpeg', 0.9);
+    /* la « petite » (≤ 480 px) accompagne la grande : FLUX.2 klein (Workers AI) exige < 512×512 */
+    const p = document.createElement('canvas'); p.width = 384; p.height = 480; p.getContext('2d').drawImage(c, 0, 0, 384, 480);
+    return { grande: c.toDataURL('image/jpeg', 0.9), petite: p.toDataURL('image/jpeg', 0.88) };
   });
-  derniereEntree = entree.split(',')[1] || '';
+  derniereEntree = entree.grande.split(',')[1] || '';
   try { writeFileSync(join(CAPTURES, 'entree.jpg'), Buffer.from(derniereEntree, 'base64')); } catch (_) { /* pas de dossier */ }
 
-  const C = await appel('/cartoon', { image: entree, style: 'toon3d' });
+  const C = await appel('/cartoon', { image: entree.grande, image_petite: entree.petite, style: 'toon3d' });
   const imgOk = (r) => r && r.st === 200 && /image/.test(r.ct || '') && r.octets > 20000 && r.dim && r.dim[0] >= 256 && r.dim[1] >= 256;
-  ok(imgOk(C), `C) /cartoon style=toon3d → une VRAIE image rendue (HTTP ${C.st}, ${C.octets || 0} octets, ${C.dim ? C.dim.join('×') : '?'}, ${C.ms} ms, moteur « ${C.provider || '?'} »)`, C.err || C.txt || (C.json && (C.json.error || C.json.message)) || '');
+  ok(imgOk(C), `C) /cartoon style=toon3d → une VRAIE image rendue (HTTP ${C.st}, ${C.octets || 0} octets, ${C.dim ? C.dim.join('×') : '?'}, ${C.ms} ms, moteur « ${C.provider || '?'} »)`, C.err || (C.json && (C.json.detail || C.json.error || C.json.message)) || C.txt || '');
   ok(!!C.b64 && C.b64 !== derniereEntree, 'C) l\'image rendue est DIFFÉRENTE de l\'entrée (pas une copie)');
   if (C.b64) { try { writeFileSync(join(CAPTURES, 'cartoon-toon3d.' + (/png/.test(C.ct) ? 'png' : 'jpg')), Buffer.from(C.b64, 'base64')); } catch (_) { /* pas de dossier */ } }
 
-  const D = await appel('/cartoon', { image: entree, style: 'anime' });
-  ok(imgOk(D), `D) /cartoon style=anime → une VRAIE image rendue (HTTP ${D.st}, ${D.octets || 0} octets, ${D.ms} ms, moteur « ${D.provider || '?'} »)`, D.err || D.txt || (D.json && (D.json.error || D.json.message)) || '');
+  const D = await appel('/cartoon', { image: entree.grande, image_petite: entree.petite, style: 'anime' });
+  ok(imgOk(D), `D) /cartoon style=anime → une VRAIE image rendue (HTTP ${D.st}, ${D.octets || 0} octets, ${D.ms} ms, moteur « ${D.provider || '?'} »)`, D.err || (D.json && (D.json.detail || D.json.error || D.json.message)) || D.txt || '');
   ok(!!D.b64 && !!C.b64 && D.b64 !== C.b64, 'D) deux styles = deux rendus différents');
   if (D.b64) { try { writeFileSync(join(CAPTURES, 'cartoon-anime.' + (/png/.test(D.ct) ? 'png' : 'jpg')), Buffer.from(D.b64, 'base64')); } catch (_) { /* pas de dossier */ } }
 
-  const E = await appel('/frames', { image: entree, mode: 'motion', n: 3 });
+  const E = await appel('/frames', { image: entree.grande, image_petite: entree.petite, mode: 'motion', n: 3 });
   const nF = (E.json && Array.isArray(E.json.frames)) ? E.json.frames.length : 0;
   ok(E.st === 200 && nF >= 2 && E.json.mode === 'motion', `E) /frames mode=motion n=3 → ${nF} instant(s) (HTTP ${E.st}, ${E.ms} ms, moteur « ${(E.json && E.json.provider) || '?'} »)`, E.err || (E.json && (E.json.detail || E.json.error || E.json.message)) || E.txt || '');
   if (nF) { E.json.frames.forEach((f, i) => { const m = /^data:image\/(\w+);base64,(.+)$/.exec(f); if (m) { try { writeFileSync(join(CAPTURES, `instant-${i + 1}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`), Buffer.from(m[2], 'base64')); } catch (_) { /* pas de dossier */ } } }); }

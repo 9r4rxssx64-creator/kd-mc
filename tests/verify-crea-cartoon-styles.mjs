@@ -11,6 +11,9 @@
  *   F) /frames mode=motion   → 6 instants, chaque consigne continue le MOUVEMENT de la photo
  *   G) /frames motion+style  → les instants sont rendus dans le style demandé
  *   H) /frames sans mode     → la danse d'avant, inchangée (rien ne régresse)
+ *   I) Gemini KO + petite    → FLUX.2 klein (Workers AI, vrai moteur d'édition, 25.10 soir) dessine avant SD
+ *   K) /frames + petite      → les instants sont dessinés par klein quand Gemini manque
+ *   J) clé Gemini bloquée    → un seul appel Gemini puis pause 6 h (plus 58-123 s perdus par demande)
  * Lancer : node tests/verify-crea-cartoon-styles.mjs
  *          node tests/verify-crea-cartoon-styles.mjs --sabotage   (rejoue le worker d'AVANT : doit être rouge)
  */
@@ -27,7 +30,11 @@ if (SABOTAGE) {
   src = src.replace("const prompt = kind === 'cartoon' ? promptCartoon(opts.style, opts.extra) : PROMPTS[kind];", 'const prompt = PROMPTS[kind];')
     .replace("if (kind === 'cartoon') {\n    try {\n      const c = await cfImg2Img(env, prompt, imgDataUrl);", "if (false) {\n    try {\n      const c = await cfImg2Img(env, prompt, imgDataUrl);")
     .replace("(body && body.mode) === 'motion' ? 'motion' : 'dance'", "'dance'")
-    .replace("kind === 'cartoon' ? { 'x-crea-style':", "false ? { 'x-crea-style':");
+    .replace("kind === 'cartoon' ? { 'x-crea-style':", "false ? { 'x-crea-style':")
+    /* 25.10 soir : sans FLUX.2 klein ni l'arrêt immédiat sur clé Gemini bloquée */
+    .replace("if (kind === 'cartoon' && opts.petite && env.AI) {", "if (false) {")
+    .replace("if (frames.length < 2 && petite && env.AI) {", "if (false) {")
+    .replace("if (r.status === 403 && /blocked|PERMISSION_DENIED|API_KEY_SERVICE/i.test(msg)) {", "if (false) {");
   if (src === avant) { console.log('❌ sabotage impossible : les points à retirer n\'ont pas été trouvés dans le source'); process.exit(1); }
   const tmp = path.join(os.tmpdir(), 'crea-worker-avant-' + process.pid + '.js');
   fs.writeFileSync(tmp, src); workerPath = 'file://' + tmp;
@@ -38,15 +45,20 @@ const worker = (await import(workerPath)).default;
 const R = { ok: [], ko: [] };
 const chk = (c, m) => (c ? R.ok : R.ko).push(m);
 const PIX = 'data:image/jpeg;base64,' + Buffer.from('FAKE-PHOTO-SANGLIER').toString('base64');
+/* Une « petite » photo avec un VRAI en-tête PNG 64×64 (le worker lit les dimensions sans décoder : klein exige < 512) */
+const PNG64 = (() => { const b = Buffer.alloc(64, 0); b.write('\x89PNG\r\n\x1a\n', 0, 'binary'); b.writeUInt32BE(13, 8); b.write('IHDR', 12); b.writeUInt32BE(64, 16); b.writeUInt32BE(64, 20); b[24] = 8; b[25] = 2; return b; })();
+const PETITE = 'data:image/png;base64,' + PNG64.toString('base64');
+const KLEIN_OUT = Buffer.alloc(900, 9).toString('base64');
 let prompts = [], aiCalls = [];
 
-function mock({ geminiOk = true } = {}) {
+function mock({ geminiOk = true, geminiBloque = false } = {}) {
   prompts = []; aiCalls = [];
   global.fetch = async (u, o) => {
     const url = String(u);
     if (url.includes('/__sso/whoami')) return new Response(JSON.stringify({ ok: true, uid: 'test-compte', name: 'Test Compte', verified: true }), { status: 200 });
     if (/generativelanguage\.googleapis\.com/.test(url)) {
       try { const b = JSON.parse(o.body); prompts.push(String(b.contents[0].parts[0].text)); } catch (_) { prompts.push('?'); }
+      if (geminiBloque) return new Response(JSON.stringify({ error: { code: 403, status: 'PERMISSION_DENIED', message: 'Requests to this API generativelanguage.googleapis.com method google.ai.generativelanguage.v1beta.GenerativeService.GenerateContent are blocked.', details: [{ reason: 'API_KEY_SERVICE_BLOCKED' }] } }), { status: 403 });
       if (!geminiOk) return new Response(JSON.stringify({ error: { message: 'Your prepayment credits are depleted' } }), { status: 429 });
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [
         { inline_data: { mime_type: 'image/png', data: Buffer.from('IMG-GEMINI').toString('base64') } }] } }] }), { status: 200 });
@@ -54,7 +66,7 @@ function mock({ geminiOk = true } = {}) {
     return new Response('{}', { status: 404 });
   };
 }
-const AI = { run: async (model, input) => { aiCalls.push({ model, input }); return new Uint8Array(900).fill(7); } };
+const AI = { run: async (model, input) => { aiCalls.push({ model, input }); if (/klein/.test(model)) return { image: KLEIN_OUT }; return new Uint8Array(900).fill(7); } };
 function env(extra) { return Object.assign({ GEMINI_API_KEY: 'k', KDMC_SSO_URL: 'https://sso.test', AI }, extra || {}); }
 function req(chemin, body) {
   return new Request('https://crea-ai.test' + chemin, { method: 'POST',
@@ -87,7 +99,7 @@ chk(/cloudflare/.test(r.headers.get('x-crea-provider') || ''), 'D) le moteur ann
 /* E */
 mock({ geminiOk: false }); r = await worker.fetch(req('/cartoon', { image: PIX, style: 'anime' }), env({ AI: undefined }));
 let jE = {}; try { jE = await r.json(); } catch (_) {}
-chk(r.status === 502 && /gemini/.test(String(jE.error)) && /cf_no_binding|cf_img2img/.test(String(jE.error)), 'E) sans aucun moteur → refus honnête 502 avec les deux causes');
+chk(r.status === 502 && /gemini/.test(String(jE.detail)) && /cf_no_binding|cf_img2img/.test(String(jE.detail)) && Array.isArray(jE.errors) && jE.errors.length >= 2, 'E) sans aucun moteur → refus honnête 502 avec TOUTES les causes (detail + errors[])');
 
 /* F */
 mock(); r = await worker.fetch(req('/frames', { image: PIX, mode: 'motion', n: 6 }), env());
@@ -105,6 +117,24 @@ chk(jG.style === 'anime' && prompts.length === 3 && prompts.every((p) => /anime/
 mock(); r = await worker.fetch(req('/frames', { image: PIX }), env());
 let jH = {}; try { jH = await r.json(); } catch (_) {}
 chk(r.status === 200 && (jH.mode === 'dance' || jH.mode === undefined) && prompts.length === 5 && prompts.every((p) => /dancing/i.test(p)), 'H) sans mode → les 5 poses de danse d\'avant (rien ne régresse)');
+
+/* I) 25.10 soir — Gemini KO + petite photo → FLUX.2 klein (Workers AI, vrai moteur d'édition) dessine, AVANT SD img2img */
+mock({ geminiOk: false }); r = await worker.fetch(req('/cartoon', { image: PIX, image_petite: PETITE, style: 'anime' }), env());
+const klein = aiCalls.find((c) => /flux-2-klein/.test(c.model));
+chk(r.status === 200 && !!klein && /klein/.test(r.headers.get('x-crea-provider') || ''), 'I) Gemini KO + petite photo → FLUX.2 klein dessine (' + (r.headers.get('x-crea-provider') || r.status) + ')');
+chk(!!klein && klein.input && klein.input.multipart && !!klein.input.multipart.body && /multipart\/form-data/.test(String(klein.input.multipart.contentType)), 'I) klein reçoit la photo en multipart (input_image_0), comme l\'exige Workers AI');
+chk(!aiCalls.some((c) => /img2img|stable-diffusion/.test(c.model)), 'I) SD img2img n\'est plus appelé quand klein a réussi');
+
+/* K) /frames motion + petite photo, Gemini KO → les instants sont dessinés par klein */
+mock({ geminiOk: false }); r = await worker.fetch(req('/frames', { image: PIX, image_petite: PETITE, mode: 'motion', n: 4 }), env());
+let jK = {}; try { jK = await r.json(); } catch (_) {}
+chk(r.status === 200 && Array.isArray(jK.frames) && jK.frames.length === 4 && /klein/.test(String(jK.provider)) && aiCalls.filter((c) => /flux-2-klein/.test(c.model)).length === 4, 'K) « faire vivre la photo » sans Gemini → 4 instants par klein (' + (jK.frames || []).length + ', ' + jK.provider + ')');
+
+/* J) EN DERNIER (la pause Gemini est une mémoire de module) : clé bloquée par Google (403) → UN seul appel Gemini, pas six, puis klein */
+mock({ geminiBloque: true }); r = await worker.fetch(req('/cartoon', { image: PIX, image_petite: PETITE, style: 'bd' }), env());
+chk(r.status === 200 && prompts.length === 1 && /klein/.test(r.headers.get('x-crea-provider') || ''), 'J) clé Gemini bloquée (403) → 1 seul appel Gemini (' + prompts.length + ') puis klein dessine');
+mock({ geminiBloque: true }); r = await worker.fetch(req('/cartoon', { image: PIX, image_petite: PETITE, style: 'bd' }), env());
+chk(r.status === 200 && prompts.length === 0, 'J) deuxième demande : Gemini en pause, 0 appel réseau vers Google (' + prompts.length + ')');
 
 console.log('\nCartoon IA par style + « faire vivre la photo » (service crea-ai)' + (SABOTAGE ? ' — SABOTAGE : worker d\'AVANT' : '') + '\n');
 R.ok.forEach((m) => console.log('  ✅ ' + m)); R.ko.forEach((m) => console.log('  ❌ ' + m));

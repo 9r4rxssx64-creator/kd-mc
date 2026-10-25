@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Créa Studio v9.20.0 + service crea-ai — FLUX.2 klein (Workers AI, gratuit) dessine quand Gemini est bloqué (2026-10-25, soir)
+- Mesuré par le robot réel (run 40205982876) : Gemini image 403 « blocked » (clé restreinte par Google, depuis le 18.10) × 6 modèles + SD img2img sans image → 502 en 58 à 123 s. Service : arrêt au premier 403 bloqué (pause 6 h, 25 s par appel), **FLUX.2 [klein] 4B** (Workers AI, aucune clé, vrai moteur d'édition) pour le cartoon et « faire vivre la photo », `errors[]` complet dans les refus. Client : chaque appel IA envoie aussi une `image_petite` (≤ 480 px, exigée par klein). Gardes : `test:crea-cartoon-styles` 21 (sabotage 16 rouges), `test:crea-cartoon-ia`, robot `verif-live-studio-ia`.
+
 ## Créa Studio v9.19.0 + service crea-ai — le cartoon passe par l'IA d'abord (galerie de 16 styles), et la photo peut « vivre » (2026-10-25)
 - **Correctif de panne (25.10, soir)** : la porte « compte vérifié » des services `kdmc-crea-ai`, `kdmc-social` et `kdmc-vente` rendait 502 à tout le monde depuis le 23.10 (`cache: 'no-store'` dans un fetch côté Worker, option que le runtime refuse) — vu par le robot réel, corrigé (en-tête `cache-control`), garde `test:crea-ai-porte-fetch`.
 - Kevin (capture du rodéo sur le sanglier) : « Le rendu est vraiment dégueulasse… qualité professionnelle commerciale ». Cause mesurée : le Studio Cartoon appliquait un FILTRE LOCAL (aplats + trait) à la photo importée et n'appelait jamais l'IA ; dans le Studio Photo, un style = filtre local, l'IA n'était qu'un bouton discret ; la vidéo = poses de DANSE en coupes sèches, inutilisables pour une scène d'action.

@@ -1083,7 +1083,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.19.0';
+var APP_VER='v9.20.0';
 document.getElementById('vbadge').textContent=APP_VER;
 
 /* ---------- utils ---------- */
@@ -1704,6 +1704,11 @@ function aiHide(){$('aiLoad').classList.add('hidden');}
 /* Traduit la vraie cause d'échec IA en message clair et actionnable (règle : jamais d'erreur générique). */
 /* Dit clairement QUELLE IA a fait le travail. Kevin doit pouvoir verifier que
    le secours a pris le relais — sinon « ça marche » cache une panne. */
+/* La « petite » photo (≤ 480 px) qui accompagne chaque appel IA : FLUX.2 klein (Workers AI, gratuit,
+   vrai moteur d'édition) exige une entrée < 512×512 ; la grande (≤ 1024) reste pour Gemini. 25.10. */
+function petiteDepuisCanvas(c){var w=c.naturalWidth||c.width,h=c.naturalHeight||c.height,M=480,s=Math.min(M/w,M/h,1);var t=document.createElement('canvas');t.width=Math.max(1,Math.round(w*s));t.height=Math.max(1,Math.round(h*s));t.getContext('2d').drawImage(c,0,0,t.width,t.height);return t.toDataURL('image/jpeg',0.88);}
+function petiteDepuisDataUrl(d){return new Promise(function(res){try{var im=new Image();im.onload=function(){try{res(petiteDepuisCanvas(im));}catch(e){res(null);}};im.onerror=function(){res(null);};im.src=d;}catch(e){res(null);}});}
+function aiFetchPetite(chemin,corps,signal){return petiteDepuisDataUrl(corps.image).then(function(p){if(p)corps.image_petite=p;return aiFetch(chemin,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corps),signal:signal});});}
 function aiWho(provider){
   var p=String(provider||'');
   if(/gemini/i.test(p))return 'IA principale';
@@ -3073,7 +3078,7 @@ var Photo=(function(){
     var badge=$('cartoonIaEtat');if(badge){badge.textContent='🤖 L\'IA dessine « '+st.nom+' »… (15 à 40 s)';badge.classList.remove('hidden');}
     var ctrl,to=setTimeout(function(){if(ctrl)try{ctrl.abort();}catch(e){}},70000);
     try{ctrl=new AbortController();}catch(e){}
-    aiFetch('/cartoon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl,style:id}),signal:ctrl?ctrl.signal:undefined})
+    aiFetch('/cartoon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl,image_petite:petiteDepuisCanvas(tmp),style:id}),signal:ctrl?ctrl.signal:undefined})
       .then(function(r){var ct=r.headers.get('content-type')||'';if(!r.ok||ct.indexOf('image')<0){return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});}
         return r.blob().then(function(b){return {blob:b,who:r.headers.get('x-crea-provider')||''};});})
       .then(function(res){clearTimeout(to);if(req!==iaReq)return;
@@ -3488,7 +3493,7 @@ var Photo=(function(){
     var ctrl,to=setTimeout(function(){if(ctrl)try{ctrl.abort();}catch(e){}},65000);
     try{ctrl=new AbortController();}catch(e){}
     /* Le cartoon porte TOUJOURS le style choisi (galerie) : le service a une consigne par style (25.10). */
-    var corps={image:dataUrl};if(kind==='cartoon')corps.style=cartoonP.style;if(opts.body)Object.keys(opts.body).forEach(function(k){corps[k]=opts.body[k];});
+    var corps={image:dataUrl,image_petite:petiteDepuisCanvas(tmp)};if(kind==='cartoon')corps.style=cartoonP.style;if(opts.body)Object.keys(opts.body).forEach(function(k){corps[k]=opts.body[k];});
     aiFetch('/'+kind,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corps),signal:ctrl?ctrl.signal:undefined})
       .then(function(r){var ct=r.headers.get('content-type')||'';if(!r.ok||ct.indexOf('image')<0){return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});}return r.blob();})
       .then(function(blob){var img=new Image();img.onload=function(){clearTimeout(to);
@@ -5323,7 +5328,7 @@ var Anim=(function(){
     aiShow('🤖 L\'IA dessine ton cartoon « '+st.nom+' »… (15 à 40 s)');
     var ctrl,to=setTimeout(function(){if(ctrl)try{ctrl.abort();}catch(e){}},70000);
     try{ctrl=new AbortController();}catch(e){}
-    aiFetch('/cartoon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:t.toDataURL('image/jpeg',0.9),style:animStyle}),signal:ctrl?ctrl.signal:undefined})
+    aiFetch('/cartoon',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:t.toDataURL('image/jpeg',0.9),image_petite:petiteDepuisCanvas(t),style:animStyle}),signal:ctrl?ctrl.signal:undefined})
       .then(function(r){var ct=r.headers.get('content-type')||'';if(!r.ok||ct.indexOf('image')<0){return r.json().then(function(j){throw new Error(j&&j.error||('http_'+r.status));},function(){throw new Error('http_'+r.status);});}
         return r.blob().then(function(b){return {blob:b,who:r.headers.get('x-crea-provider')||''};});})
       .then(function(res){clearTimeout(to);var im=new Image();im.onload=function(){
@@ -5469,7 +5474,7 @@ var AiVid=(function(){
           mouvement), la vidéo est montée ici dans le téléphone. Aucun crédit, aucune carte. */
     hint(mode==='motion'?'⏳ L\'IA dessine '+nImg+' instants du mouvement… (gratuit, ~40-90 s) 🎞️':'⏳ L\'IA dessine les poses de danse… (gratuit, ~30-60 s) 🕺');
     var corps={image:photoData,prompt:prompt,n:nImg,mode:mode};if(v&&v.style)corps.style=v.style;
-    aiFetch('/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corps)})
+    aiFetchPetite('/frames',corps)
       .then(function(r){return r.json();})
       .then(function(j){
         if(!j||!j.frames||j.frames.length<2)throw new Error((j&&(j.message||j.error))||'frames_failed');
@@ -5966,7 +5971,7 @@ var Magic=(function(){
     if(!songFile){toast('Choisis d\'abord la musique ou ta voix 🎵');return;}
     if(busy){toast('Un traitement est déjà en cours…');return;}
     busy=true;$('magicSingBtn').disabled=true;aiShow('L\'IA prépare ta bouche qui chante… 🎤');
-    aiFetch('/frames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:photoData,mode:'sing',n:3})})
+    aiFetchPetite('/frames',{image:photoData,mode:'sing',n:3})
       .then(function(r){return r.json();})
       .then(function(j){if(!j||!j.frames||j.frames.length<2)throw new Error((j&&(j.message||j.error))||'frames_failed');
         aiShow('Montage de la vidéo… 🎬');

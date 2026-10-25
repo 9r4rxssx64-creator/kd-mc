@@ -116,6 +116,36 @@ function b64ToBytes(b64) {
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
+/* Dimensions d'une image (PNG : bloc IHDR ; JPEG : marqueur SOF) SANS la décoder — le Worker n'a
+   pas de bibliothèque d'images, et FLUX.2 klein exige une entrée < 512×512 (25.10.2026). */
+function dimsImage(u) {
+  if (u.length > 24 && u[0] === 0x89 && u[1] === 0x50) {
+    return { w: ((u[16] << 24) | (u[17] << 16) | (u[18] << 8) | u[19]) >>> 0, h: ((u[20] << 24) | (u[21] << 16) | (u[22] << 8) | u[23]) >>> 0 };
+  }
+  if (u.length > 4 && u[0] === 0xFF && u[1] === 0xD8) {
+    let i = 2;
+    while (i + 9 < u.length) {
+      if (u[i] !== 0xFF) { i++; continue; }
+      const m = u[i + 1];
+      if (m === 0xD8 || m === 0x01 || (m >= 0xD0 && m <= 0xD7)) { i += 2; continue; }
+      const len = (u[i + 2] << 8) | u[i + 3];
+      if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) return { h: (u[i + 5] << 8) | u[i + 6], w: (u[i + 7] << 8) | u[i + 8] };
+      i += 2 + len;
+    }
+  }
+  return null;
+}
+/* La version « petite » (≤ 512 px) d'une photo, pour FLUX.2 klein : celle que le client envoie
+   (`image_petite`), sinon la photo elle-même si elle est déjà assez petite ; sinon rien (klein est sauté). */
+function preparerPetite(imagePetite, image) {
+  for (const src of [imagePetite, image]) {
+    const p = parseDataUrl(src); if (!p) continue;
+    let bytes; try { bytes = b64ToBytes(p.b64); } catch (_) { continue; }
+    const d = dimsImage(bytes);
+    if (d && d.w > 0 && d.h > 0 && d.w <= 512 && d.h <= 512) return { bytes, mime: p.mime, w: d.w, h: d.h, dataUrl: src };
+  }
+  return null;
+}
 /* Les modèles de transcription ne répondent pas tous pareil (mots datés,
    segments, ou juste du texte). On ramène TOUT à la même forme :
    { text, words:[{ m: mot, a: début(s), b: fin(s) }] }. Sans mots datés, on
@@ -304,9 +334,14 @@ function parseDataUrl(u) {
   return { mime: m[1], b64: m[2] };
 }
 
+/* Clé BLOQUÉE par Google (403 PERMISSION_DENIED « API_KEY_SERVICE_BLOCKED », mesuré le 18.10 par la sonde et
+   le 25.10 par le robot réel du Studio) : la même clé sert aux 6 modèles, inutile d'essayer les 5 autres
+   (58 à 123 s perdus par appel, mesuré run 40205982876) ni de revenir avant 6 h. Mémoire d'isolat, 0 KV. */
+let geminiPauseJusqua = 0;
 async function geminiImage(env, prompt, imgDataUrl, extraImg) {
   const key = env.GEMINI_API_KEY || env.GOOGLE_API_KEY;
   if (!key) throw new Error('gemini_no_key');
+  if (Date.now() < geminiPauseJusqua) throw new Error('gemini_pause:cle bloquee par Google (403 API_KEY_SERVICE_BLOCKED), reessai dans ' + Math.ceil((geminiPauseJusqua - Date.now()) / 60000) + ' min');
   const parts = [{ text: prompt }];
   if (imgDataUrl) {
     const p = parseDataUrl(imgDataUrl);
@@ -328,7 +363,7 @@ async function geminiImage(env, prompt, imgDataUrl, extraImg) {
     try {
       r = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
-        { method: 'POST', headers: { 'content-type': 'application/json' }, body }
+        { method: 'POST', headers: { 'content-type': 'application/json' }, body, signal: AbortSignal.timeout(25000) }
       );
       j = await r.json();
     } catch (e) { lastErr = 'gemini_net_' + String((e && e.message) || e).slice(0, 80); gemErrs.push(model + ':' + lastErr); continue; }
@@ -337,7 +372,12 @@ async function geminiImage(env, prompt, imgDataUrl, extraImg) {
       lastErr = 'gemini_' + r.status + (msg ? '_' + msg.slice(0, 140) : '');
       /* On garde l'erreur de CHAQUE modèle : avant, seule la dernière
          survivait, et on ne pouvait pas savoir pourquoi le 1er avait échoué. */
-      gemErrs.push(model + ':' + r.status + (msg ? ' ' + msg.slice(0, 60) : ''));
+      gemErrs.push(model + ':' + r.status + (msg ? ' ' + msg.slice(0, 160) : ''));
+      if (r.status === 403 && /blocked|PERMISSION_DENIED|API_KEY_SERVICE/i.test(msg)) {
+        geminiPauseJusqua = Date.now() + 6 * 3600 * 1000;
+        gemErrs.push('(meme cle pour les ' + (GEM_MODELS.length - 1) + ' autres modeles : on n\'insiste pas, Gemini en pause 6 h)');
+        break;
+      }
       continue;
     }
     const cand = (j && j.candidates && j.candidates[0]) || null;
@@ -404,6 +444,33 @@ async function cfImg2Img(env, prompt, imgDataUrl) {
     } catch (e) { errs.push(c.model.split('/').pop() + ':' + String((e && e.message) || e).slice(0, 60)); }
   }
   throw new Error('cf_img2img_' + errs.join(' ; ').slice(0, 240));
+}
+/* ---------------- Fournisseur 1ter : FLUX.2 [klein] 4B sur Workers AI (GRATUIT, même compte) --------
+   Vrai moteur d'ÉDITION : il part de LA photo (input_image_0) et la redessine selon la consigne.
+   25.10.2026 : Gemini est bloqué par Google (clé 403) et SD 1.5 img2img rend une bouillie → klein
+   devient le moteur gratuit du cartoon et de « faire vivre la photo ». Coût mesuré au tarif Cloudflare :
+   5,37 neurones par tuile 512 d'entrée + 26,05 par tuile 512 de sortie (1024² ≈ 110) sur les 10 000
+   gratuits par jour. Entrée OBLIGATOIREMENT < 512×512 (multipart), sortie { image: base64 }. */
+const CF_EDIT_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
+async function cfKleinEdit(env, prompt, petite) {
+  if (!env.AI) throw new Error('cf_no_binding');
+  if (!petite) throw new Error('klein_sans_petite_image');
+  const long = 1024, sc = long / Math.max(petite.w, petite.h);
+  const W = Math.max(256, Math.round(petite.w * sc / 16) * 16), H = Math.max(256, Math.round(petite.h * sc / 16) * 16);
+  const form = new FormData();
+  form.append('prompt', ('Image 0 is the reference photo. ' + String(prompt)).slice(0, 1800));
+  form.append('input_image_0', new Blob([petite.bytes], { type: petite.mime || 'image/jpeg' }), /png/.test(petite.mime) ? 'photo.png' : 'photo.jpg');
+  form.append('width', String(W)); form.append('height', String(H));
+  const fr = new Response(form);
+  const r = await env.AI.run(CF_EDIT_MODEL, { multipart: { body: fr.body, contentType: fr.headers.get('content-type') || 'multipart/form-data' } });
+  const nom = 'cloudflare:' + CF_EDIT_MODEL.split('/').pop();
+  if (r && typeof r.image === 'string' && r.image.length > 100) return { mime: /^\/9j\//.test(r.image) ? 'image/jpeg' : 'image/png', b64: r.image, provider: nom };
+  let u = null;
+  if (r instanceof ReadableStream) u = new Uint8Array(await new Response(r).arrayBuffer());
+  else if (r instanceof ArrayBuffer) u = new Uint8Array(r);
+  else if (r instanceof Uint8Array) u = r;
+  if (u && u.length > 500) { let s = ''; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return { mime: u[0] === 0xFF ? 'image/jpeg' : 'image/png', b64: btoa(s), provider: nom }; }
+  throw new Error('klein_vide');
 }
 /* Plusieurs modèles candidats, essayés dans l'ordre. Un seul modèle figé =
    une dépréciation (vécu : llama-3.1-8b retiré le 2026-05-30) casse la feature
@@ -832,7 +899,15 @@ async function editImageChain(env, kind, imgDataUrl, h, opts) {
     const g = await geminiImage(env, prompt, imgDataUrl);
     return imgResponse(g.mime, g.b64, entetes(g.provider));
   } catch (e) { errs.push(String((e && e.message) || e)); }
-  /* 2. Workers AI image→image (gratuit, aucune clé) — pour le cartoon : on part de la photo.
+  /* 2. FLUX.2 klein (Workers AI, gratuit, aucune clé) : vrai moteur d'édition, part de la petite photo.
+        Depuis le 25.10 c'est lui qui dessine quand Gemini est bloqué. */
+  if (kind === 'cartoon' && opts.petite && env.AI) {
+    try {
+      const k = await cfKleinEdit(env, prompt, opts.petite);
+      return imgResponse(k.mime, k.b64, entetes(k.provider));
+    } catch (e) { errs.push('klein:' + String((e && e.message) || e).slice(0, 200)); }
+  }
+  /* 3. Workers AI image→image SD 1.5 (gratuit, aucune clé) — dernier secours gratuit du cartoon.
         Le détourage et l'amélioration n'ont pas d'équivalent fidèle ici (SD réinventerait). */
   if (kind === 'cartoon') {
     try {
@@ -854,7 +929,8 @@ async function editImageChain(env, kind, imgDataUrl, h, opts) {
       }
     }
   } else errs.push('replicate_no_key');
-  throw new Error(errs.join(' | '));
+  const err = new Error(errs.join(' | ')); err.errs = errs;   /* la liste COMPLÈTE part dans la réponse JSON (plus de cause tronquée) */
+  throw err;
 }
 
 /* Course : plusieurs moteurs GRATUITS lancés EN MÊME TEMPS, on garde le premier
@@ -1213,6 +1289,7 @@ export default {
          (vidéo cartoon) ; sans style, photoréaliste comme avant. */
       const styleF = (body && typeof body.style === 'string' && CARTOON_IA[body.style.toLowerCase()]) ? body.style.toLowerCase() : '';
       const n = Math.max(2, Math.min(8, parseInt((body && body.n), 10) || (mode === 'sing' ? 3 : mode === 'motion' ? 6 : 5)));
+      const petite = preparerPetite(body && body.image_petite, image);
       const poses = mode === 'sing' ? SING_POSES.slice(0, n) : mode === 'motion' ? MOTION_PHASES.slice(0, n) : DANCE_POSES.slice(0, n);
       const texte = (p) => (mode === 'sing' ? singPrompt(p) : mode === 'motion' ? motionPrompt(p, extra, styleF) : dancePrompt(p, extra) + (styleF ? ' Render it in this style: ' + CARTOON_IA[styleF] : ''));
       const frames = [];
@@ -1236,6 +1313,18 @@ export default {
       /* 2) Secours : un vrai moteur d'ÉDITION (part de TA photo, garde ton
             visage). On ne fait que les 2 poses nécessaires pour animer, avec
             une attente écourtée — c'est ce qui tient dans le budget Cloudflare. */
+      /* 1bis) FLUX.2 klein (Workers AI, gratuit) : chaque instant est une ÉDITION de la petite photo.
+            Mesuré le 25.10 (run 40205982876) : Gemini bloqué par Google → sans ceci, « faire vivre la
+            photo » rendait 502 pour tout le monde. */
+      if (frames.length < 2 && petite && env.AI) {
+        const outsK = await Promise.allSettled(poses.map((p) => cfKleinEdit(env, texte(p), petite)));
+        const faitesK = [];
+        outsK.forEach((r, i) => {
+          if (r.status === 'fulfilled') faitesK.push('data:' + r.value.mime + ';base64,' + r.value.b64);
+          else errs.push('klein#' + (i + 1) + ':' + String((r.reason && r.reason.message) || r.reason).slice(0, 160));
+        });
+        if (faitesK.length >= 2) { frames.length = 0; faitesK.forEach((d) => frames.push(d)); provider = 'cloudflare:' + CF_EDIT_MODEL.split('/').pop(); }
+      } else if (frames.length < 2) errs.push(petite ? 'klein:cf_no_binding' : 'klein:pas de petite image (< 512 px) envoyee');
       const rtokFrames = jetonReplicate(env);
       if (frames.length < 2 && rtokFrames) {
         try {
@@ -1279,9 +1368,9 @@ export default {
            Gemini (6 modèles sondés) mangeaient les 300 caractères et
            TRONQUAIENT la cause réelle — on lisait « crédits épuisés » alors que
            le vrai coupable était un délai dépassé côté moteur d'édition. */
-        const decisifs = errs.filter((x) => /^(edit|replicate)/.test(x));
-        const detail = decisifs.concat(errs.filter((x) => !/^(edit|replicate)/.test(x))).join(' | ');
-        return json({ error: (decisifs[0] || errs[0] || 'frames_failed'), detail: detail.slice(0, 400), got: frames.length,
+        const decisifs = errs.filter((x) => /^(klein|edit|replicate)/.test(x));
+        const detail = decisifs.concat(errs.filter((x) => !/^(klein|edit|replicate)/.test(x))).join(' | ');
+        return json({ error: (decisifs[0] || errs[0] || 'frames_failed'), detail: detail.slice(0, 900), errors: errs, got: frames.length,
           message: "Je n'ai pas pu fabriquer les poses à partir de ta photo. "
             + 'Je préfère te le dire plutôt que de te rendre quelqu\'un d\'autre.' }, h, 502);
       }
@@ -1316,9 +1405,16 @@ export default {
     if (badImage(image)) return json({ error: 'bad_image' }, h, 400);
     const optsEdit = kind === 'cartoon' ? {
       style: (body && typeof body.style === 'string') ? body.style.slice(0, 24) : '',
-      extra: (body && typeof body.prompt === 'string') ? body.prompt.slice(0, 200) : ''
+      extra: (body && typeof body.prompt === 'string') ? body.prompt.slice(0, 200) : '',
+      petite: preparerPetite(body && body.image_petite, image)
     } : {};
     try { return await editImageChain(env, kind, image, h, optsEdit); }
-    catch (e) { return json({ error: String((e && e.message) || e) }, h, 502); }
+    catch (e) {
+      /* Toutes les causes, dans l'ordre des moteurs essayés — rien de tronqué (25.10 : le robot ne lisait
+         que les 300 premiers caractères et la vraie cause était cachée derrière les 6 erreurs Gemini). */
+      const errs = (e && e.errs) || [String((e && e.message) || e)];
+      return json({ error: errs[0], detail: errs.join(' | ').slice(0, 900), errors: errs,
+        message: 'Je n\'ai pas pu dessiner cette photo avec l\'IA (' + errs.length + ' moteur(s) essayé(s)). Réessaie dans un moment.' }, h, 502);
+    }
   }
 };

@@ -12470,3 +12470,7 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ## 🔓 RÈGLE ABSOLUE — JAMAIS BLOQUÉ PAR LA PORTE DU DOMAINE : LE ROBOT PUBLIC « SERVI » LIT LES PAGES DERRIÈRE LA PORTE, CONNECTÉ EN ADMIN, EN LECTURE SEULE, ET RENDS DES NOMBRES (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve des solutions, crée, pour ne jamais être bloqué comme ça. »
 - Cas : Autorisations v1.3.3 fusionnée, impossible à lire depuis une session (porte), Lenovo éteint. Outil : `tools/plateformes/verifier-servi.mjs` + workflow public `verifier-servi.yml` ; détail et commandes : `.claude/rules/verifier-servi.md`.
+
+## 🌉 RÈGLE ABSOLUE — LE PONT NE DOIT JAMAIS ÊTRE BLOQUÉ : QUAND LE QUOTA GRATUIT DE D1 EST DÉPASSÉ, ON ÉCRIT DANS LE PONT DE SECOURS GITHUB ET ON LIT SANS PARCOURIR LA TABLE (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
+« Trouve une solution gratuite pour débloquer le blocage du pont. Crée si besoin. Trouve des solutions, va plus loin. »
+- Mesuré 25.10 : D1 refuse TOUT (même une lecture d'une ligne, même un index) jusqu'à minuit UTC ; cause : le Tableau relisait la table entière toutes les 30 s. Secours : discussion privée 5236 (CMCteams) + `tools/pont/secours.mjs` ; réparation de fond : `tools/pont/reparation-quota.sql` ; règles de lecture bon marché dans `tools/pont/README.md` et `.claude/rules/pont.md`.

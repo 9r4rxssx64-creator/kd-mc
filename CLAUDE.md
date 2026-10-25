@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 234 règles — le texte de Kevin, une par une
+## 📜 Les 235 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1024,6 +1024,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🔓 RÈGLE ABSOLUE — JAMAIS BLOQUÉ PAR LA PORTE DU DOMAINE : LE ROBOT PUBLIC « SERVI » LIT LES PAGES DERRIÈRE LA PORTE, CONNECTÉ EN ADMIN, EN LECTURE SEULE, ET RENDS DES NOMBRES (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve des solutions, crée, pour ne jamais être bloqué comme ça. »
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-jamais-bloqué-par-la-porte-du-domaine-le-robot-public-servi-lit-les-pages-derrière-la-porte-connecté-en-admin-en-lecture-seule-et-rends-des-nombres-kevin-2026-10-25-absolue-toutes-les-branches)
+
+### 🌉 RÈGLE ABSOLUE — LE PONT NE DOIT JAMAIS ÊTRE BLOQUÉ : QUAND LE QUOTA GRATUIT DE D1 EST DÉPASSÉ, ON ÉCRIT DANS LE PONT DE SECOURS GITHUB ET ON LIT SANS PARCOURIR LA TABLE (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
+« Trouve une solution gratuite pour débloquer le blocage du pont. Crée si besoin. Trouve des solutions, va plus loin. »
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-le-pont-ne-doit-jamais-être-bloqué-quand-le-quota-gratuit-de-d1-est-dépassé-on-écrit-dans-le-pont-de-secours-github-et-on-lit-sans-parcourir-la-table-kevin-2026-10-25-absolue-toutes-les-branches)
 
 ---
 

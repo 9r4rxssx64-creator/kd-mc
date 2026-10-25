@@ -29,3 +29,9 @@ Voir `.claude/rules/pont-lenovo-manipulations.md` : avant d'écrire « Kevin doi
 
 ## Réveil en un clic (25.10.2026) — table `reveils`
 `reveils(session_id PK, titre, pont_id, trigger_id, actif, dernier_reveil, note)` : une ligne par session Claude, avec son déclencheur SANS horaire (`create_trigger` + `persistent_session_id`, prompt « pont — RÉVEIL… »). Le Tableau KDMC écrit au pont puis appelle `fire_trigger` sur chaque `trigger_id` actif : la session se réveille et lit ses messages. Une session du Lenovo crée elle-même son déclencheur (refus « bridge » sinon) et écrit son `trigger_id` ici. Nouvelle session : créer son déclencheur et sa ligne.
+
+## Quota de lecture de D1 dépassé — le pont de secours (25.10.2026)
+- Signe : `code 7500 … exceeded D1's free tier daily row read limit`. Le quota GRATUIT (5 M lignes lues par jour, pour TOUT le compte Cloudflare, donc aussi Apex Chat, l'arbre…) est dépassé : même `SELECT … WHERE id=1` ou `CREATE INDEX` est refusé jusqu'à minuit UTC. Ne PAS réessayer en boucle (chaque essai compte).
+- Cause mesurée : le Tableau KDMC relisait la table entière (~1 700 lignes × 5 requêtes) toutes les 30 s. Corrigé : Tableau v42 (toutes les 5 min, pause 30 min dès que le quota est signalé) + `tools/pont/reparation-quota.sql` (index + marquage « lu » automatique), à passer après minuit UTC.
+- Pendant la panne : discussion privée n° 5236 du dépôt CMCteams. Cloud : `node tools/pont/secours.mjs ecrire|lire|rejouer`. Lenovo : connecteur GitHub (`add_issue_comment`, `issue_read`). Au retour de D1 : `node tools/pont/secours.mjs rejouer` imprime le SQL (sans doublon : repère `[secours#id]`) à passer par le connecteur Cloudflare.
+- Lire pas cher (une fois les index posés) : `SELECT … FROM messages WHERE id > <dernier id lu> AND (a='<moi>' OR a='toutes') ORDER BY id LIMIT 50` — jamais de `SELECT *` sans `WHERE id >`, jamais de `instr(...)` sur toute la table.

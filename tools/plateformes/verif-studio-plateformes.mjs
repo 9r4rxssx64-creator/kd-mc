@@ -83,7 +83,8 @@ async function ouvrir(moteur, ap) {
   await ctx.route('**/*', (r) => (r.request().url().startsWith(base) ? r.continue() : r.abort()));
   const p = await ctx.newPage(); const erreurs = [];
   p.on('pageerror', (e) => erreurs.push('js: ' + String(e.message).slice(0, 120)));
-  p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|favicon|manifest|ERR_FAILED|status of 40[134]|403|NetworkError|Load failed|hors_ligne_test|abort/i.test(m.text())) erreurs.push('console: ' + m.text().slice(0, 120)); });
+  /* « Button failed to load, iconName = invalid-placard » = message INTERNE de WebKit sous Linux (thème d'icônes des contrôles média), pas une erreur de l'app (mesuré run 40217482338) */
+  p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|favicon|manifest|ERR_FAILED|status of 40[134]|403|NetworkError|Load failed|hors_ligne_test|abort|Button failed to load|invalid-placard/i.test(m.text())) erreurs.push('console: ' + m.text().slice(0, 120)); });
   const t0 = Date.now();
   await p.goto(base + '/', { waitUntil: 'domcontentloaded' });
   let pret = false;
@@ -94,7 +95,11 @@ async function ouvrir(moteur, ap) {
   const porte = await p.evaluate(() => { const g = document.getElementById('gate'); return !!g && !g.classList.contains('hidden'); }).catch(() => false);
   if (porte) {
     await p.fill('#gateName', 'Test Plateformes'); await p.fill('#gateCode', '123456');
-    await p.click('#gateGo'); await p.waitForTimeout(400);
+    await p.click('#gateGo');
+    /* attendre que la porte soit VRAIMENT refermée (run public 40217482338, 412 px : le robot touchait la barre sous la porte encore ouverte → tout « recouvert ») */
+    let fermee = false;
+    for (let k = 0; k < 40 && !fermee; k++) { fermee = await p.evaluate(() => { const g = document.getElementById('gate'); return !g || g.classList.contains('hidden') || getComputedStyle(g).display === 'none'; }).catch(() => false); if (!fermee) await p.waitForTimeout(150); }
+    if (!fermee) throw new Error('la porte du Studio ne s\'est pas refermée après « Entrer » (prénom + nom + code)');
   }
   await p.waitForTimeout(500);
   return { ctx, p, erreurs, touch: !!opts.hasTouch, dessin, porte };

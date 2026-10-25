@@ -315,6 +315,41 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
   await dors(6500);
   const ap = await n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), r = document.getElementById('tard').getBoundingClientRect(); return { rec: Math.min(f.right, r.right) - Math.max(f.left, r.left) > 2 && Math.min(f.bottom, r.bottom) - Math.max(f.top, r.top) > 2, f: [Math.round(f.left), Math.round(f.top)] }; });
   chk(ap.rec === false, `un bouton fixe apparu 9 s après la pose, juste sous le rond : Bee s'écarte seule en moins de 7 s (rond en ${ap.f.join(',')})`);
+  /* LA BARRE DE SECOURS D'APEX AI (Kevin 24.10, mesure du Lenovo : « Dashboard personnel » et « Ouvrir Admin » sous le rond) : cinq boutons de 44 px en colonne à droite, INVISIBLES et intouchables par défaut
+     (visibility:hidden !important, comme rescue.css) ; ils n'apparaissent que si Kevin les montre (data-apex-rescue-show). Cachés : Bee ne bouge pas pour rien. Montrés : Bee s'écarte seule. */
+  /* la page de test a une CSP stricte (pas de <style> en ligne) : on pose les styles un par un, comme le fait l'app (propriété CSS d'un élément) */
+  const rond = () => n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(); return [Math.round(f.left), Math.round(f.top)]; });
+  await n.page.evaluate(() => document.getElementById('tard').remove());
+  await dors(500);
+  const rond0 = await rond();
+  await n.page.evaluate((r) => {
+    const t = document.createElement('div'); t.id = 'apex-rescue-toolbar';
+    const im = (e, k, v) => e.style.setProperty(k, v, 'important');
+    t.style.cssText = 'position:fixed;bottom:72px;right:4px;display:flex;flex-direction:column;gap:3px;z-index:9998';
+    im(t, 'visibility', 'hidden'); im(t, 'opacity', '0'); im(t, 'pointer-events', 'none');
+    ['coffre', 'dashboard', 'admin', 'chat', 'login'].forEach((k) => { const b = document.createElement('button'); b.id = 'apex-rescue-' + k; b.textContent = k[0]; b.style.cssText = 'width:44px;height:44px;padding:0'; t.appendChild(b); });
+    document.body.appendChild(t);
+  });
+  await dors(6500);
+  const mes = () => n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), bs = [...document.querySelectorAll('#apex-rescue-toolbar button')].map((b) => b.getBoundingClientRect()); return { f: [Math.round(f.left), Math.round(f.top)], rec: bs.filter((r) => Math.min(f.right, r.right) - Math.max(f.left, r.left) > 2 && Math.min(f.bottom, r.bottom) - Math.max(f.top, r.top) > 2).length }; });
+  const avant = await mes();
+  chk(avant.rec > 0 && avant.f.join() === rond0.join(), `barre de secours CACHÉE (invisible, intouchable) : Bee ne bouge pas pour rien (rond en ${avant.f.join(',')}, ${avant.rec} boutons invisibles dessous)`);
+  await n.page.evaluate(() => { const t = document.getElementById('apex-rescue-toolbar'); t.style.setProperty('visibility', 'visible', 'important'); t.style.setProperty('opacity', '0.72', 'important'); t.style.setProperty('pointer-events', 'auto', 'important'); });
+  await dors(6500);
+  const apres = await mes();
+  chk(apres.rec === 0, `barre de secours MONTRÉE : Bee s'écarte seule en moins de 7 s, aucun des 5 boutons n'est recouvert (rond en ${apres.f.join(',')})`);
+  /* PENDANT LE DÉFILEMENT, BEE S'EFFACE (Kevin 25.10, pont 1042 : sur le portail la bulle passe sur les flèches › et les cartes) : plus petite (≥ 44 px) et à moitié transparente tant que la page bouge, pleine après l'arrêt */
+  await n.page.evaluate(() => { const g = document.createElement('div'); g.id = 'grand'; g.style.cssText = 'height:3000px;width:1px'; document.body.appendChild(g); });
+  const etat = () => n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'), r = f.getBoundingClientRect(), c = getComputedStyle(f); return { op: +(+c.opacity).toFixed(2), w: Math.round(r.width), tf: f.style.transform }; });
+  const repos = await etat();
+  await n.page.evaluate(() => window.scrollBy(0, 400));
+  await dors(250);
+  const defile = await etat();
+  const lanceur = await n.page.frames().find((f) => /__javis\/cadre/.test(f.url())).locator('#javis-launcher').boundingBox();
+  chk(defile.op > 0.3 && defile.op < 0.6 && defile.w < 92 && /scale/.test(defile.tf) && lanceur && lanceur.width >= 44 && lanceur.height >= 44, `pendant le défilement : Bee est plus petite (cadre ${defile.w} px, bulle ${lanceur && Math.round(lanceur.width)}×${lanceur && Math.round(lanceur.height)} px, toujours ≥ 44) et à moitié transparente (opacité ${defile.op})`);
+  await dors(1600);
+  const arret = await etat();
+  chk(arret.op === 1 && arret.w === repos.w && arret.tf === '', `0,7 s après l'arrêt : Bee est pleine et à sa taille (opacité ${arret.op}, ${arret.w} px)`);
   await n.ctx.close();
 }
 

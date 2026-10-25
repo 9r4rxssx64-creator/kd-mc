@@ -112,7 +112,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.347';
+export const API_VERSION = '1.1.348';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1938,6 +1938,20 @@ export async function purgeLocationHistory(env, now = Date.now()) {
   try { out.ai_summary_cache = ((await _purgeAiSummaryCache(env, now)) || {}).meta?.changes ?? 0; }
   catch (e) { out.ai_summary_cache = 'erreur: ' + (e && e.message); }
   return out;
+}
+
+// 25.10.2026 (pont 1033) : les robots « Temps Reel… » / « Parcours Robot… » créent un compte du domaine (supprimé par le robot)
+// ET une ligne Apex Chat que rien n'effaçait (25 restées en prod). Chaque nuit, ces lignes de test (jamais un admin, jamais
+// une vraie personne : uid `temps-reel…` / `parcours-robot…` venu du domaine) sont marquées supprimées, comme une suppression de compte.
+export async function purgeComptesDeTest(env, now = Date.now()) {
+  try {
+    const r = await env.APEX_CHAT_DB.prepare(
+      "UPDATE users SET status='deleted', kdmc_uid=NULL, phone='TESTPURGE_' || id, phone_hash='TESTPURGE_' || id, updated_at=? " +
+      "WHERE source='kdmc-sso' AND status != 'deleted' AND COALESCE(is_admin,0)=0 AND id = 'kdmc_' || kdmc_uid " +
+      "AND (kdmc_uid LIKE 'temps-reel%' OR kdmc_uid LIKE 'parcours-robot%') AND created_at < ?"
+    ).bind(now, now - 3600000).run();
+    return { comptes_de_test: (r && r.meta && r.meta.changes) || 0 };
+  } catch (e) { return { comptes_de_test: 'erreur: ' + (e && e.message) }; }
 }
 
 // Audit 16.10.2026 : la charte promet « historique des connexions : 30 jours » et rien ne l'effaçait (la table
@@ -7724,6 +7738,7 @@ const _workerHandler = {
       ctx.waitUntil(performDailyBackup(env));
       await purgeLocationHistory(env);   // Lot B : positions > 30 j + cache des résumés IA > 7 j (jamais bloquant)
       await purgeExpiredStories(env);    // v1.1.304 : stories expirées (jamais bloquant)
+      await purgeComptesDeTest(env);   // 25.10.2026 : lignes des robots « Temps Reel… » / « Parcours Robot… » (jamais bloquant)
       await purgeHistoriqueConnexions(env);   // 16.10.2026 : connexions > 30 j et codes SMS expirés (jamais bloquant)
       try { await env.APEX_CHAT_DB.prepare('DELETE FROM revoked_tokens WHERE exp < ?').bind(Date.now()).run(); } catch (_) { /* jamais bloquant */ }
       await env.APEX_CHAT_DB.prepare(

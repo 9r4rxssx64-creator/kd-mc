@@ -105,7 +105,15 @@ export function partout() {
     function veiller() {
       if (veille) return;
       veille = setInterval(function () { if (!document.hidden) choisirPlace(); }, 4000);
-      window.addEventListener('scroll', function () { clearTimeout(defile); defile = setTimeout(choisirPlace, 350); }, true);
+      window.addEventListener('scroll', function () { discret(true); clearTimeout(defile); defile = setTimeout(function () { discret(false); choisirPlace(); }, 700); }, true);
+    }
+    /* PENDANT LE DÉFILEMENT, BEE S'EFFACE (Kevin 25.10, iPhone sur kd-mc.com : en faisant défiler le portail, la bulle passe sur les flèches › et le texte des cartes — du contenu qui n'est pas un bouton fixe, donc impossible à éviter par la place) :
+       elle rétrécit (×0,75 ≈ 51 px, toujours ≥ 44 px) et devient à moitié transparente tant que la page bouge, puis revient pleine 0,7 s après l'arrêt. transform + opacity seulement (GPU), jamais quand le chat est ouvert. */
+    function discret(oui) {
+      if (!cadre) return;
+      var st = cadre.style;
+      if (oui && !ouvert) { st.transformOrigin = place.cote === 'right' ? 'bottom right' : 'bottom left'; st.transform = 'scale(0.75)'; st.opacity = '0.45'; }
+      else { st.transform = ''; st.opacity = ''; }
     }
     function contexte() {
       try {
@@ -120,13 +128,13 @@ export function partout() {
       cadre.setAttribute('aria-hidden', 'false');
       var s = cadre.style;
       s.position = 'fixed'; s.border = '0'; s.margin = '0'; s.padding = '0'; s.background = 'transparent'; s.colorScheme = 'normal';
-      s.zIndex = '2147483000'; s.display = 'none'; s.overflow = 'hidden';
+      s.zIndex = '2147483000'; s.display = 'none'; s.overflow = 'hidden'; s.transition = 'opacity .18s ease, transform .18s ease';
       taille();
       window.addEventListener('message', function (e) {
         if (!cadre || e.origin !== location.origin || e.source !== cadre.contentWindow) return;   // seul NOTRE cadre, de NOTRE origine
         var d = e.data; if (!d || d.kdmcBee !== 1) return;
         if (d.t === 'pret') { cadre.style.display = 'block'; taille(); contexte(); replacer(); }
-        else if (d.t === 'ouvert') { ouvert = true; taille(); }
+        else if (d.t === 'ouvert') { ouvert = true; discret(false); taille(); }
         else if (d.t === 'ferme') { ouvert = false; taille(); choisirPlace(); }
         else if (d.t === 'cache') { try { cadre.parentNode.removeChild(cadre); } catch (x) { /* déjà parti */ } cadre = null; if (veille) { clearInterval(veille); veille = 0; } }
       });

@@ -37,6 +37,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Apex Chat v1.1.347 (2026-10-24 — le service worker ne relaie plus l'identité du domaine)
 - Les appels `/__sso/…` (qui es-tu, laissez-passer, entrée) sont faits par le navigateur lui-même, plus par le service worker : un agent différent faisait refuser le laissez-passer lié à l'appareil, et la fenêtre « Installer » ne s'ouvrait pas chez le robot d'inscription. Preuve : `tests/unit/sw-laisse-le-navigateur-identite.test.js` 3/3 (rouge sans le correctif) ; 2 285 tests verts.
 
+## Apex Chat v1.1.348 (2026-10-25 — les comptes de test des robots ne restent plus)
+- La purge de nuit (03:00) marque supprimées les lignes de test des robots (`temps-reel…`, `parcours-robot…`) venues du domaine, vieilles de plus d'une heure, jamais un admin. 25 lignes déjà purgées en prod. Preuve : `purge-comptes-de-test.test.js` 2/2, rouge en sabotant l'exclusion admin ou l'appel de 03:00 ; 2 287 tests verts. Leçon 769.
+
 ## Apex AI v13.4.393 (2026-10-25 — les icônes d'installation, cette fois au bon endroit)
 - Les icônes du manifeste sont servies à `/icons/…` (et non `/assets/icons/…`, qui donnait 404 pour le Chrome connecté de Kevin). Deux icônes de raccourci inexistantes remplacées par l'icône 192. Preuve : `demarrage-silencieux-392.test.ts` 4/4, rouge en remettant l'ancien chemin ; chaque `src` du manifeste construit existe dans `apex-ai-v13/`. Leçon 766.
 

@@ -35,6 +35,8 @@ function corsHeaders(origin) {
     'Access-Control-Allow-Origin': ok ? origin : 'https://studio.kd-mc.com',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'content-type, authorization',
+    /* 25.10 : sans cette ligne, le navigateur (donc le Studio et le robot) ne lit pas quel moteur a dessiné → badge « moteur ? » */
+    'Access-Control-Expose-Headers': 'x-crea-provider, x-crea-style',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   };
@@ -452,13 +454,18 @@ async function cfImg2Img(env, prompt, imgDataUrl) {
    5,37 neurones par tuile 512 d'entrée + 26,05 par tuile 512 de sortie (1024² ≈ 110) sur les 10 000
    gratuits par jour. Entrée OBLIGATOIREMENT < 512×512 (multipart), sortie { image: base64 }. */
 const CF_EDIT_MODEL = '@cf/black-forest-labs/flux-2-klein-4b';
-async function cfKleinEdit(env, prompt, petite) {
+/* Regardé sur les vrais rendus (run 40208059047) : pour les INSTANTS, klein changeait de personnage d'une image à
+   l'autre (une image a même inventé deux enfants) → en mode « fidèle », la consigne verrouille sujet, visage,
+   vêtements, animal, couleurs ET style : seule la pose / l'instant change. Pour le cartoon, le style DOIT changer. */
+const KLEIN_FIDELE = 'Keep EXACTLY the same subject(s) as image 0: same person, same face, same hair, same clothes, same animal, same colors, same background and the SAME visual style as image 0. Do NOT add any new person, animal or object; do NOT remove anything. Change ONLY the pose and the moment described here: ';
+async function cfKleinEdit(env, prompt, petite, opts) {
   if (!env.AI) throw new Error('cf_no_binding');
   if (!petite) throw new Error('klein_sans_petite_image');
+  opts = opts || {};
   const long = 1024, sc = long / Math.max(petite.w, petite.h);
   const W = Math.max(256, Math.round(petite.w * sc / 16) * 16), H = Math.max(256, Math.round(petite.h * sc / 16) * 16);
   const form = new FormData();
-  form.append('prompt', ('Image 0 is the reference photo. ' + String(prompt)).slice(0, 1800));
+  form.append('prompt', ('Image 0 is the reference photo. ' + (opts.fidele ? KLEIN_FIDELE : '') + String(prompt)).slice(0, 1800));
   form.append('input_image_0', new Blob([petite.bytes], { type: petite.mime || 'image/jpeg' }), /png/.test(petite.mime) ? 'photo.png' : 'photo.jpg');
   form.append('width', String(W)); form.append('height', String(H));
   const fr = new Response(form);
@@ -1317,7 +1324,7 @@ export default {
             Mesuré le 25.10 (run 40205982876) : Gemini bloqué par Google → sans ceci, « faire vivre la
             photo » rendait 502 pour tout le monde. */
       if (frames.length < 2 && petite && env.AI) {
-        const outsK = await Promise.allSettled(poses.map((p) => cfKleinEdit(env, texte(p), petite)));
+        const outsK = await Promise.allSettled(poses.map((p) => cfKleinEdit(env, texte(p), petite, { fidele: true })));
         const faitesK = [];
         outsK.forEach((r, i) => {
           if (r.status === 'fulfilled') faitesK.push('data:' + r.value.mime + ';base64,' + r.value.b64);

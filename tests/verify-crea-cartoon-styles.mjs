@@ -34,6 +34,7 @@ if (SABOTAGE) {
     /* 25.10 soir : sans FLUX.2 klein ni l'arrêt immédiat sur clé Gemini bloquée */
     .replace("if (kind === 'cartoon' && opts.petite && env.AI) {", "if (false) {")
     .replace("if (frames.length < 2 && petite && env.AI) {", "if (false) {")
+    .replace("cfKleinEdit(env, texte(p), petite, { fidele: true })", "cfKleinEdit(env, texte(p), petite)")
     .replace("if (r.status === 403 && /blocked|PERMISSION_DENIED|API_KEY_SERVICE/i.test(msg)) {", "if (false) {");
   if (src === avant) { console.log('❌ sabotage impossible : les points à retirer n\'ont pas été trouvés dans le source'); process.exit(1); }
   const tmp = path.join(os.tmpdir(), 'crea-worker-avant-' + process.pid + '.js');
@@ -129,6 +130,12 @@ chk(!aiCalls.some((c) => /img2img|stable-diffusion/.test(c.model)), 'I) SD img2i
 mock({ geminiOk: false }); r = await worker.fetch(req('/frames', { image: PIX, image_petite: PETITE, mode: 'motion', n: 4 }), env());
 let jK = {}; try { jK = await r.json(); } catch (_) {}
 chk(r.status === 200 && Array.isArray(jK.frames) && jK.frames.length === 4 && /klein/.test(String(jK.provider)) && aiCalls.filter((c) => /flux-2-klein/.test(c.model)).length === 4, 'K) « faire vivre la photo » sans Gemini → 4 instants par klein (' + (jK.frames || []).length + ', ' + jK.provider + ')');
+/* K2) regardé sur les vrais rendus (run 40208059047) : sans verrou, klein changeait de personnage → la consigne des instants exige le MÊME sujet, et le cartoon (I) ne l'impose pas (le style doit changer) */
+const kK = aiCalls.find((c) => /flux-2-klein/.test(c.model)); const texteK = kK ? await new Response(kK.input.multipart.body).text() : '';
+chk(/same person, same face/.test(texteK) && /Do NOT add any new person/.test(texteK) && /motion/i.test(texteK), 'K2) chaque instant klein verrouille le sujet (même personne, rien d\'ajouté) et ne change que la pose');
+mock({ geminiOk: false }); r = await worker.fetch(req('/cartoon', { image: PIX, image_petite: PETITE, style: 'anime' }), env());
+const kI = aiCalls.find((c) => /flux-2-klein/.test(c.model)); const texteI = kI ? await new Response(kI.input.multipart.body).text() : '';
+chk(r.status === 200 && /anime/i.test(texteI) && !/SAME visual style/.test(texteI), 'K2) le cartoon klein, lui, laisse le style changer (pas de verrou de style)');
 
 /* J) EN DERNIER (la pause Gemini est une mémoire de module) : clé bloquée par Google (403) → UN seul appel Gemini, pas six, puis klein */
 mock({ geminiBloque: true }); r = await worker.fetch(req('/cartoon', { image: PIX, image_petite: PETITE, style: 'bd' }), env());

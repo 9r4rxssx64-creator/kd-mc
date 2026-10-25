@@ -513,8 +513,8 @@ test('Bee sur l\'admin : /__javis/* est relayé tel quel au domaine (méthode, c
 // 25.10.2026 (Kevin, capture de admin.kd-mc.com : « Il y a encore des traces ») — les comptes jetables des robots ne s'affichent plus.
 import { estCompteDeTest } from './worker.js';
 test('comptes de test des robots : jamais dans « Qui se connecte », jamais une vraie personne', () => {
-  for (const e of [{ name: 'Temps ReelCsltmj' }, { name: 'Temps ReelBequhw' }, { name: 'Parcours Robot Abc' }, { uid: 'testparcours-x1' }, { uid: 'kdmc_testmail-y' }, { uid: 'parcours-robot-3' }])
+  for (const e of [{ name: 'Temps ReelCsltmj' }, { name: 'Temps ReelBequhw' }, { name: 'Parcours Robot Abc' }, { uid: 'testparcours-x1' }, { uid: 'kdmc_testmail-y' }, { uid: 'parcours-robot-3' }, { uid: 'temps-reelAbc12' }, { uid: 'kdmc_temps-reelXyz' }, { uid: 'tempsreel9' }])
     assert.equal(estCompteDeTest(e), true, JSON.stringify(e));
-  for (const e of [{ name: 'Marc SCHWIETZER', uid: 'kdmc_m' }, { name: 'kevin Desarzens', uid: 'kdmc_admin' }, { name: 'Laurence', uid: 'laurence' }, { name: 'Robert Temps' }, { name: 'Tempête Reel' }])
+  for (const e of [{ name: 'Marc SCHWIETZER', uid: 'kdmc_m' }, { name: 'kevin Desarzens', uid: 'kdmc_admin' }, { name: 'Laurence', uid: 'laurence' }, { name: 'Robert Temps' }, { name: 'Tempête Reel' }, { uid: 'temps-partiel-marc', name: 'Marc' }])
     assert.equal(estCompteDeTest(e), false, JSON.stringify(e));
 });

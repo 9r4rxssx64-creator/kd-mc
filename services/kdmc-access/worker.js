@@ -225,7 +225,7 @@ async function sessionAdmin(request, env) {
 /* Les comptes JETABLES des robots de contrôle (supprimés du domaine à la fin de chaque passage) : leurs connexions restent écrites dans le
    journal Firebase, mais ne s'affichent plus ni ne comptent (personnes, connexions). Même liste fermée que tools/smoke/supprimer-compte-test.mjs,
    plus les NOMS que ces robots se donnent (« Temps ReelA… », « Parcours Robot… »). Jamais une vraie personne : préfixes et noms de robots seulement. */
-export const UID_TEST = /^(kdmc_)?(testparcours-|testmail-|testvitesse-|testdecoupe-|testsecours-|testrapide-|testlot-|testlecture-|testfinal-|testcache-|testpass-|testsecurite-|testinscription-|parcours-robot|tempsreel)/i;
+export const UID_TEST = /^(kdmc_)?(testparcours-|testmail-|testvitesse-|testdecoupe-|testsecours-|testrapide-|testlot-|testlecture-|testfinal-|testcache-|testpass-|testsecurite-|testinscription-|parcours-robot|temps-?reel)/i;
 export const NOM_TEST = /^\s*(temps\s*reel|parcours\s*robot|robot\s+(de\s+)?(test|contr[oô]le))/i;
 export function estCompteDeTest(e) { return UID_TEST.test(String((e && e.uid) || '')) || NOM_TEST.test(String((e && e.name) || '')); }
 

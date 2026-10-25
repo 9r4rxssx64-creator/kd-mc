@@ -314,10 +314,11 @@
   function blocAcces(a) {
     if (!APPS_LISTE.length) return '';
     var portee = a.portee === 'app' ? 'app' : 'domaine';
-    var acces = a.acces || [], bloque = a.bloque || [];
+    var acces = a.acces || [], bloque = a.bloque || [], roles = Array.isArray(a.roles) ? a.roles : [];
     var resume = portee === 'domaine'
       ? ('Tout le domaine' + (bloque.length ? ' · sauf ' + esc(bloque.join(', ')) : ''))
       : (acces.length ? esc(acces.join(', ')) : '⚠️ aucune app');
+    if (roles.indexOf('shops') >= 0) resume += ' · 🛍 boutiques';
     return '<details class="acces" data-uid="' + esc(a.uid) + '">'
       + '<summary>🔐 Où elle peut aller <b>' + resume + '</b></summary>'
       + '<div class="accbody">'
@@ -326,6 +327,10 @@
       + '<label class="accradio"><input type="radio" name="p-' + esc(a.uid) + '" data-portee="app"'
       + (portee === 'app' ? ' checked' : '') + '> Seulement les applications cochées</label>'
       + '<div class="chips grpacces">' + APPS_LISTE.map(function (x) { return chip(a.uid, 'acces', x, acces.indexOf(x) >= 0); }).join('') + '</div>'
+      /* Le rôle « shops » (25.10, pont 1044) : sans cette case, il n'y avait aucun écran pour voir ni poser le droit qui ouvre
+         l'admin de Chez Lolo, La Détente, Sourcing et le tableau des boutiques. Le domaine l'exige en plus du code prouvé. */
+      + '<label class="accradio"><input type="checkbox" data-role="shops"' + (roles.indexOf('shops') >= 0 ? ' checked' : '')
+      + '> 🛍 Gère les boutiques <span class="d">(Chez Lolo, La Détente, Sourcing, Tableau)</span></label>'
       + '<details class="sousbloc"><summary>🚫 Fermer une application précise</summary>'
       + '<div class="d">Marche même si la personne a accès à tout le domaine.</div>'
       + '<div class="chips">' + APPS_LISTE.map(function (x) { return chip(a.uid, 'bloque', x, bloque.indexOf(x) >= 0); }).join('') + '</div>'
@@ -364,6 +369,8 @@
         return out;
       };
       var acces = lu('acces'), bloque = lu('bloque');
+      var caseShops = box.querySelector('input[data-role="shops"]');
+      var roles = caseShops && caseShops.checked ? ['shops'] : [];
       var msg = box.querySelector('.accmsg');
       /* On prévient AVANT d'enregistrer : « une app » sans app cochée = la
          personne n'a plus accès à rien, et elle ne comprendrait pas pourquoi. */
@@ -375,7 +382,7 @@
       fetch('/__admin/acces', {
         method: 'POST', credentials: 'include',
         headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()),
-        body: JSON.stringify({ uid: uid, portee: portee, acces: acces, bloque: bloque }),
+        body: JSON.stringify({ uid: uid, portee: portee, acces: acces, bloque: bloque, roles: roles }),
       })
         .then(function (r) { return r.json(); })
         .then(function (j) {
@@ -386,6 +393,7 @@
             if (s) s.textContent = portee === 'domaine'
               ? ('Tout le domaine' + (bloque.length ? ' · sauf ' + bloque.join(', ') : ''))
               : acces.join(', ');
+            if (s && roles.length) s.textContent += ' · 🛍 boutiques';
             loadAudit();
           } else msg.textContent = '⚠️ ' + ((j && j.reason) || 'Échec — réessaie');
         })

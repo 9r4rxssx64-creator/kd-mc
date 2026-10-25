@@ -5440,6 +5440,8 @@ async function handleAdmin(request, url, env) {
       portee: a.portee === 'app' ? 'app' : 'domaine',
       acces: Array.isArray(a.acces) ? a.acces : [],
       bloque: Array.isArray(a.bloque) ? a.bloque : [],
+      /* Les droits nommés (25.10) : sans eux, l'écran admin ne pouvait ni montrer ni poser « 🛍 Gère les boutiques » (pont 1044). */
+      roles: Array.isArray(a.roles) ? a.roles.filter((x) => ROLES_CONNUS.has(x)) : [],
       /* Par où elle est réellement passée — pour ouvrir en connaissance de cause
          au lieu de deviner. */
       vues: Object.keys(a.apps || {}).map(appDe).filter(Boolean),

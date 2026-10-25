@@ -62,8 +62,13 @@ async function requireCompte(req, env) {
     /* 13.10 : le routeur lie le pass à la FAMILLE D'APPAREIL de la personne (iPhone, PC…) et refuse un pass présenté depuis une autre famille. Cet appel part du
        worker (« autre » famille) : sans le User-Agent de la personne, un pass émis sur son iPhone était refusé. On transmet CE SEUL en-tête, rien d'autre. */
     const entetes = { Authorization: 'Bearer ' + tok }; const ua = req.headers.get('user-agent'); if (ua) entetes['user-agent'] = ua;
+    /* 25.10.2026 — PANNE RÉELLE vue par le robot « comme Kevin » (run public 40205002932) : depuis le 23.10, CHAQUE appel
+       authentifié rendait 502 « whoami_exc : The 'cache' field on 'RequestInitializerDict' is not implemented » —
+       l'option `cache` de fetch n'existe pas dans le runtime des Workers (elle n'est valable que dans un navigateur).
+       Toute l'IA du Studio était donc morte en ligne (« Connecte-toi… » pour tout le monde). Jamais `cache:` dans un
+       fetch côté worker ; garde : test:crea-ai-porte-fetch. */
     const r = await fetch((env && env.KDMC_SSO_URL ? env.KDMC_SSO_URL.replace(/\/$/, '') + '/__sso/whoami' : WHOAMI_URL),
-      { headers: entetes, cache: 'no-store' });
+      { headers: Object.assign({ 'cache-control': 'no-cache' }, entetes) });
     if (!r.ok) return { ok: false, status: 502, error: 'whoami_http_' + r.status, detail: 'le domaine ne répond pas' };
     const j = await r.json();
     if (!j || !j.ok) return { ok: false, status: 401, error: 'session_invalide', detail: 'session inconnue ou expirée' };

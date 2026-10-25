@@ -15,7 +15,7 @@
       "maj": "2026-10-25",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "25.10 : Kevin « rendu dégueulasse » → Studio créa v9.19.0 : cartoon par l IA d abord (16 styles, Workers AI img2img en secours), vidéo « faire vivre la photo » (mode motion + fondu) ; gardes test:crea-cartoon-styles / test:crea-cartoon-ia"
+      "note": "25.10 soir : panne réelle corrigée (cache: dans fetch Worker → 502 porte compte de crea-ai/social/vente depuis le 23.10), garde test:crea-ai-porte-fetch, PR en cours"
     },
     "cmcteams": {
       "titre": "CMCteams",

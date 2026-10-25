@@ -660,7 +660,7 @@ async function requireAdmin(req) {
     /* 13.10 : le routeur lie le pass à la FAMILLE D'APPAREIL de la personne (iPhone, PC…) et refuse un pass présenté depuis une autre famille. Cet appel part du
        worker (« autre » famille) : sans le User-Agent de la personne, un pass émis sur son iPhone était refusé. On transmet CE SEUL en-tête, rien d'autre. */
     const entetes = { Authorization: auth }; const ua = req.headers.get('user-agent'); if (ua) entetes['user-agent'] = ua;
-    const r = await fetch('https://kd-mc.com/__sso/whoami', { headers: entetes, cache: 'no-store' });
+    const r = await fetch('https://kd-mc.com/__sso/whoami', { headers: Object.assign({ 'cache-control': 'no-cache' }, entetes) }); /* 25.10 : `cache:` n'existe pas dans fetch côté Worker (502 depuis le 23.10) */
     if (!r.ok) return { ok: false, status: 502, detail: 'whoami HTTP ' + r.status, step: 'whoami_fetch' };
     const j = await r.json();
     if (!j || !j.ok) return { ok: false, status: 401, detail: 'session invalide', step: 'whoami_session' };
@@ -688,7 +688,7 @@ export async function requireSimulation(req, lireWhoami) {
     return { ok: false, status: 502, detail: String((e && e.message) || e).slice(0, 120), step: 'simu_exc' };
   }
 }
-const whoamiDomaine = async (entetes) => { const r = await fetch('https://kd-mc.com/__sso/whoami', { headers: entetes, cache: 'no-store' }); return r.ok ? r.json() : null; };
+const whoamiDomaine = async (entetes) => { const r = await fetch('https://kd-mc.com/__sso/whoami', { headers: Object.assign({ 'cache-control': 'no-cache' }, entetes) }); /* 25.10 : `cache:` n'existe pas dans fetch côté Worker (502 depuis le 23.10) */ return r.ok ? r.json() : null; };
 const TTL_SIMULATION = 86400;   /* un accès simulé vit 24 h, n'est jamais compté comme une vente, ne part par aucun e-mail */
 
 /* ── Contenu payant (D1) ─────────────────────────────────────────────────

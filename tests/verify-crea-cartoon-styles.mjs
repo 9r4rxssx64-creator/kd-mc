@@ -20,10 +20,19 @@ import { execFileSync } from 'node:child_process';
 const SABOTAGE = process.argv.includes('--sabotage');
 let workerPath = new URL('../services/kdmc-crea-ai/worker.js', import.meta.url).href;
 if (SABOTAGE) {
-  const avant = execFileSync('git', ['show', 'origin/main:services/kdmc-crea-ai/worker.js'], { encoding: 'utf8' });
+  /* On rejoue le worker d'AVANT en retirant du SOURCE les trois apports (pas `git show origin/main` : une fois fusionné,
+     main contient le correctif et le sabotage ne discriminerait plus rien — vu le 25.10 juste après la fusion). */
+  let src = fs.readFileSync(new URL('../services/kdmc-crea-ai/worker.js', import.meta.url), 'utf8');
+  const avant = src;
+  src = src.replace("const prompt = kind === 'cartoon' ? promptCartoon(opts.style, opts.extra) : PROMPTS[kind];", 'const prompt = PROMPTS[kind];')
+    .replace("if (kind === 'cartoon') {\n    try {\n      const c = await cfImg2Img(env, prompt, imgDataUrl);", "if (false) {\n    try {\n      const c = await cfImg2Img(env, prompt, imgDataUrl);")
+    .replace("(body && body.mode) === 'motion' ? 'motion' : 'dance'", "'dance'")
+    .replace("kind === 'cartoon' ? { 'x-crea-style':", "false ? { 'x-crea-style':");
+  if (src === avant) { console.log('❌ sabotage impossible : les points à retirer n\'ont pas été trouvés dans le source'); process.exit(1); }
   const tmp = path.join(os.tmpdir(), 'crea-worker-avant-' + process.pid + '.js');
-  fs.writeFileSync(tmp, avant); workerPath = 'file://' + tmp;
+  fs.writeFileSync(tmp, src); workerPath = 'file://' + tmp;
 }
+void execFileSync;
 const worker = (await import(workerPath)).default;
 
 const R = { ok: [], ko: [] };

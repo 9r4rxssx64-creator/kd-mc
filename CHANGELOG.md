@@ -51,6 +51,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Apex Chat v1.1.348 (2026-10-25 — les comptes de test des robots ne restent plus)
 - La purge de nuit (03:00) marque supprimées les lignes de test des robots (`temps-reel…`, `parcours-robot…`) venues du domaine, vieilles de plus d'une heure, jamais un admin. 25 lignes déjà purgées en prod. Preuve : `purge-comptes-de-test.test.js` 2/2, rouge en sabotant l'exclusion admin ou l'appel de 03:00 ; 2 287 tests verts. Leçon 769.
 
+## Apex Chat v1.1.349 (2026-10-25 — une entrée refusée dit toujours pourquoi)
+- `POST /api/auth/sso-from-kdmc` : une exception non prévue renvoie `500 kdmc_sso_exception` avec le détail, au lieu d'un corps vide. Preuve : `api-worker-sso-kdmc.test.js` 13/13, rouge sans la protection ; 2 288 tests verts. Leçon 775.
+
 ## Apex AI v13.4.395 (2026-10-25 — le lien « ← KDMC » assez grand pour le doigt)
 - Lien « ← KDMC » : 44 px de haut (avant 37). Remesure du Lenovo sur 394 : 12 → 2 cibles ; la seconde est la pastille de version, un texte non cliquable. Preuve : `cibles-44-chat-394.test.ts` 4/4, rouge sous l'ancien style. Leçon 773.
 

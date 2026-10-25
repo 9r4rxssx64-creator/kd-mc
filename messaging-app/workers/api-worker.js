@@ -112,7 +112,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.348';
+export const API_VERSION = '1.1.349';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1598,7 +1598,18 @@ export async function _adoptKevinRow(env, uid, now = Date.now()) {
 // lui-même https://kd-mc.com/__sso/whoami (source de vérité = le domaine), et
 // n'accepte la session QUE si la réponse a verified === true (Face ID prouvé par
 // passkey ES256). Une identité juste auto-déclarée (verified:false) → REFUS.
+/* 25.10.2026 (robot « toutes les fonctions », 3 entrées sur 3 refusées : POST /api/auth/sso-from-kdmc → 500 au corps VIDE, cause introuvable) : une exception sortie d'une étape
+   (base, journal, empreinte d'appareil…) donnait un 500 sans rien dire. Désormais le refus porte toujours un code et l'étape (jamais un secret ni un pass). */
 export async function handleSsoFromKdmc(request, env) {
+  try {
+    return await _ssoFromKdmc(request, env);
+  } catch (e) {
+    console.error('[SSO] exception non prévue :', e && e.message);
+    return err('Connexion kd-mc.com : erreur interne', 500, 'kdmc_sso_exception', { detail: String((e && e.message) || e).slice(0, 160) });
+  }
+}
+
+async function _ssoFromKdmc(request, env) {
   let body = {};
   try { body = await request.json(); } catch (_) { body = {}; }
   const authHeader = request.headers.get('Authorization') || '';

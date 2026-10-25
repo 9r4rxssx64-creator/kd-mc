@@ -186,3 +186,15 @@ describe('handleSsoFromKdmc — utilisateur normal reconnu par son code (sans Fa
     expect((await r.json()).error).toBe('face_id_requis');
   });
 });
+
+describe('SSO kd-mc.com : une exception non prévue dit sa cause (25.10.2026)', () => {
+  it('base en panne après whoami OK → 500 JSON kdmc_sso_exception avec détail, jamais un corps vide', async () => {
+    mockWhoami({ ok: true, uid: 'parcours-robotabc', name: 'Parcours Robot A', verified: false, code: true, admin: false });
+    const env = ENV({ APEX_CHAT_DB: { prepare() { throw new Error('D1_ERROR: panne simulée'); } } });
+    const r = await ssoFromKdmc({ kdmc_token: 'jeton.signe' }, env);
+    expect(r.status).toBe(500);
+    const j = await r.json();
+    expect(j.code || j.error).toBe('kdmc_sso_exception');
+    expect(JSON.stringify(j)).toContain('panne simulée');
+  });
+});

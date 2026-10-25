@@ -142,7 +142,7 @@ export function aUnRetour() {
   });
 }
 
-async function connecterAdmin(page, hash) {
+export async function connecterAdmin(page, hash) {
   await page.goto('https://kd-mc.com/sw.js', { waitUntil: 'domcontentloaded', timeout: 60000 });
   return page.evaluate(async (h) => {
     const x = await fetch('/__admin/login', { method: 'POST', credentials: 'include', cache: 'no-store', headers: { 'content-type': 'application/json', 'x-kdmc-verif': '1' }, body: JSON.stringify({ hash: h }) });

@@ -12466,3 +12466,7 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ## 🗺️ RÈGLE ABSOLUE — TOUT LE DOMAINE DE KEVIN EST MON TERRAIN : JE LE CONNAIS, JE LE NOTE, JE LE TESTE EN ENTIER, TOUTES BRANCHES, PRÉSENTES ET FUTURES (Kevin 2026-10-25, ABSOLUE)
 « Voici tout mon domaine. Note tout et rappelle-toi. Pareil pour toutes les autres branches et les futures. »
 - Source des apps : `kdmc-home/apps.json` ; liste vue par Kevin, éléments flottants (abeille, « Vue admin », version) qui ne doivent rien cacher, élément commun corrigé une seule fois au fichier partagé et annoncé au pont : tout est dans `.claude/rules/domaine-complet.md`.
+
+## 🔓 RÈGLE ABSOLUE — JAMAIS BLOQUÉ PAR LA PORTE DU DOMAINE : LE ROBOT PUBLIC « SERVI » LIT LES PAGES DERRIÈRE LA PORTE, CONNECTÉ EN ADMIN, EN LECTURE SEULE, ET RENDS DES NOMBRES (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
+« Trouve des solutions, crée, pour ne jamais être bloqué comme ça. »
+- Cas : Autorisations v1.3.3 fusionnée, impossible à lire depuis une session (porte), Lenovo éteint. Outil : `tools/plateformes/verifier-servi.mjs` + workflow public `verifier-servi.yml` ; détail et commandes : `.claude/rules/verifier-servi.md`.

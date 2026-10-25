@@ -1,0 +1,64 @@
+name: Vérifier ce qui est SERVI (même derrière la porte du domaine, connecté en admin, lecture seule)
+
+# Kevin 25.10.2026 : « Trouve des solutions, crée, pour ne jamais être bloqué comme ça » (une session ne peut pas lire une page derrière la porte ;
+# le Lenovo n'est pas toujours allumé). Le robot du dépôt PUBLIC a le secret (empreinte jamais écrite ni journalisée) : il se connecte comme Kevin,
+# LECTURE SEULE, ouvre chaque adresse *.kd-mc.com sur iPhone 13 (Safari) et portable, et rend des NOMBRES : version servie, haut vs « ← Portail »,
+# boutons cachés, débordement, petites cibles. Le journal d'un dépôt public se lit par tous : AUCUN texte de page, balise#id.classe et nombres seulement.
+# À la main seulement, jamais de cron. Lecture : annotations « Servi N » (gh api repos/…/check-runs/<job>/annotations).
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "Adresses *.kd-mc.com à lire, séparées par des espaces (ex. autorisations.kd-mc.com https://kd-mc.com/liens/)"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verifier-servi
+  cancel-in-progress: false
+
+jobs:
+  servi:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium et WebKit (Safari)
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium webkit
+
+      - name: Lire les pages servies — nombres et sélecteurs seulement
+        id: robot
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          WEBKIT: "1"
+          URLS: ${{ inputs.urls }}
+        shell: bash -euo pipefail {0}
+        run: |
+          set +e
+          # shellcheck disable=SC2086
+          stdbuf -oL -eL node tools/plateformes/verifier-servi.mjs $URLS 2>&1 | tee /tmp/servi.log
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Rapport lisible depuis l'agent (annotations)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/servi.log ] || { echo "::notice title=Servi::(pas de journal)"; exit 0; }
+          sed -E 's/[0-9a-f]{16,}/…/g' /tmp/servi.log | cut -c1-600 > /tmp/servi.txt
+          split -l 5 -d /tmp/servi.txt /tmp/sv_
+          n=0
+          for f in /tmp/sv_*; do n=$((n+1)); msg=$(sed -e 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}'); echo "::notice title=Servi ${n}::${msg}"; done
+
+      - name: Verdict (le robot a tourné jusqu'au bout)
+        if: always()
+        run: test "${{ steps.robot.outputs.rc }}" = "0"

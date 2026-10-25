@@ -91,6 +91,11 @@ async function ouvrir(moteur, ap) {
   for (let k = 0; k < 80 && !pret; k++) { pret = await p.evaluate(() => document.querySelectorAll('#bnav button[data-go]').length >= 9).catch(() => false); if (!pret) await p.waitForTimeout(250); }
   if (!pret) throw new Error('la barre du bas ne s\'est pas dessinée en 20 s');
   const dessin = Date.now() - t0;
+  /* la barre est dans le HTML statique : attendre aussi que le SCRIPT ait pris la main (le bouton « Entrer » a son gestionnaire)
+     — run public 40217940248, iPad : « Entrer » touché avant l'initialisation, la porte ne se refermait pas */
+  let script = false;
+  for (let k = 0; k < 80 && !script; k++) { script = await p.evaluate(() => { const g = document.getElementById('gateGo'); return !!(window.Anim && window.Photo) && (!g || typeof g.onclick === 'function'); }).catch(() => false); if (!script) await p.waitForTimeout(250); }
+  if (!script) throw new Error('le script du Studio n\'a pas pris la main en 20 s (bouton « Entrer » sans gestionnaire)');
   /* la porte (prénom + nom + code) : un compte LOCAL fictif, comme un premier passage */
   const porte = await p.evaluate(() => { const g = document.getElementById('gate'); return !!g && !g.classList.contains('hidden'); }).catch(() => false);
   if (porte) {
@@ -98,7 +103,10 @@ async function ouvrir(moteur, ap) {
     await p.click('#gateGo');
     /* attendre que la porte soit VRAIMENT refermée (run public 40217482338, 412 px : le robot touchait la barre sous la porte encore ouverte → tout « recouvert ») */
     let fermee = false;
-    for (let k = 0; k < 40 && !fermee; k++) { fermee = await p.evaluate(() => { const g = document.getElementById('gate'); return !g || g.classList.contains('hidden') || getComputedStyle(g).display === 'none'; }).catch(() => false); if (!fermee) await p.waitForTimeout(150); }
+    for (let k = 0; k < 60 && !fermee; k++) {
+      fermee = await p.evaluate(() => { const g = document.getElementById('gate'); return !g || g.classList.contains('hidden') || getComputedStyle(g).display === 'none'; }).catch(() => false);
+      if (!fermee) { await p.waitForTimeout(150); if (k === 20 || k === 40) { await p.fill('#gateCode', '123456').catch(() => {}); await p.click('#gateGo').catch(() => {}); } }   /* une 2e et 3e touche si la 1re s'est perdue */
+    }
     if (!fermee) throw new Error('la porte du Studio ne s\'est pas refermée après « Entrer » (prénom + nom + code)');
   }
   await p.waitForTimeout(500);

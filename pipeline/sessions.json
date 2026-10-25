@@ -15,7 +15,7 @@
       "maj": "2026-10-25",
       "attend_kevin": null,
       "attend_session": null,
-      "note": "25.10 soir : Studio v9.21.0 — contrôle toutes plateformes (196/196 Chromium), barre deux rangées, galerie entière, 44 px ; PR en cours"
+      "note": "25.10 18h15 UTC : robot public studio-plateformes run 40218470362 : Chromium 196/196, WebKit 149/149, Firefox 75/75, 0 rouge ; outil corrigé (attente du script avant Entrer, PR #5248). Studio v9.21.0 en ligne, vérif réelle 10/10."
     },
     "cmcteams": {
       "titre": "CMCteams",

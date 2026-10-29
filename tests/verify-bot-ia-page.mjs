@@ -105,7 +105,17 @@ chk(tts.length === 1 && /l=fr/.test(tts[0]) && /v=shimmer/.test(tts[0]) && /faux
 chk(/voix du téléphone|Lecture impossible/.test(await t('iaOk') + await t('iaErr')), 'Voix du domaine indisponible → repli voix du téléphone annoncé');
 chk(erreurs.length === 0, '0 exception JS' + (erreurs.length ? ' : ' + erreurs.join(' | ') : ''));
 const src = await readFile('tools/crypto-bot-dashboard/index.html', 'utf8');
-chk(/data-version="v1\.5\.2"/.test(src), 'badge de version v1.5.2');
+chk(/data-version="v1\.5\.3"/.test(src), 'badge de version v1.5.3');
+const petites = await page.evaluate(() => {
+  document.querySelectorAll('.hid,[hidden]').forEach((e) => { e.classList.remove('hid'); e.hidden = false; });
+  const o = [];
+  document.querySelectorAll('button,a,input,select,textarea,summary,.chip,[onclick]').forEach((e) => {
+    const r = e.getBoundingClientRect();
+    if (r.width && r.height && (r.height < 43.5 || r.width < 43.5)) o.push((e.className || e.tagName) + '[' + (e.textContent||'').trim().slice(0,20) + '] ' + Math.round(r.width) + 'x' + Math.round(r.height));
+  });
+  return o;
+});
+chk(petites.length === 0, 'Cibles tactiles : aucune commande de moins de 44 px' + (petites.length ? ' : ' + petites.slice(0, 4).join(' | ') : ''));
 await page.screenshot({ path: process.env.CAPTURE || '/dev/null', fullPage: false }).catch(() => {});
 await nav.close(); srv.close();
 

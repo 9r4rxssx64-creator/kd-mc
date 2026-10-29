@@ -46,7 +46,7 @@
   /* Réglages */
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 4px}
   .chip{padding:8px 13px;border-radius:99px;border:1px solid var(--line);background:var(--card2);color:var(--mut);
-        font-size:13px;font-weight:700;cursor:pointer;min-height:40px;display:flex;align-items:center}
+        font-size:13px;font-weight:700;cursor:pointer;min-height:44px;display:flex;align-items:center}
   .chip.on{background:rgba(90,169,255,.16);border-color:var(--blue);color:var(--blue)}
   label{display:block;color:var(--mut);font-size:12px;margin:12px 0 4px}
   select,input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;color:var(--txt);
@@ -278,7 +278,7 @@
   <div id="fatal" class="err hid"></div>
 </div>
 
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.5.2" data-color="#e8b830" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.5.3" data-color="#e8b830" defer></script>
 <script>
 (function(){
   var API = location.origin, SSO_KEY = 'kdmc_sso_pass', lastStatus = '';
@@ -693,7 +693,7 @@
       var bo=m.bourse||[];
       $('mkBourse').innerHTML=bo.length?bo.map(function(b){ return '<div class="coin"><span class="nm">'+esc(b.nom||b.symbole)+'</span><span class="px">'+(b.cloture==null?'fermé / pas de cotation':esc(Number(b.cloture).toLocaleString('fr-FR',{maximumFractionDigits:4}))+' · <b style="color:'+couleur(b.var_jour)+'">'+pct(b.var_jour)+'</b>')+'</span></div>'; }).join(''):'<div class="sub">Source indisponible pour le moment.</div>';
       var ac=m.actus||[];
-      $('mkActus').innerHTML=ac.length?ac.slice(0,12).map(function(a){ var t=esc(a.titre); var l=/^https:\/\//.test(a.lien||'')?'<a href="'+esc(a.lien)+'" target="_blank" rel="noopener noreferrer" style="color:var(--txt);text-decoration:none">'+t+'</a>':t; return '<div class="coin" style="display:block"><div style="font-size:13.5px">'+l+'</div><div class="px">'+esc(a.source)+'</div></div>'; }).join(''):'<div class="sub">Aucune actualité reçue.</div>';
+      $('mkActus').innerHTML=ac.length?ac.slice(0,12).map(function(a){ var t=esc(a.titre); var l=/^https:\/\//.test(a.lien||'')?'<a href="'+esc(a.lien)+'" target="_blank" rel="noopener noreferrer" style="color:var(--txt);text-decoration:none;display:flex;align-items:center;min-height:44px">'+t+'</a>':t; return '<div class="coin" style="display:block"><div style="font-size:13.5px">'+l+'</div><div class="px">'+esc(a.source)+'</div></div>'; }).join(''):'<div class="sub">Aucune actualité reçue.</div>';
       var so=m.sources||{};
       $('mkSources').innerHTML=Object.keys(so).map(function(k){ var ok=/^ok/.test(String(so[k])); var via=(String(so[k]).match(/^ok \(([^;)]+)/)||[])[1]; return '<div class="coin"><span class="px" style="color:var(--txt)">'+esc(k)+'</span><span class="tag '+(ok?'t-buy':'t-sell')+'">'+(ok?'✅ '+esc(via||'répond'):'❌ '+esc(so[k]))+'</span></div>'; }).join('');
     }).catch(function(){ $('mkCryptos').innerHTML='<div class="sub">Le domaine ne répond pas.</div>'; });

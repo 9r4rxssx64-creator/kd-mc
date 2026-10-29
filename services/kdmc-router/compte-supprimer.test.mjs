@@ -48,12 +48,15 @@ ok(r.j.ok === false && r.j.reason === 'not_found', '2c. uid inconnu → not_foun
 r = await adm({ confirmer: true });
 ok(r.j.ok === false, '2d. sans uid → refusé', r.j);
 
+await db.prepare("INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) VALUES ('yann-test', 'Yann Test', ?, 'connexion', 'kd-mc.com', '', 'Monaco', 'iPhone')").bind(Date.now()).run();
+ok(await db.prepare('SELECT uid FROM activite WHERE uid = ?').bind('yann-test').first(), '2e. (préparation) il a un historique de connexions');
 console.log('\n== 3. La suppression ==');
 r = await adm({ uid: 'yann-test', confirmer: true });
 ok(r.j.ok === true && r.j.supprime === true, '3. supprimé', r.j);
 ok(!kv.has('acc:yann-test') && !kv.has('cred:yann-test') && !kv.has('rlc:yann-test'), '3b. fiche, code et compteur effacés');
 ok(!kv.has('nm:yann test') && !JSON.parse(kv.get('idx:uids')).includes('yann-test'), '3c. le nom redevient libre, la personne sort de l\'index');
 ok(!(await db.prepare('SELECT uid FROM inscription_admin WHERE uid = ?').bind('yann-test').first()), '3d. sa demande en attente est vidée');
+ok(!(await db.prepare('SELECT uid FROM activite WHERE uid = ?').bind('yann-test').first()), '3d2. son fil d\'activité (historique de connexions) est effacé AVEC le compte');
 const copie = JSON.parse(kv.get('del:yann-test') || 'null');
 ok(copie && copie.name === 'Yann Test' && !('cred' in copie), '3e. une copie de la fiche (sans code) reste, pour réparer une erreur');
 ok(JSON.parse(kv.get('aud:log') || '[]').some((e) => e.ev === 'compte_supprime' && e.uid === 'yann-test'), '3f. journalisé');

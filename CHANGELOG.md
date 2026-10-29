@@ -26,6 +26,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
 - Film de preuve : 3D | marionnette sans WebGL, côte à côte.
 
+## Créa Studio v9.22.9 — une seule pastille de version, toujours la vraie (2026-10-29)
+- Mesuré en ligne par `verifier-servi` (v9.22.8) : « badge v9.22.8/v9.18.6 » — deux pastilles, la seconde (module partagé) figée sur une vieille version. Le module lit désormais `APP_VER` (`data-version-global`) et s'efface quand la pastille du Studio est là (`data-own-badge="#vbadge"`), comme l'Arbre.
+- Garde : `test:studio-plateformes` vérifie que la balise du module suit `APP_VER` et la bulle propre ; rouge sur la balise d'avant.
+
 ## Créa Studio v9.22.8 — iPhone en paysage : l'accueil des studios ne passe plus sous la barre du bas (2026-10-29)
 - Mesuré par le robot d'affichage du domaine (iPhone paysage 844×342) : « Prendre une photo » de l'accueil Photo était entièrement SOUS la barre du bas, hors de portée (scène ≈ 150 px pour ≈ 210 px de contenu). Écran bas (< 480 px de haut) : icône + titre sur une ligne, texte masqué, boutons côte à côte, zone qui défile si besoin. Mesure après : 0 recouvrement sur 7 écrans.
 - Garde : `verif-studio-plateformes.mjs` (appareil « iPhone paysage 844×342 » + mesure `accueil`), vert 39/39 ; sabotage : avec le Studio d'avant → rouge (« Choisir une photo, Prendre une photo » cachés).

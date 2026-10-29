@@ -21,6 +21,8 @@ t(/workflow_dispatch/.test(w) && !/schedule:/.test(w) && /moteur: \[chromium, we
 const h = lire('tools/crea-studio/index.html');
 t(/@media \(max-width:520px\)\{\s*#bnav\{flex-wrap:wrap/.test(h) && /#animStyles\{flex-wrap:wrap/.test(h) && /\.tbtn\{\s*min-width:44px;height:44px/.test(h) && /--navh/.test(h) && /function majNavH/.test(h), 'le Studio porte les correctifs : barre sur deux rangées, galerie enroulée, outils 44 px, pastille qui suit la barre');
 t(/@media \(max-height:480px\)\{\s*\.empty\{/.test(h) && /out\.accueil/.test(o) && /844x342/.test(o), 'accueil des studios : écran bas (iPhone paysage 844×342) — boutons visibles, mesure + appareil dans la matrice');
+{ const v = (h.match(/var APP_VER='(v[\d.]+)'/) || [])[1], tag = (h.match(/<script[^>]*version-badge-pwa\.js[^>]*>/) || [''])[0];
+  t(!!v && tag.includes('data-version="' + v + '"') && /data-version-global="APP_VER"/.test(tag) && /data-own-badge="#vbadge"/.test(tag), 'une seule pastille de version, toujours celle de l\'app (29.10 : le domaine en montrait deux, v9.22.8 et un v9.18.6 figé)'); }
 const pk = lire('package.json');
 t(/"verif:studio-plateformes"/.test(pk) && /npm run test:studio-plateformes/.test(pk), 'les scripts existent et la garde est dans test:ci');
 const r = spawnSync(process.execPath, ['tools/plateformes/verif-studio-plateformes.mjs'], { cwd: R, encoding: 'utf8', timeout: 300000,

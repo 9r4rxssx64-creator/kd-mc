@@ -48,6 +48,8 @@ const jetonDe = (html) => { const m = html.match(/class="jeton">([A-Z0-9-]+)</);
   ok(propre('**Il fait beau** 🌞 à Monaco.\n- 18 degrés\nVoir https://exemple.fr/x ok') === 'Il fait beau à Monaco. 18 degrés. Voir ok', '0c. réponse nettoyée pour la voix (ni Markdown, ni émoji, ni adresse)', propre('**Il fait beau** 🌞 à Monaco.\n- 18 degrés\nVoir https://exemple.fr/x ok')); }
 
 /* ───── 1. la page : Kevin seul ───── */
+{ const r = await R('/__javis/raccourci', { method: 'GET', redirect: 'manual' });
+  ok(r.status === 302 && r.headers.get('location') === '/__javis/raccourci/', '1-lien. le lien SANS barre finale (celui que Kevin touche) mène à la page au lieu d\'un 405', r.status + ' ' + r.headers.get('location')); }
 { let r = await R('/__javis/raccourci/', { method: 'GET' });
   ok(r.status === 403, '1a. un inconnu ne voit pas la page (403)', r.status);
   r = await R('/__javis/raccourci/', { method: 'GET', headers: KEVIN });

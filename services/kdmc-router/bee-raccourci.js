@@ -143,6 +143,8 @@ export async function handleRaccourci(request, url, env, d) {
 
   /* — l'entrée de Siri : POST /__javis/raccourci, JETON dans Authorization — */
   if (p === '/__javis/raccourci') {
+    /* le lien que Kevin touche n'a pas de barre finale : on l'envoie sur la page (aucune donnée n'est lue ici) */
+    if (request.method === 'GET') return new Response(null, { status: 302, headers: { location: '/__javis/raccourci/', 'cache-control': 'no-store' } });
     if (request.method !== 'POST') return J({ ok: false, reason: 'methode' }, 405);
     const texte = url.searchParams.get('texte') === '1' || /text\/plain/i.test(request.headers.get('accept') || '');
     const refus = (reason, st, msg) => (texte ? T(msg || 'Refusé.', st) : J({ ok: false, reason }, st));

@@ -53,6 +53,8 @@
   ------------------------------------------------------------------------ */
   /* lire les octets d'un fichier : trois voies (certains moteurs refusent l'une ou l'autre : « I/O read operation failed ») */
   async function lireOctets(blob) {
+    if (blob instanceof ArrayBuffer) return blob;
+    if (ArrayBuffer.isView(blob)) return blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength);
     try { return await blob.arrayBuffer(); } catch (e1) { /* voie 2 */ }
     try { return await new Response(blob).arrayBuffer(); } catch (e2) { /* voie 3 */ }
     return new Promise(function (ok, ko) { var r = new FileReader(); r.onload = function () { ok(r.result); }; r.onerror = function () { ko(new Error('Fichier illisible')); }; r.readAsArrayBuffer(blob); });
@@ -245,6 +247,8 @@
     aide(A.PERSOS[id].emoji + ' ' + A.PERSOS[id].nom + ' est prêt : donne-lui une voix, ou copie tes grimaces avec la caméra.');
   }
   function lireImageFichier(file) {
+    /* une image, un canevas ou une ImageBitmap déjà prête (intégration dans une autre app) passe telle quelle */
+    if (file && typeof Blob !== 'undefined' && !(file instanceof Blob)) return Promise.resolve(file);
     var charge = function (src, nettoyer) { return new Promise(function (ok, ko) { var im = new Image(); im.onload = function () { ok(im); if (nettoyer) { try { URL.revokeObjectURL(src); } catch (e) { /* ok */ } } }; im.onerror = function () { ko(new Error('Image illisible')); }; im.src = src; }); };
     var voie1 = null; try { voie1 = URL.createObjectURL(file); } catch (e) { voie1 = null; }
     var essai1 = voie1 ? charge(voie1, true) : Promise.reject(new Error('pas d\'adresse'));

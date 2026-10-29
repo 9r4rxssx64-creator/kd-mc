@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 243 règles — le texte de Kevin, une par une
+## 📜 Les 244 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1060,6 +1060,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🔁 RÈGLE ABSOLUE — QUAND KEVIN RELANCE, TOUT LE MONDE EST RELANCÉ RÉELLEMENT, ET LE TABLEAU NE DIT « RELANCÉ » QU'AVEC LA PREUVE (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Vérifie dans mon tableau de bord quand je relance mes sessions si vraiment tout est à jour et pourquoi j'ai beaucoup de branches rouges qui ne lisent pas les messages. Tout doit être actualisé […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-quand-kevin-relance-tout-le-monde-est-relancé-réellement-et-le-tableau-ne-dit-relancé-quavec-la-preuve-kevin-2026-10-29-absolue-toutes-les-branches)
+
+### 📱 RÈGLE ABSOLUE — CONNEXION PAR QR : KEVIN SCANNE AVEC L'APPAREIL PHOTO DE L'IPHONE, SES CODES NE SE RETAPENT PAS (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Quand j'ai des connexions à faire de compte, mes codes sont sur l'iPhone, donc fais-moi faire avec un code que je scanne, que je fais avec l'appareil photo. Un QR code ou quelque chose comme […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-connexion-par-qr-kevin-scanne-avec-lappareil-photo-de-liphone-ses-codes-ne-se-retapent-pas-kevin-2026-10-29-absolue-toutes-les-branches)
 
 ---
 

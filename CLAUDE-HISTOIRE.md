@@ -12520,3 +12520,9 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 « Vérifie dans mon tableau de bord quand je relance mes sessions si vraiment tout est à jour et pourquoi j'ai beaucoup de branches rouges qui ne lisent pas les messages. Tout doit être actualisé en temps réel et vérifié, de vraies informations. Quand je relance, tout le monde doit être relancé réellement. »
 - `.claude/rules/relance-reelle.md` : mesures du 29.10 (10 routines jamais exécutées malgré « réveillée ✅ » ; `fire_trigger` = session neuve vide ; branches mortes vs vivantes), relance = déclencheur programmé lié à la vraie session, preuve = `lu_par` + `last_run`, branche sans session = « morte » et reprise par la branche propriétaire.
 - Tableau KDMC : source versionnée `tools/pont/tableau-kdmc.html` ; garde `tests/verify-relance-reelle.mjs`.
+
+## 📱 RÈGLE ABSOLUE — CONNEXION PAR QR : KEVIN SCANNE AVEC L'APPAREIL PHOTO DE L'IPHONE, SES CODES NE SE RETAPENT PAS (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Quand j'ai des connexions à faire de compte, mes codes sont sur l'iPhone, donc fais-moi faire avec un code que je scanne, que je fais avec l'appareil photo. Un QR code ou quelque chose comme ça pour les connexions au site. Note-le, rappelle-toi-en pour tout le monde. »
+- `.claude/rules/connexion-par-qr.md` : ordre de préférence (clé d'accès par QR → QR du service → code reçu en dernier), phrase unique à Kevin (« Scanne le code à l'écran avec l'appareil photo de l'iPhone, puis Face ID »), le domaine ne limite jamais la clé d'accès à son appareil d'origine, mesure réelle confiée au Lenovo.
+- Déclencheur : la clé App Store Connect (mission 1293 au pont) ; message à `toutes` au pont. Garde : `tests/verify-connexion-qr.mjs` (`npm run test:connexion-qr`, dans test:ci).
+

@@ -15,6 +15,7 @@
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os'; import { fileURLToPath } from 'node:url'; import { spawnSync } from 'node:child_process';
 import { chromium, webkit, firefox } from 'playwright';
 const R = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const FIX = path.join(R, 'tests/avatars-donnees');
 const SOURCE = path.join(R, 'tools/crea-studio');
 const STUDIO = process.env.STUDIO_DIR || SOURCE;
 const CAPTURES = process.env.CAPTURES || path.join(os.tmpdir(), 'avatars-captures');
@@ -100,8 +101,10 @@ const MESURES = `(() => {
     saturation(c, y0 = 0.2, y1 = 0.8) { const A = lire(c), W = A.width, H = A.height; let s = 0, k = 0; for (let y = Math.floor(H * y0); y < Math.floor(H * y1); y += 2) for (let x = 0; x < W; x += 2) { const i = (y * W + x) * 4, mx = Math.max(A.data[i], A.data[i + 1], A.data[i + 2]), mn = Math.min(A.data[i], A.data[i + 1], A.data[i + 2]); s += mx ? (mx - mn) / mx : 0; k++; } return s / k; },
     vide(c) { const A = lire(c); let s = 0, s2 = 0, k = 0; for (let i = 0; i < A.data.length; i += 16) { const l = A.data[i] * 0.3 + A.data[i + 1] * 0.59 + A.data[i + 2] * 0.11; s += l; s2 += l * l; k++; } const m = s / k; return Math.sqrt(Math.max(0, s2 / k - m * m)); },
     png(c) { return c.toDataURL('image/png').split(',')[1]; },
+    blobOK: true,
+    async photo(url, nom, type) { if (this.blobOK) return this.fichier(url, nom, type); const im = new Image(); im.src = url + '?i=' + Math.random(); await im.decode(); return im; },
     async fichier(url, nom, type) { const r = await fetch(url); const buf = await r.arrayBuffer(); return new File([buf], nom, { type: type || r.headers.get('content-type') || 'image/jpeg' }); },
-    async wav(b64) { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: 'audio/wav' }); },
+    async wav(b64) { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return this.blobOK ? new Blob([u], { type: 'audio/wav' }) : u; },
     frequence(buffer) { const x = buffer.getChannelData(0), N = 8192, re = new Float64Array(N), im = new Float64Array(N), d0 = Math.floor((x.length - N) / 2); for (let i = 0; i < N; i++) re[i] = x[d0 + i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)); AvatarCore.fft(re, im); let best = 1, bv = 0; for (let k = 1; k < N / 2; k++) { const v = Math.hypot(re[k], im[k]); if (v > bv) { bv = v; best = k; } } return best * buffer.sampleRate / N; }
   };
 })()`;
@@ -119,8 +122,17 @@ async function ouvrirStudio(ctx, erreurs) {
   return page;
 }
 
+/* poser les repères à la main : œil gauche, œil droit, bouche (coordonnées dans l'image d'origine) */
+async function toucherYeuxBouche(page, T0, points) {
+  const box = await page.evaluate(() => { const r = Avatar.canvas().getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, cw: Avatar.canvas().width, ch: Avatar.canvas().height }; });
+  const vers = (px, py) => { const m = T0.m; const cx = (m.ox + px * m.s) / box.cw * box.w + box.x, cy = (m.oy + py * m.s) / box.ch * box.h + box.y; return [cx, cy]; };
+  await page.evaluate(() => Avatar.canvas().scrollIntoView({ block: 'center' })); const b2 = await page.evaluate(() => { const r = Avatar.canvas().getBoundingClientRect(); return { x: r.left, y: r.top }; }); const dx = b2.x - box.x, dy = b2.y - box.y;
+  for (const [px, py] of points) { const [cx, cy] = vers(px, py); await page.mouse.click(cx + dx, cy + dy); await page.waitForTimeout(80); }
+}
+
 async function suite(nom, browser) {
   const tag = nom; const erreurs = []; const ctx = await contexte(browser, nom); const page = await ouvrirStudio(ctx, erreurs);
+  await page.evaluate((b) => { window.__m.blobOK = b; }, nom === 'chromium');
   const sauver = async (fichier, b64) => fs.writeFileSync(path.join(CAPTURES, `${nom}-${fichier}.png`), Buffer.from(b64, 'base64'));
   dire(`\n== ${nom} ==`);
 
@@ -152,9 +164,24 @@ async function suite(nom, browser) {
 
   /* C. photo */
   const t0 = Date.now();
-  await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.fichier('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); });
-  const dureeDetect = Date.now() - t0; const E = await page.evaluate(() => Avatar.etat());
-  ok(E.source === 'photo' && E.vues === 1 && E.manuel[0] === false && !!E.rendu, `${tag} C) photo « homme » : visage trouvé par MediaPipe (${E.delegue || '?'}), rendu ${E.rendu}, en ${dureeDetect} ms (modèle compris)`, JSON.stringify(E).slice(0, 200) + (E.panneVision || E.erreurVision ? ' | panne: ' + E.panneVision + ' / ' + E.erreurVision : ''));
+  await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.photo('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); });
+  const dureeDetect = Date.now() - t0; let E = await page.evaluate(() => Avatar.etat());
+  /* un moteur SANS WebGL (Firefox sans carte graphique, comme sur le robot) : le suivi de visage ne peut pas démarrer ; l'app doit alors le DIRE et proposer les 3 touchés */
+  if (E.source === 'touches' && /GLctx|WebGL/i.test(E.panneVision || '')) {
+    const T = await page.evaluate(() => Avatar.touchesInfo());
+    ok(!!T && T.n === 0, `${tag} C) suivi de visage indisponible ici (« ${E.panneVision.slice(0, 40)} », pas de WebGL) : l'app propose les 3 touchés à la main`);
+    const lm = JSON.parse(fs.readFileSync(path.join(FIX, 'fictif-homme.lm.json'), 'utf8')).lm;
+    const pt = (i) => [lm[i][0] * T.w, lm[i][1] * T.h];
+    const yeux = [pt(468), pt(473)].sort((a, b) => a[0] - b[0]);
+    await toucherYeuxBouche(page, T, [yeux[0], yeux[1], [(pt(13)[0] + pt(14)[0]) / 2, (pt(13)[1] + pt(14)[1]) / 2]]);
+    E = await page.evaluate(() => Avatar.etat());
+    ok(E.source === 'photo' && E.manuel[0] === true && !!E.rendu, `${tag} C) repli à la main : l'avatar existe (rendu ${E.rendu}) et la bouche s'ouvre`, JSON.stringify(E).slice(0, 160));
+    const o = await page.evaluate(() => { Avatar.rendre({}); const a = __m.copie(Avatar.canvas()); Avatar.rendre({ jaw: 1 }); return { bouche: __m.diffMoy(a, Avatar.canvas(), 0.5, 0.85) }; });
+    ok(o.bouche > 4, `${tag} C) repli à la main : la bouche change à l'écran (${o.bouche.toFixed(1)})`);
+  }
+
+  const sansSuivi = E.manuel && E.manuel[0] === true && /GLctx|WebGL/i.test(E.panneVision || '');
+  if (!sansSuivi) ok(E.source === 'photo' && E.vues === 1 && E.manuel[0] === false && !!E.rendu, `${tag} C) photo « homme » : visage trouvé par MediaPipe (${E.delegue || '?'}), rendu ${E.rendu}, en ${dureeDetect} ms (modèle compris)`, JSON.stringify(E).slice(0, 200) + (E.panneVision || E.erreurVision ? ' | panne: ' + E.panneVision + ' / ' + E.erreurVision : ''));
   if (E.source === 'photo' && !E.manuel[0]) {
     const C = await page.evaluate(() => {
       Avatar.rendre({}); const neutre = __m.copie(Avatar.canvas()), cadre = Avatar.cadre(), orig = Avatar.vue0();
@@ -186,11 +213,11 @@ async function suite(nom, browser) {
   {
     const Lu = await page.evaluate(async () => {
       const r = {}; r.homme = Avatar.etat().lunettes;
-      await Avatar.depuisPhoto(await __m.fichier('/fix/fictif-barbe.jpg', 'barbe.jpg', 'image/jpeg')); r.barbe = Avatar.etat().lunettes; r.source = Avatar.etat().source;
+      await Avatar.depuisPhoto(await __m.photo('/fix/fictif-barbe.jpg', 'barbe.jpg', 'image/jpeg')); r.barbe = Avatar.etat().lunettes; r.source = Avatar.etat().source;
       Avatar.rendre({}); const n0 = __m.copie(Avatar.canvas()); Avatar.rendre({ browL: 1, browR: 1 }); r.avec = __m.diffMoy(n0, Avatar.canvas(), 0.3, 0.6);
       document.getElementById('avLunettes').click(); Avatar.rendre({}); const n1 = __m.copie(Avatar.canvas()); Avatar.rendre({ browL: 1, browR: 1 }); r.sans = __m.diffMoy(n1, Avatar.canvas(), 0.3, 0.6); r.bouton = Avatar.etat().lunettes;
       document.getElementById('avLunettes').click();
-      await Avatar.depuisPhoto(await __m.fichier('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); return r;
+      await Avatar.depuisPhoto(await __m.photo('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); return r;
     });
     ok(Lu.source === 'photo' && Lu.homme === false && Lu.barbe === true && Lu.bouton === false && Lu.avec < Lu.sans * 0.6, `${tag} C) lunettes : repérées sur l'homme à lunettes (${Lu.barbe}), pas sur l'autre (${Lu.homme}) ; sourcils levés : ${Lu.avec.toFixed(2)} avec le réglage « lunettes » contre ${Lu.sans.toFixed(2)} sans ; le bouton corrige à la main`, JSON.stringify(Lu));
   }
@@ -265,14 +292,11 @@ async function suite(nom, browser) {
   }
 
   /* D. chien : à la main */
-  await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.fichier('/fix/fictif-chien.jpg', 'chien.jpg', 'image/jpeg'), { manuel: true }); });
+  await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.photo('/fix/fictif-chien.jpg', 'chien.jpg', 'image/jpeg'), { manuel: true }); });
   const T0 = await page.evaluate(() => Avatar.touchesInfo());
   ok(!!T0 && T0.n === 0, `${tag} D) chien : l'écran demande de toucher les yeux et la bouche`);
   if (T0) {
-    const box = await page.evaluate(() => { const r = Avatar.canvas().getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, cw: Avatar.canvas().width, ch: Avatar.canvas().height }; });
-    const vers = (px, py) => { const m = T0.m; const cx = (m.ox + px * m.s) / box.cw * box.w + box.x, cy = (m.oy + py * m.s) / box.ch * box.h + box.y; return [cx, cy]; };
-    await page.evaluate(() => Avatar.canvas().scrollIntoView({ block: 'center' })); const b2 = await page.evaluate(() => { const r = Avatar.canvas().getBoundingClientRect(); return { x: r.left, y: r.top }; }); const dx = b2.x - box.x, dy = b2.y - box.y;
-    for (const [px, py] of [[246, 158], [394, 160], [324, 362]]) { const [cx, cy] = vers(px, py); await page.mouse.click(cx + dx, cy + dy); await page.waitForTimeout(80); }
+    await toucherYeuxBouche(page, T0, [[246, 158], [394, 160], [324, 362]]);
     const D = await page.evaluate(() => { const e = Avatar.etat(); if (e.source !== 'photo') return { source: e.source }; Avatar.rendre({}); const n0 = __m.copie(Avatar.canvas()); Avatar.rendre({ jaw: 1 }); const c1 = __m.copie(Avatar.canvas()); const b = { haut: __m.diffMoy(n0, c1, 0.05, 0.35), bouche: __m.diffMoy(n0, c1, 0.5, 0.85), n: __m.boite(n0, c1, 30).n }; const png = __m.png(Avatar.canvas()); Avatar.rendre({ blinkL: 1, blinkR: 1 }); return { source: e.source, manuel: e.manuel[0], b, png, ferme: __m.png(Avatar.canvas()) }; });
     ok(D.source === 'photo' && D.manuel === true && D.b && D.b.bouche > 4 && D.b.bouche > 3 * D.b.haut, `${tag} D) chien placé à la main : la bouche s'ouvre sous les yeux (changement ${D.b ? D.b.bouche.toFixed(1) : '?'} dans la zone de la bouche contre ${D.b ? D.b.haut.toFixed(1) : '?'} sur le front)`, JSON.stringify(D).slice(0, 160));
     if (D.png) { await sauver('chien-bouche', D.png); await sauver('chien-yeux-fermes', D.ferme); }
@@ -280,7 +304,7 @@ async function suite(nom, browser) {
 
   /* J. caméra (Chromium, visage vidéo simulé) */
   if (nom === 'chromium' && !process.env.SANS_CAMERA) {
-    await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.fichier('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); });
+    await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.photo('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); });
     const images = await page.evaluate(() => { const o = []; [0, 1].forEach((j) => { Avatar.rendre({ jaw: j }); o.push(__m.png(Avatar.canvas())); }); return o; });
     const d = fs.mkdtempSync(path.join(os.tmpdir(), 'cam-')); let y4m = null;
     try {
@@ -308,7 +332,7 @@ async function suite(nom, browser) {
 
   /* M. vidéo « tour de la tête » (une vidéo fabriquée ici : la tête tourne de -0,55 à +0,55 rad, avec la voix en son) */
   if (nom !== 'webkit' && !process.env.SANS_VIDEO) {
-    await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.fichier('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); });
+    await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.photo('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); });
     const rendus = await page.evaluate(() => { const o = []; for (let i = 0; i < 20; i++) { const yaw = -0.55 + 1.1 * i / 19; Avatar.rendre({ yaw }); o.push(__m.png(Avatar.canvas())); } return o; });
     const d = fs.mkdtempSync(path.join(os.tmpdir(), 'orbite-')); let fichier = null;
     try {

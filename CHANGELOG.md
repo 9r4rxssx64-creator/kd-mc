@@ -15,6 +15,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
 - Film de preuve : 3D | marionnette sans WebGL, côte à côte.
 
+## Créa Studio v9.22.2 — Avatars : l'app accepte une image ou des octets déjà prêts, le robot ne dépend plus des fichiers du navigateur (2026-10-29)
+- WebKit du robot refuse de relire un fichier créé dans la page ; Firefox du robot n'a pas de WebGL (le suivi de visage ne démarre pas : l'app le dit et propose les 3 touchés). `Avatar.depuisPhoto` accepte aussi une image / un canevas, `preparerSonDepuis` des octets (utile pour intégrer dans une autre app) ; le robot vérifie ces deux voies et le repli à la main.
+
 ## Créa Studio v9.22.1 — Avatars : lecture de fichier robuste (Safari / Firefox), meilleurs looks feutre et peluche (2026-10-29)
 - Premier run sur trois moteurs (dépôt public) : Chromium 100 % ; WebKit refusait la lecture d'un fichier (« I/O read operation failed »), Firefox ne rendait pas le visage. Lecture des octets par trois voies, image par adresse `data:` en repli, diagnostic de la panne du suivi de visage dans `Avatar.etat()`. Service crea-ai : consignes feutre / peluche réécrites après avoir regardé les vrais rendus.
 

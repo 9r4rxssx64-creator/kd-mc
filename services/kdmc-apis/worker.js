@@ -180,6 +180,7 @@ function err(message, status, origin, detail) {
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal… pareil dans mes autres projets » :
    le routage IA commun du domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { repondreAvecOutils, REGLES_OUTILS_APPS, SANS_PLANNING, RE_BESOIN_OUTILS, questionComplexe } from '../_shared/outils-lecture.js';
+import { handleDelegue } from './delegue.js';
 import { routeText, routeSmart, analyseQuestion, detectDomain, routingStatus, chargerPauses, chargerModelesRetires, DOMAIN_PREFERENCES, QWEN_MODELS } from '../_shared/ia-route.js';
 
 export const KEYLESS = {
@@ -802,6 +803,9 @@ export default {
       if (await kevinVerifie(request, env)) return detail();
       return json({ ok: true }, 200, origin, { 'Cache-Control': 'no-store' });
     }
+
+    /* DÉLÉGUER AUX IA GRATUITES (29.10) : porte des SESSIONS DE TRAVAIL, jeton à empreinte en D1 (delegue.js) — pas un compte de personne, IA gratuites seulement. */
+    if (path === '/delegue') return handleDelegue(request, env, { routeSmart, sansPayants: sansMoteursPayants });
 
     /* AUCUNE CONSULTATION SANS COMPTE : tout ce qui suit exige un compte du domaine ouvert et non révoqué. */
     const compte = await compteVerifie(request, env);

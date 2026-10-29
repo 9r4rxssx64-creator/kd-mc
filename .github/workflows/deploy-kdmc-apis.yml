@@ -45,7 +45,8 @@ jobs:
         working-directory: services/kdmc-apis
         run: |
           node --check worker.js
-          node --test worker.test.mjs
+          node --check delegue.js
+          node --test worker.test.mjs delegue.test.mjs
 
       - name: Install wrangler
         run: npm install -g wrangler@^3.80.0

@@ -40,3 +40,9 @@ name = "LIMITE_IA_PREMIUM"
 type = "ratelimit"
 namespace_id = "2702"
 simple = { limit = 6, period = 60 }
+
+# DÉLÉGUER AUX IA GRATUITES (29.10.2026) : empreintes des jetons de session + compteur du jour. Base séparée, minuscule ; lecture par clé primaire seulement.
+[[d1_databases]]
+binding = "DELEGUE"
+database_name = "kdmc-delegue"
+database_id = "a879de68-47ef-44ee-a6bd-3b5a64f79c32"

@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 235 règles — le texte de Kevin, une par une
+## 📜 Les 236 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1028,6 +1028,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🌉 RÈGLE ABSOLUE — LE PONT NE DOIT JAMAIS ÊTRE BLOQUÉ : QUAND LE QUOTA GRATUIT DE D1 EST DÉPASSÉ, ON ÉCRIT DANS LE PONT DE SECOURS GITHUB ET ON LIT SANS PARCOURIR LA TABLE (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve une solution gratuite pour débloquer le blocage du pont. Crée si besoin. Trouve des solutions, va plus loin. »
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-le-pont-ne-doit-jamais-être-bloqué-quand-le-quota-gratuit-de-d1-est-dépassé-on-écrit-dans-le-pont-de-secours-github-et-on-lit-sans-parcourir-la-table-kevin-2026-10-25-absolue-toutes-les-branches)
+
+### 🤝 RÈGLE ABSOLUE — DÉLÉGUER AUX IA GRATUITES, VÉRIFIER, PUIS LIVRER : LE FORFAIT DE KEVIN PENSE ET CONTRÔLE, LE GRATUIT DÉGROSSIT (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES : CLOUD, IPHONE, LENOVO)
+« Trouve une solution pour que on économise au maximum mon forfait de token… intègre toutes les IA gratuites, crée ce qu'il faut pour leur déléguer du travail que tu vérifies avant de mettre en […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-déléguer-aux-ia-gratuites-vérifier-puis-livrer-le-forfait-de-kevin-pense-et-contrôle-le-gratuit-dégrossit-kevin-2026-10-29-absolue-toutes-les-branches-cloud-iphone-lenovo)
 
 ---
 

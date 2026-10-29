@@ -20,6 +20,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
 - Film de preuve : 3D | marionnette sans WebGL, côte à côte.
 
+## Créa Studio v9.22.6 — Avatars : l'enregistrement n'attend jamais indéfiniment le réveil du son (2026-10-29)
+- Le réveil du son (`resume`) est limité à 1,5 s : certains navigateurs sans geste ne répondent jamais, l'enregistrement ne doit pas rester figé.
+
 ## Créa Studio v9.22.5 — Avatars : le son de l'enregistrement se réveille tout seul (2026-10-29)
 - Mesuré sur Firefox (robot public) : le son de l'enregistrement était « suspendu » (silencieux) quand aucun geste n'avait eu lieu ; l'enregistrement le réveille maintenant explicitement (`resume`) et le robot donne un vrai toucher avant. WebKit 18/18, Chromium 28/28.
 

@@ -488,7 +488,8 @@
   async function enregistrerVideo() {
     if (typeof MediaRecorder === 'undefined' || !out.captureStream) throw new Error('Ce navigateur ne sait pas enregistrer de vidéo. Mets à jour iOS / ton navigateur.');
     var c = racine.AudioBus.context(), dest = c.createMediaStreamDestination(), flux = out.captureStream(30);
-    try { if (c.state === 'suspended') await c.resume(); } catch (e) { /* le navigateur attend un geste : le toucher du bouton le donne */ }
+    /* réveiller le son ; sans geste certains navigateurs ne répondent jamais : on n'attend pas plus de 1,5 s */
+    try { if (c.state === 'suspended') await Promise.race([c.resume(), new Promise(function (ok) { setTimeout(ok, 1500); })]); } catch (e) { /* le toucher du bouton donnera le geste */ }
     dest.stream.getAudioTracks().forEach(function (t) { flux.addTrack(t); });
     var mime = mimeEnreg(), rec = new MediaRecorder(flux, mime ? { mimeType: mime, videoBitsPerSecond: 6000000 } : undefined), parts = [];
     rec.ondataavailable = function (e) { if (e.data && e.data.size) parts.push(e.data); };

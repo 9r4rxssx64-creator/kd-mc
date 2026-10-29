@@ -4,8 +4,8 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
-## Apex Chat 1.1.352 (29.10.2026)
-- Le service worker laisse le navigateur faire POST /api/auth/sso-from-kdmc (agent de la page conservé) : l'entrée par le domaine n'est plus refusée « appareil » quand l'agent du service worker diffère de celui de la page (robot).
+## Apex Chat 1.1.353 (29.10.2026)
+- Le service worker (toutes origines : l'API est sur workers.dev) laisse le navigateur faire POST /api/auth/sso-from-kdmc (agent de la page conservé) : l'entrée par le domaine n'est plus refusée « appareil » quand l'agent du service worker diffère de celui de la page (robot).
 
 ---
 

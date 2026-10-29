@@ -155,6 +155,17 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
 </style>
 <style>
 /* ---- 24.10 : tout vient de la liste des tâches EN DIRECT (relue seule toutes les 30 s), tout se touche ---- */
+.sante{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:12px 0;background:var(--surface);display:grid;gap:4px}
+.sante.vert{border-color:color-mix(in srgb,var(--fait) 55%,var(--line));background:var(--fait-bg)}
+.sante.orange{border-color:color-mix(in srgb,var(--toi) 55%,var(--line));background:var(--toi-bg)}
+.sante .titre{font-weight:800}.sante .note{margin:0;font-size:14px}
+.barre{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:10px;padding:6px 8px 6px 14px;margin:-8px -8px 0;border-radius:999px;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 18px -12px #0006;backdrop-filter:blur(10px)}
+.barre .fraicheur{flex:1;min-width:0;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barre .rond{min-height:44px;min-width:44px;padding:0;border-radius:50%;display:grid;place-items:center}
+.barre.vieux .fraicheur{color:var(--toi);font-weight:700}
+.squelette{border-radius:12px;min-height:56px;display:grid;align-items:center;padding:0 14px;background:linear-gradient(90deg,var(--afaire-bg) 25%,var(--surface) 50%,var(--afaire-bg) 75%);background-size:200% 100%}
+@media (prefers-reduced-motion:no-preference){.squelette{animation:balaie 1.4s linear infinite}}
+@keyframes balaie{to{background-position:-200% 0}}
 .compteurs{grid-template-columns:repeat(4,1fr)}
 @media (max-width:520px){.compteurs{grid-template-columns:repeat(2,1fr)}}
 .compteur.afaire b{color:var(--afaire)}
@@ -190,10 +201,11 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
 .filtre-actif.on{display:flex}
 </style>
 <div class="wrap">
+  <div class="barre" id="barre" role="status"><span class="direct" id="direct">En direct</span><span class="fraicheur" id="fraicheur">lecture…</span><button class="btn rond" id="b-actu2" type="button" aria-label="Actualiser maintenant">🔄</button></div>
   <header>
     <h1>Tableau <span>KDMC</span></h1>
     <p class="maj" id="maj">Lecture de la liste des tâches…</p>
-    <div class="actu"><button class="btn go" id="b-actu" type="button">🔄 Actualiser maintenant</button><button class="btn" id="b-aut" type="button">🔐 Autoriser la lecture</button><span class="direct" id="direct">En direct</span><span class="etat-actu" id="t-actu" role="status" aria-live="polite"></span></div>
+    <div class="actu"><button class="btn go" id="b-actu" type="button">🔄 Actualiser maintenant</button><button class="btn" id="b-aut" type="button">🔐 Autoriser la lecture</button><span class="etat-actu" id="t-actu" role="status" aria-live="polite"></span></div>
   </header>
 
   <div class="compteurs" aria-label="Résumé">
@@ -202,6 +214,8 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
     <a class="compteur afaire" href="#t-afaire" data-cible="t-afaire"><b id="n-afaire">…</b><small>À faire</small></a>
     <a class="compteur fait" href="#t-fait" data-cible="t-fait"><b id="n-fait">…</b><small>Fait 3 j</small></a>
   </div>
+
+  <section class="sante gris" id="sante" aria-live="polite"><div class="titre">🩺 Santé des branches</div><p class="note">Lecture…</p></section>
 
   <div class="filtre"><input id="filtre" type="search" placeholder="🔎 Chercher une tâche, un projet, une branche…" aria-label="Chercher dans le tableau" autocomplete="off"><span class="vide" id="filtre-vide">Rien ne correspond.</span></div>
   <div class="filtre-actif" id="filtre-actif"><span id="filtre-actif-t"></span><button class="btn" type="button" id="filtre-tout">✕ Tout montrer</button></div>
@@ -219,13 +233,13 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
   <section aria-labelledby="t-toi">
     <h2 id="t-toi">À toi <span class="n">ce que personne d'autre ne peut faire</span></h2>
     <p class="sous">Seulement ce qui demande ta main (un code, une case, un courrier). Touche une carte pour tout voir.</p>
-    <div class="liste" id="l-toi"><p class="vide-liste">Lecture…</p></div>
+    <div class="liste" id="l-toi"><p class="vide-liste squelette">Lecture…</p></div>
   </section>
 
   <section aria-labelledby="t-branches">
     <h2 id="t-branches">Qui attend quoi <span class="n">toutes les branches</span></h2>
     <p class="sous">Touche une branche pour ne voir que ses tâches. « Relancer » lui écrit tout de suite au pont.</p>
-    <div class="liste" id="v-branches"><p class="vide-liste">Lecture…</p></div>
+    <div class="liste" id="v-branches"><p class="vide-liste squelette">Lecture…</p></div>
     <div class="actu" style="margin-top:12px">
       <button class="btn go" type="button" id="q-avancer">🚀 Tout le monde : avancez</button>
       <button class="btn" type="button" id="q-pont">📬 Que chacun lise le pont</button>
@@ -238,7 +252,7 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
     <h2 id="t-relances">Relances envoyées <span class="n">heure exacte et qui a vraiment lu</span></h2>
     <p class="sous">Chaque clic sur « Tout le monde : avancez », « Que chacun lise le pont » ou « Relancer » laisse ici sa trace : l'heure, et pour chaque branche ✅ a lu / ⏳ pas encore. Ces boutons RÉVEILLENT aussi chaque branche tout de suite (elle reçoit « pont — RÉVEIL » dans sa discussion) : plus besoin d'écrire « pont » à chacune.</p>
     <div class="liste compact" id="l-reveils"></div>
-    <div class="liste compact" id="l-relances"><p class="vide-liste">Lecture…</p></div>
+    <div class="liste compact" id="l-relances"><p class="vide-liste squelette">Lecture…</p></div>
   </section>
 
   <section aria-labelledby="t-demande">
@@ -274,17 +288,17 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
 
   <section aria-labelledby="t-cours">
     <h2 id="t-cours">En cours <span class="n">les branches s'en occupent</span></h2>
-    <div class="liste" id="l-cours"><p class="vide-liste">Lecture…</p></div>
+    <div class="liste" id="l-cours"><p class="vide-liste squelette">Lecture…</p></div>
   </section>
 
   <section aria-labelledby="t-afaire">
     <h2 id="t-afaire">À faire <span class="n">prévu, pas commencé</span></h2>
-    <div class="liste compact" id="l-afaire"><p class="vide-liste">Lecture…</p></div>
+    <div class="liste compact" id="l-afaire"><p class="vide-liste squelette">Lecture…</p></div>
   </section>
 
   <section aria-labelledby="t-fait">
     <h2 id="t-fait">Fait <span class="n">les 3 derniers jours</span></h2>
-    <div class="liste compact" id="l-fait"><p class="vide-liste">Lecture…</p></div>
+    <div class="liste compact" id="l-fait"><p class="vide-liste squelette">Lecture…</p></div>
   </section>
 
 
@@ -361,7 +375,25 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
   }
   /* ---- RÉVEIL en un clic (25.10) : chaque session a un déclencheur sans horaire (table reveils) ; on le lance = elle se met au travail ---- */
   const REMOTE='Claude Code Remote';
-  let REVEILS=[];
+  let REVEILS=[], CURS={};
+  const tms=v=>{const n=Number(v); if(Number.isFinite(n)&&n>1e11)return n; const d=Date.parse(String(v||'').replace(' ','T')+'Z'); return Number.isFinite(d)?d:0};
+  /* 29.10 : l'état d'une branche vient de ses PREUVES (curseur du pont, dernier message), pas seulement de la table reveils — plusieurs lignes de reveils n'ont pas de pont_id et faisaient passer une branche vivante pour « morte » */
+  function etatBranche(k){
+    const n=NONLUS[k]||0, c=CURS[k], sv=MSGS.find(m=>String(m.de).toLowerCase()===k);
+    const rvv=REVEILS.find(x=>String(x.pont_id||'').toLowerCase()===k), ordi=/^(pc-|arbre-pc|moulin-pc|pont-lenovo|detente|reverse)/.test(k);
+    const vu=Math.max(c?c.maj:0, sv?sv.ts:0), frais=!!vu&&Date.now()-vu<6*3600000;
+    const morte=!rvv&&!ordi&&!frais;
+    return {n,vu,frais,morte,rvv,ordi,retard:!morte&&n>0&&!frais};
+  }
+  function dessinerSante(cles,E){
+    const S=$('#sante'); if(!S)return; S.textContent='';
+    const mortes=cles.filter(k=>E[k].morte), vivantes=cles.filter(k=>!E[k].morte), retard=vivantes.filter(k=>E[k].retard);
+    S.className='sante '+(retard.length?'orange':(mortes.length?'gris':'vert'));
+    S.appendChild(el('div','titre','🩺 '+vivantes.length+' branche'+(vivantes.length>1?'s':'')+' vivante'+(vivantes.length>1?'s':'')+(retard.length?' · '+retard.length+' en retard':' · toutes à jour')+(mortes.length?' · '+mortes.length+' sans session':'')));
+    if(retard.length)S.appendChild(el('p','note','⏳ En retard (courrier non lu, aucun signe depuis 6 h) : '+retard.map(k=>nom(k)+' ('+E[k].n+')').join(', ')+'. Dis « pont » dans la session « Domain Kdmc » : je programme leur relance.'));
+    if(mortes.length)S.appendChild(el('p','note','🪦 Aucune session ne les lit : '+mortes.map(k=>nom(k)+(E[k].n?' ('+E[k].n+')':'')).join(', ')+'. Leurs messages sont à reprendre par la branche propriétaire.'));
+    if(!retard.length&&!mortes.length)S.appendChild(el('p','note','Toutes les branches ont lu leur courrier récemment.'));
+  }
   async function lireReveils(){ try{ REVEILS=lignes(await sql('SELECT session_id,titre,pont_id,trigger_id,actif,dernier_reveil FROM reveils ORDER BY titre'),'titre') }catch(e){} return REVEILS }
   /* 29.10 (Kevin : « quand je relance, tout le monde doit être relancé RÉELLEMENT ») : mesuré, l'ancien réveil (fire_trigger) ne réveillait personne —
      aucune des 10 routines n'avait de dernière exécution alors que la page écrivait « réveillée ✅ » — et, lancé à la main, il crée une session NEUVE et vide
@@ -391,13 +423,16 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
     d.sans.forEach(r=>g.appendChild(el('span','etat revoir','💻 '+r.titre+' : se relance seule (ordinateur) ou en tapant « pont »')));
     c.appendChild(g);
     c.appendChild(el('p','detail','Ce n\'est « lu » qu\'une fois la branche passée : regarde « Relances envoyées » (✅ a lu / ⏳ pas encore).'));
-    if(d.ko.some(o=>o.e&&/not_in_manifest|authz|permission|approval|denied/.test(o.e.code||'')))c.appendChild(el('p','detail','Touche « 🔐 Autoriser la lecture » et active « Claude Code Remote » (création de relance), puis recommence.'));
+    if(d.ko.some(o=>o.e&&/blocked_by_policy/.test(o.e.code||'')))c.appendChild(el('p','detail','🚫 La plateforme interdit à une page de créer une relance (mesuré 29.10 : « blocked_by_policy », aucune fenêtre d\'autorisation possible). Seule une session Claude peut la programmer : écris « pont » dans la session « Domain Kdmc » ; elle programme les relances de tout le monde, avec preuve.'));
+    else if(d.ko.some(o=>o.e&&/not_in_manifest|authz|permission|approval|denied/.test(o.e.code||'')))c.appendChild(el('p','detail','Touche « 🔐 Autoriser la lecture » et active « Claude Code Remote » (création de relance), puis recommence.'));
     L.appendChild(c);
   }
   async function garderEnvoi(o){ if(!db)return; try{ await db.doc('demandes/'+o.cle).set(o) }catch(e){} }
 
   /* ---- état ---- */
-  let RELANCES=[], TACHES=[], MSGS=[], NONLUS={}, ENVOIS={}, OUVERTS=new Set(), FILTRE_BRANCHE='', DERNIER=null, PRECEDENT={};
+  /* confort de CET appareil : branche choisie et recherche reviennent à la réouverture (rien de partagé, rien de secret) */
+  const MEM={lire(k){try{return localStorage.getItem('tkdmc_'+k)}catch(e){return null}},ecrire(k,v){try{localStorage.setItem('tkdmc_'+k,v)}catch(e){}}};
+  let RELANCES=[], TACHES=[], MSGS=[], NONLUS={}, ENVOIS={}, OUVERTS=new Set(), FILTRE_BRANCHE=MEM.lire('branche')||'', DERNIER=null, PRECEDENT={}, DERNIER_ID=0;
   function lienTache(m,id){ return new RegExp('\\b(t[âa]ches?|task)\\s*n?°?\\s*'+id+'\\b','i').test((m.sujet||'')+' '+(m.corps||'')) }
 
   function classer(r){
@@ -530,7 +565,8 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
     TACHES.filter(r=>r.statut!=='fait').forEach(r=>{const k=String(r.qui||'?').toLowerCase(); if(k==='kevin'||k==='toutes')return; const o=g[k]=g[k]||{c:0,a:0,b:0,retard:0}; if(r.statut==='en_cours'||r.statut==='attend_kevin')o.c++; else if(r.statut==='a_faire')o.a++; else o.b++; const maj=Number(r.maj)||0; if(MSGS.some(m=>m.ts>maj&&lienTache(m,r.id)&&m.de!==r.qui))o.retard++;});
     Object.keys(NONLUS).forEach(k=>{k=k.toLowerCase(); if(k!=='kevin'&&k!=='toutes'&&k!=='kevin-tableau')g[k]=g[k]||{c:0,a:0,b:0,retard:0}});
     const cles=Object.keys(g).sort((x,y)=>((NONLUS[y]||0)+g[y].b*2+g[y].retard*2+g[y].a)-((NONLUS[x]||0)+g[x].b*2+g[x].retard*2+g[x].a));
-    if(!cles.length){box.appendChild(el('p','vide-liste','Personne n\'a rien en attente.'));return}
+    if(!cles.length){box.appendChild(el('p','vide-liste','Personne n\'a rien en attente.'));dessinerSante([],{});return}
+    const E={}; cles.forEach(k=>{E[k]=etatBranche(k)}); dessinerSante(cles,E);
     cles.forEach(k=>{
       const o=g[k], n=NONLUS[k]||0;
       const c=el('article','carte branche-carte'+(n>0||o.b>0||o.retard>0?' toi':'')+(FILTRE_BRANCHE===k?' choisie':'')); c.tabIndex=0; c.setAttribute('role','button');
@@ -538,8 +574,8 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
       c.appendChild(el('div','note',o.c+' en cours · '+o.a+' à faire · '+o.b+' bloquée(s) · '+n+' message(s) non lu(s)'));
       const dr=RELANCES.find(m=>String(m.a).toLowerCase()===k||String(m.a).toLowerCase()==='toutes');
       c.appendChild(el('div','quand',dr?'Ta dernière relance : '+jour(dr.ts)+' à '+hm(dr.ts)+' · '+(luPar(dr).includes(k)?'✅ lue':'⏳ pas encore lue'):'Aucune relance envoyée'));
-      const sv=MSGS.find(m=>String(m.de).toLowerCase()===k); c.appendChild(el('div','quand',sv?'Dernier signe de la branche : '+ilya(sv.ts):'Aucun message de cette branche depuis 4 jours'));
-      const rvv=REVEILS.find(x=>String(x.pont_id||'').toLowerCase()===k), ordi=/^(pc-|arbre-pc|moulin-pc|pont-lenovo|detente|reverse)/.test(k), morte=!rvv&&!ordi;
+      const e=E[k], rvv=e.rvv, ordi=e.ordi, morte=e.morte;
+      c.appendChild(el('div','quand',e.vu?'Dernière lecture / signe : '+ilya(e.vu)+(e.frais?' 🟢':' 🟠'):'Aucune lecture connue'));
       if(morte&&n>0)c.appendChild(el('div','qui','🪦 Aucune session vivante ne lit son courrier : ses '+n+' message(s) restent en attente. Relancer d\'ici ne la réveille pas.'));
       else if(o.retard)c.appendChild(el('div','qui','⚠️ '+o.retard+' tâche(s) pas à jour malgré du nouveau'));
       else if(n>0)c.appendChild(el('div','qui','⏳ elle n\'a pas encore lu son courrier'));
@@ -548,7 +584,7 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
         try{const num=await auPont(k,'Kevin (tableau) : relance','Kevin te relance depuis le tableau : lis tes messages non lus du pont, fais avancer tes tâches, mets CHAQUE ligne de la table taches à jour (statut + note datée) — le tableau signale celles qui ont reçu du nouveau sans être notées — et réponds.'); const rv=await reveiller([k],num); b.textContent='✔ Parti (n° '+num+')'+(rv.ok?' · relance programmée':(rv.sans?' · pas de session à relancer d\'ici':'')); setTimeout(actualiser,800)}
         catch(e){b.disabled=false;b.textContent=o2;c.appendChild(el('p','detail',raison(e,'envoyer')))} };
       c.appendChild(b);
-      const choisir=()=>{FILTRE_BRANCHE=FILTRE_BRANCHE===k?'':k; dessiner(); if(FILTRE_BRANCHE)document.getElementById('t-cours').scrollIntoView({behavior:'smooth',block:'start'})};
+      const choisir=()=>{FILTRE_BRANCHE=FILTRE_BRANCHE===k?'':k; MEM.ecrire('branche',FILTRE_BRANCHE); dessiner(); if(FILTRE_BRANCHE)document.getElementById('t-cours').scrollIntoView({behavior:'smooth',block:'start'})};
       c.addEventListener('click',choisir); c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choisir()}});
       box.appendChild(c);
     });
@@ -563,13 +599,13 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
   });
   document.addEventListener('keydown',ev=>{ if(ev.key!=='Enter'&&ev.key!==' ')return; const c=ev.target.closest&&ev.target.closest('.carte[data-id]'); if(!c||c!==ev.target)return; ev.preventDefault(); c.click() });
   document.querySelectorAll('a.compteur').forEach(a=>a.addEventListener('click',ev=>{ev.preventDefault();const s=document.getElementById(a.dataset.cible);if(s){s.scrollIntoView({behavior:'smooth',block:'start'});s.setAttribute('tabindex','-1');s.focus({preventScroll:true})}}));
-  $('#filtre-tout').addEventListener('click',()=>{FILTRE_BRANCHE='';$('#filtre').value='';dessiner()});
+  $('#filtre-tout').addEventListener('click',()=>{FILTRE_BRANCHE='';$('#filtre').value='';MEM.ecrire('branche','');MEM.ecrire('recherche','');dessiner()});
 
   /* ---- la lecture en direct ---- */
   let encours=false, echecs=0;
   async function actualiser(){
     if(encours||Date.now()<PAUSE_JUSQUA)return; encours=true;
-    const btn=$('#b-actu'), etat=$('#t-actu'), dir=$('#direct'); btn.disabled=true; btn.textContent='⏳ Lecture…';
+    const btn=$('#b-actu'), etat=$('#t-actu'), dir=$('#direct'); btn.disabled=true; btn.textContent='⏳ Lecture…'; $('#b-actu2').disabled=true;
     try{
       const avant={}; TACHES.forEach(r=>avant[r.id]=r.statut+'|'+r.maj);
       const t=lignes(await sql('SELECT id,projet,titre,statut,qui,lien,note,maj FROM taches ORDER BY id'),'statut');
@@ -578,22 +614,38 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
       try{ MSGS=lignes(await sql('SELECT id,ts,de,a,sujet,substr(corps,1,600) AS corps,lu_par FROM messages WHERE ts>CAST(? AS INTEGER) ORDER BY id DESC LIMIT 400',[depuis]),'ts').map(m=>({...m,ts:Number(m.ts)})) }catch(e){}
       try{ const nl=lignes(await sql("SELECT a, COUNT(*) AS n FROM messages WHERE id>(SELECT MAX(id)-400 FROM messages) AND a<>'toutes' AND (lu_par IS NULL OR instr(lu_par, a||';')=0) GROUP BY a"),'n'); NONLUS={}; nl.forEach(x=>NONLUS[String(x.a).toLowerCase()]=Number(x.n)) }catch(e){}
       try{ RELANCES=lignes(await sql("SELECT id,ts,a,sujet,lu_par FROM messages WHERE de='kevin-tableau' ORDER BY id DESC LIMIT 40"),'ts').map(m=>({...m,ts:Number(m.ts)})) }catch(e){}
-      MSGS.forEach(m=>{PONT[m.id]=m});
+      try{ CURS={}; lignes(await sql('SELECT branche,dernier_id,maj FROM curseurs'),'branche').forEach(x=>{CURS[String(x.branche).toLowerCase()]={id:Number(x.dernier_id),maj:tms(x.maj)}}) }catch(e){}
+      MSGS.forEach(m=>{PONT[m.id]=m}); DERNIER_ID=MSGS.reduce((a,m)=>Math.max(a,Number(m.id)||0),DERNIER_ID);
       try{ await lireReveils() }catch(e){}
       PRECEDENT=TACHES.length?avant:{};
       TACHES=t; DERNIER=Date.now(); echecs=0;
       dessiner(); dessinerEnvois(envoisCourants);
       $('#maj').textContent='En direct · lu à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+t.length+' tâches';
-      etat.textContent=''; dir.classList.remove('hors-ligne'); dir.textContent='En direct (toutes les 5 min)';
+      etat.textContent=''; dir.classList.remove('hors-ligne'); dir.textContent='En direct'; fraicheur();
     }catch(e){
       echecs++; dir.classList.add('hors-ligne'); dir.textContent='Pas à jour';
       const plein=QUOTA.test(JSON.stringify(e||'')+String(e&&e.message||''));
       if(plein)PAUSE_JUSQUA=Date.now()+1800000;
       etat.textContent=(plein?'Le quota gratuit de la base du pont est dépassé : il revient à minuit UTC (2 h du matin en France). En attendant, les branches écrivent dans la discussion GitHub n° 5236 (dépôt CMCteams). Je ne réessaie pas avant 30 min.':raison(e,'lire la liste'))+(DERNIER?' Dernière lecture '+ilya(DERNIER)+'.':'');
     }
-    encours=false; btn.disabled=false; btn.textContent='🔄 Actualiser maintenant';
+    encours=false; btn.disabled=false; btn.textContent='🔄 Actualiser maintenant'; $('#b-actu2').disabled=false;
   }
   setInterval(()=>{ if(document.visibilityState==='visible'&&echecs<5)actualiser() },PERIODE);
+  /* temps réel à coût quasi nul (quotas-gratuits.md) : toutes les 30 s on lit UNE ligne (le plus grand numéro de message, clé primaire) ;
+     la lecture complète ne part que si un nouveau message est arrivé, sinon elle reste à 5 min */
+  async function pouls(){
+    if(document.visibilityState!=='visible'||encours||!DERNIER||echecs>=5||Date.now()<PAUSE_JUSQUA)return;
+    try{ const r=lignes(await sql('SELECT MAX(id) AS m FROM messages'),'m'); const m=Number(r[0]&&r[0].m)||0; if(m>DERNIER_ID)actualiser() }catch(e){}
+  }
+  setInterval(pouls,30000);
+  function fraicheur(){
+    const F=$('#fraicheur'), B=$('#barre'); if(!F)return;
+    if(!DERNIER){F.textContent='lecture…';return}
+    const s=Math.round((Date.now()-DERNIER)/1000), vieux=s>600;
+    F.textContent='lu '+(s<5?'à l\'instant':s<60?'il y a '+s+' s':'il y a '+Math.round(s/60)+' min')+' · '+TACHES.length+' tâches'+(vieux?' · pas à jour':'');
+    B.classList.toggle('vieux',vieux);
+  }
+  setInterval(fraicheur,10000);
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){echecs=0;actualiser()} });
   setInterval(()=>{ if(TACHES.length&&!encours)dessiner() },60000);   /* les « il y a » avancent même sans changement */
 
@@ -658,10 +710,12 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
   function filtrer(){ const q=norm($('#filtre').value).trim(); let n=0;
     document.querySelectorAll('section .carte').forEach(c=>{ if(c.closest('#v-branches')||c.closest('#form-demande'))return; const ok=!q||norm(c.innerText+' '+(c.dataset.branche||'')).includes(q); c.classList.toggle('masque',!ok); if(ok)n++ });
     $('#filtre-vide').style.display=(q&&!n)?'inline':'none' }
-  $('#filtre').addEventListener('input',filtrer);
+  $('#filtre').addEventListener('input',()=>{MEM.ecrire('recherche',$('#filtre').value);filtrer()});
+  { const r=MEM.lire('recherche'); if(r)$('#filtre').value=r }
 
   $('#b-aut').addEventListener('click',autoriser);
   $('#b-actu').addEventListener('click',()=>{echecs=0;PAUSE_JUSQUA=0;actualiser()});
+  $('#b-actu2').addEventListener('click',()=>{echecs=0;PAUSE_JUSQUA=0;actualiser()});
   if(db){ db.collection('demandes').onSnapshot(s=>{ const liste=[]; s.docs.forEach(d=>{const x=d.data(); if(!x)return; if(x.tache){const k='t'+x.tache; if(!ENVOIS[k]||x.demande_le>ENVOIS[k].demande_le)ENVOIS[k]=x} else liste.push(x)}); dessinerEnvois(liste); if(TACHES.length)dessiner() },()=>{}) }
   actualiser();
 })();

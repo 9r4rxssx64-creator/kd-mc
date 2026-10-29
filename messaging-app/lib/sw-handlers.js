@@ -13,7 +13,7 @@
  *   - OFFLINE_CACHE  : fallback HTML hors-ligne
  */
 
-export const CACHE_VERSION = 'apex-chat-v1.1.352';
+export const CACHE_VERSION = 'apex-chat-v1.1.353';
 export const STATIC_CACHE = `${CACHE_VERSION}-static`;
 export const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 export const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
@@ -158,7 +158,7 @@ export async function handleFetchSWR(request, { fetch, caches, response }) {
 export function laisserLeNavigateur(request, origine) {
   try {
     const u = new URL(request.url);
-    return (!origine || u.origin === origine) && (u.pathname.startsWith('/__') || u.pathname === '/api/auth/sso-from-kdmc');
+    return ((!origine || u.origin === origine) && u.pathname.startsWith('/__')) || u.pathname === '/api/auth/sso-from-kdmc';   // sso-from-kdmc : l'API est sur une AUTRE origine (workers.dev), d'où aucune condition d'origine
   } catch { return false; }
 }
 

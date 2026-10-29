@@ -324,6 +324,7 @@
   "tests/verify-lieux-parite.mjs",
   "tests/verify-light-admin-reentrer.mjs",
   "tests/verify-light-audit-8-10.mjs",
+  "tests/verify-light-entete-largeur.mjs",
   "tests/verify-light-equipes-firebase.mjs",
   "tests/verify-light-faceid-code.mjs",
   "tests/verify-light-invite.mjs",

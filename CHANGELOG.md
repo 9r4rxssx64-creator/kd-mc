@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams light v1.115 — la barre du haut ne fait plus déborder la page sur iPhone (2026-10-29)
+- Mesuré en ligne par le robot public Servi (iPhone 13, Safari, connecté admin, run 40857034043) : la page débordait de 52 px, à cause du choix d'équipe (`select#boardSel`, 428 px sur un écran de 390) qui prend la largeur de son plus long libellé. Les listes de la barre du haut ne dépassent plus l'écran (`header select{max-width:100%}`), toujours 44 px de haut.
+- Garde : `tests/verify-light-entete-largeur.mjs` (375/390/412 px, libellé très long ; rouge sous `SABOTAGE=1`), dans `test:ci`. CMCteams v9.990 contrôlé par le même robot : 0 débordement, rien à changer.
 ## Javis / Bee v1.24 — la voix commence dès la 1re phrase (2026-10-29)
 - Une réponse de plus de 150 signes est coupée après sa première phrase : le son de la 1re phrase part seul pendant que la suite se fabrique (les deux sons sont demandés en même temps, le 2e enchaîne). Une réponse courte reste UN son ; si le 2e son manque, le téléphone dit seulement la suite.
 - Mesuré en navigateur : Bee parle après 477 ms au lieu de ~3 084 ms (réponse entière) avec une voix de test à 12 ms par signe. Garde : `tests/verify-javis-bee-reelle.mjs` (section « la 1re phrase part seule », rouge si on ne coupe jamais). Copies : `javis/`, `arbre/` ; `javis/sw.js` = javis-v1.24.

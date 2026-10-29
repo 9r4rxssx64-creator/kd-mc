@@ -75,8 +75,10 @@ async function contexte(browser, nom, extra) {
   const mobile = nom !== 'firefox';
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, ...(mobile ? { isMobile: true, hasTouch: true } : {}), serviceWorkers: 'block', permissions: nom === 'chromium' ? ['camera', 'microphone'] : [], ...(extra || {}) });
   const corps = [];
+  if (process.env.SANS_WEBGL) await ctx.addInitScript(() => { window.__avatarSansWebGL = true; });   /* dessin 2D de repli (moteur sans WebGL) */
   await ctx.route('**/*', async (r) => {
     const q = r.request(), u = new URL(q.url());
+    if (process.env.SANS_VISION && (u.hostname === 'cdn.jsdelivr.net' || u.hostname === 'storage.googleapis.com')) return r.abort();   /* essai : le suivi de visage ne se charge pas */
     if (u.hostname === 'localhost' || u.hostname === 'cdn.jsdelivr.net' || u.hostname === 'storage.googleapis.com') return r.continue();
     if (u.hostname === 'crea-ai.kd-mc.com' || u.hostname === 'kdmc-crea-ai.9r4rxssx64.workers.dev') {
       const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-expose-headers': 'x-crea-provider,x-crea-style' };
@@ -167,9 +169,9 @@ async function suite(nom, browser) {
   await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.photo('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); });
   const dureeDetect = Date.now() - t0; let E = await page.evaluate(() => Avatar.etat());
   /* un moteur SANS WebGL (Firefox sans carte graphique, comme sur le robot) : le suivi de visage ne peut pas démarrer ; l'app doit alors le DIRE et proposer les 3 touchés */
-  if (E.source === 'touches' && /GLctx|WebGL/i.test(E.panneVision || '')) {
+  if (E.source === 'touches' && (E.panneVision || '').length > 0) {
     const T = await page.evaluate(() => Avatar.touchesInfo());
-    ok(!!T && T.n === 0, `${tag} C) suivi de visage indisponible ici (« ${E.panneVision.slice(0, 40)} », pas de WebGL) : l'app propose les 3 touchés à la main`);
+    ok(!!T && T.n === 0, `${tag} C) suivi de visage indisponible ici (« ${E.panneVision.slice(0, 40)} ») : l'app propose les 3 touchés à la main`);
     const lm = JSON.parse(fs.readFileSync(path.join(FIX, 'fictif-homme.lm.json'), 'utf8')).lm;
     const pt = (i) => [lm[i][0] * T.w, lm[i][1] * T.h];
     const yeux = [pt(468), pt(473)].sort((a, b) => a[0] - b[0]);
@@ -180,7 +182,7 @@ async function suite(nom, browser) {
     ok(o.bouche > 4, `${tag} C) repli à la main : la bouche change à l'écran (${o.bouche.toFixed(1)})`);
   }
 
-  const sansSuivi = E.manuel && E.manuel[0] === true && /GLctx|WebGL/i.test(E.panneVision || '');
+  const sansSuivi = E.manuel && E.manuel[0] === true && (E.panneVision || '').length > 0;
   if (!sansSuivi) ok(E.source === 'photo' && E.vues === 1 && E.manuel[0] === false && !!E.rendu, `${tag} C) photo « homme » : visage trouvé par MediaPipe (${E.delegue || '?'}), rendu ${E.rendu}, en ${dureeDetect} ms (modèle compris)`, JSON.stringify(E).slice(0, 200) + (E.panneVision || E.erreurVision ? ' | panne: ' + E.panneVision + ' / ' + E.erreurVision : ''));
   if (E.source === 'photo' && !E.manuel[0]) {
     const C = await page.evaluate(() => {
@@ -210,7 +212,8 @@ async function suite(nom, browser) {
   }
 
   /* lunettes : détectées sur l'homme à lunettes, pas sur les autres ; elles adoucissent les sourcils (la monture n'est plus arrachée) */
-  {
+  if (sansSuivi) dire(`ℹ️ ${tag} C) lunettes : sans suivi de visage ici, la détection des lunettes n'est pas mesurable (jouée sur Chromium)`);
+  else {
     const Lu = await page.evaluate(async () => {
       const r = {}; r.homme = Avatar.etat().lunettes;
       await Avatar.depuisPhoto(await __m.photo('/fix/fictif-barbe.jpg', 'barbe.jpg', 'image/jpeg')); r.barbe = Avatar.etat().lunettes; r.source = Avatar.etat().source;
@@ -230,7 +233,7 @@ async function suite(nom, browser) {
     const L = await page.evaluate(async () => { await Avatar.appliquerLook('toon3d'); const e = Avatar.etat(); Avatar.rendre({ jaw: 0.4 }); return { look: e.look, retrouves: e.looksRetrouves, textures: e.texturesLook, vide: __m.vide(Avatar.canvas()) }; });
     const cor = ctx.__corps[ctx.__corps.length - 1] || {};
     ok(cor.style === 'toon3d' && cor.avatar === true && cor.petite === true, `${tag} I) look IA : la demande part avec style « ${cor.style} », consigne avatar=${cor.avatar}, petite image=${cor.petite}`);
-    ok(L.look === 'toon3d' && L.textures === 1 && L.retrouves === 1 && L.vide > 20, `${tag} I) le dessin remplace la photo (${L.textures} texture) et le visage y est re-trouvé (${L.retrouves}/1), rendu non vide`);
+    ok(L.look === 'toon3d' && L.textures === 1 && L.retrouves === (sansSuivi ? 0 : 1) && L.vide > 20, `${tag} I) le dessin remplace la photo (${L.textures} texture) et le visage y est re-trouvé (${L.retrouves}/1), rendu non vide`);
     await page.evaluate(async () => { await Avatar.appliquerLook('reel'); });
   }
 

@@ -10,8 +10,19 @@
  *   node tools/plateformes/verifier-servi.mjs https://autorisations.kd-mc.com/ [autre-adresse…]
  * Seules les adresses *.kd-mc.com sont ouvertes (le cookie admin ne sort jamais du domaine).
  */
-import { chromium, webkit } from 'playwright';
+import { chromium, webkit, devices } from 'playwright';
 import { ECRANS, mesurer, connecterAdmin, lectureSeule } from './verif-affichage-domaine.mjs';
+
+/* Écrans supplémentaires PROPRES À CE ROBOT (Kevin 29.10 : « portrait ET paysage sur tous les appareils, toujours » —
+ * minimum iPhone 390x844 et 844x390, iPad 820x1180 et 1180x820). Définis ICI, pas ajoutés à ECRANS (partagé par
+ * verif-affichage-domaine.mjs et ses propres gardes) : ne pas alourdir ni changer le comportement des autres robots. */
+const ECRANS_SUPPL = [
+  { nom: 'iphone-13-paysage', tel: true, ...devices['iPhone 13'], viewport: { width: 844, height: 390 } },
+  { nom: 'ipad-portrait', tel: true, ...devices['iPad Mini'], viewport: { width: 820, height: 1180 } },
+  { nom: 'ipad-paysage', tel: true, ...devices['iPad Mini'], viewport: { width: 1180, height: 820 } },
+];
+export const NOMS_ECRANS_SERVI = ['iphone-13', 'portable', 'iphone-13-paysage', 'ipad-portrait', 'ipad-paysage'];
+export function trouverEcranServi(nom) { return ECRANS.find((e) => e.nom === nom) || ECRANS_SUPPL.find((e) => e.nom === nom); }
 
 export const HOTE_PERMIS = /^(?:[a-z0-9-]+\.)*kd-mc\.com$/i;
 export function adresseSure(a) {
@@ -67,8 +78,8 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
   const bw = process.env.WEBKIT === '1' ? await webkit.launch({ headless: true }).catch(() => null) : null;
   const sortie = [];
   try {
-    for (const nom of ['iphone-13', 'portable']) {
-      const ec = ECRANS.find((e) => e.nom === nom); const { nom: _n, tel, explorer: _e, ...opts } = ec; delete opts.defaultBrowserType;
+    for (const nom of NOMS_ECRANS_SERVI) {
+      const ec = trouverEcranServi(nom); const { nom: _n, tel, explorer: _e, ...opts } = ec; delete opts.defaultBrowserType;
       const moteur = bw && nom === 'iphone-13' ? bw : b;
       const ctx = await moteur.newContext({ ...opts }); await lectureSeule(ctx);
       const page = await ctx.newPage();

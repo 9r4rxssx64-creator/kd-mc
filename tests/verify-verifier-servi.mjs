@@ -7,7 +7,7 @@ import { readFileSync, existsSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
-import { adresseSure, mesurerServi } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi } from '../tools/plateformes/verifier-servi.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
 const exe = process.env.PW_EXE || ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => existsSync(p));
@@ -43,5 +43,12 @@ ok('3. aucun texte de page dans la mesure', !/secret|Dupont|Léa/.test(sortie), 
 const wf = readFileSync(new URL('../.github/workflows/verifier-servi.yml', import.meta.url), 'utf8');
 ok('4a. workflow : à la main seulement, jamais de cron', /workflow_dispatch:/.test(wf) && !/^\s*schedule:/m.test(wf) && !/cron:/.test(wf));
 ok('4b. workflow : lit le secret sans l’écrire', /secrets\.APEX_ADMIN_PIN_SHA256/.test(wf) && !/echo[^\n]*APEX_ADMIN_PIN/.test(wf));
+/* 5 (Kevin 29.10 : « portrait ET paysage sur tous les appareils, toujours » — minimum iPhone 390x844 et 844x390,
+   iPad 820x1180 et 1180x820) : les 5 écrans sont bien ceux mesurés, avec les dimensions exactes demandées. */
+ok('5a. iPhone 13 portrait = 390×664 (déjà mesuré, écran partagé ECRANS inchangé)', trouverEcranServi('iphone-13')?.viewport?.width === 390 && trouverEcranServi('iphone-13').viewport.height === 664);
+ok('5b. iPhone 13 paysage = 844×390', trouverEcranServi('iphone-13-paysage')?.viewport?.width === 844 && trouverEcranServi('iphone-13-paysage').viewport.height === 390);
+ok('5c. iPad portrait = 820×1180', trouverEcranServi('ipad-portrait')?.viewport?.width === 820 && trouverEcranServi('ipad-portrait').viewport.height === 1180);
+ok('5d. iPad paysage = 1180×820', trouverEcranServi('ipad-paysage')?.viewport?.width === 1180 && trouverEcranServi('ipad-paysage').viewport.height === 820);
+ok('5e. les 5 écrans sont bien ceux parcourus par le robot', NOMS_ECRANS_SERVI.length === 5 && NOMS_ECRANS_SERVI.every((n) => !!trouverEcranServi(n)), NOMS_ECRANS_SERVI.join(','));
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Vérifier le servi : domaine seul, pastille détectée, aucun texte, robot public sans cron'));
 process.exit(ko ? 1 : 0);

@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 241 règles — le texte de Kevin, une par une
+## 📜 Les 242 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1048,6 +1048,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🧭 RÈGLE ABSOLUE — QUI FAIT QUOI : ROBOTS GRATUITS POUR LE RÉPÉTITIF, UNE PRISE AVANT CHAQUE LOT, JAMAIS DEUX FOIS LE MÊME TRAVAIL (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Vérifie que tout soit bien organisé pour que tous les robots travaillent pour soulager toutes les branches, que tout soit bien réparti, que tout soit mis au courant pour pas qu'on travaille […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-qui-fait-quoi-robots-gratuits-pour-le-répétitif-une-prise-avant-chaque-lot-jamais-deux-fois-le-même-travail-kevin-2026-10-29-absolue-toutes-les-branches)
+
+### 🌳 RÈGLE ABSOLUE — ARBRE : CHAQUE MODIFICATION, PAR N'IMPORTE QUEL COMPTE, EST PROPAGÉE ET RELUE AUTOMATIQUEMENT (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« À chaque modification, peu importe par quel compte ou par qui, tout doit être mis à jour automatiquement en toute autonomie. Et vérifié sur erreur. Toujours gratuit, sécurisé, temps réel, […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-chaque-modification-par-nimporte-quel-compte-est-propagée-et-relue-automatiquement-kevin-2026-10-29-absolue-toutes-les-branches)
 
 ### 🎛️ RÈGLE ABSOLUE — UN SEUL ENDROIT POUR TOUT COMMANDER : LE TABLEAU DE BORD ADMIN ; LE PORTAIL N'A QU'UNE CARTE ADMIN, ET UNE INFO N'EST AFFICHÉE QUE DANS UNE PAGE (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve une solution pour les différents liens, accès, vues… où c'est des doublons d'informations : on regroupe tout au maximum à un seul endroit. J'ai beaucoup d'endroits où j'ai les visites, […]

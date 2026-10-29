@@ -182,6 +182,12 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
         const js = [];
         const onErr = (e) => js.push(String(e && e.message).replace(/["'«][^"'»]{12,}["'»]/g, '"…"').replace(/\S+@\S+/g, '…@…').replace(/\d{6,}/g, '…').slice(0, 70));
         page.on('pageerror', onErr);
+        /* 29.10.2026 (pont 1356 : « refus CORS » vers apex-depot-relais, 146 erreurs, que le relais ne reproduit pas au curl) : noter POURQUOI (échec réseau ou réponse ≥ 400, ACAO présent ou non) — hôtes seulement, jamais de chemin ni de texte. */
+        const reseau = [];
+        const hote = (u) => { try { return new URL(u).host.slice(0, 40); } catch { return '?'; } };
+        const onFail = (q) => { if (reseau.length < 3) reseau.push('échec ' + hote(q.url()) + ' ' + String((q.failure() || {}).errorText || '?').slice(0, 60)); };
+        const onRep = (r) => { if (reseau.length < 3 && r.status() >= 400) reseau.push(r.status() + ' ' + hote(r.url()) + ' acao=' + (r.headers()['access-control-allow-origin'] ? 'oui' : 'non')); };
+        page.on('requestfailed', onFail); page.on('response', onRep);
         const t0 = Date.now(); let st = 0, m = null, err = '';
         try {
           const rep = await page.goto(url(h), { waitUntil: 'load', timeout: 30000 });
@@ -190,7 +196,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
           await page.evaluate(() => window.scrollTo(0, 0));
           m = await page.evaluate(mesurer, tel);
         } catch (e) { err = String(e && e.message).split('\n')[0].slice(0, 90); }
-        page.off('pageerror', onErr);
+        page.off('pageerror', onErr); page.off('requestfailed', onFail); page.off('response', onRep);
         /* un niveau plus loin (écrans « explorer ») : toucher chaque onglet/menu, remesurer, noter s'il a réagi et si un retour existe */
         let explo = null;
         if (m && ec.explorer) {
@@ -223,6 +229,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
         if (m && m.cache) journal('   ↳ caché : ' + m.cacheEx.join(' | '));
         if (m && m.haut) journal('   ↳ haut : ' + m.hautEx.join(' | '));
         if (js.length) journal('   ↳ js : ' + [...new Set(js)].slice(0, 2).join(' | '));
+        if (js.length && reseau.length) journal('   ↳ réseau : ' + reseau.join(' | '));
         if (explo) journal(`   ↳ exploré : ${explo.touches} touché(s) · ${explo.morts} sans réaction · ${explo.sansRetour} page(s) sans retour · ${explo.cache} caché(s) · haut ${explo.haut} · déborde ${explo.deborde}${explo.ex.length ? ' · ' + explo.ex.join(' | ') : ''}`);
       }
       await ctx.close();

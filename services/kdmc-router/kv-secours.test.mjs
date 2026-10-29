@@ -117,5 +117,24 @@ console.log('\n== 8. VRAI routeur, KV plein + vieux journal : chaque alerte s\'a
   const noms = (log || []).filter((e) => e.type === 'demande_chef').map((e) => e.name).sort();
   ok(noms.join() === 'Alice T,Bruno T,Chloé T' && log.some((e) => e.ev === 'vieux_evenement'), '8b. les TROIS demandes sont dans le journal (avant : seule la dernière survivait), l\'ancien événement aussi', log);
 }
+
+console.log('\n== 9. Quota D1 : le secours ne relit plus la table, et il se vide tout seul (29.10, kdmc-cercle 5,3 M lignes lues le 25.10) ==');
+{
+  const kv = kvFaux(), db = d1(); const S = kvAvecSecours(kv, db);
+  kv.refuser(true);
+  for (let i = 0; i < 25; i++) await S.put('del:' + i, 'v' + i, { expirationTtl: 3600 });
+  kv.refuser(false);
+  db.q.length = 0;
+  const reel = Date.now; Date.now = () => reel() + 6000;   // le mémo « le secours a des lignes » (5 s) est périmé : la vérification se refait
+  try { await S.get('rien:1'); } finally { Date.now = reel; }
+  ok(!db.q.some((x) => /COUNT\(\*\)/i.test(x)), '9. la vérification « le secours a-t-il des lignes ? » n\'est plus un COUNT(*) (il relisait toute la table à chaque passage)', db.q);
+  ok(db.q.some((x) => /SELECT 1 AS n FROM kv_secours LIMIT 1/.test(x)), '9b. elle lit UNE ligne (LIMIT 1)');
+  await attendre(); await attendre();
+  ok(db._s.prepare('SELECT COUNT(*) AS n FROM kv_secours').get().n === 15 && [...kv.m.keys()].filter((k) => k.startsWith('del:')).length === 10, '9c. le KV accepte de nouveau : 10 lignes reversées au KV et parties du secours (les 15 autres au passage suivant)');
+  const kv2 = kvFaux(), db2 = d1(); const S2 = kvAvecSecours(kv2, db2);
+  kv2.refuser(true); for (let i = 0; i < 5; i++) await S2.put('del:' + i, 'v', { expirationTtl: 3600 });
+  await S2.get('rien:1'); await attendre(); await attendre();
+  ok(db2._s.prepare('SELECT COUNT(*) AS n FROM kv_secours').get().n === 5 && kv2.m.size === 0, '9d. tant que le KV refuse, rien ne part du secours (aucune perte)');
+}
 console.log(`\n${pass} ✅ / ${fail} ❌\n`);
 process.exit(fail ? 1 : 0);

@@ -37,10 +37,28 @@ export function kvAvecSecours(kv, db, journal) {
   let par = PAR_KV.get(kv); if (!par) { par = new WeakMap(); PAR_KV.set(kv, par); }
   const deja = par.get(db); if (deja) return deja;
   let lignes = { n: null, t: 0 };   // cache « le secours a des lignes » (par isolat)
+  let dernierVidage = 0;
+  /* Le KV accepte de nouveau : on y reverse le secours, 10 lignes par minute et par machine, sans attendre personne ; au premier refus on s'arrête
+     (le plafond du jour est revenu). Table vide = plus aucune lecture D1 ajoutée aux lectures du KV. */
+  const vider = () => {
+    if (Date.now() - dernierVidage < 60000) return; dernierVidage = Date.now();
+    Promise.resolve().then(async () => {
+      const l = await db.prepare('SELECT k, v, exp FROM kv_secours LIMIT 10').all();
+      for (const r of (l && l.results) || []) {
+        if (r.exp && r.exp < Date.now()) { await db.prepare('DELETE FROM kv_secours WHERE k = ? AND v = ?').bind(r.k, r.v).run(); continue; }
+        try { await (r.exp ? kv.put(r.k, r.v, { expiration: Math.ceil(r.exp / 1000) }) : kv.put(r.k, r.v)); } catch { return; }
+        await db.prepare('DELETE FROM kv_secours WHERE k = ? AND v = ?').bind(r.k, r.v).run();
+      }
+    }).catch(() => {});
+  };
   const aDesLignes = async () => {
     if (lignes.n !== null && Date.now() - lignes.t < VERIF_LIGNES_MS) return lignes.n > 0;
-    try { await preparer(db); const r = await db.prepare('SELECT COUNT(*) AS n FROM kv_secours').first(); lignes = { n: Number(r && r.n) || 0, t: Date.now() }; }
+    /* 29.10 (mesuré par `mesure-quotas.yml` : kdmc-cercle 4,9 M lignes lues le 23.10 et 5,3 M le 25.10, ≈ 52 lignes lues par requête, ≈ 100 000 requêtes/jour = le plafond
+       gratuit de D1 coulé) : `COUNT(*)` relisait TOUTE la table (90 lignes restées là depuis le 17.10) à chaque passage de chaque machine. « Y a-t-il au moins
+       une ligne ? » se lit en UNE ligne : `LIMIT 1`. Et le secours se vide tout seul (vider, ci-dessous) : plus de lecture D1 avant chaque lecture du KV. */
+    try { await preparer(db); const r = await db.prepare('SELECT 1 AS n FROM kv_secours LIMIT 1').first(); lignes = { n: r ? 1 : 0, t: Date.now() }; }
     catch { lignes = { n: 0, t: Date.now() }; }
+    if (lignes.n > 0) vider();
     return lignes.n > 0;
   };
   const effacerSecours = async (k) => { if (lignes.n === 0 && Date.now() - lignes.t < VERIF_LIGNES_MS) return; try { await preparer(db); await db.prepare('DELETE FROM kv_secours WHERE k = ?').bind(k).run(); } catch { /* */ } };

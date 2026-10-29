@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 242 règles — le texte de Kevin, une par une
+## 📜 Les 243 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1056,6 +1056,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🎛️ RÈGLE ABSOLUE — UN SEUL ENDROIT POUR TOUT COMMANDER : LE TABLEAU DE BORD ADMIN ; LE PORTAIL N'A QU'UNE CARTE ADMIN, ET UNE INFO N'EST AFFICHÉE QUE DANS UNE PAGE (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve une solution pour les différents liens, accès, vues… où c'est des doublons d'informations : on regroupe tout au maximum à un seul endroit. J'ai beaucoup d'endroits où j'ai les visites, […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-un-seul-endroit-pour-tout-commander-le-tableau-de-bord-admin-le-portail-na-quune-carte-admin-et-une-info-nest-affichée-que-dans-une-page-kevin-2026-10-29-absolue-toutes-les-branches)
+
+### 🔁 RÈGLE ABSOLUE — QUAND KEVIN RELANCE, TOUT LE MONDE EST RELANCÉ RÉELLEMENT, ET LE TABLEAU NE DIT « RELANCÉ » QU'AVEC LA PREUVE (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Vérifie dans mon tableau de bord quand je relance mes sessions si vraiment tout est à jour et pourquoi j'ai beaucoup de branches rouges qui ne lisent pas les messages. Tout doit être actualisé […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-quand-kevin-relance-tout-le-monde-est-relancé-réellement-et-le-tableau-ne-dit-relancé-quavec-la-preuve-kevin-2026-10-29-absolue-toutes-les-branches)
 
 ---
 

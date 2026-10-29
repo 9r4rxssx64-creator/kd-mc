@@ -1,0 +1,669 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tableau KDMC</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Mise en page : une colonne lisible au téléphone ; d'abord « À toi », puis l'avancement des branches, puis qui est qui. */
+:root{
+  --bg:#f3f4f7; --surface:#ffffff; --fg:#161a23; --muted:#5b6272; --line:#dfe2ea;
+  --accent:#c8102e; /* rouge Monaco */
+  --toi:#b45309; --toi-bg:#fff4e2;
+  --cours:#1d4ed8; --cours-bg:#e8efff;
+  --afaire:#4b5563; --afaire-bg:#eef0f3;
+  --fait:#15803d; --fait-bg:#e6f6ec;
+  --bloque:#b91c1c; --bloque-bg:#fde8e8;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f121a; --surface:#181c27; --fg:#eceff5; --muted:#a1a8b8; --line:#2a3040;
+  --accent:#ff4d63;
+  --toi:#fbbf63; --toi-bg:#33260f; --cours:#8fb0ff; --cours-bg:#18233d;
+  --afaire:#c2c8d4; --afaire-bg:#232836; --fait:#6fd396; --fait-bg:#143021;
+  --bloque:#ff8a8a; --bloque-bg:#3a1717; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f121a; --surface:#181c27; --fg:#eceff5; --muted:#a1a8b8; --line:#2a3040;
+  --accent:#ff4d63;
+  --toi:#fbbf63; --toi-bg:#33260f; --cours:#8fb0ff; --cours-bg:#18233d;
+  --afaire:#c2c8d4; --afaire-bg:#232836; --fait:#6fd396; --fait-bg:#143021;
+  --bloque:#ff8a8a; --bloque-bg:#3a1717; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:28px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.05}
+h1 span{color:var(--accent)}
+.maj{color:var(--muted);font-size:14px;margin-top:6px}
+.compteurs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.compteur{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:2px}
+.compteur b{font-family:var(--display);font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.compteur small{color:var(--muted);font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+.compteur.toi b{color:var(--toi)} .compteur.cours b{color:var(--cours)} .compteur.fait b{color:var(--fait)}
+section{display:grid;gap:12px}
+h2{font-size:21px;font-weight:600;display:flex;align-items:baseline;gap:10px}
+h2 .n{font-family:var(--body);font-size:14px;color:var(--muted);font-weight:400}
+.sous{color:var(--muted);font-size:15px;margin:-6px 0 0}
+.liste{display:grid;gap:10px}
+.carte{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:8px;min-width:0}
+.carte.toi{border-color:color-mix(in srgb,var(--toi) 45%,var(--line));background:linear-gradient(var(--toi-bg),var(--surface) 70%)}
+.haut{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.puce{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:3px 9px}
+.puce.toi{color:var(--toi);background:var(--toi-bg)} .puce.cours{color:var(--cours);background:var(--cours-bg)}
+.puce.afaire{color:var(--afaire);background:var(--afaire-bg)} .puce.fait{color:var(--fait);background:var(--fait-bg)}
+.projet{font-size:13px;color:var(--muted)}
+.titre{font-weight:700;font-size:17px;line-height:1.35}
+.note{color:var(--muted);font-size:15px}
+.qui{font-size:14px} .qui strong{font-weight:700}
+.bouton{justify-self:start;display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:10px 14px;font-size:15px}
+.bouton:focus-visible,a:focus-visible{outline:3px solid var(--cours);outline-offset:2px}
+.urgence{font-size:13px;font-weight:700;color:var(--muted)}
+.compact .carte{padding:10px 14px;gap:4px}
+.qui-est-qui{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.lieu{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;min-width:0}
+.lieu h3{font-family:var(--display);font-size:17px;margin:0}
+.lieu ul{margin:0;padding-left:18px;color:var(--muted);font-size:15px;display:grid;gap:3px}
+.lieu ul b{color:var(--fg)}
+.liens{display:flex;flex-wrap:wrap;gap:8px}
+.liens a{color:var(--fg);text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-size:15px}
+.pied{color:var(--muted);font-size:13px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-top:1px dashed var(--line);padding-top:10px}
+.btn{font:inherit;font-weight:700;border-radius:10px;padding:10px 14px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn.ok{background:var(--fait);color:#fff;border-color:transparent}
+.btn.go{background:var(--cours);color:#fff;border-color:transparent}
+.btn[disabled]{opacity:.55;cursor:default}
+.btn:focus-visible{outline:3px solid var(--cours);outline-offset:2px}
+.etat{font-size:14px;font-weight:700;display:inline-flex;gap:6px;align-items:center;border-radius:8px;padding:5px 10px}
+.etat.verif{color:var(--cours);background:var(--cours-bg)} .etat.bon{color:var(--fait);background:var(--fait-bg)}
+.etat.revoir{color:var(--bloque);background:var(--bloque-bg)} .etat.envoye{color:var(--cours);background:var(--cours-bg)}
+.detail{flex-basis:100%;color:var(--muted);font-size:14px;margin:0}
+.demande{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:10px}
+.demande label{font-weight:700;font-size:15px}
+.demande select,.demande textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;box-sizing:border-box}
+.demande textarea{min-height:84px;resize:vertical}
+.hors{font-size:14px;color:var(--muted);background:var(--afaire-bg);border-radius:10px;padding:10px 12px}
+.carte.fini{opacity:.7}
+a.compteur{color:inherit;text-decoration:none;cursor:pointer}
+a.compteur:hover{border-color:var(--accent)}
+a.compteur:focus-visible{outline:3px solid var(--cours);outline-offset:2px}
+.compteur small::after{content:" ›";opacity:.6}
+section{scroll-margin-top:12px}
+details.groupe{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0}
+details.groupe>summary{cursor:pointer;font-weight:700;padding:14px 16px;min-height:44px;box-sizing:border-box;list-style-position:inside}
+details.groupe>summary:focus-visible{outline:3px solid var(--cours);outline-offset:2px}
+details.groupe[open]>summary{border-bottom:1px dashed var(--line)}
+details.groupe>.liste{padding:10px}
+.actu{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.etat-actu{color:var(--muted);font-size:14px}
+.etapes{margin:0;padding-left:22px;display:grid;gap:8px;font-size:15px}
+.etapes li{padding-left:2px}
+.etapes li::marker{font-weight:700;color:var(--toi)}
+.etapes a{color:var(--accent);font-weight:700}
+.etapes code,.note code{font-size:14px;background:var(--afaire-bg);border-radius:4px;padding:1px 5px}
+.verifie{font-size:13px;color:var(--fait)}
+.attente{color:var(--muted);font-size:15px}
+.boutons{display:flex;flex-wrap:wrap;gap:8px}
+@media (prefers-reduced-motion:no-preference){.bouton{transition:filter .15s}.bouton:hover{filter:brightness(1.1)}}
+.envoi .heure{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.suivi{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:14px;color:var(--muted)}
+h3.jour{font-family:var(--display);font-size:15px;margin:8px 0 0;color:var(--fg)}
+/* ---- Design 23.10 : verre dépoli, dégradés, cartes vivantes, tout cliquable, mobile d'abord ---- */
+:root{--glass:rgba(255,255,255,.66);--glass-b:rgba(255,255,255,.9);--ombre:0 10px 30px -18px rgba(20,32,70,.45);--grad:linear-gradient(135deg,#c8102e,#ff7a3d)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glass:rgba(28,33,48,.66);--glass-b:rgba(40,47,68,.85);--ombre:0 12px 34px -18px rgba(0,0,0,.8);--grad:linear-gradient(135deg,#ff4d63,#ffa14d)}}
+:root[data-theme="dark"]{--glass:rgba(28,33,48,.66);--glass-b:rgba(40,47,68,.85);--ombre:0 12px 34px -18px rgba(0,0,0,.8);--grad:linear-gradient(135deg,#ff4d63,#ffa14d)}
+body{background:radial-gradient(900px 480px at 8% -8%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 62%),radial-gradient(760px 420px at 100% 4%,color-mix(in srgb,var(--cours) 16%,transparent),transparent 58%),radial-gradient(700px 500px at 50% 110%,color-mix(in srgb,var(--fait) 10%,transparent),transparent 60%),var(--bg);background-attachment:fixed;-webkit-font-smoothing:antialiased}
+.wrap{max-width:800px;gap:26px}
+h1{font-size:clamp(34px,8vw,50px);letter-spacing:-.035em}
+h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-size:22px;letter-spacing:-.015em}
+.maj{font-size:13px;letter-spacing:.03em;text-transform:uppercase;opacity:.9}
+.compteurs{gap:12px}
+.compteur{border-radius:20px;padding:16px 16px 14px;background:var(--glass);backdrop-filter:blur(10px) saturate(1.3);-webkit-backdrop-filter:blur(10px) saturate(1.3);box-shadow:var(--ombre);border:1px solid var(--glass-b)}
+.compteur b{font-size:42px;letter-spacing:-.04em}
+a.compteur{min-height:44px}
+@media (prefers-reduced-motion:no-preference){.compteur,.carte,.btn,.bouton{transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}.compteur:hover,.carte:hover{transform:translateY(-2px)}.btn:not([disabled]):hover{transform:translateY(-1px);filter:brightness(1.06)}.btn:not([disabled]):active{transform:scale(.97)}}
+.carte{border-radius:18px;background:var(--glass);backdrop-filter:blur(8px) saturate(1.2);-webkit-backdrop-filter:blur(8px) saturate(1.2);border:1px solid var(--glass-b);box-shadow:var(--ombre);position:relative;overflow:hidden;padding:16px 18px 16px 22px}
+.carte::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--cours)}
+.carte.toi::before{background:var(--toi)}
+.carte.fini::before,.compact .carte .puce.fait{background:var(--fait)}
+.carte .puce.afaire~*{}
+.carte:has(.puce.afaire)::before{background:var(--afaire)}
+.carte:has(.puce.fait)::before{background:var(--fait)}
+.carte.toi{background:linear-gradient(135deg,var(--toi-bg),var(--glass) 62%)}
+.puce{letter-spacing:.07em;font-size:11.5px;padding:4px 10px}
+.titre{font-size:17px;letter-spacing:-.01em}
+.btn{border-radius:14px;min-height:44px;padding:11px 16px;background:var(--glass);backdrop-filter:blur(6px);box-shadow:var(--ombre)}
+.btn.go{background:linear-gradient(135deg,var(--cours),color-mix(in srgb,var(--cours) 65%,#7c3aed));box-shadow:0 10px 24px -12px var(--cours)}
+.btn.ok{background:linear-gradient(135deg,var(--fait),color-mix(in srgb,var(--fait) 70%,#0ea5a4))}
+.bouton{background:var(--grad);border-radius:14px;min-height:44px;box-shadow:0 10px 24px -12px var(--accent)}
+.liens a{min-height:44px;display:inline-flex;align-items:center;border-radius:999px;background:var(--glass);backdrop-filter:blur(6px);box-shadow:var(--ombre)}
+.liens a:hover{border-color:var(--accent)}
+.lieu,.demande{border-radius:18px;background:var(--glass);backdrop-filter:blur(8px);box-shadow:var(--ombre);border:1px solid var(--glass-b)}
+details.groupe{border-radius:18px;background:var(--glass);backdrop-filter:blur(8px);box-shadow:var(--ombre);border:1px solid var(--glass-b)}
+details.groupe>summary{font-family:var(--display);font-size:17px}
+#v-branches{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+#v-branches .carte{align-content:start}
+.filtre{display:flex;gap:8px;align-items:center}
+.filtre input{flex:1;font:inherit;color:var(--fg);background:var(--glass);border:1px solid var(--glass-b);border-radius:16px;padding:13px 16px;min-height:48px;box-shadow:var(--ombre);backdrop-filter:blur(8px);box-sizing:border-box}
+.filtre input:focus-visible{outline:3px solid var(--cours);outline-offset:2px}
+.filtre .vide{display:none;color:var(--muted);font-size:14px}
+.carte.masque,details.groupe.masque{display:none}
+.rapide{display:flex;flex-wrap:wrap;gap:8px}
+.rapide a{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14.5px;color:var(--fg);background:var(--glass);border:1px solid var(--glass-b);box-shadow:var(--ombre)}
+.rapide a:hover{border-color:var(--accent)}
+@media (max-width:520px){h1{font-size:36px}.compteur b{font-size:36px}.compteur{padding:12px}}
+</style>
+<style>
+/* ---- 24.10 : tout vient de la liste des tâches EN DIRECT (relue seule toutes les 30 s), tout se touche ---- */
+.compteurs{grid-template-columns:repeat(4,1fr)}
+@media (max-width:520px){.compteurs{grid-template-columns:repeat(2,1fr)}}
+.compteur.afaire b{color:var(--afaire)}
+.compteur.bouge b{animation:bouge .6s ease}
+@keyframes bouge{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.compteur.bouge b{animation:none}}
+.direct{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--fait);font-weight:700}
+.direct::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 0 0 currentColor}
+@media (prefers-reduced-motion:no-preference){.direct::before{animation:pouls 2s infinite}}
+@keyframes pouls{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--fait) 60%,transparent)}100%{box-shadow:0 0 0 8px transparent}}
+.direct.hors-ligne{color:var(--bloque)}
+.carte[data-id]{cursor:pointer}
+.carte[data-id]:focus-visible{outline:3px solid var(--cours);outline-offset:2px}
+.carte .plus{display:none;gap:8px}
+.carte.ouvert .plus{display:grid}
+.carte:not(.ouvert) .note{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.carte .ouvrir{font-size:13px;color:var(--muted)}
+.carte.ouvert .ouvrir{display:none}
+.drapeau{font-size:12.5px;font-weight:700;border-radius:8px;padding:4px 9px;display:inline-flex;gap:5px;align-items:center}
+.drapeau.retard{color:var(--toi);background:var(--toi-bg)}
+.drapeau.neuf{color:var(--cours);background:var(--cours-bg)}
+.puce.bloque{color:var(--bloque);background:var(--bloque-bg)}
+.carte:has(.puce.bloque)::before{background:var(--bloque)}
+.quand{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.msgs{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.msgs li{font-size:14px;background:var(--afaire-bg);border-radius:10px;padding:8px 10px}
+.msgs li b{display:block;font-size:13.5px}
+.msgs li span{color:var(--muted)}
+.vide-liste{color:var(--muted);font-size:15px}
+.branche-carte{cursor:pointer}
+.branche-carte.choisie{outline:3px solid var(--accent);outline-offset:2px}
+.filtre-actif{display:none;align-items:center;gap:8px;font-size:14px}
+.filtre-actif.on{display:flex}
+</style>
+<div class="wrap">
+  <header>
+    <h1>Tableau <span>KDMC</span></h1>
+    <p class="maj" id="maj">Lecture de la liste des tâches…</p>
+    <div class="actu"><button class="btn go" id="b-actu" type="button">🔄 Actualiser maintenant</button><button class="btn" id="b-aut" type="button">🔐 Autoriser la lecture</button><span class="direct" id="direct">En direct</span><span class="etat-actu" id="t-actu" role="status" aria-live="polite"></span></div>
+  </header>
+
+  <div class="compteurs" aria-label="Résumé">
+    <a class="compteur toi" href="#t-toi" data-cible="t-toi"><b id="n-toi">…</b><small>À toi</small></a>
+    <a class="compteur cours" href="#t-cours" data-cible="t-cours"><b id="n-cours">…</b><small>En cours</small></a>
+    <a class="compteur afaire" href="#t-afaire" data-cible="t-afaire"><b id="n-afaire">…</b><small>À faire</small></a>
+    <a class="compteur fait" href="#t-fait" data-cible="t-fait"><b id="n-fait">…</b><small>Fait 3 j</small></a>
+  </div>
+
+  <div class="filtre"><input id="filtre" type="search" placeholder="🔎 Chercher une tâche, un projet, une branche…" aria-label="Chercher dans le tableau" autocomplete="off"><span class="vide" id="filtre-vide">Rien ne correspond.</span></div>
+  <div class="filtre-actif" id="filtre-actif"><span id="filtre-actif-t"></span><button class="btn" type="button" id="filtre-tout">✕ Tout montrer</button></div>
+  <nav class="rapide" aria-label="Accès rapides">
+    <a href="#t-relances">🕑 Relances</a>
+    <a href="#t-demande">✍️ Écrire à une branche</a>
+    <a href="https://kd-mc.com/admin/" target="_blank" rel="noopener">🛠 Admin</a>
+    <a href="https://arbre.kd-mc.com/" target="_blank" rel="noopener">🌳 Arbre</a>
+    <a href="https://apex-chat.kd-mc.com/" target="_blank" rel="noopener">💬 Apex Chat</a>
+    <a href="https://apex-ai.kd-mc.com/" target="_blank" rel="noopener">🧠 Apex AI</a>
+    <a href="https://staging.kd-mc.com/" target="_blank" rel="noopener">🧪 Staging</a>
+    <a href="https://claude.ai/artifact/5akE9yY4MBoRxFUrYAvXJJ" target="_blank" rel="noopener">📌 Raccourci Staging</a>
+  </nav>
+
+  <section aria-labelledby="t-toi">
+    <h2 id="t-toi">À toi <span class="n">ce que personne d'autre ne peut faire</span></h2>
+    <p class="sous">Seulement ce qui demande ta main (un code, une case, un courrier). Touche une carte pour tout voir.</p>
+    <div class="liste" id="l-toi"><p class="vide-liste">Lecture…</p></div>
+  </section>
+
+  <section aria-labelledby="t-branches">
+    <h2 id="t-branches">Qui attend quoi <span class="n">toutes les branches</span></h2>
+    <p class="sous">Touche une branche pour ne voir que ses tâches. « Relancer » lui écrit tout de suite au pont.</p>
+    <div class="liste" id="v-branches"><p class="vide-liste">Lecture…</p></div>
+    <div class="actu" style="margin-top:12px">
+      <button class="btn go" type="button" id="q-avancer">🚀 Tout le monde : avancez</button>
+      <button class="btn" type="button" id="q-pont">📬 Que chacun lise le pont</button>
+      <button class="btn" type="button" id="q-rien">🧹 Rien ne doit rester en attente</button>
+      <span class="etat-actu" id="q-etat" role="status" aria-live="polite"></span>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-relances">
+    <h2 id="t-relances">Relances envoyées <span class="n">heure exacte et qui a vraiment lu</span></h2>
+    <p class="sous">Chaque clic sur « Tout le monde : avancez », « Que chacun lise le pont » ou « Relancer » laisse ici sa trace : l'heure, et pour chaque branche ✅ a lu / ⏳ pas encore. Ces boutons RÉVEILLENT aussi chaque branche tout de suite (elle reçoit « pont — RÉVEIL » dans sa discussion) : plus besoin d'écrire « pont » à chacune.</p>
+    <div class="liste compact" id="l-reveils"></div>
+    <div class="liste compact" id="l-relances"><p class="vide-liste">Lecture…</p></div>
+  </section>
+
+  <section aria-labelledby="t-demande">
+    <h2 id="t-demande">Écrire à une branche <span class="n">tu choisis laquelle, ou toutes</span></h2>
+    <p class="sous">Écris ce que tu veux : la demande part au pont tout de suite. La trace (heure, qui a lu) apparaît juste au-dessus, dans « Relances envoyées ».</p>
+    <form class="demande" id="form-demande">
+      <label for="d-branche">À qui</label>
+      <select id="d-branche">
+        <option value="toutes">La bonne branche, choisie pour moi (toutes la voient)</option>
+        <option value="pc-config">L'ordinateur : réglages, Cloudflare, navigateur (pc-config)</option>
+        <option value="arbre-pc">L'ordinateur : recherches d'archives (arbre-pc)</option>
+        <option value="pc-connecteurs">L'ordinateur : connecteurs et tests (pc-connecteurs)</option>
+        <option value="arbre-cloud">Le cloud : l'arbre généalogique</option>
+        <option value="apex-cloud">Le cloud : Apex Chat et Apex AI</option>
+        <option value="commerce-cloud">Le cloud : boutique et pubs</option>
+        <option value="cmcteams-cloud">Le cloud : CMCteams et l'admin du domaine</option>
+        <option value="pont-point">Le cloud : Apex AI, routeur, robots (pont-point)</option>
+        <option value="cloud-installer">Le cloud : installer l'app + notifications, admin (cloud-installer)</option>
+        <option value="lingua-cloud">Le cloud : Lingua (lingua-cloud)</option>
+        <option value="cmcteams-pdf">Le cloud : audit CMCteams et light (cmcteams-pdf)</option>
+        <option value="javis-bee">Le cloud : Javis / Bee (javis-bee)</option>
+        <option value="moulin-pc">L'ordinateur : Moulin mobile (moulin-pc)</option>
+        <option value="sdb">Salle de bain (sdb)</option>
+        <option value="moulin-mobile">Moulin mobile, business plan (moulin-mobile)</option>
+      </select>
+      <label for="d-texte">Ce que tu veux</label>
+      <textarea id="d-texte" placeholder="Ex. : vérifier que mes photos s'affichent sur le téléphone"></textarea>
+      <button class="btn go" type="submit" id="d-envoyer">🚀 Envoyer le travail</button>
+      <span class="etat-actu" id="d-etat" role="status" aria-live="polite"></span>
+      <div id="d-liste" class="liste compact"></div>
+    </form>
+  </section>
+
+  <section aria-labelledby="t-cours">
+    <h2 id="t-cours">En cours <span class="n">les branches s'en occupent</span></h2>
+    <div class="liste" id="l-cours"><p class="vide-liste">Lecture…</p></div>
+  </section>
+
+  <section aria-labelledby="t-afaire">
+    <h2 id="t-afaire">À faire <span class="n">prévu, pas commencé</span></h2>
+    <div class="liste compact" id="l-afaire"><p class="vide-liste">Lecture…</p></div>
+  </section>
+
+  <section aria-labelledby="t-fait">
+    <h2 id="t-fait">Fait <span class="n">les 3 derniers jours</span></h2>
+    <div class="liste compact" id="l-fait"><p class="vide-liste">Lecture…</p></div>
+  </section>
+
+
+  <section aria-labelledby="t-qui">
+    <h2 id="t-qui">Qui est qui</h2>
+    <div class="qui-est-qui">
+      <div class="lieu">
+        <h3>L'ordinateur</h3>
+        <ul>
+          <li><b>pc-config</b> : réglages, Cloudflare, comptes, tout ce qui se fait dans ton navigateur</li>
+          <li><b>arbre-pc</b> : recherches dans les archives</li>
+          <li><b>moulin-pc</b> : moulin mobile</li>
+        </ul>
+      </div>
+      <div class="lieu">
+        <h3>Le cloud</h3>
+        <ul>
+          <li><b>Arbre</b> : seule à écrire dans l'arbre</li>
+          <li><b>Apex</b> : Apex Chat et Apex AI</li>
+          <li><b>Domaine</b>, <b>CMCteams</b>, <b>Javis</b>, <b>Commerce</b></li>
+        </ul>
+      </div>
+      <div class="lieu">
+        <h3>Ton téléphone</h3>
+        <ul>
+          <li>Toi : les décisions, Face ID, et les actions de la liste « À toi »</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-liens">
+    <h2 id="t-liens">Accès rapides</h2>
+    <div class="liens">
+      <a href="https://kd-mc.com/" target="_blank" rel="noopener">Portail kd-mc.com</a>
+      <a href="https://kd-mc.com/admin/" target="_blank" rel="noopener">Admin du domaine</a>
+      <a href="https://arbre.kd-mc.com/" target="_blank" rel="noopener">Arbre</a>
+      <a href="https://apex-chat.kd-mc.com/" target="_blank" rel="noopener">Apex Chat</a>
+      <a href="https://apex-ai.kd-mc.com/" target="_blank" rel="noopener">Apex AI</a>
+      <a href="https://dash.cloudflare.com/425377ca5c9259cbbef9d8b11cfbfee0" target="_blank" rel="noopener">Cloudflare</a>
+    </div>
+  </section>
+
+  <p class="pied">Source : la liste des tâches du pont, relue toute seule toutes les 5 minutes (et dès que tu reviens sur la page). Rien n'est écrit à la main dans cette page : ce que tu vois est ce que les branches ont noté. Un drapeau « ⚠️ » dit quand une branche a reçu du nouveau sans mettre sa tâche à jour.</p>
+</div>
+<script>
+(async function(){
+  const $=(s,r=document)=>r.querySelector(s);
+  const NOMS={'pc-config':"l'ordinateur (réglages)",'arbre-pc':"l'ordinateur (archives)",'arbre-cloud':'le cloud (arbre)','apex-cloud':'le cloud (Apex)','commerce-cloud':'le cloud (boutique)','cmcteams-cloud':"le cloud (CMCteams, admin)",'toutes':'toutes les branches','pont-point':'le cloud (Apex AI, routeur, robots)','cloud-installer':'le cloud (installer, admin du domaine)','lingua-cloud':'le cloud (Lingua)','cmcteams-pdf':'le cloud (audit CMCteams)','javis-bee':'le cloud (Javis / Bee)','moulin-pc':"l'ordinateur (Moulin mobile)",'moulin-mobile':'Moulin mobile (business plan)','moulin-video':'Moulin mobile (vidéo)','sdb':'Salle de bain','staging':'Staging','design-system':'Design System','cloud-arbre-migration':'le cloud (migration de l arbre)','comptes-cloud':'le cloud (comptes du domaine)','kevin':'toi'};
+  const nom=k=>NOMS[String(k||'').toLowerCase()]||k||'?';
+  const estKevin=q=>String(q||'').toLowerCase()==='kevin';
+  const SERVEUR='Cloudflare Developer Platform', BASE='ad7b5970-cbed-426b-a1b3-dea57116f6c8';
+  const PERIODE=300000, FAIT_JOURS=3; let PAUSE_JUSQUA=0; const QUOTA=/7500|free tier|row read limit/i;
+  let db=null; try{ db=(window.claude&&claude.use)?await claude.use('db'):null }catch(e){ db=null }
+  let mcp=null; try{ mcp=(window.claude&&claude.use)?await claude.use('mcp'):null }catch(e){ mcp=null }
+
+  /* ---- outils d'affichage ---- */
+  const JOURS=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'], MOIS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  const hm=t=>{const d=new Date(t);return d.getHours()+' h '+String(d.getMinutes()).padStart(2,'0')};
+  function jour(t){const d=new Date(t),a=new Date();const k=Math.round((new Date(a.getFullYear(),a.getMonth(),a.getDate())-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/86400000);return k===0?"aujourd'hui":k===1?'hier':JOURS[d.getDay()]+' '+d.getDate()+' '+MOIS[d.getMonth()]}
+  function ilya(t){const m=Math.round((Date.now()-t)/60000);if(m<1)return "à l'instant";if(m<60)return 'il y a '+m+' min';const h=Math.floor(m/60);if(h<24)return 'il y a '+h+' h';const j=Math.floor(h/24);return 'il y a '+j+' jour'+(j>1?'s':'')}
+  const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e};
+  function lignes(p,cle){ if(!p)return[]; if(typeof p==='string'){try{p=JSON.parse(p)}catch(e){return[]}} const q=[p]; while(q.length){const x=q.shift(); if(Array.isArray(x)){ if(x.length&&x[0]&&typeof x[0]==='object'&&cle in x[0])return x; x.forEach(y=>q.push(y)) } else if(x&&typeof x==='object'){ Object.values(x).forEach(y=>q.push(y)) } } return[] }
+  async function sql(requete,params){
+    if(!mcp)throw {code:'indisponible'};
+    const r=await mcp.callTool(SERVEUR,'d1_database_query',params?{database_id:BASE,sql:requete,params}:{database_id:BASE,sql:requete},{cache:false});
+    return r&&r.payload!==undefined?r.payload:r;
+  }
+
+  /* ---- écrire au pont TOUT DE SUITE (plus de « part dans les 30 minutes ») ---- */
+  async function auPont(a,sujet,corps){
+    const p=await sql("INSERT INTO messages (ts,de,a,sujet,corps,lu_par) VALUES (CAST(strftime('%s','now') AS INTEGER)*1000,'kevin-tableau',?,?,?,'') RETURNING id",[a,sujet,corps]);
+    const l=lignes(p,'id'); return l.length?Number(l[0].id):0;
+  }
+  /* ---- RÉVEIL en un clic (25.10) : chaque session a un déclencheur sans horaire (table reveils) ; on le lance = elle se met au travail ---- */
+  const REMOTE='Claude Code Remote';
+  let REVEILS=[];
+  async function lireReveils(){ try{ REVEILS=lignes(await sql('SELECT session_id,titre,pont_id,trigger_id,actif,dernier_reveil FROM reveils ORDER BY titre'),'titre') }catch(e){} return REVEILS }
+  /* 29.10 (Kevin : « quand je relance, tout le monde doit être relancé RÉELLEMENT ») : mesuré, l'ancien réveil (fire_trigger) ne réveillait personne —
+     aucune des 10 routines n'avait de dernière exécution alors que la page écrivait « réveillée ✅ » — et, lancé à la main, il crée une session NEUVE et vide
+     (sans dépôt) au lieu de reprendre la vraie. Le seul chemin mesuré qui reprend la VRAIE session : un déclencheur programmé, lié à elle (create_trigger,
+     persistent_session_id, une minute et demie plus tard). On n'écrit « relancée » que programmée ; « a lu » ne s'affiche que quand la branche a marqué le message lu. */
+  const iso=t=>new Date(t).toISOString().replace(/\.\d+Z$/,'Z');
+  async function reveiller(pontIds,num){
+    await lireReveils();
+    const cibles=REVEILS.filter(r=>Number(r.actif)===1&&r.session_id&&(!pontIds||pontIds.includes(String(r.pont_id||'').toLowerCase())));
+    const sans=REVEILS.filter(r=>Number(r.actif)!==1&&(!pontIds||pontIds.includes(String(r.pont_id||'').toLowerCase())));
+    const quand=Date.now()+60000;
+    const txt='pont — RELANCE RÉELLE demandée par Kevin (message du pont n° '+num+'). Lis tes messages NON LUS du pont D1 kdmc-pont (a = ton id pont ou « toutes »), traite-les, MARQUE-LES LUS (UPDATE messages SET lu_par = lu_par || \'<ton id pont>;\' WHERE id = …), mets à jour ta ligne sessions (maj) et ton curseur, et réponds en UNE ligne au pont. Si ta ligne de la table reveils n\'a pas de pont_id, écris-le. Rien chez toi : réponds « rien en attente » et arrête-toi.';
+    const res=await Promise.allSettled(cibles.map(r=>mcp.callTool(REMOTE,'create_trigger',{name:'Relance réelle — '+r.titre,prompt:txt,initiation:'human_request',persistent_session_id:String(r.session_id),run_once_at:iso(quand)},{cache:false})));
+    const ok=[], ko=[];
+    res.forEach((x,i)=>{ const bon=x.status==='fulfilled'&&x.value&&JSON.stringify(x.value.payload||x.value).includes('CREATED'); (bon?ok:ko).push({r:cibles[i],e:x.status==='rejected'?x.reason:{code:'non_confirme'}}) });
+    dessinerReveils({ok,ko,sans,quand});
+    return {ok:ok.length,ko:ko.length,sans:sans.length,quand};
+  }
+  function dessinerReveils(d){
+    const L=$('#l-reveils'); if(!L)return; L.innerHTML='';
+    const c=el('article','carte envoi'+(d.ko.length||d.sans.length?'':' fini'));
+    const haut=el('div','haut'); haut.append(el('span','puce '+(d.ko.length?'bloque':'cours'),'⏰ '+d.ok.length+' relance'+(d.ok.length>1?'s':'')+' programmée'+(d.ok.length>1?'s':'')), el('span','heure','prévue à '+hm(d.quand)+' (mesuré : 5 à 7 min de délai)'));
+    c.appendChild(haut);
+    const g=el('div','boutons');
+    d.ok.forEach(o=>g.appendChild(el('span','etat verif','⏳ '+o.r.titre+' : se réveille vers '+hm(d.quand)+' + quelques minutes')));
+    d.ko.forEach(o=>g.appendChild(el('span','etat revoir','⚠️ '+o.r.titre+' : relance NON programmée ('+((o.e&&o.e.code)||'refus')+')')));
+    d.sans.forEach(r=>g.appendChild(el('span','etat revoir','💻 '+r.titre+' : se relance seule (ordinateur) ou en tapant « pont »')));
+    c.appendChild(g);
+    c.appendChild(el('p','detail','Ce n\'est « lu » qu\'une fois la branche passée : regarde « Relances envoyées » (✅ a lu / ⏳ pas encore).'));
+    if(d.ko.some(o=>o.e&&/not_in_manifest|authz|permission|approval|denied/.test(o.e.code||'')))c.appendChild(el('p','detail','Touche « 🔐 Autoriser la lecture » et active « Claude Code Remote » (création de relance), puis recommence.'));
+    L.appendChild(c);
+  }
+  async function garderEnvoi(o){ if(!db)return; try{ await db.doc('demandes/'+o.cle).set(o) }catch(e){} }
+
+  /* ---- état ---- */
+  let RELANCES=[], TACHES=[], MSGS=[], NONLUS={}, ENVOIS={}, OUVERTS=new Set(), FILTRE_BRANCHE='', DERNIER=null, PRECEDENT={};
+  function lienTache(m,id){ return new RegExp('\\b(t[âa]ches?|task)\\s*n?°?\\s*'+id+'\\b','i').test((m.sujet||'')+' '+(m.corps||'')) }
+
+  function classer(r){
+    if(r.statut==='fait')return 'fait';
+    if(r.statut==='attend_kevin'&&estKevin(r.qui))return 'toi';
+    if(r.statut==='a_faire')return 'afaire';
+    return 'cours';
+  }
+  function puce(r){
+    if(r.statut==='fait')return ['fait','Fait'];
+    if(r.statut==='bloque')return ['bloque','Bloqué'];
+    if(r.statut==='attend_kevin')return estKevin(r.qui)?['toi','À toi']:['cours','Attend '+nom(r.qui)];
+    if(r.statut==='a_faire')return ['afaire','À faire'];
+    return ['cours','En cours'];
+  }
+
+  function carte(r){
+    const groupe=classer(r), [pc,pt]=puce(r);
+    const c=el('article','carte'+(groupe==='toi'?' toi':'')+(OUVERTS.has(String(r.id))?' ouvert':'')); c.dataset.id=r.id; c.dataset.branche=r.qui||''; c.tabIndex=0; c.setAttribute('role','button'); c.setAttribute('aria-expanded',OUVERTS.has(String(r.id))?'true':'false');
+    const haut=el('div','haut'); haut.append(el('span','puce '+pc,pt), el('span','projet',(r.projet||'')+' · n° '+r.id));
+    const maj=Number(r.maj)||0; if(maj)haut.append(el('span','quand','noté '+ilya(maj)));
+    const lies=MSGS.filter(m=>m.ts>maj&&lienTache(m,r.id)&&m.de!==r.qui);
+    if(groupe!=='fait'&&lies.length)haut.append(el('span','drapeau retard','⚠️ '+lies.length+' message'+(lies.length>1?'s':'')+' depuis, pas encore noté'));
+    else if(groupe==='cours'&&maj&&Date.now()-maj>86400000&&r.statut==='en_cours')haut.append(el('span','drapeau retard','⏰ pas mise à jour depuis '+ilya(maj).replace('il y a ','')));
+    if(PRECEDENT[r.id]&&PRECEDENT[r.id]!==r.statut+'|'+r.maj)haut.append(el('span','drapeau neuf','✨ vient de changer'));
+    c.appendChild(haut);
+    c.appendChild(el('div','titre',r.titre));
+    if(r.note)c.appendChild(el('div','note',r.note));
+    if(!estKevin(r.qui)&&r.qui){const q=el('div','qui');q.append('Qui : ');q.appendChild(el('strong',null,nom(r.qui)));c.appendChild(q)}
+    c.appendChild(el('span','ouvrir','Touche pour tout voir ›'));
+    const plus=el('div','plus');
+    if(maj)plus.appendChild(el('div','quand','Dernière note de la branche : '+jour(maj)+' à '+hm(maj)));
+    const recents=MSGS.filter(m=>lienTache(m,r.id)).slice(0,5);
+    if(recents.length){plus.appendChild(el('div','qui','Messages du pont sur cette tâche :'));const ul=el('ul','msgs');recents.forEach(m=>{const li=el('li');li.appendChild(el('b',null,'n° '+m.id+' · '+jour(m.ts)+' à '+hm(m.ts)+' · '+nom(m.de)+' → '+nom(m.a)));li.appendChild(el('span',null,(m.sujet||'')));ul.appendChild(li)});plus.appendChild(ul)}
+    if(r.lien&&/^https:\/\//.test(r.lien)){const a=el('a','bouton','Ouvrir ›');a.href=r.lien;a.target='_blank';a.rel='noopener';plus.appendChild(a)}
+    c.appendChild(plus);
+    const act=el('div','actions'); c.appendChild(act); actions(r,groupe,act);
+    return c;
+  }
+
+  function etatEnvoi(e){
+    if(!e)return null;
+    if(e.etat==='en_attente')return '⏳ Relance du '+jour(e.demande_le)+' à '+hm(e.demande_le)+' : part par l\'ordinateur (toutes les 30 min, 7 h – 23 h)';
+    const pt=e.pont&&PONT[e.pont];
+    const lus=pt?String(pt.lu_par||'').split(';').map(s=>s.trim()).filter(Boolean):[];
+    return '🚀 Parti au pont '+jour(e.demande_le)+' à '+hm(e.demande_le)+(e.pont?' (n° '+e.pont+')':'')+' · '+(lus.length?'👀 lu par '+lus.map(nom).join(', '):'pas encore lu');
+  }
+  function actions(r,groupe,act){
+    act.innerHTML='';
+    if(groupe==='fait')return;
+    const dernier=ENVOIS['t'+r.id];
+    if(dernier){act.appendChild(el('span','etat envoye',etatEnvoi(dernier)))}
+    if(groupe==='toi'){
+      const b=el('button','btn ok','✅ J\'ai fait ça'); b.type='button'; b.disabled=!mcp;
+      b.onclick=ev=>{ev.stopPropagation();commande(b,r,'pc-config','Kevin (tableau) : tâche '+r.id+' FAITE','Kevin vient de toucher « J\'ai fait ça » sur la tâche '+r.id+' : « '+r.titre+' ». Vérifie en réel, passe-la en fait dans la table taches (ou dis ce qui manque) et réponds.')};
+      act.appendChild(b);
+    }else{
+      const dest=(!r.qui||estKevin(r.qui))?'toutes':r.qui;
+      const b=el('button','btn go',dernier?'🚀 Relancer encore':'🚀 Relancer cette branche'); b.type='button'; b.disabled=!mcp;
+      b.onclick=ev=>{ev.stopPropagation();commande(b,r,dest,'Kevin (tableau) : relance tâche '+r.id,'Kevin relance la tâche '+r.id+' : « '+r.titre+' ». Fais-la avancer maintenant (ou donne-la à qui peut), mets la ligne taches à jour (statut + note datée) et réponds au pont.')};
+      act.appendChild(b);
+    }
+  }
+  async function commande(b,r,dest,sujet,corps){
+    const o=b.textContent; b.disabled=true; b.textContent='⏳ Envoi au pont…';
+    try{
+      const n=await auPont(dest,sujet,corps);
+      reveiller(dest==='toutes'?null:[String(dest).toLowerCase()],n).catch(()=>{});
+      const e={cle:'t'+r.id+'-'+Date.now(),tache:Number(r.id),branche:dest,texte:sujet,etat:'envoye',reponse:'message n°'+n,pont:n,demande_le:Date.now()};
+      ENVOIS['t'+r.id]=e; PONT[n]={id:n,ts:Date.now(),lu_par:''}; garderEnvoi(e);
+      b.textContent='✔ Parti au pont (n° '+n+')';
+      setTimeout(actualiser,800);
+    }catch(err){ b.disabled=false; b.textContent=o; const p=el('p','detail',raison(err,'envoyer')); b.parentElement.appendChild(p) }
+  }
+  function raison(e,quoi){
+    const c=e&&e.code;
+    if(c==='not_in_manifest'||c==='authz_denied'||c==='permission_denied'||c==='approval_required')return 'Accès refusé : touche « 🔐 Autoriser la lecture » puis réessaie.';
+    if(c==='needs_reauth')return 'Reconnecte Cloudflare dans claude.ai › Réglages › Connecteurs, puis réessaie.';
+    if(c==='server_not_connected')return 'Ajoute le connecteur Cloudflare dans claude.ai › Réglages › Connecteurs.';
+    if(c==='indisponible')return 'Ouvre cette page depuis ton compte Claude pour '+quoi+'.';
+    return 'Impossible de '+quoi+' pour l\'instant ('+(c||'erreur')+'). Réessaie dans un instant.';
+  }
+
+  function remplir(id,liste,vide){
+    const L=document.getElementById(id); L.innerHTML='';
+    if(!liste.length){L.appendChild(el('p','vide-liste',vide));return}
+    liste.forEach(r=>L.appendChild(carte(r)));
+  }
+  function poserCompteur(id,n){const b=document.getElementById(id); if(!b)return; if(b.textContent!==String(n)&&b.textContent!=='…'){const a=b.closest('.compteur');a.classList.remove('bouge');void a.offsetWidth;a.classList.add('bouge')} b.textContent=n}
+
+  function dessiner(){
+    const vis=TACHES.filter(r=>!FILTRE_BRANCHE||String(r.qui||'').toLowerCase()===FILTRE_BRANCHE);
+    const g={toi:[],cours:[],afaire:[],fait:[]};
+    vis.forEach(r=>g[classer(r)].push(r));
+    const parMaj=(a,b)=>(Number(b.maj)||0)-(Number(a.maj)||0);
+    g.cours.sort((a,b)=>(a.statut==='bloque')-(b.statut==='bloque')||parMaj(a,b));
+    g.afaire.sort(parMaj);
+    g.fait=g.fait.filter(r=>Date.now()-(Number(r.maj)||0)<FAIT_JOURS*86400000).sort(parMaj);
+    remplir('l-toi',g.toi,'Rien ne t\'attend. ✅');
+    remplir('l-cours',g.cours,'Aucune tâche en cours.');
+    remplir('l-afaire',g.afaire,'Rien de prévu.');
+    remplir('l-fait',g.fait,'Rien de terminé ces 3 derniers jours.');
+    poserCompteur('n-toi',g.toi.length); poserCompteur('n-cours',g.cours.length); poserCompteur('n-afaire',g.afaire.length); poserCompteur('n-fait',g.fait.length);
+    const fa=$('#filtre-actif'); fa.classList.toggle('on',!!FILTRE_BRANCHE); $('#filtre-actif-t').textContent=FILTRE_BRANCHE?'Seulement : '+nom(FILTRE_BRANCHE):'';
+    branches(); relances(); filtrer();
+  }
+
+  const BRANCHES=['pc-config','arbre-pc','pc-connecteurs','arbre-cloud','apex-cloud','commerce-cloud','cmcteams-cloud','pont-point','cloud-installer','lingua-cloud','cmcteams-pdf','javis-bee','moulin-pc','sdb','moulin-mobile'];
+  const luPar=m=>String(m.lu_par||'').split(';').map(s=>s.trim()).filter(Boolean);
+  function relances(){
+    const L=$('#l-relances'); if(!L)return; L.innerHTML='';
+    if(!RELANCES.length){L.appendChild(el('p','vide-liste','Aucune relance envoyée depuis ce tableau pour l\'instant.'));return}
+    let jc='';
+    RELANCES.slice(0,25).forEach(m=>{
+      const j=jour(m.ts); if(j!==jc){jc=j;L.appendChild(el('h3','jour',j.charAt(0).toUpperCase()+j.slice(1)))}
+      const lus=luPar(m), tous=String(m.a).toLowerCase()==='toutes';
+      const cible=tous?BRANCHES:[String(m.a).toLowerCase()];
+      const ont=cible.filter(b=>lus.includes(b)), pas=cible.filter(b=>!lus.includes(b));
+      const c=el('article','carte envoi'+(pas.length?'':' fini'));
+      const haut=el('div','haut'); haut.append(el('span','puce '+(pas.length?(ont.length?'cours':'bloque'):'fait'),pas.length?ont.length+' / '+cible.length+' ont lu':'Tout le monde a lu'), el('span','heure',jour(m.ts)+' '+hm(m.ts)+' · '+ilya(m.ts)+' · n° '+m.id));
+      c.appendChild(haut);
+      c.appendChild(el('div','titre',(m.sujet||'').replace(/^Kevin \(tableau\) : /,'').split('\n')[0]+' → '+nom(m.a)));
+      const g=el('div','boutons'); cible.forEach(b=>{const lu=lus.includes(b); g.appendChild(el('span','etat '+(lu?'bon':'revoir'),(lu?'✅ ':'⏳ ')+nom(b)))}); c.appendChild(g);
+      L.appendChild(c);
+    });
+  }
+  function branches(){
+    const box=$('#v-branches'); box.innerHTML='';
+    const g={};
+    TACHES.filter(r=>r.statut!=='fait').forEach(r=>{const k=String(r.qui||'?').toLowerCase(); if(k==='kevin'||k==='toutes')return; const o=g[k]=g[k]||{c:0,a:0,b:0,retard:0}; if(r.statut==='en_cours'||r.statut==='attend_kevin')o.c++; else if(r.statut==='a_faire')o.a++; else o.b++; const maj=Number(r.maj)||0; if(MSGS.some(m=>m.ts>maj&&lienTache(m,r.id)&&m.de!==r.qui))o.retard++;});
+    Object.keys(NONLUS).forEach(k=>{k=k.toLowerCase(); if(k!=='kevin'&&k!=='toutes'&&k!=='kevin-tableau')g[k]=g[k]||{c:0,a:0,b:0,retard:0}});
+    const cles=Object.keys(g).sort((x,y)=>((NONLUS[y]||0)+g[y].b*2+g[y].retard*2+g[y].a)-((NONLUS[x]||0)+g[x].b*2+g[x].retard*2+g[x].a));
+    if(!cles.length){box.appendChild(el('p','vide-liste','Personne n\'a rien en attente.'));return}
+    cles.forEach(k=>{
+      const o=g[k], n=NONLUS[k]||0;
+      const c=el('article','carte branche-carte'+(n>0||o.b>0||o.retard>0?' toi':'')+(FILTRE_BRANCHE===k?' choisie':'')); c.tabIndex=0; c.setAttribute('role','button');
+      c.appendChild(el('div','titre',nom(k)));
+      c.appendChild(el('div','note',o.c+' en cours · '+o.a+' à faire · '+o.b+' bloquée(s) · '+n+' message(s) non lu(s)'));
+      const dr=RELANCES.find(m=>String(m.a).toLowerCase()===k||String(m.a).toLowerCase()==='toutes');
+      c.appendChild(el('div','quand',dr?'Ta dernière relance : '+jour(dr.ts)+' à '+hm(dr.ts)+' · '+(luPar(dr).includes(k)?'✅ lue':'⏳ pas encore lue'):'Aucune relance envoyée'));
+      const sv=MSGS.find(m=>String(m.de).toLowerCase()===k); c.appendChild(el('div','quand',sv?'Dernier signe de la branche : '+ilya(sv.ts):'Aucun message de cette branche depuis 4 jours'));
+      const rvv=REVEILS.find(x=>String(x.pont_id||'').toLowerCase()===k), ordi=/^(pc-|arbre-pc|moulin-pc|pont-lenovo|detente|reverse)/.test(k), morte=!rvv&&!ordi;
+      if(morte&&n>0)c.appendChild(el('div','qui','🪦 Aucune session vivante ne lit son courrier : ses '+n+' message(s) restent en attente. Relancer d\'ici ne la réveille pas.'));
+      else if(o.retard)c.appendChild(el('div','qui','⚠️ '+o.retard+' tâche(s) pas à jour malgré du nouveau'));
+      else if(n>0)c.appendChild(el('div','qui','⏳ elle n\'a pas encore lu son courrier'));
+      const b=el('button','btn go',morte?'Pas de session à relancer':'🚀 Relancer'); b.type='button'; b.disabled=!mcp||morte;
+      b.onclick=async ev=>{ev.stopPropagation(); const o2=b.textContent; b.disabled=true; b.textContent='⏳…';
+        try{const num=await auPont(k,'Kevin (tableau) : relance','Kevin te relance depuis le tableau : lis tes messages non lus du pont, fais avancer tes tâches, mets CHAQUE ligne de la table taches à jour (statut + note datée) — le tableau signale celles qui ont reçu du nouveau sans être notées — et réponds.'); const rv=await reveiller([k],num); b.textContent='✔ Parti (n° '+num+')'+(rv.ok?' · relance programmée':(rv.sans?' · pas de session à relancer d\'ici':'')); setTimeout(actualiser,800)}
+        catch(e){b.disabled=false;b.textContent=o2;c.appendChild(el('p','detail',raison(e,'envoyer')))} };
+      c.appendChild(b);
+      const choisir=()=>{FILTRE_BRANCHE=FILTRE_BRANCHE===k?'':k; dessiner(); if(FILTRE_BRANCHE)document.getElementById('t-cours').scrollIntoView({behavior:'smooth',block:'start'})};
+      c.addEventListener('click',choisir); c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choisir()}});
+      box.appendChild(c);
+    });
+  }
+
+  /* toucher une carte = l'ouvrir / la refermer (tout est cliquable) */
+  document.addEventListener('click',ev=>{
+    const c=ev.target.closest('.carte[data-id]'); if(!c)return;
+    if(ev.target.closest('a,button,input,select,textarea'))return;
+    const id=c.dataset.id; if(OUVERTS.has(id))OUVERTS.delete(id); else OUVERTS.add(id);
+    c.classList.toggle('ouvert'); c.setAttribute('aria-expanded',c.classList.contains('ouvert')?'true':'false');
+  });
+  document.addEventListener('keydown',ev=>{ if(ev.key!=='Enter'&&ev.key!==' ')return; const c=ev.target.closest&&ev.target.closest('.carte[data-id]'); if(!c||c!==ev.target)return; ev.preventDefault(); c.click() });
+  document.querySelectorAll('a.compteur').forEach(a=>a.addEventListener('click',ev=>{ev.preventDefault();const s=document.getElementById(a.dataset.cible);if(s){s.scrollIntoView({behavior:'smooth',block:'start'});s.setAttribute('tabindex','-1');s.focus({preventScroll:true})}}));
+  $('#filtre-tout').addEventListener('click',()=>{FILTRE_BRANCHE='';$('#filtre').value='';dessiner()});
+
+  /* ---- la lecture en direct ---- */
+  let encours=false, echecs=0;
+  async function actualiser(){
+    if(encours||Date.now()<PAUSE_JUSQUA)return; encours=true;
+    const btn=$('#b-actu'), etat=$('#t-actu'), dir=$('#direct'); btn.disabled=true; btn.textContent='⏳ Lecture…';
+    try{
+      const avant={}; TACHES.forEach(r=>avant[r.id]=r.statut+'|'+r.maj);
+      const t=lignes(await sql('SELECT id,projet,titre,statut,qui,lien,note,maj FROM taches ORDER BY id'),'statut');
+      if(!t.length)throw {code:'vide'};
+      const depuis=String(Date.now()-4*86400000);
+      try{ MSGS=lignes(await sql('SELECT id,ts,de,a,sujet,substr(corps,1,600) AS corps,lu_par FROM messages WHERE ts>CAST(? AS INTEGER) ORDER BY id DESC LIMIT 400',[depuis]),'ts').map(m=>({...m,ts:Number(m.ts)})) }catch(e){}
+      try{ const nl=lignes(await sql("SELECT a, COUNT(*) AS n FROM messages WHERE id>(SELECT MAX(id)-400 FROM messages) AND a<>'toutes' AND (lu_par IS NULL OR instr(lu_par, a||';')=0) GROUP BY a"),'n'); NONLUS={}; nl.forEach(x=>NONLUS[String(x.a).toLowerCase()]=Number(x.n)) }catch(e){}
+      try{ RELANCES=lignes(await sql("SELECT id,ts,a,sujet,lu_par FROM messages WHERE de='kevin-tableau' ORDER BY id DESC LIMIT 40"),'ts').map(m=>({...m,ts:Number(m.ts)})) }catch(e){}
+      MSGS.forEach(m=>{PONT[m.id]=m});
+      try{ await lireReveils() }catch(e){}
+      PRECEDENT=TACHES.length?avant:{};
+      TACHES=t; DERNIER=Date.now(); echecs=0;
+      dessiner(); dessinerEnvois(envoisCourants);
+      $('#maj').textContent='En direct · lu à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · '+t.length+' tâches';
+      etat.textContent=''; dir.classList.remove('hors-ligne'); dir.textContent='En direct (toutes les 5 min)';
+    }catch(e){
+      echecs++; dir.classList.add('hors-ligne'); dir.textContent='Pas à jour';
+      const plein=QUOTA.test(JSON.stringify(e||'')+String(e&&e.message||''));
+      if(plein)PAUSE_JUSQUA=Date.now()+1800000;
+      etat.textContent=(plein?'Le quota gratuit de la base du pont est dépassé : il revient à minuit UTC (2 h du matin en France). En attendant, les branches écrivent dans la discussion GitHub n° 5236 (dépôt CMCteams). Je ne réessaie pas avant 30 min.':raison(e,'lire la liste'))+(DERNIER?' Dernière lecture '+ilya(DERNIER)+'.':'');
+    }
+    encours=false; btn.disabled=false; btn.textContent='🔄 Actualiser maintenant';
+  }
+  setInterval(()=>{ if(document.visibilityState==='visible'&&echecs<5)actualiser() },PERIODE);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){echecs=0;actualiser()} });
+  setInterval(()=>{ if(TACHES.length&&!encours)dessiner() },60000);   /* les « il y a » avancent même sans changement */
+
+  async function autoriser(){
+    const etat=$('#t-actu');
+    try{ const p=await claude.use('permissions'); if(!p)throw {code:'indisponible'}; const m=await p.state(); const cles=Object.keys(m).filter(k=>/mcp/i.test(k)&&m[k]==='prompt'); if(cles.length)await p.request(cles); else await p.manage(); }
+    catch(e){ etat.textContent='Ouvre le menu « Autorisations » de cette page (en haut, près de « Partager ») et active « Cloudflare Developer Platform ».'; return }
+    echecs=0; actualiser();
+  }
+
+  /* ---- les travaux envoyés : départ au pont et lecture, en direct ---- */
+  const PONT={}; let envoisCourants=[];
+  function dessinerEnvois(liste){
+    envoisCourants=liste; const L=$('#d-liste'); L.innerHTML='';
+    const tri=liste.slice().sort((a,b)=>b.demande_le-a.demande_le).slice(0,12);
+    if(!tri.length){L.appendChild(el('p','attente','Rien envoyé pour l\'instant.'));return}
+    let jc='';
+    tri.forEach(x=>{
+      const j=jour(x.demande_le); if(j!==jc){jc=j;L.appendChild(el('h3','jour',j.charAt(0).toUpperCase()+j.slice(1)))}
+      const m=String(x.reponse||'').match(/n°\s*(\d+)/), num=x.pont||(m?Number(m[1]):0), pt=num&&PONT[num];
+      const e=el('article','carte envoi');
+      const haut=el('div','haut'); haut.append(el('span','puce '+(x.etat==='fait'?'fait':x.etat==='envoye'?'cours':'afaire'),x.etat==='envoye'?'Parti':x.etat==='fait'?'Fait':'En attente'), el('span','heure',hm(x.demande_le)+' · '+ilya(x.demande_le)));
+      e.appendChild(haut); e.appendChild(el('div','titre',x.texte));
+      const ol=el('ul','suivi'); const li=t=>ol.appendChild(el('li',null,t));
+      li('✍️ Écrit '+j+' à '+hm(x.demande_le)+' — pour '+nom(x.branche));
+      if(x.etat==='en_attente')li('⏳ Ancien envoi : part par l\'ordinateur (toutes les 30 min, 7 h – 23 h)');
+      else{
+        li('🚀 Parti au pont'+(num?' (message n° '+num+')':'')+(pt?' à '+hm(pt.ts):''));
+        if(pt){const lus=String(pt.lu_par||'').split(';').map(s=>s.trim()).filter(Boolean);li(lus.length?'👀 Lu par '+lus.length+' branche'+(lus.length>1?'s':'')+' : '+lus.map(nom).join(', '):'👀 Pas encore lu')}
+        const rep=num&&MSGS.filter(mm=>mm.id>num&&new RegExp('\\b'+num+'\\b').test((mm.sujet||'')+' '+(mm.corps||''))).pop();
+        if(rep)li('💬 Réponse de '+nom(rep.de)+' ('+hm(rep.ts)+') : '+rep.sujet);
+        if(x.fait_le)li('✅ Fait '+jour(x.fait_le)+' à '+hm(x.fait_le));
+      }
+      e.appendChild(ol); L.appendChild(e);
+    });
+  }
+
+  /* ---- boutons « tout le monde » et formulaire : directement au pont ---- */
+  [['q-avancer','Kevin (tableau) : tout le monde avance maintenant sur ses tâches en cours et à faire, sans attendre ; mets ta ligne taches à jour et réponds au pont quand c est fait ou si tu es bloquée.'],
+   ['q-pont','Kevin (tableau) : que chaque branche lise ses messages NON LUS du pont, les traite, les marque lus, mette ses lignes taches à jour et réponde en une ligne.'],
+   ['q-rien','Kevin (tableau) : RIEN ne doit rester en attente pour rien. Pour chaque tâche ou message en attente : fais-le, ou cherche une solution, ou donne-le à la branche qui peut (l ordinateur pour le navigateur de Kevin) ; ne garde en attend_kevin que ce qui exige un mot de passe, un code ou un captcha de Kevin, avec étapes numérotées et liens cliquables ; chaque note taches datée.']].forEach(([id,t])=>{
+    const b=document.getElementById(id); if(!b)return; b.disabled=!mcp;
+    b.addEventListener('click',async()=>{ const o=b.textContent; b.disabled=true; b.textContent='⏳…';
+      try{const n=await auPont('toutes','Kevin (tableau) : '+o.replace(/^[^A-Za-zÀ-ÿ]+/,'').trim(),t); b.textContent='⏰ Relance des branches…'; const rv=await reveiller(null,n); b.textContent='✔ Parti (n° '+n+') · '+rv.ok+' relance(s) programmée(s)'; $('#q-etat').textContent='Envoyé à toutes les branches à '+hm(Date.now())+' · '+rv.ok+' relance(s) programmée(s) pour '+hm(rv.quand)+' (réellement lues quand « a lu » passe au vert)'+(rv.sans?' · '+rv.sans+' sans réveil':'')+(rv.ko?' · '+rv.ko+' refus':'')+'.'; setTimeout(()=>{b.textContent=o;b.disabled=false},5000); setTimeout(actualiser,800)}
+      catch(e){b.textContent=o;b.disabled=false;$('#q-etat').textContent=raison(e,'envoyer')} });
+  });
+  $('#form-demande').addEventListener('submit',async ev=>{
+    ev.preventDefault(); const t=$('#d-texte').value.trim(); if(!t)return; const br=$('#d-branche').value; const btn=$('#d-envoyer'); btn.disabled=true; btn.textContent='⏳ Envoi au pont…';
+    try{
+      const n=await auPont(br,'Kevin (tableau) : '+t.slice(0,90),'Demande de Kevin depuis le tableau'+(br==='toutes'?' (pour la branche qui sait le faire)':'')+' : '+t+' — Prends-la, fais-la, mets la table taches à jour et réponds au pont.');
+      const e={cle:'m'+Date.now(),branche:br,texte:t,etat:'envoye',reponse:'message n°'+n,pont:n,demande_le:Date.now()};
+      reveiller(br==='toutes'?null:[br],n).catch(()=>{});
+      PONT[n]={id:n,ts:Date.now(),lu_par:''}; envoisCourants=[e].concat(envoisCourants); dessinerEnvois(envoisCourants); garderEnvoi(e);
+      $('#d-texte').value=''; $('#d-etat').textContent='Parti au pont à '+hm(Date.now())+' (n° '+n+').'; setTimeout(actualiser,800);
+    }catch(e){ $('#d-etat').textContent=raison(e,'envoyer') }
+    btn.disabled=false; btn.textContent='🚀 Envoyer le travail';
+  });
+  if(!mcp){ $('#d-envoyer').disabled=true; $('header').appendChild(el('p','hors','Ouvre cette page depuis ton compte Claude : elle lit et écrit le pont avec tes accès.')) }
+
+  /* ---- recherche ---- */
+  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  function filtrer(){ const q=norm($('#filtre').value).trim(); let n=0;
+    document.querySelectorAll('section .carte').forEach(c=>{ if(c.closest('#v-branches')||c.closest('#form-demande'))return; const ok=!q||norm(c.innerText+' '+(c.dataset.branche||'')).includes(q); c.classList.toggle('masque',!ok); if(ok)n++ });
+    $('#filtre-vide').style.display=(q&&!n)?'inline':'none' }
+  $('#filtre').addEventListener('input',filtrer);
+
+  $('#b-aut').addEventListener('click',autoriser);
+  $('#b-actu').addEventListener('click',()=>{echecs=0;PAUSE_JUSQUA=0;actualiser()});
+  if(db){ db.collection('demandes').onSnapshot(s=>{ const liste=[]; s.docs.forEach(d=>{const x=d.data(); if(!x)return; if(x.tache){const k='t'+x.tache; if(!ENVOIS[k]||x.demande_le>ENVOIS[k].demande_le)ENVOIS[k]=x} else liste.push(x)}); dessinerEnvois(liste); if(TACHES.length)dessiner() },()=>{}) }
+  actualiser();
+})();
+</script>
+</body></html>

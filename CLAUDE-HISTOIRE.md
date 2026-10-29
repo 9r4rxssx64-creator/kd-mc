@@ -12515,3 +12515,8 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - Gardes : `tests/admin-tuiles.test.mjs` (portail = une seule carte admin ; toute ancienne adresse est une tuile de l'admin), `tests/verify-portail-range.mjs`, `tests/verify-tuiles-apps.mjs`, `tests/tor-catalogue.test.mjs`, et en navigateur `verify-tor-tuile-portail.mjs` / `verify-tableau-tuile-portail.mjs` (rouges sur l'ancien portail, vérifié).
 
 - **Rappel 29.10 (3ᵉ fois) — déléguer un maximum aux robots gratuits** : Kevin : « Dis à tout le monde de penser à vraiment utiliser au maximum les robots automatiques gratuits pour tout leur travail. Ils doivent déléguer un maximum. » Message n° 1259 à `toutes` ; ordre de travail et bilan de fin de tour ajoutés à `.claude/rules/delegue-gratuit.md`.
+
+## 🔁 RÈGLE ABSOLUE — QUAND KEVIN RELANCE, TOUT LE MONDE EST RELANCÉ RÉELLEMENT, ET LE TABLEAU NE DIT « RELANCÉ » QU'AVEC LA PREUVE (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Vérifie dans mon tableau de bord quand je relance mes sessions si vraiment tout est à jour et pourquoi j'ai beaucoup de branches rouges qui ne lisent pas les messages. Tout doit être actualisé en temps réel et vérifié, de vraies informations. Quand je relance, tout le monde doit être relancé réellement. »
+- `.claude/rules/relance-reelle.md` : mesures du 29.10 (10 routines jamais exécutées malgré « réveillée ✅ » ; `fire_trigger` = session neuve vide ; branches mortes vs vivantes), relance = déclencheur programmé lié à la vraie session, preuve = `lu_par` + `last_run`, branche sans session = « morte » et reprise par la branche propriétaire.
+- Tableau KDMC : source versionnée `tools/pont/tableau-kdmc.html` ; garde `tests/verify-relance-reelle.mjs`.

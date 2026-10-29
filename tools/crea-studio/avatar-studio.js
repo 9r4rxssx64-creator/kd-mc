@@ -94,7 +94,7 @@
     id: 'domaine', nom: 'Voix IA gratuite', emoji: '🔊', description: 'La voix du domaine (gratuite, illimitée).',
     fabriquer: function (texte) {
       return racine.aiFetch('/voice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texte, lang: 'fr' }) })
-        .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw new Error((j && j.error) || ('voice_http_' + r.status)); }, function () { throw new Error('voice_http_' + r.status); }); return r.blob(); });
+        .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw new Error((j && j.error) || ('voice_http_' + r.status)); }, function () { throw new Error('voice_http_' + r.status); }); return r.arrayBuffer(); });   /* des octets : plus sûr que Blob (un Blob créé dans la page est illisible sur certains moteurs) */
     }
   });
 
@@ -246,6 +246,13 @@
     S.nom = A.PERSOS[id].nom; ouvrirPanneau(); majSections();
     aide(A.PERSOS[id].emoji + ' ' + A.PERSOS[id].nom + ' est prêt : donne-lui une voix, ou copie tes grimaces avec la caméra.');
   }
+  function imageDepuisOctets(buf, type) {
+    return new Promise(function (ok, ko) {
+      var u = new Uint8Array(buf), bin = '', i; for (i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+      var im = new Image(); im.onload = function () { ok(im); }; im.onerror = function () { ko(new Error('Image illisible')); };
+      im.src = 'data:' + (String(type || 'image/jpeg').split(';')[0]) + ';base64,' + btoa(bin);
+    });
+  }
   function lireImageFichier(file) {
     /* une image, un canevas ou une ImageBitmap déjà prête (intégration dans une autre app) passe telle quelle */
     if (file && typeof Blob !== 'undefined' && !(file instanceof Blob)) return Promise.resolve(file);
@@ -383,6 +390,7 @@
         var m = $('aiMsg'); if (m) m.textContent = ia.emoji + ' Look « ' + ia.nom + ' » : vue ' + (i + 1) + '/' + n + ' faite';
       }
       racine.aiHide && racine.aiHide();
+      S.erreurLook = erreurs[0] || '';
       if (!ok) { S.look = 'reel'; chipOn('avLooks', '.chip', 'reel'); dire(messageIA(erreurs[0]), 4500); aide('😕 ' + messageIA(erreurs[0])); return; }
       S.vues.slice(n).forEach(function (v) { v.texture = v.original; });
       monterRendu();
@@ -404,7 +412,7 @@
     finally { clearTimeout(to); }
     var ct = r.headers.get('content-type') || '';
     if (!r.ok || ct.indexOf('image') < 0) { var j = await r.json().catch(function () { return {}; }); throw new Error((j && (j.detail || j.error)) || ('http_' + r.status)); }
-    var blob = await r.blob(), im = await lireImageFichier(blob);
+    var im = await imageDepuisOctets(await r.arrayBuffer(), ct);
     var cv = document.createElement('canvas'); cv.width = v.w; cv.height = v.h; cv.getContext('2d').drawImage(im, 0, 0, v.w, v.h);
     var pts = null;
     if (!v.manuel) {                                         /* on essaie de RE-TROUVER le visage sur le dessin ; sinon on garde les repères de la photo */
@@ -700,7 +708,7 @@
     version: '1.0.0', Vision: Vision, Voix: Voix, Core: C,
     pause: pause, activer: activer, choisirPerso: choisirPerso, depuisPhoto: depuisPhoto, depuisVideo: depuisVideo, appliquerLook: appliquerLook,
     jouer: jouer, garder: garder, charger: charger, exporter: exporterPaquet, partager: partager, definirHumeur: function (h) { if (C.HUMEURS[h]) { S.humeur = h; chipOn('avHumeurs', '.chip', h); } },
-    etat: function () { return { source: S.source, vues: S.vues.length, yaws: S.vues.map(function (v) { return +v.yaw.toFixed(3); }), manuel: S.vues.map(function (v) { return !!v.manuel; }), rendu: rendu ? rendu.mode() : (S.source === 'perso' ? '2d-perso' : null), look: S.look, lunettes: !!S.lunettes, looksRetrouves: S.vues.filter(function (v) { return !!v.ptsLook; }).length, texturesLook: S.vues.filter(function (v) { return !!v.texture; }).length, mode: S.mode, perso: S.persoId, params: derniersP, son: S.son ? { duree: S.son.duree, frames: S.son.frames.length } : null, camera: !!S.camera, enregistre: !!S.sortie, occupe: S.occupe, delegue: Vision.delegue() , panneVision: S.panneVision || '', erreurVision: Vision.erreur()}; },
+    etat: function () { return { source: S.source, vues: S.vues.length, yaws: S.vues.map(function (v) { return +v.yaw.toFixed(3); }), manuel: S.vues.map(function (v) { return !!v.manuel; }), rendu: rendu ? rendu.mode() : (S.source === 'perso' ? '2d-perso' : null), look: S.look, lunettes: !!S.lunettes, looksRetrouves: S.vues.filter(function (v) { return !!v.ptsLook; }).length, texturesLook: S.vues.filter(function (v) { return !!v.texture; }).length, mode: S.mode, perso: S.persoId, params: derniersP, son: S.son ? { duree: S.son.duree, frames: S.son.frames.length } : null, camera: !!S.camera, enregistre: !!S.sortie, occupe: S.occupe, delegue: Vision.delegue() , erreurLook: S.erreurLook || '', panneVision: S.panneVision || '', erreurVision: Vision.erreur()}; },
     rendre: function (P) { var t = (performance.now() - t0) / 1000; if (P) { var sauv = S.camera; S.camera = { params: C.assainir(P) }; dessiner(t); S.camera = sauv; } else dessiner(t); },
     vue0: function () { return S.vues[0] ? S.vues[0].original : null; }, cadre: function () { return rendu ? rendu.cadre() : null; }, son: function () { return S.son; },
     /* Où est l'ouverture de la bouche à l'écran (pixels de la sortie) pour un réglage donné — sert aux mesures. */

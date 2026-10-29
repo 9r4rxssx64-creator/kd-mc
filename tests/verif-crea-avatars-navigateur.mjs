@@ -69,7 +69,7 @@ const PAROLE = wav(colle(SIL, voyelle(SR, 0.5, 120, [[800, 120, 1], [1200, 150, 
 const SINUS = wav(Float32Array.from({ length: SR * 1.2 }, (_, i) => 0.5 * Math.sin(2 * Math.PI * 200 * i / SR)), SR);
 
 const CIBLE = { chromium, webkit, firefox };
-async function lancer(nom) { try { return await CIBLE[nom].launch(nom === 'chromium' ? { args: ['--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] } : {}); } catch (e) { dire(`ℹ️ ${nom} absent ici (${String(e.message).split('\n')[0].slice(0, 80)}) : lancé par le robot du dépôt public`); return null; } }
+async function lancer(nom) { try { return await CIBLE[nom].launch(nom === 'chromium' ? { args: ['--autoplay-policy=no-user-gesture-required', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] } : nom === 'firefox' ? { firefoxUserPrefs: { 'media.autoplay.default': 0, 'media.autoplay.blocking_policy': 0, 'media.autoplay.block-webaudio': false } } : {}); } catch (e) { dire(`ℹ️ ${nom} absent ici (${String(e.message).split('\n')[0].slice(0, 80)}) : lancé par le robot du dépôt public`); return null; } }
 
 async function contexte(browser, nom, extra) {
   const mobile = nom !== 'firefox';
@@ -233,7 +233,7 @@ async function suite(nom, browser) {
     const L = await page.evaluate(async () => { await Avatar.appliquerLook('toon3d'); const e = Avatar.etat(); Avatar.rendre({ jaw: 0.4 }); return { look: e.look, retrouves: e.looksRetrouves, textures: e.texturesLook, vide: __m.vide(Avatar.canvas()) }; });
     const cor = ctx.__corps[ctx.__corps.length - 1] || {};
     ok(cor.style === 'toon3d' && cor.avatar === true && cor.petite === true, `${tag} I) look IA : la demande part avec style « ${cor.style} », consigne avatar=${cor.avatar}, petite image=${cor.petite}`);
-    ok(L.look === 'toon3d' && L.textures === 1 && L.retrouves === (sansSuivi ? 0 : 1) && L.vide > 20, `${tag} I) le dessin remplace la photo (${L.textures} texture) et le visage y est re-trouvé (${L.retrouves}/1), rendu non vide`);
+    ok(L.look === 'toon3d' && L.textures === 1 && L.retrouves === (sansSuivi ? 0 : 1) && L.vide > 20, `${tag} I) le dessin remplace la photo (${L.textures} texture) et le visage y est re-trouvé (${L.retrouves}/1), rendu non vide`, JSON.stringify(L) + ' ' + (await page.evaluate(() => Avatar.etat().erreurLook)));
     await page.evaluate(async () => { await Avatar.appliquerLook('reel'); });
   }
 
@@ -260,7 +260,7 @@ async function suite(nom, browser) {
     await Avatar.jouer(false); const e1 = Avatar.etat();
     return { chips, son: e1.son, appels };
   }, { parole });
-  ok(F.chips.includes('domaine') && F.chips.includes('clone-essai') && F.son && F.son.duree > 1.5, `${tag} E) voix IA du service lue (${F.son ? F.son.duree.toFixed(2) : '?'} s) ; une voix ajoutée par une autre branche apparaît dans la liste (${F.chips.join(', ')})`);
+  ok(F.chips.includes('domaine') && F.chips.includes('clone-essai') && F.son && F.son.duree > 1.5, `${tag} E) voix IA du service lue (${F.son ? F.son.duree.toFixed(2) : '?'} s) ; une voix ajoutée par une autre branche apparaît dans la liste (${F.chips.join(', ')})`, JSON.stringify(F).slice(0, 300));
   const F2 = await page.evaluate(async () => { document.querySelector('#avVoix .chip[data-id="clone-essai"]').click(); Avatar.reglerMode('texte'); await Avatar.jouer(false); return Avatar.etat().son; });
   ok(!!F2 && F2.duree > 1.5, `${tag} E) choisir la voix ajoutée la fait parler (contrat « fournisseur de voix » pour le clonage)`);
 
@@ -291,7 +291,7 @@ async function suite(nom, browser) {
       await Avatar.charger(p); const e = Avatar.etat(); Avatar.rendre({ jaw: 0.5 });
       return { n: l.length, ok: val.ok, vues: e.vues, source: e.source, octets: JSON.stringify(p).length, vide: __m.vide(Avatar.canvas()) };
     });
-    ok(G.n >= 1 && G.ok && G.vues === 1 && G.source === 'photo' && G.vide > 20, `${tag} G) avatar gardé (${G.octets} octets) puis rechargé : paquet valide, ${G.vues} vue, rendu non vide`);
+    ok(G.n >= 1 && G.ok && G.vues === 1 && G.source === 'photo' && G.vide > 20, `${tag} G) avatar gardé (${G.octets} octets) puis rechargé : paquet valide, ${G.vues} vue, rendu non vide`, JSON.stringify(G));
   }
 
   /* D. chien : à la main */

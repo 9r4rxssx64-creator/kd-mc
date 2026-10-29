@@ -58,6 +58,8 @@ const w = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/import \{[^}]*presenceBattre[^}]*\} from '\.\/boite\.js'/.test(w), '12. le routeur importe la présence');
 ok(/await enrich\(env, request, s\.uid, s\.name, s\.cgu, acc(, \{ sansCreation: ficheEnCreation\(acc, s\) \})?\);\s*\n\s*try \{ await presenceBattre\(env\.CERCLE_DB, s\.uid, s\.name, app, Date\.now\(\)\); \} catch/.test(w), '13. /__sso/whoami (le battement de chaque app ouverte) range la présence, en « try » : une panne de D1 ne casse jamais une connexion');
 const portail = readFileSync(new URL('../../kdmc-home/kdmc-boite.js', import.meta.url), 'utf8');
-ok(/D\.enLigne/.test(portail) && /en ligne maintenant/.test(portail) && /data-enligne/.test(portail), '14. la fenêtre « Mes messages » du portail affiche la liste');
+const tableauAdmin = readFileSync(new URL('../../kdmc-home/admin/tableau.js', import.meta.url), 'utf8');
+/* 29.10 (Kevin : « les connectés à plusieurs endroits, ça ne sert à rien ») : la liste n'est plus dans la boîte des messages, elle vit dans le tableau de bord admin, qui lit les mêmes données. */
+ok(/enLigne/.test(portail) && !/data-enligne/.test(portail) && /En ligne maintenant/.test(tableauAdmin) && /enLigne|connectes/.test(tableauAdmin), '14. « en ligne » : fournie par la boîte, affichée UNE seule fois — dans le tableau de bord admin');
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

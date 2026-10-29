@@ -7,86 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 29/10/2026 11:41 UTC
-
-- **Branche** : `main` · **Commit** : `553ede36` · **Run** : `40867041766`
-- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/40867041766
-- **Ce que la machine a dit** :
-
-```
-125 contrôle(s) OK · 0 échec(s)
-# Subtest: coach : Qwen mort → un gratuit à clé prend le relais ; rien → ai_absent + causes (fail-open)
-ok 2 - coach : Qwen mort → un gratuit à clé prend le relais ; rien → ai_absent + causes (fail-open)
-# fail 0
-  ✅ 3b. aucun 429 (aucune écriture refusée)
-  ✅ 4. sans lot : 8 écriture(s) refusée(s) (429) et fiche incomplète → la garde 3 est discriminante
-  ✅ 5. pass tout neuf, fiche introuvable : CMCteams fermé (en_creation)
-== 6. KV qui refuse TOUTE écriture (plafond du jour) : le pass dit « en attente », fermé à tout âge ==
-  ✅ 6e. Kevin est prévenu que le stockage a refusé l'inscription
-  ✅ 3. signature altérée → refus, compte toujours fermé
-  ✅ 3b. jeton forgé (charge vraie, signature inventée) → refus
-  ✅ 3c. jeton tronqué → refus
-  ✅ 3d. sans jeton → refus
-  ✅ 3e. jeton expiré → refus
-  ✅ 3f. bon compte, autre adresse → refus
-== 4. Refusé par l'admin : un mail ne rouvre pas ; sans clé : rien ne part ==
-  ✅ 4b. compte refusé par l'admin → le mail n'ouvre pas
-  ✅ 4c. sans clé EmailJS : fermé, pas de mail, message d'avant (fail-open vers Kevin)
-  ✅ 7f. la fiche note l'échec (echec, envoye_at 0)
-# Subtest: par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la correction sont à Kevin seul
-ok 3 - par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la correction sont à Kevin seul
-# fail 0
-13 OK · 0 échec(s)
-10 OK / 0 échec(s)
-  ✅ 2c. KV en panne → le plafond REFUSE (fermé), il ne s'ouvre plus en grand (SABOTAGE : catch → true rougit)
-24 OK / 0 échec(s)
-15 OK / 0 échec(s)
-Portes par dossier : 82 passed, 0 failed
-16 OK / 1 échec(s)
-##[error]Process completed with exit code 1.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 29/10/2026 11:40 UTC
-
-- **Branche** : `main` · **Commit** : `553ede36` · **Run** : `40867005120`
-- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/40867005120
-- **Ce que la machine a dit** :
-
-```
-125 contrôle(s) OK · 0 échec(s)
-# Subtest: coach : Qwen mort → un gratuit à clé prend le relais ; rien → ai_absent + causes (fail-open)
-ok 2 - coach : Qwen mort → un gratuit à clé prend le relais ; rien → ai_absent + causes (fail-open)
-# fail 0
-  ✅ 3b. aucun 429 (aucune écriture refusée)
-  ✅ 4. sans lot : 8 écriture(s) refusée(s) (429) et fiche incomplète → la garde 3 est discriminante
-  ✅ 5. pass tout neuf, fiche introuvable : CMCteams fermé (en_creation)
-== 6. KV qui refuse TOUTE écriture (plafond du jour) : le pass dit « en attente », fermé à tout âge ==
-  ✅ 6e. Kevin est prévenu que le stockage a refusé l'inscription
-  ✅ 3. signature altérée → refus, compte toujours fermé
-  ✅ 3b. jeton forgé (charge vraie, signature inventée) → refus
-  ✅ 3c. jeton tronqué → refus
-  ✅ 3d. sans jeton → refus
-  ✅ 3e. jeton expiré → refus
-  ✅ 3f. bon compte, autre adresse → refus
-== 4. Refusé par l'admin : un mail ne rouvre pas ; sans clé : rien ne part ==
-  ✅ 4b. compte refusé par l'admin → le mail n'ouvre pas
-  ✅ 4c. sans clé EmailJS : fermé, pas de mail, message d'avant (fail-open vers Kevin)
-  ✅ 7f. la fiche note l'échec (echec, envoye_at 0)
-# Subtest: par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la correction sont à Kevin seul
-ok 3 - par le vrai routeur : refus expliqué + alerte pour Kevin ; la liste et la correction sont à Kevin seul
-# fail 0
-13 OK · 0 échec(s)
-10 OK / 0 échec(s)
-  ✅ 2c. KV en panne → le plafond REFUSE (fermé), il ne s'ouvre plus en grand (SABOTAGE : catch → true rougit)
-24 OK / 0 échec(s)
-15 OK / 0 échec(s)
-Portes par dossier : 82 passed, 0 failed
-16 OK / 1 échec(s)
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -594,5 +514,31 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cuisine.kd-mc.com            200   310280 car.
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
+##[error]Process completed with exit code 1.
+```
+
+## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
+- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
 ##[error]Process completed with exit code 1.
 ```

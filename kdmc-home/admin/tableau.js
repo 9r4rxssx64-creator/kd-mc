@@ -34,6 +34,7 @@
     'https://apex-ai.kd-mc.com/': 'ia', 'https://javis.kd-mc.com/': 'ia', 'https://bot.kd-mc.com/': 'ia',
     'https://kdmc-uptime.9r4rxssx64.workers.dev/': 'ia',
     '/admin/openai.html': 'couts',
+    '/voix/': 'ia',   /* Studio Voix (29.10) */
     '/liens/': 'reglages', 'https://autorisations.kd-mc.com/': 'reglages', 'https://coffre.kd-mc.com/': 'reglages',
     /* 23.10 : les 7 tuiles ajoutées (« qu'il ne m'en manque pas ») */
     'https://claude.ai/artifact/TainhAk9Vrd9k2ZZ2VuVP6': 'ia', 'https://claude.ai/artifact/5akE9yY4MBoRxFUrYAvXJJ': 'ia', 'https://claude.ai/code/artifacts': 'ia',
@@ -239,8 +240,11 @@
       var m = /^https:\/\/([a-z0-9.-]+)\/$/.exec(href), v = m && versions && versions[m[1]] && versions[m[1]].version;
       if (v) { var d = a.querySelector('.d'); var sp = document.createElement('span'); sp.className = 'ver'; sp.textContent = v; if (d) d.appendChild(sp); }
       var g = document.getElementById('tuiles-' + ranger(href)) || document.getElementById('tuiles-apps');   /* jamais une tuile perdue : sans place prévue, elle va dans « Apps du domaine » */
-      if (g) g.appendChild(a);
+      /* un outil « admin d'abord » voyage avec son interrupteur « Ouvert à tous » (Kevin 29.10) */
+      var bloc = a.parentNode && a.parentNode.classList && a.parentNode.classList.contains('outil-ouv') ? a.parentNode : a;
+      if (g) g.appendChild(bloc);
     }
+    if (global.kdmcAdmin && global.kdmcAdmin.wireOutils) global.kdmcAdmin.wireOutils();
     Object.keys(TUILES).forEach(function (sec) {
       var g = document.getElementById('tuiles-' + sec); if (!g) return;
       g.insertAdjacentHTML('beforeend', TUILES[sec].map(function (t) { return tuile(t[0], t[1], t[2], t[3]); }).join(''));

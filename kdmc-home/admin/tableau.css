@@ -86,3 +86,13 @@ a.home{color:var(--mut);text-decoration:none;font-size:13px;border:1px solid var
 /* 17.10 : « Sites utilisés » — une ligne par app, « vu » en minuscules, le reste replié */
 .kv .vu{color:var(--subtle);font-size:13px;text-transform:none;letter-spacing:0}
 .kv details.plus{margin-top:6px}.kv details.plus>summary{cursor:pointer;color:var(--gold);min-height:44px;display:flex;align-items:center;list-style:none}.kv details.plus>summary::-webkit-details-marker{display:none}
+/* Outils « admin d'abord » (Studio Voix, 29.10) : la tuile + l'interrupteur « Ouvert à tous », ≥ 44 px, lisible clair/sombre */
+.outil-ouv{display:flex;flex-direction:column;gap:6px}
+.outil-ouv>.cardrow{flex:1}
+.ouvtous{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:inherit;font:600 14px/1 inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ouvtous[disabled]{opacity:.5;cursor:default}
+.ouvtous .sw{position:relative;width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,.18);flex:0 0 42px;transition:background .2s}
+.ouvtous .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.ouvtous.on{border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.08)}
+.ouvtous.on .sw{background:#34d399}
+.ouvtous.on .sw::after{transform:translateX(18px)}

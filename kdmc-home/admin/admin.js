@@ -30,6 +30,12 @@
   function card(i, n, d, h) {
     return '<a class="kdmc-card kdmc-in cardrow" href="' + h + '"><span class="i">' + i + '</span><span class="ct"><span class="n">' + esc(n) + '</span><span class="d">' + esc(d) + '</span></span><span class="arr">›</span></a>';
   }
+  /* Tuile d'un outil « admin d'abord » : la tuile ouvre l'outil, l'interrupteur à côté l'ouvre ou le referme à tout le monde (état lu au serveur). */
+  function cardOutil(i, n, d, h, id) {
+    return '<div class="outil-ouv">' + card(i, n, d, h)
+      + '<button type="button" class="ouvtous" data-outil="' + esc(id) + '" role="switch" aria-checked="false" disabled>'
+      + '<span class="sw" aria-hidden="true"></span><span class="lb">🔒 Toi seul</span></button></div>';
+  }
   /* Les sections choisies à la main : ce que Kevin ouvre le plus souvent, dans son ordre. */
   function hubHaut() {
     /* En premier, les deux pages que Kevin ouvre le plus souvent (demandé le
@@ -78,6 +84,11 @@
       + card('💰', 'Finances', 'Coffre finances chiffré : relevés, factures, budget', 'https://cmcteams.kd-mc.com/tools/finances/')
       + card('📨', 'Messages employés', 'Les messages que les employés t\'envoient depuis CMCteams', 'https://cmcteams.kd-mc.com/tools/messages/')
       + card('🧬', 'Cloneur de sites', 'Lire, extraire ou cloner une page web', '/clone/')
+      + '</div>'
+      /* Kevin 29.10 : « une tuile admin seulement pour l'instant, que je peux cocher pour débloquer pour tout le monde ou pas ».
+         Un outil neuf naît ici, réservé à l'admin ; l'interrupteur l'ouvre à tout compte du domaine (POST /__admin/outils-ouverts, routeur). */
+      + '<h2 class="cat">🧪 Nouveaux outils — toi d\'abord</h2><div class="grid">'
+      + cardOutil('🎙️', 'Studio Voix', 'Cloner une voix et la faire parler, partout', '/voix/', 'voix')
       + '</div>'
       + '<h2 class="cat">🎨 Studios de création</h2><div class="grid">'
       + card('🎨', 'Studio — La Détente', 'Créer logos & produits (POD)', 'https://shops.kd-mc.com/la-detente/studio.html')
@@ -527,6 +538,32 @@
     fer.addEventListener('click', function () { agir('fermer'); });
     rou.addEventListener('click', function () { agir('rouvrir'); });
   }
+  /* ---- Interrupteurs « Ouvert à tous » des outils admin d'abord (Kevin 29.10) ---- */
+  function wireOutils() {
+    var bs = document.querySelectorAll('button.ouvtous[data-outil]:not([data-cable])');
+    if (!bs.length) return;
+    function peindre(b, ouvert) {
+      b.setAttribute('aria-checked', ouvert ? 'true' : 'false'); b.classList.toggle('on', !!ouvert);
+      b.querySelector('.lb').textContent = ouvert ? '🌍 Ouvert à tous' : '🔒 Toi seul';
+    }
+    fetch('/__admin/outils-ouverts', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) return;
+        Array.prototype.forEach.call(bs, function (b) { peindre(b, (j.ouverts || []).indexOf(b.getAttribute('data-outil')) >= 0); b.disabled = false; });
+      }).catch(function () { /* hors ligne : l'interrupteur reste gris */ });
+    Array.prototype.forEach.call(bs, function (b) {
+      b.setAttribute('data-cable', '1');
+      b.addEventListener('click', function () {
+        var veut = b.getAttribute('aria-checked') !== 'true';
+        b.disabled = true; b.querySelector('.lb').textContent = '…';
+        fetch('/__admin/outils-ouverts', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ id: b.getAttribute('data-outil'), ouvert: veut }) })
+          .then(function (r) { return r.json(); })
+          .then(function (j) { b.disabled = false; peindre(b, j && j.ok ? (j.ouverts || []).indexOf(b.getAttribute('data-outil')) >= 0 : !veut); })
+          .catch(function () { b.disabled = false; peindre(b, !veut); });
+      });
+    });
+  }
   function wireFermees() {
     var b = document.getElementById('fermgen-save');
     if (!b) return;
@@ -815,7 +852,7 @@
     wireBloques();
     wireAttendus();
     wireAcces();
-    wireFermees();
+    wireFermees(); wireOutils();
     wireCreer();
     wireLot();
     var q = document.getElementById('q');
@@ -925,7 +962,7 @@
      data-tableau-unique ; tableau.js vérifie d'abord la session (admin + Face ID, /__sso/whoami), puis MONTE ces fiches dans
      sa section « Personnes & comptes ». Le serveur garde son propre verrou (/__admin/* → 403 sans preuve). */
   var SANS_HUB = false;
-  if (typeof window !== 'undefined') window.kdmcAdmin = { hub: hub, monter: function (el) { if (!el) return; app = el; SANS_HUB = true; boot(); } };
+  if (typeof window !== 'undefined') window.kdmcAdmin = { hub: hub, wireOutils: wireOutils, monter: function (el) { if (!el) return; app = el; SANS_HUB = true; boot(); } };
   /* « Qui se connecte » (admin.kd-mc.com) — 15.10.2026. Cette page n'est plus servie sans compte du domaine, et une app
      installée sur l'écran d'accueil a ses cookies à part : un lien nu y arrivait SANS session (porte). Les tuiles de cet
      admin étaient des liens nus, contrairement à celles du portail. On passe donc par kdmcSSO.porte() (comme le portail) :

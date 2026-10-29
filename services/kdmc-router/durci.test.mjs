@@ -62,5 +62,9 @@ console.log('\nRouteur durci : en-têtes sur TOUTES les réponses + http → htt
 { const r = durcirReponse(new Response('x=1', { status: 200, headers: { 'content-type': 'application/javascript' } }));
   ok(!r.headers.get('permissions-policy') && !r.headers.get('content-security-policy'), '15. un script ne reçoit ni Permissions-Policy ni CSP'); }
 
+{ const h = durcirReponse(new Response('<html></html>', { status: 200, headers: { 'content-type': 'text/html' } })).headers;
+  const js = durcirReponse(new Response('x=1', { status: 200, headers: { 'content-type': 'application/javascript' } })).headers;
+  ok(/Sec-CH-UA-Model/.test(h.get('accept-ch') || '') && !js.get('accept-ch'), '16. toute page HTML demande le modèle exact de l\'appareil (Accept-CH), un script non (29.10 : tablette de Kevin)'); }
+
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

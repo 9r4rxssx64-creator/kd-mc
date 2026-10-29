@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d17">
+<title>Studio Voix — KDMC</title>
+<style>
+:root{--f:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;--bg:#0b0d17;--bg2:#121527;--card:rgba(255,255,255,.045);--line:rgba(255,255,255,.1);--txt:#eef1ff;--dim:#9aa3c7;--a1:#8b5cf6;--a2:#22d3ee;--ok:#34d399;--ko:#fb7185;--champ:#0e1122}
+@media (prefers-color-scheme:light){:root{--bg:#f5f6fb;--bg2:#ffffff;--card:#ffffff;--line:rgba(20,24,60,.12);--txt:#14183a;--dim:#5b6390;--champ:#f3f4fa}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;color:var(--txt);background:var(--bg);background-image:radial-gradient(900px 500px at 85% -10%,rgba(139,92,246,.22),transparent 60%),radial-gradient(700px 420px at -10% 10%,rgba(34,211,238,.14),transparent 60%);min-height:100dvh;padding:16px 16px calc(84px + env(safe-area-inset-bottom))}
+.wrap{max-width:760px;margin:0 auto}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.retour{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;color:var(--txt);text-decoration:none;font-weight:600;font-size:14px;background:var(--card)}
+h1{font-size:28px;line-height:1.1;margin:14px 0 4px;letter-spacing:-.02em}
+h1 span{background:linear-gradient(90deg,var(--a1),var(--a2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--dim);margin:0 0 18px;font-size:15px}
+.etapes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:16px;position:sticky;top:0;z-index:5;padding:6px;border-radius:16px;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line)}
+.etapes button{min-height:44px;border:0;border-radius:11px;background:transparent;color:var(--dim);font:600 14px/1.1 var(--f);cursor:pointer}
+.etapes button[aria-selected=true]{background:linear-gradient(135deg,var(--a1),#6d28d9);color:#fff;box-shadow:0 6px 18px rgba(139,92,246,.35)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px}
+.card h2{font-size:18px;margin:0 0 4px}
+.k{color:var(--dim);font-size:14px;margin:0 0 12px}
+label.l{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+input[type=text],textarea,select{width:100%;font:16px/1.4 var(--f);color:var(--txt);background:var(--champ);border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;min-height:48px}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--a1);box-shadow:0 0 0 3px rgba(139,92,246,.25)}
+textarea{min-height:120px;resize:vertical}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--txt);font:700 15px/1 var(--f);cursor:pointer;-webkit-tap-highlight-color:transparent;text-decoration:none}
+.btn:active{transform:scale(.98)}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.go{border:0;color:#fff;background:linear-gradient(135deg,var(--a1),var(--a2));box-shadow:0 8px 22px rgba(139,92,246,.3)}
+.btn.rec{border:0;color:#fff;background:linear-gradient(135deg,#f43f5e,#be123c)}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.row .btn{flex:1 1 160px}
+.lire{background:var(--champ);border:1px dashed var(--line);border-radius:14px;padding:14px;font-size:17px;line-height:1.55}
+canvas{width:100%;height:64px;display:block;margin-top:12px;border-radius:12px;background:var(--champ)}
+.chrono{font-variant-numeric:tabular-nums;color:var(--dim);font-size:14px;margin-top:6px}
+.accord{display:flex;gap:12px;align-items:flex-start;margin-top:14px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--champ);cursor:pointer}
+.accord input{width:24px;height:24px;flex:0 0 24px;margin:2px 0 0;accent-color:var(--a1)}
+.accord span{font-size:14px;color:var(--dim)}
+.voix{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:16px;margin-top:10px;background:var(--champ)}
+.voix .av{width:44px;height:44px;flex:0 0 44px;border-radius:50%;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--a1),var(--a2))}
+.voix .ct{flex:1;min-width:0}
+.voix .n{font-weight:700}
+.voix .d{font-size:13px;color:var(--dim)}
+.voix .ic{min-width:44px;min-height:44px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--txt);font-size:18px;cursor:pointer}
+.vide{color:var(--dim);text-align:center;padding:22px 8px;font-size:15px}
+.etat{margin-top:12px;font-size:14px;color:var(--dim);min-height:20px}
+.etat.ko{color:var(--ko)}.etat.ok{color:var(--ok)}
+.barre{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:10px;display:none}
+.barre i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--a1),var(--a2));transition:width .3s}
+.res{margin-top:12px;padding:12px;border-radius:16px;border:1px solid var(--line);background:var(--champ)}
+.res audio{width:100%;margin-top:6px}
+.ia{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:rgba(139,92,246,.18);color:var(--a1)}
+.grille2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grille2{grid-template-columns:1fr}}
+input[type=range]{width:100%;height:44px;accent-color:var(--a1)}
+.code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;background:var(--champ);border:1px solid var(--line);border-radius:12px;padding:12px}
+.cache{display:none}
+.porte{text-align:center;padding:40px 16px}
+.ver{position:fixed;left:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);min-height:44px;min-width:44px;display:inline-flex;align-items:center;font-size:11px;color:var(--dim);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 10px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="retour" href="/admin/">← Tableau de bord</a></div>
+  <h1>🎙️ <span>Studio Voix</span></h1>
+  <p class="sub">Clone une voix à partir de quelques secondes, puis fais-lui dire ce que tu veux — en français et 9 autres langues. Gratuit, sur tous tes appareils.</p>
+
+  <div id="porte" class="card porte cache"></div>
+
+  <div id="studio" class="cache">
+    <nav class="etapes" role="tablist">
+      <button role="tab" data-v="parler" aria-selected="true">🗣️ Faire parler</button>
+      <button role="tab" data-v="nouvelle" aria-selected="false">➕ Nouvelle voix</button>
+      <button role="tab" data-v="voix" aria-selected="false">📚 Mes voix</button>
+    </nav>
+
+    <!-- FAIRE PARLER -->
+    <section id="v-parler">
+      <div class="card">
+        <h2>Faire parler une voix</h2>
+        <p class="k">Choisis la voix, écris le texte, touche « Générer ». Les longs textes sont découpés phrase par phrase.</p>
+        <label class="l" for="choixVoix">Voix</label>
+        <select id="choixVoix"></select>
+        <label class="l" for="texte">Texte à dire</label>
+        <textarea id="texte" maxlength="3000" placeholder="Bonjour ! Bienvenue sur kd-mc.com…"></textarea>
+        <div class="chrono" id="compte">0 / 3000 caractères</div>
+        <div class="grille2">
+          <div><label class="l" for="langue">Langue</label><select id="langue"></select></div>
+          <div><label class="l" for="moteur">Moteur</label><select id="moteur">
+            <option value="auto">✨ Automatique (le meilleur qui répond)</option>
+            <option value="qwen">Qwen3-TTS — le plus fidèle</option>
+            <option value="chatterbox">Chatterbox — le plus expressif</option>
+          </select></div>
+        </div>
+        <label class="l" for="expr">Expressivité <span class="k" id="exprV">(normale)</span></label>
+        <input id="expr" type="range" min="0.25" max="1.2" step="0.05" value="0.5">
+        <div class="row"><button class="btn go" id="generer">🎙️ Générer</button></div>
+        <div class="barre" id="barre"><i></i></div>
+        <div class="etat" id="etatG" aria-live="polite"></div>
+        <div id="resultats"></div>
+      </div>
+      <div class="card">
+        <h2>🔌 L'intégrer dans une app</h2>
+        <p class="k">Une adresse du domaine rend la phrase en audio (fichier WAV), avec ta voix. Une phrase déjà dite revient tout de suite (gardée en mémoire).</p>
+        <div class="code" id="lienInt">Choisis une voix et écris un texte.</div>
+        <div class="row"><button class="btn" id="copierLien">📋 Copier l'adresse</button></div>
+      </div>
+    </section>
+
+    <!-- NOUVELLE VOIX -->
+    <section id="v-nouvelle" class="cache">
+      <div class="card">
+        <h2>1 · Enregistre ou importe la voix</h2>
+        <p class="k">10 à 20 secondes au calme suffisent. Lis le texte ci-dessous d'une voix naturelle, téléphone à 20 cm.</p>
+        <div class="lire" id="aLire" contenteditable="true" spellcheck="false">Bonjour, je m'appelle comme tu veux. Aujourd'hui il fait beau à Monaco, la mer est calme et je prends le temps de parler tranquillement, avec ma voix de tous les jours.</div>
+        <canvas id="onde" width="700" height="64"></canvas>
+        <div class="chrono" id="chrono">Prêt.</div>
+        <div class="row">
+          <button class="btn rec" id="enreg">⏺ Enregistrer</button>
+          <label class="btn" for="fichier">📁 Importer un audio</label>
+          <input id="fichier" type="file" accept="audio/*,video/*" class="cache">
+        </div>
+        <audio id="ecoute" controls class="cache" style="width:100%;margin-top:12px"></audio>
+      </div>
+      <div class="card">
+        <h2>2 · Donne-lui un nom</h2>
+        <label class="l" for="nomVoix">Nom de la voix</label>
+        <input id="nomVoix" type="text" maxlength="40" placeholder="ex. Kevin — posé">
+        <label class="l" for="langueV">Langue de l'enregistrement</label>
+        <select id="langueV"></select>
+        <label class="l" for="texteRef">Ce que dit l'enregistrement <span class="k">(rempli tout seul si tu as lu le texte ; améliore la ressemblance)</span></label>
+        <textarea id="texteRef" maxlength="400" style="min-height:80px"></textarea>
+        <label class="l" for="accordPar">À qui est cette voix ?</label>
+        <input id="accordPar" type="text" maxlength="60" placeholder="moi-même">
+        <label class="accord"><input type="checkbox" id="accord"><span><b>J'ai l'accord de cette personne</b> pour cloner sa voix (ou c'est la mienne). Les audios créés seront présentés comme « voix générée par IA ».</span></label>
+        <div class="row"><button class="btn go" id="sauver" disabled>💾 Enregistrer la voix</button></div>
+        <div class="etat" id="etatN" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- MES VOIX -->
+    <section id="v-voix" class="cache">
+      <div class="card">
+        <h2>Mes voix</h2>
+        <p class="k">Rangées sur ton compte : tu les retrouves sur iPhone, Android et ordinateur.</p>
+        <div id="liste"></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="voix" data-version="v1.0.0" data-color="#8b5cf6" defer></script>
+<script>
+(function () {
+  'use strict';
+  var VER = '1.0.0';
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function entetes() { var h = {}; try { var t = localStorage.getItem('kdmc_admin_token'); var p = localStorage.getItem('kdmc_sso_token'); if (t) h['x-kdmc-admin'] = t; if (p) h.Authorization = 'Bearer ' + p; } catch (e) { /* stockage fermé */ } return h; }
+  function api(chemin, opts) { opts = opts || {}; opts.credentials = 'include'; opts.cache = 'no-store'; opts.headers = Object.assign(entetes(), opts.headers || {}); return fetch(chemin, opts); }
+  var ETAT = { voix: [], moteurs: [], langues: {}, echant: {} };
+  var MSG = { accord_requis: 'Coche l\'accord de la personne.', echantillon_requis: 'Il manque l\'enregistrement.', taille_echantillon: 'Enregistrement trop court ou trop long (3 à 40 s).',
+    format_wav: 'Format audio non reconnu.', trop_de_voix: 'Tu as déjà 30 voix : supprimes-en une.', reserve_admin: 'Cet outil est réservé à l\'administrateur pour le moment.', compte_requis: 'Connecte-toi d\'abord sur kd-mc.com.' };
+
+  /* ---------- ONGLETS ---------- */
+  function vue(v) {
+    Array.prototype.forEach.call(document.querySelectorAll('.etapes button'), function (b) { b.setAttribute('aria-selected', b.getAttribute('data-v') === v ? 'true' : 'false'); });
+    ['parler', 'nouvelle', 'voix'].forEach(function (x) { $('v-' + x).classList.toggle('cache', x !== v); });
+    try { history.replaceState(null, '', '#' + v); } catch (e) { /* */ }
+  }
+  document.querySelector('.etapes').addEventListener('click', function (e) { var b = e.target.closest('button[data-v]'); if (b) vue(b.getAttribute('data-v')); });
+
+  /* ---------- CHARGEMENT ---------- */
+  function charger() {
+    return api('/__voix/moi').then(function (r) { return r.json().then(function (j) { return { r: r, j: j }; }); }).then(function (x) {
+      if (!x.j || !x.j.ok) {
+        $('porte').innerHTML = '<div style="font-size:44px">🔒</div><h2>' + esc(MSG[x.j && x.j.reason] || 'Accès impossible pour le moment.') + '</h2><p class="k">Studio Voix s\'ouvrira ici dès que l\'administrateur l\'aura rendu disponible.</p><a class="btn go" href="/">Aller au portail</a>';
+        $('porte').classList.remove('cache'); return;
+      }
+      ETAT.voix = x.j.voix || []; ETAT.moteurs = x.j.moteurs || []; ETAT.langues = x.j.langues || {};
+      if (!x.j.admin) { var ret = document.querySelector('.retour'); ret.href = '/'; ret.textContent = '← Portail'; }
+      remplirLangues(); peindreVoix();
+      $('studio').classList.remove('cache');
+      var h = (location.hash || '').slice(1); vue(['parler', 'nouvelle', 'voix'].indexOf(h) >= 0 ? h : (ETAT.voix.length ? 'parler' : 'nouvelle'));
+    }).catch(function () { $('porte').innerHTML = '<h2>Pas de réseau</h2><p class="k">Vérifie la connexion puis recharge la page.</p>'; $('porte').classList.remove('cache'); });
+  }
+  var NOMS_L = { fr: 'Français', en: 'Anglais', it: 'Italien', es: 'Espagnol', de: 'Allemand', pt: 'Portugais', ru: 'Russe', ja: 'Japonais', ko: 'Coréen', zh: 'Chinois' };
+  function remplirLangues() {
+    var o = Object.keys(ETAT.langues).map(function (k) { return '<option value="' + esc(k) + '">' + esc(NOMS_L[k] || k) + '</option>'; }).join('');
+    $('langue').innerHTML = o; $('langueV').innerHTML = o;
+  }
+  function initiales(n) { return String(n || '?').trim().split(/\s+/).slice(0, 2).map(function (m) { return m.charAt(0).toUpperCase(); }).join(''); }
+  function peindreVoix() {
+    var sel = $('choixVoix'), garde = sel.value;
+    sel.innerHTML = ETAT.voix.length ? ETAT.voix.map(function (v) { return '<option value="' + esc(v.id) + '">' + esc(v.nom) + ' · ' + esc(NOMS_L[v.langue] || v.langue) + '</option>'; }).join('') : '<option value="">— crée d\'abord une voix —</option>';
+    if (garde) sel.value = garde;
+    var v = voixChoisie(); if (v) $('langue').value = v.langue;
+    $('liste').innerHTML = ETAT.voix.length ? ETAT.voix.map(function (v) {
+      return '<div class="voix"><span class="av">' + esc(initiales(v.nom)) + '</span><span class="ct"><span class="n">' + esc(v.nom) + '</span><br><span class="d">' + esc(NOMS_L[v.langue] || v.langue)
+        + ' · voix de ' + esc(v.accord && v.accord.par || '?') + ' · ' + new Date(v.cree).toLocaleDateString('fr-FR') + '</span></span>'
+        + '<button class="ic" data-ecoute="' + esc(v.id) + '" aria-label="Écouter l\'échantillon">▶️</button>'
+        + '<button class="ic" data-parle="' + esc(v.id) + '" aria-label="Faire parler">🗣️</button>'
+        + '<button class="ic" data-suppr="' + esc(v.id) + '" aria-label="Supprimer">🗑️</button></div>';
+    }).join('') : '<div class="vide">Aucune voix pour l\'instant.<br><br><button class="btn go" data-aller="nouvelle">➕ Créer ma première voix</button></div>';
+    majLien();
+  }
+  function voixChoisie() { var id = $('choixVoix').value; return ETAT.voix.filter(function (v) { return v.id === id; })[0] || null; }
+  $('choixVoix').addEventListener('change', function () { var v = voixChoisie(); if (v) $('langue').value = v.langue; majLien(); });
+  $('liste').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.getAttribute('data-aller')) return vue(b.getAttribute('data-aller'));
+    if (b.getAttribute('data-parle')) { $('choixVoix').value = b.getAttribute('data-parle'); $('choixVoix').dispatchEvent(new Event('change')); return vue('parler'); }
+    if (b.getAttribute('data-ecoute')) { echantillon(b.getAttribute('data-ecoute')).then(function (blob) { new Audio(URL.createObjectURL(blob)).play(); }); return; }
+    var id = b.getAttribute('data-suppr');
+    if (id && confirm('Supprimer cette voix ? Son échantillon sera effacé.')) {
+      api('/__voix/supprimer', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: id }) }).then(function () { ETAT.voix = ETAT.voix.filter(function (v) { return v.id !== id; }); delete ETAT.echant[id]; peindreVoix(); });
+    }
+  });
+  function echantillon(id) {
+    if (ETAT.echant[id]) return Promise.resolve(ETAT.echant[id]);
+    return api('/__voix/echantillon?id=' + encodeURIComponent(id)).then(function (r) { if (!r.ok) throw new Error('échantillon introuvable'); return r.blob(); }).then(function (b) { ETAT.echant[id] = b; return b; });
+  }
+
+  /* ---------- AUDIO : tout devient un WAV mono 24 kHz (accepté partout, iPhone compris) ---------- */
+  var actx = null;
+  function ctx() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); return actx; }
+  function decoder(buf) { return new Promise(function (ok, ko) { var p = ctx().decodeAudioData(buf, ok, ko); if (p && p.then) p.then(ok, ko); }); }
+  function versMono24k(ab, maxS) {
+    var sr = 24000, dur = Math.min(ab.duration, maxS || 600), n = Math.ceil(dur * sr);
+    var off = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, n, sr);
+    var src = off.createBufferSource(); src.buffer = ab; src.connect(off.destination); src.start(0);
+    return off.startRendering ? new Promise(function (ok) { var p = off.startRendering(); if (p && p.then) p.then(ok); else off.oncomplete = function (e) { ok(e.renderedBuffer); }; }) : Promise.reject(new Error('audio'));
+  }
+  function pcmVersWav(f32, sr) {
+    var crete = 0; for (var i = 0; i < f32.length; i++) crete = Math.max(crete, Math.abs(f32[i]));
+    var gain = crete > 0.01 ? Math.min(0.95 / crete, 4) : 1;
+    var b = new ArrayBuffer(44 + f32.length * 2), v = new DataView(b);
+    function s(o, t) { for (var k = 0; k < t.length; k++) v.setUint8(o + k, t.charCodeAt(k)); }
+    s(0, 'RIFF'); v.setUint32(4, 36 + f32.length * 2, true); s(8, 'WAVE'); s(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); s(36, 'data'); v.setUint32(40, f32.length * 2, true);
+    for (var j = 0; j < f32.length; j++) { var x = Math.max(-1, Math.min(1, f32[j] * gain)); v.setInt16(44 + j * 2, x < 0 ? x * 0x8000 : x * 0x7fff, true); }
+    return new Blob([b], { type: 'audio/wav' });
+  }
+  /* coupe les silences du début et de la fin (un échantillon propre = un clone plus fidèle) */
+  function rogner(f32, sr) {
+    var seuil = 0.02, a = 0, z = f32.length - 1;
+    while (a < z && Math.abs(f32[a]) < seuil) a++;
+    while (z > a && Math.abs(f32[z]) < seuil) z--;
+    return f32.subarray(Math.max(0, a - sr * 0.15), Math.min(f32.length, z + sr * 0.25));
+  }
+  function preparer(arrayBuf) {
+    return decoder(arrayBuf).then(function (ab) { return versMono24k(ab, 40); }).then(function (r) {
+      var f = rogner(r.getChannelData(0), 24000), s = f.length / 24000;
+      if (s < 3) throw new Error('Trop court : au moins 3 secondes de voix.');
+      if (s > 25) f = f.subarray(0, 25 * 24000);
+      return { wav: pcmVersWav(f, 24000), duree: Math.min(s, 25) };
+    });
+  }
+
+  /* ---------- ENREGISTRER ---------- */
+  var ECH = null, rec = null, morceaux = [], t0 = 0, minuteur = null, anim = null;
+  function dessinerOnde(an) {
+    var c = $('onde'), g = c.getContext('2d'), d = new Uint8Array(an.fftSize);
+    (function boucle() {
+      an.getByteTimeDomainData(d); g.clearRect(0, 0, c.width, c.height);
+      var grad = g.createLinearGradient(0, 0, c.width, 0); grad.addColorStop(0, '#8b5cf6'); grad.addColorStop(1, '#22d3ee');
+      g.strokeStyle = grad; g.lineWidth = 3; g.beginPath();
+      for (var i = 0; i < d.length; i++) { var x = i / d.length * c.width, y = d[i] / 255 * c.height; if (i) g.lineTo(x, y); else g.moveTo(x, y); }
+      g.stroke(); anim = requestAnimationFrame(boucle);
+    })();
+  }
+  $('enreg').addEventListener('click', function () {
+    if (rec && rec.state === 'recording') { rec.stop(); return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder) { etatN('Ce navigateur ne sait pas enregistrer : importe plutôt un fichier audio.', 'ko'); return; }
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: true } }).then(function (flux) {
+      var an = ctx().createAnalyser(); an.fftSize = 1024; ctx().createMediaStreamSource(flux).connect(an); if (ctx().resume) ctx().resume(); dessinerOnde(an);
+      morceaux = []; rec = new MediaRecorder(flux);
+      rec.ondataavailable = function (e) { if (e.data && e.data.size) morceaux.push(e.data); };
+      rec.onstop = function () {
+        clearInterval(minuteur); cancelAnimationFrame(anim); flux.getTracks().forEach(function (t) { t.stop(); });
+        $('enreg').textContent = '⏺ Recommencer';
+        new Blob(morceaux, { type: rec.mimeType || 'audio/mp4' }).arrayBuffer().then(function (buf) { return preparer(buf); }).then(function (r) {
+          poserEchantillon(r, $('aLire').textContent.trim());
+        }).catch(function (e) { etatN(e.message || 'Enregistrement illisible, réessaie.', 'ko'); });
+      };
+      rec.start(250); t0 = Date.now(); $('enreg').textContent = '⏹ Arrêter';
+      minuteur = setInterval(function () { var s = Math.floor((Date.now() - t0) / 1000); $('chrono').textContent = '⏺ ' + s + ' s ' + (s < 8 ? '— continue…' : s < 20 ? '— parfait, tu peux arrêter' : '— c\'est assez'); if (s >= 30) rec.stop(); }, 250);
+    }).catch(function () { etatN('Micro refusé : autorise le micro pour kd-mc.com (réglages du navigateur), ou importe un fichier.', 'ko'); });
+  });
+  $('fichier').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    etatN('Lecture du fichier…');
+    f.arrayBuffer().then(preparer).then(function (r) { poserEchantillon(r, ''); }).catch(function (e) { etatN(e.message && /court/.test(e.message) ? e.message : 'Fichier audio illisible (essaie un mp3, m4a ou wav).', 'ko'); });
+  });
+  function poserEchantillon(r, texte) {
+    ECH = r.wav; var a = $('ecoute'); a.src = URL.createObjectURL(r.wav); a.classList.remove('cache');
+    $('chrono').textContent = '✅ ' + r.duree.toFixed(1) + ' s de voix, prêtes.';
+    if (texte && !$('texteRef').value) $('texteRef').value = texte.slice(0, 400);
+    etatN(''); verifSauver();
+  }
+  function etatN(t, c) { var e = $('etatN'); e.textContent = t; e.className = 'etat' + (c ? ' ' + c : ''); }
+  function verifSauver() { $('sauver').disabled = !(ECH && $('accord').checked); }
+  $('accord').addEventListener('change', verifSauver);
+  $('sauver').addEventListener('click', function () {
+    var fd = new FormData();
+    fd.append('audio', ECH, 'voix.wav'); fd.append('nom', $('nomVoix').value); fd.append('langue', $('langueV').value);
+    fd.append('texteRef', $('texteRef').value); fd.append('accordPar', $('accordPar').value); fd.append('accord', $('accord').checked ? 'oui' : 'non');
+    $('sauver').disabled = true; etatN('Enregistrement…');
+    api('/__voix/ajouter', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j.ok) { etatN(MSG[j.reason] || 'Refusé : ' + j.reason, 'ko'); verifSauver(); return; }
+      ETAT.voix.unshift(j.voix); ETAT.echant[j.voix.id] = ECH; peindreVoix(); $('choixVoix').value = j.voix.id; $('choixVoix').dispatchEvent(new Event('change'));
+      ECH = null; $('ecoute').classList.add('cache'); $('nomVoix').value = ''; $('texteRef').value = ''; $('accord').checked = false; $('chrono').textContent = 'Prêt.'; $('enreg').textContent = '⏺ Enregistrer';
+      etatN('✅ Voix enregistrée.', 'ok'); vue('parler'); $('texte').focus();
+    }).catch(function () { etatN('Pas de réseau : réessaie.', 'ko'); verifSauver(); });
+  });
+
+  /* ---------- GÉNÉRER (dans le navigateur : chaque appareil a son propre quota gratuit) ---------- */
+  function donnees(m, fichier, texte, v, l) {
+    if (m === 'qwen') { var ref = String(v.texteRef || '').trim(); return [fichier, ref, texte, ETAT.langues[l] || 'French', !ref, '1.7B']; }
+    return [texte, l, fichier, Number($('expr').value), 0.8, 0, 0.5];
+  }
+  function appelMoteur(m, blob, texte, v, l) {
+    var fd = new FormData(); fd.append('files', blob, 'voix.wav');
+    return fetch(m.base + '/gradio_api/upload', { method: 'POST', body: fd }).then(function (r) { if (!r.ok) throw new Error('envoi ' + r.status); return r.json(); }).then(function (p) {
+      var fichier = { path: p[0], meta: { _type: 'gradio.FileData' } };
+      return fetch(m.base + '/gradio_api/call/' + m.fn, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: donnees(m.id, fichier, texte, v, l) }) });
+    }).then(function (r) { if (!r.ok) throw new Error('demande ' + r.status); return r.json(); }).then(function (j) {
+      return fetch(m.base + '/gradio_api/call/' + m.fn + '/' + j.event_id).then(function (r) { return r.text(); });
+    }).then(function (flux) {
+      var u = /event:\s*complete/.test(flux) && (flux.match(/"url":\s*"(https:\/\/[^"]+\.hf\.space\/gradio_api\/file=[^"]+)"/) || [])[1];
+      if (!u) throw new Error(/quota|ZeroGPU|exceeded/i.test(flux) ? 'quota' : 'pas de résultat');
+      return fetch(u).then(function (r) { if (!r.ok) throw new Error('audio ' + r.status); return r.arrayBuffer(); });
+    });
+  }
+  function ordre() {
+    var c = $('moteur').value, l = ETAT.moteurs.slice();
+    if (c !== 'auto') l.sort(function (a, b) { return (b.id === c) - (a.id === c); });
+    else if (Number($('expr').value) > 0.7) l.sort(function (a, b) { return (b.id === 'chatterbox') - (a.id === 'chatterbox'); });   /* beaucoup d'expression : Chatterbox d'abord */
+    return l;
+  }
+  function decouper(t) {
+    var phrases = t.replace(/\s+/g, ' ').trim().match(/[^.!?…]+[.!?…]+["»”]?\s*|[^.!?…]+$/g) || [t], out = [], cur = '';
+    phrases.forEach(function (p) { if ((cur + p).length > 260 && cur) { out.push(cur.trim()); cur = ''; } cur += p; });
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+  function etatG(t, c) { var e = $('etatG'); e.textContent = t; e.className = 'etat' + (c ? ' ' + c : ''); }
+  function barre(p) { $('barre').style.display = p == null ? 'none' : 'block'; $('barre').firstChild.style.width = (p || 0) + '%'; }
+  var occupe = false;
+  $('generer').addEventListener('click', function () {
+    if (occupe) return;
+    var v = voixChoisie(), texte = $('texte').value.trim(), l = $('langue').value;
+    if (!v) { etatG('Crée d\'abord une voix (onglet « Nouvelle voix »).', 'ko'); return; }
+    if (!texte) { etatG('Écris le texte à dire.', 'ko'); return; }
+    if (ctx().resume) ctx().resume();
+    occupe = true; $('generer').disabled = true;
+    var bouts = decouper(texte), audios = [], moteurUtilise = '', t0 = Date.now();
+    etatG('Préparation de la voix…'); barre(3);
+    echantillon(v.id).then(function (blob) {
+      var i = 0;
+      function suivant() {
+        if (i >= bouts.length) return Promise.resolve();
+        etatG('🎙️ Génération ' + (i + 1) + ' / ' + bouts.length + '… (10 à 30 s par morceau)');
+        var essais = ordre(), k = 0, derniere = null;
+        function essayer() {
+          if (k >= essais.length) return Promise.reject(new Error(derniere && /quota/.test(derniere.message) ? 'quota' : 'tous'));
+          var m = essais[k++];
+          return appelMoteur(m, blob, bouts[i], v, l).then(function (buf) { moteurUtilise = moteurUtilise || m.nom; return buf; }, function (e) { derniere = e; if (k < essais.length) etatG('↪︎ ' + m.nom + ' ne répond pas, j\'essaie ' + essais[k].nom + '…'); return essayer(); });
+        }
+        return essayer().then(function (buf) { audios.push(buf); i++; barre(5 + 95 * i / bouts.length); return suivant(); });
+      }
+      return suivant();
+    }).then(function () {
+      return Promise.all(audios.map(function (b) { return decoder(b.slice(0)); }));
+    }).then(function (abs) {
+      var sr = 24000, pause = Math.round(sr * 0.18), tot = 0;
+      var mono = abs.map(function (ab) { return ab.sampleRate === sr ? ab.getChannelData(0) : reech(ab.getChannelData(0), ab.sampleRate, sr); });
+      mono.forEach(function (m) { tot += m.length + pause; });
+      var f = new Float32Array(tot), o = 0; mono.forEach(function (m) { f.set(m, o); o += m.length + pause; });
+      ajouterResultat(pcmVersWav(f, sr), v, texte, moteurUtilise, (Date.now() - t0) / 1000);
+      etatG('✅ Prêt.', 'ok'); barre(null);
+    }).catch(function (e) {
+      barre(null);
+      etatG(e && e.message === 'quota' ? 'Le quota gratuit du jour de cet appareil est atteint. Réessaie demain, ou depuis un autre appareil.' : e && e.message === 'tous' ? 'Les moteurs gratuits ne répondent pas en ce moment. Réessaie dans une minute.' : 'La génération a échoué : ' + (e && e.message || e) + '. Réessaie.', 'ko');
+    }).then(function () { occupe = false; $('generer').disabled = false; });
+  });
+  function reech(src, de, vers) { var n = Math.round(src.length * vers / de), out = new Float32Array(n); for (var i = 0; i < n; i++) { var x = i * de / vers, a = Math.floor(x), t = x - a; out[i] = (src[a] || 0) * (1 - t) + (src[a + 1] || 0) * t; } return out; }
+  function ajouterResultat(wav, v, texte, moteur, s) {
+    var u = URL.createObjectURL(wav), nom = (v.nom || 'voix').replace(/[^\w-]+/g, '-') + '-voix-ia-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '') + '.wav';
+    var d = document.createElement('div'); d.className = 'res';
+    d.innerHTML = '<span class="ia">Voix générée par IA</span> <span class="k">' + esc(v.nom) + ' · ' + esc(moteur) + ' · ' + s.toFixed(0) + ' s</span>'
+      + '<div class="k" style="margin:6px 0 0">' + esc(texte.length > 140 ? texte.slice(0, 140) + '…' : texte) + '</div>'
+      + '<audio controls src="' + u + '"></audio><div class="row"><a class="btn" download="' + esc(nom) + '" href="' + u + '">⬇️ Télécharger</a>'
+      + (navigator.canShare ? '<button class="btn" data-part="1">📤 Partager</button>' : '') + '</div>';
+    $('resultats').insertBefore(d, $('resultats').firstChild);
+    var a = d.querySelector('audio'); a.play().catch(function () { /* iPhone : lecture au toucher */ });
+    var p = d.querySelector('[data-part]');
+    if (p) p.addEventListener('click', function () { var f = new File([wav], nom, { type: 'audio/wav' }); if (navigator.canShare({ files: [f] })) navigator.share({ files: [f], title: 'Voix générée par IA' }).catch(function () { /* annulé */ }); });
+  }
+
+  /* ---------- INTÉGRATION ---------- */
+  function majLien() {
+    var v = voixChoisie(), t = $('texte').value.trim().slice(0, 600) || 'Bonjour';
+    $('lienInt').textContent = v ? location.origin + '/__voix/dire?voix=' + encodeURIComponent(v.id) + '&texte=' + encodeURIComponent(t) : 'Choisis une voix et écris un texte.';
+    $('compte').textContent = $('texte').value.length + ' / 3000 caractères';
+  }
+  $('texte').addEventListener('input', majLien);
+  $('copierLien').addEventListener('click', function () { var b = this; navigator.clipboard.writeText($('lienInt').textContent).then(function () { b.textContent = '✓ Copiée'; setTimeout(function () { b.textContent = '📋 Copier l\'adresse'; }, 1500); }); });
+  $('expr').addEventListener('input', function () { var x = Number(this.value); $('exprV').textContent = x < 0.4 ? '(sobre)' : x <= 0.7 ? '(normale)' : '(très expressive)'; });
+
+  charger();
+})();
+</script>
+</body>
+</html>

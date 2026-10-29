@@ -389,6 +389,7 @@
   "tests/verify-seances.mjs",
   "tests/verify-secrets-cmc.mjs",
   "tests/verify-seed-remplace-import-perime.mjs",
+  "tests/verify-studio-voix.mjs",
   "tests/verify-sw-identite.mjs",
   "tests/verify-sw-lie-fi.mjs",
   "tests/verify-sw-navigation.mjs",

@@ -17,6 +17,7 @@ import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la
 import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret, jetonConfirmation, envoyerMailConfirmation, sha256Hex as sha256HexMail } from './mail-confirme.js';   // confirmation par MAIL de l'inscription (Kevin 17.10 : « B », pas de 2e numéro pour WhatsApp)
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
+import { handleVoix } from './voix.js';   // 🎙️ Studio Voix : bibliothèque de voix clonées + porte d'intégration (Kevin 29.10)
 import * as cptD1 from './compteurs-d1.js';
 /* Toute notification de MESSAGE ouvre la boîte unique (réponse directe), pas l'app d'origine — Kevin 4.10 : « temps réel partout ». */
 const URL_MESSAGES = 'https://kd-mc.com/#messages';
@@ -262,6 +263,21 @@ const SURFACES_JUMELLES = [['cmcteams', 'departs']];
    remise toute seule qu'aux personnes que l'admin a rangées lui-même ; un compte ordinaire, `compte_unique`, tape le code). */
 const APPS_PRIVEES = ['coffre', 'bot', 'dashboard'];
 /* Apps fermées pour tout le monde (cfg:apps_fermees) : relue au plus toutes les 30 s par isolat — une lecture KV, jamais une écriture. */
+/* OUTILS « ADMIN D'ABORD » (Kevin 29.10 : « une tuile admin seulement pour l'instant, que je peux cocher pour débloquer pour tout le monde ou pas ») :
+   un outil de cette liste n'est ouvert qu'à l'admin tant que son id n'est PAS dans `cfg:outils_ouverts` ; coché dans le tableau de bord admin, il s'ouvre
+   à tout compte du domaine (porte « fiche »). Liste FERMÉE : un nouvel outil s'ajoute ici ET dans PORTES (champ `debloquable`). Relue au plus toutes les 30 s. */
+export const OUTILS_DEBLOCABLES = { voix: 'Studio Voix' };
+const CLE_OUTILS_OUVERTS = 'cfg:outils_ouverts';
+let OUVERTS = { liste: [], t: 0, kv: null };
+export async function chargerOutilsOuverts(env, force) {
+  const kv = env && env.ACCOUNTS;
+  if (!kv) { OUVERTS = { liste: [], t: 0, kv: null }; return OUVERTS.liste; }
+  if (!force && OUVERTS.kv === kv && Date.now() - OUVERTS.t < 30000) return OUVERTS.liste;
+  let liste = [];
+  try { const v = JSON.parse((await kv.get(CLE_OUTILS_OUVERTS)) || '[]'); if (Array.isArray(v)) liste = v.map((x) => String(x || '')).filter((x) => Object.prototype.hasOwnProperty.call(OUTILS_DEBLOCABLES, x)); } catch { liste = OUVERTS.kv === kv ? OUVERTS.liste : []; }
+  OUVERTS = { liste, t: Date.now(), kv };
+  return liste;
+}
 const CLE_FERMEES = 'cfg:apps_fermees';
 const MSG_FERME_GENERAL = 'Cette application est fermée pour le moment par l\'administrateur. Elle rouvrira dès qu\'il l\'aura décidé.';
 let FERMEES = { liste: [], t: 0, kv: null };
@@ -689,6 +705,17 @@ const ROUTEUR = {
 
     // SSO transverse (session unique + CGU). Même origine par sous-domaine.
     if (url.pathname.startsWith('/__sso/')) return handleSso(request, url, env, ctx);
+    // 🎙️ Studio Voix (Kevin 29.10) : admin prouvé, ou tout compte du domaine quand l'outil est coché « Ouvert à tous » (voir voix.js).
+    if (url.pathname.startsWith('/__voix/')) {
+      const adm = await adminSession(request, env);
+      const ouvert = (await chargerOutilsOuverts(env)).indexOf('voix') >= 0;
+      let uid = adm ? CANON_UID : '';
+      if (!uid && ouvert && env.KDMC_SSO_SECRET && (await compteConnu(request, env))) {
+        const s = await ssoVerify(env.KDMC_SSO_SECRET, ssoToken(request), request);
+        uid = (s && s.uid) || '';
+      }
+      return handleVoix(request, url, env, { uid, admin: !!adm, ouvert, limite: (q) => limiteTous(env.LIMITE_VOIX, q) });
+    }
     // Admin domaine (fiches clients + fonctions communes). Réservé admin.
     if (url.pathname.startsWith('/__admin/')) return handleAdmin(request, url, env);
     // Coffre Finances : sauvegarde EN LIGNE chiffrée de bout en bout. Réservé admin
@@ -1013,7 +1040,6 @@ const ROUTEUR = {
     }
     /* ✉️ LE BOUTON « ÉCRIRE À L'ADMIN » sur toute page HTML de toute app (Kevin 3.10 : « toutes les apps du domaine doivent pouvoir contacter l'admin
        depuis leur compte »). Posé ICI, dans la couche partagée : la prochaine adresse l'a sans qu'on y pense. */
-    if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '')) outHeaders.set('accept-ch', 'Sec-CH-UA-Model, Sec-CH-UA-Platform-Version');   /* 29.10 : le modèle exact de l'appareil (Chrome le masque sinon) */
     if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '') && host !== 'admin.kd-mc.com') {
       return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }), String(env && env.BEE_PARTOUT) === '0' ? '' : PARTOUT_TAG, { hote: host, dest: request.headers.get('sec-fetch-dest') || '', nonce: String(env && env.BEE_PARTOUT) !== '0' && marqueurKevin(request) ? nonceBee() : '' });
     }
@@ -1245,6 +1271,8 @@ export function durcirReponse(res) {
        (USB, série, HID, MIDI, paiement, géoloc) restent à la page ; seul le pistage publicitaire est coupé. La CSP de base
        ne touche à aucun script (base-uri, object-src, frame-ancestors = l'équivalent de X-Frame-Options SAMEORIGIN).
        Une app qui pose les siennes garde les siennes. Prouvé : durci.test.mjs 12-15. */
+    /* 29.10 (Kevin : « est-ce ma tablette Lenovo ? ») : Chrome Android masque le modèle (« K ») ; cette demande le fait envoyer sur les requêtes suivantes de la même adresse (whoami). Posée ICI, sur toutes les pages HTML de tous les sous-domaines (un test sur le seul portail laissait les apps sans l'indice). */
+    if (!h.has('accept-ch')) h.set('accept-ch', 'Sec-CH-UA-Model, Sec-CH-UA-Platform-Version');
     if (!h.has('permissions-policy')) h.set('permissions-policy', PERMISSIONS_PAGE);
     if (!h.has('content-security-policy')) h.set('content-security-policy', "base-uri 'self'; object-src 'none'; frame-ancestors 'self'");
     const cc = h.get('cache-control') || '';
@@ -1997,6 +2025,8 @@ const PORTES = [
   { dossier: '/CMCteams/kdmc-home/admin', niveau: 'admin', verrou: () => priveLock('Admin du domaine', '👑') },
   { dossier: '/CMCteams/kdmc-home/liens', niveau: 'admin', verrou: () => priveLock('Centre de contrôle', '🎛️') },
   { dossier: '/CMCteams/kdmc-home/clone', niveau: 'admin', verrou: () => priveLock('Cloneur de sites', '🧬') },
+  /* Studio Voix (Kevin 29.10) : admin seul tant que l'interrupteur « Ouvert à tous » du tableau de bord n'est pas coché ; coché = tout compte du domaine. */
+  { dossier: '/CMCteams/kdmc-home/voix', niveau: 'admin', debloquable: 'voix', app: 'kd-mc.com', nom: 'Studio Voix', verrou: () => priveLock('Studio Voix', '🎙️') },
   { dossier: '/CMCteams/kdmc-home/empreinte', niveau: 'admin', verrou: () => priveLock('Changer mon code admin', '🔑') },
   { dossier: '/CMCteams/tools/finances', niveau: 'admin', verrou: () => priveLock('Finances', '💰') },
   { dossier: '/CMCteams/tools/messages', niveau: 'admin', verrou: () => priveLock('Messages employés', '📨') },
@@ -2133,7 +2163,9 @@ async function porteGenerale(request, url, env, cheminCMC) {
 async function porteFermee(request, url, env, cheminCMC) {
   const g = porteDe(cheminCMC);
   if (!g) return porteGenerale(request, url, env, cheminCMC);
-  if (g.niveau === 'admin') {
+  /* Outil « admin d'abord » coché « Ouvert à tous » : il passe par la porte « fiche » (tout compte du domaine), plus par le code admin. */
+  const ouvertATous = !!(g.debloquable && (await chargerOutilsOuverts(env)).indexOf(g.debloquable) >= 0);
+  if (g.niveau === 'admin' && !ouvertATous) {
     /* Fail-open si le code admin n'est pas déployé (anti-verrouillage au déploiement,
        leçons #99/#100) — comme les deux verrous d'avant, qui ne regardaient que l'adresse. */
     if (!(env && env.KDMC_ADMIN_PIN_SHA256)) return null;
@@ -5576,6 +5608,22 @@ async function handleAdmin(request, url, env) {
     FERMEES = { liste, t: Date.now(), kv: env.ACCOUNTS };
     await audLog(env, { ev: 'apps_fermees', fermees: liste, detail: liste.length ? 'fermées pour tout le monde : ' + liste.join(', ') : 'aucune app fermée en général' });
     return J({ ok: true, fermees: liste });
+  }
+  /* ── OUTILS « ADMIN D'ABORD » : ouvrir / refermer à tout le monde (Kevin 29.10) ── GET → { outils:{id:nom}, ouverts } · POST { id, ouvert:true|false }. */
+  if (path === '/__admin/outils-ouverts' && request.method === 'GET') {
+    return J({ ok: true, outils: OUTILS_DEBLOCABLES, ouverts: await chargerOutilsOuverts(env, true) });
+  }
+  if (path === '/__admin/outils-ouverts' && request.method === 'POST') {
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const id = String(b.id || '');
+    if (!Object.prototype.hasOwnProperty.call(OUTILS_DEBLOCABLES, id)) return J({ ok: false, reason: 'outil inconnu' });
+    if (!env.ACCOUNTS) return J({ ok: false, reason: 'registre indisponible' });
+    const cur = await chargerOutilsOuverts(env, true);
+    const liste = b.ouvert === true ? [...new Set([...cur, id])] : cur.filter((x) => x !== id);
+    try { await env.ACCOUNTS.put(CLE_OUTILS_OUVERTS, JSON.stringify(liste)); } catch { return J({ ok: false, reason: 'registre indisponible' }); }
+    OUVERTS = { liste, t: Date.now(), kv: env.ACCOUNTS };
+    await audLog(env, { ev: 'outil_ouvert', detail: OUTILS_DEBLOCABLES[id] + (b.ouvert === true ? ' ouvert à tout le monde' : ' réservé à l\'admin') });
+    return J({ ok: true, ouverts: liste });
   }
   /* Code oublié : l'admin efface le code enregistré au domaine ; la personne en choisit un
      nouveau à sa prochaine connexion depuis son appareil (ou en recréant son compte). */

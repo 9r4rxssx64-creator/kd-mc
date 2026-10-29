@@ -198,3 +198,15 @@ describe('SSO kd-mc.com : une exception non prévue dit sa cause (25.10.2026)', 
     expect(JSON.stringify(j)).toContain('panne simulée');
   });
 });
+
+describe('SSO kd-mc.com : un refus « appareil » nomme les deux familles (29.10.2026)', () => {
+  it('whoami ok:false cause appareil → 401 avec pass_appareil, requete_appareil et source', async () => {
+    mockWhoami({ ok: false, reason: 'pass_refuse', cause: 'appareil', pass_appareil: 'iphone', requete_appareil: 'linux', source: 'en-tete' });
+    const r = await ssoFromKdmc({ kdmc_token: 'jeton.signe' }, makeKdmcDB());
+    expect(r.status).toBe(401);
+    const j = await r.json();
+    expect(JSON.stringify(j)).toContain('"pass_appareil":"iphone"');
+    expect(JSON.stringify(j)).toContain('"requete_appareil":"linux"');
+    expect(JSON.stringify(j)).toContain('"source":"en-tete"');
+  });
+});

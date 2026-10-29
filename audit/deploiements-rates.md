@@ -7,24 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 29/10/2026 09:13 UTC
-
-- **Branche** : `main` · **Commit** : `300cb2a7` · **Run** : `40847357813`
-- **Ce qui a lâché** : deploy › La boîte unique est servie et fermée aux inconnus (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/40847357813
-- **Ce que la machine a dit** :
-
-```
-deploy	La boîte unique est servie et fermée aux inconnus (bloquant)	﻿2026-10-29T09:11:36.2735705Z ##[group]Run trap 'echo "::error title=Boîte unique::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR
-^[[36;1mtrap 'echo "::error title=Boîte unique::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR^[[0m
-^[[36;1m  if [ "$A" = "401" ] && grep -q admin_requis /tmp/boite-a.json && [ "$D" = "403" ] && grep -q origine_refusee /tmp/boite-d.json; then ok=1; break; fi^[[0m
-^[[36;1m[ "$ok" = "1" ] || { echo "::error title=Boîte unique::lecture sans session = HTTP $A (401 attendu), dépôt hors domaine = HTTP $D (403 attendu)"; exit 1; }^[[0m
-^[[36;1m[ "$ok" = "1" ] || { echo "::error title=Bouton admin::bouton.js = HTTP $B (200 attendu), balise présente dans la page de Lingua = $P (1 attendu)"; exit 1; }^[[0m
-^[[36;1mecho "::notice title=Boîte unique::EN LIGNE et fermée aux inconnus — /__boite/admin sans session = 401 admin_requis ; dépôt depuis un site hors domaine = 403 origine_refusee"^[[0m
-##[error]lecture sans session = HTTP 500 (401 attendu), dépôt hors domaine = HTTP 500 (403 attendu)
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -546,4 +528,17 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
+##[error]Process completed with exit code 1.
 ```

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.350 (29.10.2026)
+- Entrée par le domaine : un refus « appareil » renvoie `pass_appareil`, `requete_appareil` et `source` (familles seulement) pour nommer la paire coupable quand le robot échoue.
+
+---
+
 ## Créa Studio v9.21.0 — toutes les plateformes : barre du bas sur deux rangées, galerie des styles entière, outils 44 px (2026-10-25, soir)
 - Nouveau contrôle `npm run verif:studio-plateformes` (17 appareils : iPhone de Kevin portrait/paysage, iPhone SE, Pixel, Galaxy S9+, iPad, tablette, Lenovo, navigateurs étroits 340-412 px, grand écran ; Chromium ici, WebKit/Firefox par le robot public `studio-plateformes.yml`) : premier dessin, 0 erreur JS, débordement, barre du bas dans l'écran, rien ne la recouvre, les 9 studios s'ouvrent au toucher, galerie des 12 styles visible, 44 px, pastille. Trouvé et corrigé : sur téléphone, 3 studios (Famille, Mes créations, Magie) et 8 styles sur 12 étaient hors écran (défilement caché), Ouvrir/Exporter 40 px. Avant 46/58, après 70/70 (sous-ensemble) ; matrice Chromium complète 17 appareils : 196/196 (25.10, 17h40 UTC). Garde `test:studio-plateformes` (dans test:ci ; sabotage Studio v9.18.6 → 5 rouges). Leçon 775.
 

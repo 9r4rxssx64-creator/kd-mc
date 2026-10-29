@@ -112,7 +112,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.349';
+export const API_VERSION = '1.1.350';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1654,7 +1654,7 @@ async function _ssoFromKdmc(request, env) {
     return err('Session kd-mc.com injoignable', 401, 'kdmc_session_invalide', { detail: String(e?.message || '') });
   }
 
-  if (!who || who.ok !== true) return err('Session kd-mc.com invalide', 401, 'kdmc_session_invalide', { reason: who && typeof who.reason === 'string' ? who.reason.slice(0, 40) : 'inconnue', cause: who && typeof who.cause === 'string' ? who.cause.slice(0, 30) : undefined });   // la raison donnée par le domaine (ex. en_creation) : lisible dans la réponse
+  if (!who || who.ok !== true) return err('Session kd-mc.com invalide', 401, 'kdmc_session_invalide', { reason: who && typeof who.reason === 'string' ? who.reason.slice(0, 40) : 'inconnue', cause: who && typeof who.cause === 'string' ? who.cause.slice(0, 30) : undefined, pass_appareil: who && typeof who.pass_appareil === 'string' ? who.pass_appareil.slice(0, 12) : undefined, requete_appareil: who && typeof who.requete_appareil === 'string' ? who.requete_appareil.slice(0, 12) : undefined, source: who && typeof who.source === 'string' ? who.source.slice(0, 12) : undefined });   // la raison donnée par le domaine (ex. en_creation) : lisible dans la réponse
   // RÈGLE DU DOMAINE (Kevin 13.10) : une personne inscrite, sur son appareil connu, est reconnue
   // automatiquement dans toutes les apps. Deux preuves sont acceptées, et le domaine seul les juge :
   //  - verified === true : Face ID prouvé (passkey ES256) — seule preuve valable pour un ADMIN ;

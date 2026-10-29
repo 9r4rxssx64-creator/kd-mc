@@ -1,4 +1,10 @@
-/* Qui VOIT la tuile « Tor en clair » sur le portail kd-mc.com — Kevin 2026-09-15.
+/* Qui VOIT les entrées admin du portail kd-mc.com — Kevin 2026-09-15, réécrit le 29.10.2026 (« regroupe tout au maximum, un seul endroit »).
+ *
+ * 29.10 : Tor, Bot Crypto, Javis, « Qui se connecte » et Tableau KDMC ne sont PLUS des tuiles du portail : ils vivent dans le tableau de
+ * bord admin (/admin/, tuile par tuile, gardées par tests/admin-tuiles.test.mjs). Ce test garde maintenant : (1) la SEULE carte admin
+ * du portail (« Mon tableau de bord ») n'est visible que pour l'admin prouvé ; (2) aucune ancienne copie n'est revenue dans le portail.
+ *
+ * Ancien rôle (conservé pour l'histoire) : Qui VOIT la tuile « Tor en clair » sur le portail kd-mc.com — Kevin 2026-09-15.
  *
  * Une tuile invisible = une fonction qui n'existe pas (vécu le 2026-08-05 : Kevin ne voyait
  * rien sur son iPhone parce que la tuile exigeait le Face ID). Une tuile visible par tout le
@@ -46,9 +52,10 @@ async function vue(session) {
   await p.goto(BASE);
   await p.waitForTimeout(600);
   const r = await p.evaluate(() => {
-    const z = document.getElementById('tor-zone'), bot = document.getElementById('bot-zone');
-    return { tor: z ? !z.hidden : null, bot: bot ? !bot.hidden : null,
-             lien: z && z.querySelector('a') ? z.querySelector('a').href : null };
+    const vu = el => !!el && getComputedStyle(el).display !== 'none' && el.getClientRects().length > 0;
+    const tdb = document.getElementById('tdb-haut');
+    const copies = ['tor-zone', 'bot-zone', 'javis-zone', 'access-zone', 'tableau-zone', 'priv-zone', 'perso-zones'].filter(id => document.getElementById(id));
+    return { tdb: vu(tdb), lien: tdb && tdb.querySelector('a') ? tdb.querySelector('a').getAttribute('href') : null, copies };
   });
   await ctx.close();
   return r;
@@ -60,15 +67,14 @@ const lolo    = await vue({ uid: 'u-lolo', name: 'Laurence Saint-Polit', admin: 
 const inconnu = await vue({ uid: 'u-x', name: 'Jean Dupont', admin: false, verified: false });
 const perso   = await vue(null);
 
-ok('un « Kevin » au nom seul (sans admin prouvé) ne la voit PAS (23.10 : un homonyme voyait les raccourcis)', kevin.tor === false);
-ok('Kevin admin prouvé la voit aussi', admin.tor === true);
-ok('la tuile pointe sur tor.kd-mc.com', (admin.lien || '').includes('tor.kd-mc.com'), admin.lien);
-ok('Laurence ne la voit pas', lolo.tor === false);
-ok('un client inconnu ne la voit pas', inconnu.tor === false);
-ok('un visiteur non connecté ne la voit pas', perso.tor === false);
-ok('Laurence ne voit plus le bot (23.10 Kevin : « tout moi seul pour l\'instant »)', lolo.bot === false);
-ok('Kevin admin voit le bot', admin.bot === true);
-ok('aucune régression : l\'inconnu ne voit toujours pas le bot', inconnu.bot === false);
+ok('un « Kevin » au nom seul (sans admin prouvé) ne voit PAS la carte admin (23.10 : un homonyme voyait les raccourcis)', kevin.tdb === false);
+ok('Kevin admin prouvé la voit', admin.tdb === true);
+ok('la carte mène au tableau de bord unique (/admin/)', admin.lien === '/admin/', admin.lien);
+ok('Laurence ne la voit pas', lolo.tdb === false);
+ok('un client inconnu ne la voit pas', inconnu.tdb === false);
+ok('un visiteur non connecté ne la voit pas', perso.tdb === false);
+for (const [nom, v] of Object.entries({ kevin, admin, lolo, inconnu, perso }))
+  ok('aucune copie des anciennes tuiles (Tor, Bot, Javis, Qui se connecte, Tableau, Mon espace) dans le portail — ' + nom, v.copies.length === 0, v.copies.join(','));
 
 await b.close(); srv.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Tout passe — 5 profils vérifiés en vrai navigateur'));

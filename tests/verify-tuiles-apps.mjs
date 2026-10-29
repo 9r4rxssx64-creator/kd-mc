@@ -18,6 +18,8 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+const hubAdmin = () => createRequire(import.meta.url)('../kdmc-home/admin/admin.js').hub();
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -73,9 +75,11 @@ const sousPortails = SOUS_PORTAILS.map((sp) => ({ ...sp, html: lire(sp.fichier) 
      · ou kd-mc.com porte un lien vers le chemin qu'elle sert (ex. /cujina) ;
      · ou un sous-portail affiché sur kd-mc.com porte un lien relatif vers son dossier. */
 function atteignable(hote, chemin) {
-  if (portail.includes(`href="https://${hote}/`)) return true;
+  /* 29.10 : « atteignable » = le portail OU le tableau de bord admin (qui porte les outils privés, un seul endroit). */
+  const surfaces = portail + '\n' + hubAdmin();
+  if (surfaces.includes(`href="https://${hote}/`)) return true;
   const dossier = chemin.replace(/\/+$/, '').split('/').pop();
-  if (new RegExp(`href="/${dossier}(/|")`).test(portail)) return true;
+  if (new RegExp(`href="/${dossier}(/|")`).test(surfaces)) return true;
   return sousPortails.some((sp) => new RegExp(`href="${dossier}/"`).test(sp.html));
 }
 
@@ -108,6 +112,9 @@ const TOUTES_PAGES = [];
   }
 })(join(ROOT, 'kdmc-home'));
 TOUTES_PAGES.push(lire('shops/index.html'));
+/* 29.10 : le tableau de bord admin est rendu par JS (cartes `card(…, '/clone/')`, réglages `'/empreinte/'`) — on compte ses liens RENDUS. */
+TOUTES_PAGES.push(hubAdmin());
+TOUTES_PAGES.push([...lire('kdmc-home/admin/tableau.js').matchAll(/'(\/[a-z-]+\/)'/g)].map((m) => `href="${m[1]}"`).join('\n'));
 const TOUT = TOUTES_PAGES.join('\n');
 
 /* 1. Une sous-page du portail est atteignable par son chemin OU par sa belle adresse. */
@@ -136,7 +143,7 @@ for (const d of readdirSync(join(ROOT, 'shops'))) {
 }
 
 /* Anti-retour en arrière sur les 4 tuiles nées de cet incident. */
-ok(/id="javis-zone"/.test(portail) && portail.includes('https://javis.kd-mc.com/'), 'la tuile Javis a disparu du portail');
+ok(hubAdmin().includes('href="https://javis.kd-mc.com/"'), 'la tuile Javis a disparu du tableau de bord admin (29.10 : elle n\'est plus au portail, un seul endroit)');
 for (const d of ['rotaplan', 'kit-ia', 'croupier'])
   ok(sousPortails[0].html.includes(`href="${d}/"`), `la tuile ${d} a disparu du portail boutiques`);
 

@@ -1,4 +1,8 @@
-/* Qui VOIT la tuile « 📋 Tableau KDMC » sur le portail kd-mc.com — Kevin 2026-10-22 (« Pas de tableau »).
+/* Qui VOIT l'entrée admin du portail kd-mc.com — réécrit le 29.10.2026 (Kevin : « un seul endroit »). La tuile « Tableau KDMC » n'est plus au
+ * portail : elle est dans le tableau de bord admin (garde tests/admin-tuiles.test.mjs). Ce test garde que la SEULE carte admin du
+ * portail (« Mon tableau de bord ») suit la règle admin prouvé / vue membre, et que la tuile n'est pas revenue en copie.
+ *
+ * Ancien rôle : Qui VOIT la tuile « 📋 Tableau KDMC » sur le portail kd-mc.com — Kevin 2026-10-22 (« Pas de tableau »).
  *
  * Le tableau « qui fait quoi » entre les branches existait (page claude.ai), mais aucun bouton
  * du portail n'y menait : Kevin ne le trouvait pas. La tuile suit la règle du tableau de bord
@@ -50,8 +54,7 @@ async function vue(session) {
     /* VISIBLE À L'ÉCRAN, pas seulement l'attribut : `.grid{display:grid}` battait `hidden`
        (23.10, Lenovo msg 660 : carte « Mon tableau de bord ADMIN » encore affichée en vue membre). */
     const vu = el => !!el && getComputedStyle(el).display !== 'none' && el.getClientRects().length > 0;
-    return { tab: vu(z), tdb: vu(tdb),
-             lien: z && z.querySelector('a') ? z.querySelector('a').href : null };
+    return { tab: !!z, tdb: vu(tdb), lien: tdb && tdb.querySelector('a') ? tdb.querySelector('a').getAttribute('href') : null };
   });
   await ctx.close();
   return r;
@@ -64,15 +67,14 @@ const inconnu = await vue({ uid: 'u-x', name: 'Jean Dupont', admin: false, verif
 const perso   = await vue(null);
 const membre  = await vue({ uid: 'kdmc_admin', name: 'Kevin DESARZENS', admin: false, verified: true, apercu: 'membre', abonnement: 'max' });
 
-ok('Kevin admin voit la tuile Tableau KDMC', admin.tab === true);
-ok('la tuile mène au tableau (page claude.ai)', (admin.lien || '').startsWith('https://claude.ai/artifact/'), admin.lien);
-ok('un « Kevin » Face ID sans admin prouvé ne la voit pas (23.10 : admin seul)', kevinFi.tab === false && kevinFi.tdb === false);
+ok('la tuile « Tableau KDMC » n\'est plus une copie dans le portail (elle vit dans le tableau de bord admin)', [admin, kevinFi, lolo, inconnu, perso, membre].every(v => v.tab === false));
 ok('Kevin admin voit la carte « Mon tableau de bord ADMIN »', admin.tdb === true);
-ok('VUE MEMBRE (👁) : ni la tuile ni la carte admin à l\'écran', membre.tab === false && membre.tdb === false, JSON.stringify(membre));
-ok('même règle que le tableau de bord admin', admin.tab === admin.tdb && kevinFi.tab === kevinFi.tdb);
-ok('Laurence ne la voit pas', lolo.tab === false);
-ok('un client inconnu ne la voit pas', inconnu.tab === false);
-ok('un visiteur non connecté ne la voit pas', perso.tab === false);
+ok('elle mène au tableau de bord unique', admin.lien === '/admin/', admin.lien);
+ok('un « Kevin » Face ID sans admin prouvé ne la voit pas (23.10 : admin seul)', kevinFi.tdb === false);
+ok('VUE MEMBRE (👁) : la carte admin n\'est pas à l\'écran', membre.tdb === false, JSON.stringify(membre));
+ok('Laurence ne la voit pas', lolo.tdb === false);
+ok('un client inconnu ne la voit pas', inconnu.tdb === false);
+ok('un visiteur non connecté ne la voit pas', perso.tdb === false);
 
 await b.close(); srv.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Tout passe — 6 profils vérifiés en vrai navigateur'));

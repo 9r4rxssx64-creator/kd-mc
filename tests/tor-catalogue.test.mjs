@@ -205,18 +205,13 @@ t('l\'outil est inscrit partout dans le domaine (registre, routeur, replis)', ()
   }
 });
 
-t('la tuile du portail existe, pointe sur l\'outil, et reste dans une zone privée', () => {
+t('la tuile Tor est dans le tableau de bord admin (un seul endroit, 29.10) et plus une copie au portail', () => {
   const portail = readFileSync(new URL('../kdmc-home/index.html', import.meta.url), 'utf8');
-  const i = portail.indexOf('id="tor-zone"');
-  assert(i > 0, 'la zone #tor-zone a disparu du portail');
-  const zone = portail.slice(i, portail.indexOf('</div>', i));
-  assert(/hidden/.test(portail.slice(i - 40, i + 40)), 'la zone n\'est plus masquée par défaut : tout le monde la verrait');
-  assert(zone.includes('https://tor.kd-mc.com/'), 'la tuile ne pointe plus sur l\'outil');
+  assert(!portail.includes('id="tor-zone"'), 'une copie de la tuile Tor est revenue dans le portail (29.10 : un seul endroit)');
+  const admin = readFileSync(new URL('../kdmc-home/admin/admin.js', import.meta.url), 'utf8');
+  assert(/tor\.kd-mc\.com/.test(admin), 'tor.kd-mc.com n\'est plus joignable depuis le tableau de bord admin');
   const js = readFileSync(new URL('../kdmc-home/kdmc-portal.js', import.meta.url), 'utf8');
-  assert(js.includes("getElementById('tor-zone')"), 'la règle d\'affichage de la tuile a disparu');
-  /* 23.10 : réservée à l'ADMIN PROUVÉ (s.admin), plus jamais au nom seul (un homonyme « Kevin » la voyait) */
-  assert(/torZone\.hidden\s*=\s*!\(s && s\.admin\)/.test(js), 'la tuile n\'est plus réservée à l\'admin prouvé');
-  assert(!/torZone\.hidden[^;]*(?:named|estKevin|kevin)/.test(js), 'la tuile s\'ouvre de nouveau sur un nom');
+  assert(!js.includes("getElementById('tor-zone')"), 'une règle d\'affichage de la copie Tor est revenue dans le portail');
 });
 
 

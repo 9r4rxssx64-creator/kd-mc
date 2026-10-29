@@ -109,15 +109,20 @@ test('chaque raccourci interne vise une section qui existe vraiment dans la page
   assert.ok(/hashchange/.test(src) && /el\.open = true/.test(src), 'les sections repliées doivent se déplier quand on arrive par une tuile');
 });
 
-/* Kevin 23.10.2026 : « que j'ai toutes les tuiles, qu'il ne m'en manque pas ». Toute carte réservée à l'admin sur le portail
-   (class="card adm") et toute page « Messages employés » doivent avoir LEUR tuile dans l'admin. */
-test('toute carte admin du portail a sa tuile dans l\'admin', async () => {
+/* Kevin 23.10.2026 : « que j'ai toutes les tuiles, qu'il ne m'en manque pas » — puis 29.10.2026 : « regroupe tout au maximum, que je puisse tout
+   commander d'un seul endroit ». Le portail n'a donc PLUS qu'UNE carte admin (« Mon tableau de bord » → /admin/) ; toutes les anciennes cartes
+   « Mon espace » / « Mes raccourcis » (liste figée ci-dessous) doivent avoir LEUR tuile dans l'admin, et aucune copie ne doit revenir au portail. */
+const ANCIENNES_CARTES_PORTAIL = ['https://beatbot.kd-mc.com/', 'https://sourcing.kd-mc.com/', '/clone/', '/liens/', 'https://coffre.kd-mc.com/',
+  'https://cmcteams.kd-mc.com/tools/finances/', 'https://autorisations.kd-mc.com/', 'https://staging.kd-mc.com/', 'https://dashboard.kd-mc.com/',
+  '/empreinte/', 'https://claude.ai/artifact/TainhAk9Vrd9k2ZZ2VuVP6', 'https://javis.kd-mc.com/', 'https://bot.kd-mc.com/', 'https://admin.kd-mc.com/',
+  'https://tor.kd-mc.com/'];
+test('toute ancienne carte admin du portail a sa tuile dans l\'admin, et le portail n\'en porte plus qu\'une', async () => {
   const { readFileSync } = await import('node:fs');
   const portail = readFileSync(new URL('../kdmc-home/index.html', import.meta.url), 'utf8');
-  const liens = [...portail.matchAll(/class="card adm" href="([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(liens.length >= 10, 'cartes admin du portail lues : ' + liens.length);
+  const cartesAdm = [...portail.matchAll(/class="card adm[^"]*" href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(cartesAdm, ['/admin/'], 'le portail ne doit porter qu\'UNE carte admin (« Mon tableau de bord ») : ' + cartesAdm.join(', '));
   const tableau = readFileSync(new URL('../kdmc-home/admin/tableau.js', import.meta.url), 'utf8');   /* tuiles ajoutées par le tableau (Réglages…) */
-  const manquent = liens.filter((u) => !html.includes('href="' + u + '"') && !tableau.includes("'" + u + "']"));
+  const manquent = ANCIENNES_CARTES_PORTAIL.filter((u) => !html.includes('href="' + u + '"') && !tableau.includes("'" + u + "']"));
   assert.deepEqual(manquent, [], 'tuiles absentes de l\'admin : ' + manquent.join(', '));
   for (const u of ['https://cmcteams.kd-mc.com/tools/messages/', 'https://claude.ai/code/artifacts']) assert.ok(html.includes('href="' + u + '"'), 'tuile absente : ' + u);
 });

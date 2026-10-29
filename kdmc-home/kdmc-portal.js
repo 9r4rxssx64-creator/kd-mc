@@ -120,47 +120,21 @@
     if (!_alerteT) { try { _alerteT = setInterval(alerteCercle, 120000); } catch (e) { /* */ } }
   }
   function applyAdminVisibility(deja) {   /* `deja` : le résultat whoami déjà lu par showHub (un seul appel au domaine) */
-    var priv = document.getElementById('priv-zone');
-    if (!priv) return;
     var done = function (s) {
       /* Espace privé regroupé (Sourcing, Coffre-fort, Dashboard, Admin) :
          Kevin + Laurence (Lolo) OU admin. Les autres clients ne le voient jamais.
          /admin/ reste protégé par le code admin côté serveur (fail-closed). */
-      var named = /kevin|desarzens|laurence|lolo|saint.?polit/.test(norm(s && s.name || ''));
       /* Visuel réservé : admin (prouvé serveur via ADMIN_UIDS) OU identité FORTE Face ID
          (verified) + nom autorisé. Un inconnu qui tape "Kevin"/"Laurence" SANS Face ID
          n'est PAS verified → ne voit rien (leçon #99 : un nom auto-déclaré n'accorde aucun droit). */
       /* 23.10 (Kevin : « aucun bouton, aucune possibilité pour les autres d'atterrir dans ma partie ») : en VUE MEMBRE (s.apercu), même Kevin ne voit pas l'espace privé. */
       /* 23.10 (Kevin : « tout moi seul pour l'instant ») : l'espace privé n'est plus ouvert à Laurence (nom + Face ID) — admin prouvé seulement. */
       var isPriv = !(s && s.apercu) && !!(s && s.admin);
-      priv.hidden = !isPriv;
       /* 16.10 : le tableau de bord, tout en haut de la page, suit la même règle que « Mon espace » */
       var tdb = document.getElementById('tdb-haut'); if (tdb) tdb.hidden = !isPriv;
-      /* 22.10 : « Tableau KDMC » (qui fait quoi entre les branches, page claude.ai) — même règle que le tableau de bord */
-      var tabz = document.getElementById('tableau-zone'); if (tabz) tabz.hidden = !isPriv;
-      /* Bot crypto : tuile visible dès que la session porte le nom Kevin/Laurence
-         (OU admin/verified). Pas d'exigence Face ID car la page bot.kd-mc.com est
-         protégée par son propre code admin — la tuile ne donne AUCUN accès (≠ leçon #99
-         qui vise l'ACCÈS, pas l'affichage d'un raccourci vers une page déjà verrouillée). */
-      var botZone = document.getElementById('bot-zone');
-      if (botZone) botZone.hidden = !(s && s.admin);   /* 23.10 : plus jamais sur le NOM seul (un homonyme « Kevin » voyait les raccourcis privés) */
-      /* « Qui se connecte » : même règle que le bot — la page admin.kd-mc.com a son PROPRE
-         code admin (vérifié serveur) donc afficher le raccourci n'accorde aucun accès. Sans ça, la tuile
-         restait invisible sur l'iPhone de Kevin (Face ID non prouvé) = fonction inexistante. */
-      var accessZone = document.getElementById('access-zone');
-      if (accessZone) accessZone.hidden = !(s && s.admin);
-      /* Tor : même logique que le bot (sinon invisible sur l'iPhone de Kevin, Face ID non
-         prouvé = fonction inexistante). Mais réservé à KEVIN seul : la page n'a rien de
-         sensible, c'est un choix de discrétion, pas une protection. */
       if (s && s.admin) { if (window.kdmcBoite) window.kdmcBoite.demarrer(); else alerteCercle(); }
       else if (window.kdmcBoite && window.kdmcBoite.oublier) { try { window.kdmcBoite.oublier(); } catch (e) { /* */ } }   /* 13.10 : pas admin (ou plus) → aucun relevé gardé */   /* 3.10 : la boîte unique (toutes les apps) ; l'ancien bandeau Lingua reste en secours */
-      var torZone = document.getElementById('tor-zone');
-      if (torZone) torZone.hidden = !(s && s.admin);
-      /* Bee (Javis) : MEME regle que Tor, et pour la meme raison. L'app est deja
-         fail-closed cote javis-widget.js (whoami + admin verifie) : montrer la tuile
-         n'ouvre rien, la cacher rend juste l'app introuvable (vecu 17.09). */
-      var javisZone = document.getElementById('javis-zone');
-      if (javisZone) javisZone.hidden = !(s && s.admin);
+      /* 29.10 : Bot Crypto, Qui se connecte, Tor, Javis et Tableau KDMC ne sont plus des tuiles du portail : ils vivent dans le tableau de bord admin (un seul endroit). */
       renderSelfService(s); /* « Mes appareils / connexions » — pour TOUT connecté */
       renderTelNudge(s);    /* 13.10 (Kevin « Redemande ») : un compte d'AVANT le téléphone obligatoire → on le redemande, une fois, jusqu'à ce qu'il soit donné */
       renderCodeNudge(s);   /* 8.10 : un compte sans code au domaine s'ouvre sur son seul nom → on propose d'en choisir un, ici, sur son appareil */

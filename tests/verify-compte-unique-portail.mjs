@@ -122,7 +122,7 @@ try {
   const errA = (await pe.locator('#l-err').textContent({ timeout: 2000 }).catch(() => '')) || '';
   ok(!(await accueilVisible(pe)) && /incorrect/i.test(errA), '6. PC : son nom + mauvais code admin → refusé', errA);
   await pe.fill('#l-code', '424242'); await pe.click('#l-go'); await pe.waitForTimeout(1500); await fermerOffreFaceId(pe); await pe.waitForTimeout(600);
-  const priv = await pe.locator('#priv-zone').isVisible().catch(() => false);
+  const priv = await pe.locator('#tdb-haut').isVisible().catch(() => false);
   const helloE = (await pe.locator('#hello').textContent().catch(() => '')) || '';
   ok(await accueilVisible(pe) && priv && /Kevin/.test(helloE), '6 bis. PC : son nom + bon code admin (« J\'ai déjà un compte ») → accueil admin (zone privée visible), sans Face ID ni bouton spécial', helloE + ' priv=' + priv);
   const F = await browser.newContext({ serviceWorkers: 'block' }); await brancher(F);

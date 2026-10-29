@@ -193,8 +193,6 @@
   #tdb-haut{margin:0 0 16px}
   #tdb-haut a.card.big{min-height:88px;background:linear-gradient(160deg,rgba(232,184,48,.16),#0c150f)}
   a.card.big{border-color:rgba(232,184,48,.5);box-shadow:0 0 0 1px rgba(232,184,48,.15) inset}
-  #perso-zones:not(:has(> nav > div:not([hidden]))){display:none}
-  #perso-zones .grid>div>a.card{height:100%}
 </style>
 </head>
 <body>
@@ -209,7 +207,7 @@
       <!-- 16.10 (Kevin : « mets mon tableau de bord tout en haut du domaine ») : la PREMIÈRE chose de la page, révélée par
            kdmc-portal.js avec la même règle que « Mon espace » (admin prouvé, ou Kevin/Lolo vérifiés). -->
       <nav id="tdb-haut" class="grid tdb" aria-label="Mon tableau de bord" hidden>
-        <a class="card adm big" href="/admin/"><span class="ic">🛡</span><span class="ct"><span class="nm">Mon tableau de bord <span class="badge">Admin</span></span><span class="ds">Tout le domaine : personnes, messages, boutiques, apps, coûts</span><span class="url">kd-mc.com → admin</span></span><span class="arr">›</span></a>
+        <a class="card adm big" href="/admin/"><span class="ic">🛡</span><span class="ct"><span class="nm">Mon tableau de bord <span class="badge">Admin</span></span><span class="ds">Tout en un seul endroit : qui est en ligne, messages, comptes, outils privés, apps, coûts</span><span class="url">kd-mc.com → admin</span></span><span class="arr">›</span></a>
       </nav>
       <div class="hubbar">
         <span id="hello">Bienvenue</span>
@@ -218,40 +216,10 @@
       <div id="install" hidden></div>
       <a id="cercle-alerte" href="https://lingua.kd-mc.com/#admin" hidden></a>
 
-      <!-- TOUT l'espace réservé Kevin + Lolo : révélé par kdmc-portal.js (admin OU Kevin/Laurence). 16.10 : le tableau de bord
-           unique en tête (tout le domaine y est rangé) ; les outils privés dans un menu déroulant — rien n'est perdu. -->
-      <div id="priv-zone" hidden>
-        <h2 class="cat">🔒 Mon espace</h2>
-        <details class="grp">
-          <summary><span class="ic">🧰</span><span class="ct"><span class="nm">Mes outils privés</span><span class="ds">PoolPilot, Sourcing, Coffre, Finances, Autorisations…</span></span><b class="nb">9</b></summary>
-          <nav class="grid" aria-label="Outils privés Kevin et Lolo">
-          <a class="card adm" href="https://beatbot.kd-mc.com/"><span class="ic">🌊</span><span class="ct"><span class="nm">PoolPilot <span class="badge">Privé</span></span><span class="ds">Robot piscine Beatbot — plan 3D, mesures, pilotage réel, live</span><span class="url">beatbot.kd-mc.com</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="https://sourcing.kd-mc.com/"><span class="ic">📦</span><span class="ct"><span class="nm">Sourcing fournisseurs <span class="badge">Privé</span></span><span class="ds">Catalogues fournisseurs — choisir quoi vendre</span><span class="url">sourcing.kd-mc.com</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="/clone/"><span class="ic">🧬</span><span class="ct"><span class="nm">Cloneur de sites <span class="badge">Privé</span></span><span class="ds">Lire, extraire ou cloner n'importe quelle page web</span><span class="url">kd-mc.com → clone</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="/liens/"><span class="ic">🎛️</span><span class="ct"><span class="nm">Centre de contrôle <span class="badge">Privé</span></span><span class="ds">Tous mes liens 1-clic : apps, boutiques, clés API, workers, Firebase…</span><span class="url">kd-mc.com → liens</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="https://coffre.kd-mc.com/"><span class="ic">🔐</span><span class="ct"><span class="nm">Coffre-fort <span class="badge">Privé</span></span><span class="ds">Documents &amp; accès sécurisés</span><span class="url">coffre.kd-mc.com</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="https://cmcteams.kd-mc.com/tools/finances/"><span class="ic">💰</span><span class="ct"><span class="nm">Finances <span class="badge">Privé</span></span><span class="ds">Coffre finances chiffré — relevés, factures, tickets, fiches de paie : classés, analysés, budgétisés</span><span class="url">cmcteams.kd-mc.com → finances</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="https://autorisations.kd-mc.com/"><span class="ic">🆔</span><span class="ct"><span class="nm">Autorisations <span class="badge">Privé</span></span><span class="ds">Apex fait tout à ta place — tu valides d'un Face ID (connexion, paiement, signature, KYC)</span><span class="url">autorisations.kd-mc.com</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="https://staging.kd-mc.com/"><span class="ic">🧪</span><span class="ct"><span class="nm">Staging <span class="badge">Privé</span></span><span class="ds">Environnement de test : comptes jetables et essais, sans toucher le vrai domaine</span><span class="url">staging.kd-mc.com</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="https://dashboard.kd-mc.com/"><span class="ic">📊</span><span class="ct"><span class="nm">Dashboard boutiques <span class="badge">Privé</span></span><span class="ds">Commandes, produits, stats, finances</span><span class="url">dashboard.kd-mc.com</span></span><span class="arr">›</span></a>
-          <a class="card adm" href="/empreinte/"><span class="ic">🔑</span><span class="ct"><span class="nm">Changer mon code admin <span class="badge">Privé</span></span><span class="ds">Tape ton nouveau code : la page calcule son empreinte SUR TON TÉLÉPHONE (rien n’est envoyé, rien n’est gardé) — c’est elle qu’on publie ensuite</span><span class="url">kd-mc.com → empreinte</span></span><span class="arr">›</span></a>
-          </nav>
-        </details>
-      </div>
-
-      <!-- Raccourcis personnels de Kevin : chacun révélé par sa propre règle (kdmc-portal.js : access / tor / javis / bot), rangés
-           sous UN seul titre qui ne s'affiche que si l'un d'eux est visible. -->
-      <div id="perso-zones">
-        <h2 class="cat">⭐ Mes raccourcis</h2>
-        <nav class="grid" aria-label="Raccourcis personnels">
-          <div id="tableau-zone" hidden><a class="card adm" href="https://claude.ai/artifact/TainhAk9Vrd9k2ZZ2VuVP6" target="_blank" rel="noopener"><span class="ic">📋</span><span class="ct"><span class="nm">Tableau KDMC <span class="badge">Admin</span></span><span class="ds">Qui fait quoi entre toutes les branches : ce qui t'attend, ce qui est en cours, ce qui est fait</span><span class="url">claude.ai → Tableau KDMC</span></span><span class="arr">›</span></a></div>
-          <div id="javis-zone" hidden><a class="card adm" href="https://javis.kd-mc.com/"><span class="ic">🐝</span><span class="ct"><span class="nm">Javis <span class="badge">Privé</span></span><span class="ds">Bee en grand — elle parle, elle t'écoute, elle ouvre tes apps. À installer sur l'écran d'accueil</span><span class="url">javis.kd-mc.com</span></span><span class="arr">›</span></a></div>
-          <div id="bot-zone" hidden><a class="card adm" href="https://bot.kd-mc.com/"><span class="ic">🤖</span><span class="ct"><span class="nm">Bot Crypto <span class="badge">Privé</span></span><span class="ds">Trading auto — état, cryptos, garde-fous, marche/arrêt</span><span class="url">bot.kd-mc.com</span></span><span class="arr">›</span></a></div>
-          <div id="access-zone" hidden><a class="card adm" href="https://admin.kd-mc.com/"><span class="ic">🗂️</span><span class="ct"><span class="nm">Qui se connecte <span class="badge">Admin</span></span><span class="ds">Historique de chaque personne qui se connecte à ton domaine — apps, appareils, en ligne, actions. Code admin requis</span><span class="url">admin.kd-mc.com</span></span><span class="arr">›</span></a></div>
-          <div id="tor-zone" hidden><a class="card adm" href="https://tor.kd-mc.com/"><span class="ic">🧅</span><span class="ct"><span class="nm">Tor en clair <span class="badge">Privé</span></span><span class="ds">Comprendre le web .onion, y aller en sécurité, catalogue vérifié, identité dédiée à générer</span><span class="url">tor.kd-mc.com</span></span><span class="arr">›</span></a></div>
-        </nav>
-      </div>
-
+      <!-- 29.10 (Kevin : « regroupe tout au maximum, que je puisse tout commander d'un seul endroit ») : l'ancien « Mon espace » (10 outils privés)
+           et « Mes raccourcis » (Tableau KDMC, Javis, Bot Crypto, Qui se connecte, Tor) étaient des COPIES de ce que le tableau de bord admin
+           (/admin/) rassemble déjà : ils sont retirés d'ici. UN seul point d'entrée admin : la carte « Mon tableau de bord » en tête de page.
+           Garde : tests/admin-tuiles.test.mjs (chaque ancienne adresse est une tuile du tableau de bord ; le portail n'a qu'UNE carte admin). -->
       <!-- 16.10 (Kevin : « fais-moi le tri… allège sans rien perdre… regroupe les boutiques avec un menu déroulant ») :
            les tuiles du quotidien restent à plat ; le reste est rangé dans des menus déroulants (<details>, sans JS).
            AUCUNE adresse n'a été retirée : garde tests/verify-portail-range.mjs (toutes les anciennes tuiles présentes). -->

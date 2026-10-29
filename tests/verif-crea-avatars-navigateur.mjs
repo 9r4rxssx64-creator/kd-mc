@@ -267,6 +267,7 @@ async function suite(nom, browser) {
   /* F. enregistrement vidéo */
   const mr = await page.evaluate(() => typeof MediaRecorder !== 'undefined' && !!HTMLCanvasElement.prototype.captureStream);
   if (mr) {
+    await page.mouse.click(8, 8).catch(() => null);   /* un vrai toucher = le geste que le navigateur exige pour le son (le bouton réel le donne chez Kevin) */
     await page.evaluate(async ({ parole }) => { Avatar.reglerMode('fichier'); await Avatar.preparerSonDepuis(await __m.wav(parole)); Avatar.definirHumeur('joie'); await Avatar.jouer(true); }, { parole });
     const Fv = await page.evaluate(async () => {
       const b = Avatar.sortie(); if (!b) return { taille: 0 };

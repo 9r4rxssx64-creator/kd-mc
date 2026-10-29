@@ -9,6 +9,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Javis / Bee v1.27 — mise à jour automatique et autonome partout dans le domaine (2026-10-29)
+- Retour de Kevin : « Javis n'est pas à jour de partout sur l'ordinateur, il est toujours en 26. Vérifie les mises à jour en temps réel, qu'elles soient automatiques et autonomes, de partout : chaque application, chaque page, chaque fenêtre, chaque image, chaque vue. »
+- Cause mesurée : dans les autres apps Bee vit dans un cadre dont le widget vient de javis.kd-mc.com ; pour savoir si une version plus récente est servie elle relisait son fichier par `fetch` depuis une AUTRE adresse (401 + pas de CORS) → jamais de nouvelle version vue ; et la mise à jour automatique n'existait que dans l'app installée.
+- Corrigé : (1) `javis-version.js` (une ligne, fabriquée par `npm run sync:javis` depuis `JAVIS_VER`) lu par une balise `<script>` (part avec la session, pas de CORS) ; (2) mise à jour automatique : app installée = tout de suite ; cadre = dès que le chat est fermé ou l'onglet caché, sans toucher aux caches ni service workers de l'origine ; page qui porte Bee (arbre…) = onglet caché et page calme seulement (jamais pendant une saisie, un formulaire ou une fenêtre ouverte) ; (3) le robot Servi lit maintenant la version de Bee (page + cadre) sur chaque adresse, et accepte `ecrans` pour une mesure de masse.
+- Gardes : `tests/verify-bee-maj-auto.mjs` (`npm run test:bee-maj-auto`, 9 contrôles, 5 sabotages rouges), `sync:javis -- --verif` (la ligne de version suit le widget), `test:verifier-servi`.
+
 ## Routeur du domaine — le dessin des mascottes se lit depuis toutes les adresses : la marionnette de Bee marche enfin en vrai (2026-10-29)
 - Retour de Kevin : « le corps ne bouge pas » (le Lenovo, dans SON Chrome : marionnette active, 0 canvas, 0 élément animé). Cause : l'image du dessin (`…/bee/v2/rig/base.webp`) demandée par la marionnette depuis une autre adresse du domaine part SANS cookie ; la porte répondait 401 et aucune réponse ne portait plus l'en-tête CORS depuis le 15.10 → pas de texture, dessin plat.
 - Corrigé dans `services/kdmc-router/worker.js` : les images du dessin des mascottes (`/bee|donkey/[vN/]rig/*.webp`, illustrations sans donnée) passent la porte comme les icônes et portent `Access-Control-Allow-Origin: *`. Tout le reste de Lingua reste fermé (401).

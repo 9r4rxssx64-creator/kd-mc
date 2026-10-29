@@ -79,6 +79,24 @@ for (const cible of cibles) {
   console.log(`  → ${nom} ${avant ? 'remise à jour' : 'créée'} (${canon.length} octets)`);
 }
 
+/* LA VERSION SERVIE, lisible sans CORS (Kevin 29.10 : « Javis n'est pas à jour de partout… toujours en 26 »). Dans le cadre d'une autre app, Bee ne pouvait pas
+   relire sa version (fetch d'une autre adresse : 401 + pas de CORS) → jamais de mise à jour automatique. Une balise <script> part avec la session du domaine :
+   `javis-version.js` ne contient qu'une ligne, DÉDUITE de JAVIS_VER (jamais écrite à la main), à côté de chaque copie du widget. */
+{
+  const m = canon.toString('utf8').match(/var JAVIS_VER = '([^']+)'/);
+  if (!m) { console.error(`✗ JAVIS_VER introuvable dans ${CANON}`); process.exit(1); }
+  const voulu = `window.__javisVerServie = '${m[1]}';\n`;
+  for (const cible of [join(ROOT, 'tools/javis/javis-widget.js'), ...cibles]) {
+    const f = join(dirname(cible), 'javis-version.js');
+    if (dirname(cible) === join(ROOT, 'tools/javis')) continue;
+    let avant = null; try { avant = readFileSync(f, 'utf8'); } catch { /* absente */ }
+    if (avant === voulu) { console.log(`  = ${relative(ROOT, f)} (${m[1]})`); continue; }
+    divergentes++;
+    if (verifSeule) { console.log(`  ✗ ${relative(ROOT, f)} ${avant === null ? 'ABSENT' : 'DIVERGE'} (attendu ${m[1]})`); continue; }
+    writeFileSync(f, voulu); console.log(`  → ${relative(ROOT, f)} ${avant === null ? 'créé' : 'remis à jour'} (${m[1]})`);
+  }
+}
+
 console.log(verifSeule
   ? `Bee : ${cibles.length} copie(s) contrôlée(s), ${divergentes} divergente(s)`
   : `Bee : ${cibles.length} copie(s), ${divergentes} mise(s) à jour depuis ${CANON}`);

@@ -12,6 +12,10 @@ on:
       urls:
         description: "Adresses *.kd-mc.com à lire, séparées par des espaces (ex. autorisations.kd-mc.com https://kd-mc.com/liens/)"
         required: true
+      ecrans:
+        description: "Écrans à lire, séparés par des virgules (vide = les 5). Ex. portable pour mesurer la version de Bee sur tout le domaine"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -42,6 +46,7 @@ jobs:
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
           WEBKIT: "1"
           URLS: ${{ inputs.urls }}
+          SERVI_ECRANS: ${{ inputs.ecrans }}
         shell: bash -euo pipefail {0}
         run: |
           set +e

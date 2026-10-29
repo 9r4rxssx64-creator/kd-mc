@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.26';
+  var JAVIS_VER = 'v1.27';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -2277,8 +2277,24 @@
        sur une page de l'un de tes sites : le badge s'allume en doré (on ne recharge pas ta page sans te le demander).
      - garde-fou : jamais deux rechargements à moins de 90 s (une copie encore en cache ne fait pas boucler). */
   function verNum(v) { var g = String(v || '').match(/(\d+)\.(\d+)(?:\.(\d+))?/); return g ? (+g[1] * 1e6 + +g[2] * 1e3 + +(g[3] || 0)) : 0; }
+  /* DANS LE CADRE d'une autre app (Bee partout), le widget vient de javis.kd-mc.com : un fetch d'une AUTRE adresse part sans cookie (401) et sans en-tête CORS
+     → la version servie restait illisible et Bee ne se mettait JAMAIS à jour là où elle vit le plus (Kevin 29.10 : « toujours en 26 »). Une balise <script>, elle,
+     part avec la session du domaine et n'a pas besoin de CORS : javis-version.js ne contient qu'une ligne, `window.__javisVerServie = 'vX.Y'`. */
+  function versionServieScript() {
+    return new Promise(function (ok) {
+      var fait = false, sc = document.createElement('script');
+      var fin = function (v) { if (fait) return; fait = true; try { sc.parentNode && sc.parentNode.removeChild(sc); } catch (e) {} ok(v || ''); };
+      try { window.__javisVerServie = ''; } catch (e) {}
+      sc.async = true; sc.onload = function () { fin(String(window.__javisVerServie || '')); }; sc.onerror = function () { fin(''); };
+      sc.src = SCRIPT_SRC.split('?')[0].replace(/[^\/]*$/, '') + 'javis-version.js?_v=' + Date.now();
+      setTimeout(function () { fin(''); }, 8000);
+      (document.head || document.documentElement).appendChild(sc);
+    });
+  }
+  function autreOrigine() { try { return new URL(SCRIPT_SRC, location.href).origin !== location.origin; } catch (e) { return false; } }
   function versionServie() {
     if (!SCRIPT_SRC || !window.fetch) return Promise.resolve('');
+    if (autreOrigine()) return versionServieScript();
     var u = SCRIPT_SRC.split('?')[0] + '?_v=' + Date.now();
     return fetch(u, { cache: 'reload', credentials: 'same-origin' }).then(function (r) {
       if (!r.ok || !r.body || !r.body.getReader) return r.ok ? r.text() : '';
@@ -2295,9 +2311,12 @@
     }).then(function (t) { var m = String(t).match(/JAVIS_VER = '([^']+)'/); return m ? m[1] : ''; }).catch(function () { return ''; });
   }
   /* purge tout ce qui retient l'ancienne version, puis recharge avec un cache-buster (même méthode que Lingua) */
-  function majForcee() {
+  function majForcee(douce) {
     try { localStorage.setItem('javis_upd_ts', String(Date.now())); } catch (e) {}
     var fini = function () { try { location.replace(location.pathname + '?_upd=' + Date.now() + (location.hash || '')); } catch (e) { location.reload(); } };
+    /* douce : dans le cadre (origine kd-mc.com, partagée avec le portail et ses caches) ou dans la page d'une autre app, on ne purge JAMAIS les service workers
+       ni les caches de l'origine — ils ne sont pas à Bee. Le fichier de Bee est revalidé à chaque chargement (max-age=0) : recharger suffit. */
+    if (douce) { if (CADRE) fini(); else { try { location.reload(); } catch (e) { fini(); } } return; }
     var p = Promise.resolve();
     if ('serviceWorker' in navigator) {
       p = p.then(function () { return navigator.serviceWorker.getRegistrations(); })
@@ -2321,23 +2340,46 @@
       var saisie = (tag === 'TEXTAREA' || tag === 'INPUT') && ae.value;
       return !!saisie || !!root.querySelector('.bee-rig.talk');
     };
+    /* MISE À JOUR AUTOMATIQUE PARTOUT (Kevin 29.10 : « automatiques et autonomes… de partout dans tout le domaine »). Quand une version plus récente est servie :
+         · app installée : tout de suite (comme avant) ;
+         · CADRE d'une autre app : dès que le chat est fermé, ou onglet caché — le cadre est à Bee, la page de l'app n'est pas touchée ;
+         · page qui porte Bee elle-même (arbre…) : seulement ONGLET CACHÉ, et page calme (aucune saisie, aucun formulaire ou fenêtre ouverte) : jamais sous les doigts. */
+    var pageCalme = function () {
+      try {
+        if (document.querySelector('#saveP, dialog[open]')) return false;
+        var champs = document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), textarea');
+        for (var i = 0; i < champs.length; i++) if (String(champs[i].value || '').length) return false;
+      } catch (e) { return false; }
+      return true;
+    };
+    var peutAuto = function () {
+      var dernier = 0; try { dernier = +localStorage.getItem('javis_upd_ts') || 0; } catch (e) {}
+      if (Date.now() - dernier < 90000 || occupe()) return false;
+      if (APP_MODE) return true;
+      var ferme = !root.querySelector('#javis-panel.javis-open');
+      if (CADRE) return ferme || document.hidden;
+      return document.hidden && pageCalme();
+    };
+    var lancerAuto = function () {
+      b.textContent = '\uD83D\uDD04 Mise à jour\u2026';
+      setTimeout(function () { majForcee(!APP_MODE); }, 600);
+    };
     var verifier = function () {
-      if (document.hidden) return;
+      if (document.hidden && !neuve) return;
       versionServie().then(function (v) {
         if (!v || verNum(v) <= verNum(JAVIS_VER)) { neuve = ''; affiche(); return; }
         neuve = v; affiche();
-        var dernier = 0; try { dernier = +localStorage.getItem('javis_upd_ts') || 0; } catch (e) {}
-        if (APP_MODE && Date.now() - dernier > 90000 && !occupe()) {
-          b.textContent = '\uD83D\uDD04 Mise à jour\u2026';
-          setTimeout(majForcee, 600);
-        }
+        if (peutAuto()) lancerAuto();
       });
     };
     b.addEventListener('click', function () {
       vibrate(10); b.textContent = '\uD83D\uDD04 Mise à jour\u2026'; b.disabled = true;
       setTimeout(majForcee, 250);
     });
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) verifier(); });
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) verifier();
+      else if (neuve && peutAuto()) lancerAuto();   /* l'onglet vient de se cacher : on recharge pendant que personne ne regarde */
+    });
     setInterval(verifier, 120000);
     setTimeout(verifier, 1500);
     window.__javisVerifierMaj = verifier;   /* pour les gardes (test:javis-bee) */

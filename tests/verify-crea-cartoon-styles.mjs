@@ -137,6 +137,14 @@ mock({ geminiOk: false }); r = await worker.fetch(req('/cartoon', { image: PIX, 
 const kI = aiCalls.find((c) => /flux-2-klein/.test(c.model)); const texteI = kI ? await new Response(kI.input.multipart.body).text() : '';
 chk(r.status === 200 && /anime/i.test(texteI) && !/SAME visual style/.test(texteI), 'K2) le cartoon klein, lui, laisse le style changer (pas de verrou de style)');
 
+/* K3) 29.10 Avatars : « avatar:true » demande un visage de face, bouche fermée, pour que le suivi de visage le retrouve ; sans lui, rien n'est ajouté (le cartoon d'avant ne change pas) */
+mock({ geminiOk: false }); r = await worker.fetch(req('/cartoon', { image: PIX, image_petite: PETITE, style: 'feutre', avatar: true }), env());
+const kA = aiCalls.find((c) => /flux-2-klein/.test(c.model)); const texteA = kA ? await new Response(kA.input.multipart.body).text() : '';
+chk(r.status === 200 && /frontal/.test(texteA) && /mouth closed/.test(texteA) && /felt/i.test(texteA), 'K3) look avatar « feutre » : face, bouche fermée, matière feutre dans la consigne klein');
+mock({ geminiOk: false }); r = await worker.fetch(req('/cartoon', { image: PIX, image_petite: PETITE, style: 'feutre' }), env());
+const kN = aiCalls.find((c) => /flux-2-klein/.test(c.model)); const texteN = kN ? await new Response(kN.input.multipart.body).text() : '';
+chk(r.status === 200 && !/mouth closed/.test(texteN), 'K3) sans avatar:true, la consigne d\'avant est inchangée (pas de « bouche fermée »)');
+
 /* J) EN DERNIER (la pause Gemini est une mémoire de module) : clé bloquée par Google (403) → UN seul appel Gemini, pas six, puis klein */
 mock({ geminiBloque: true }); r = await worker.fetch(req('/cartoon', { image: PIX, image_petite: PETITE, style: 'bd' }), env());
 chk(r.status === 200 && prompts.length === 1 && /klein/.test(r.headers.get('x-crea-provider') || ''), 'J) clé Gemini bloquée (403) → 1 seul appel Gemini (' + prompts.length + ') puis klein dessine');

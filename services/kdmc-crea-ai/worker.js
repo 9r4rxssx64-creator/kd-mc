@@ -207,12 +207,18 @@ const CARTOON_IA = {
   ghibli: 'Redraw this photo as a hand-painted Studio Ghibli film frame: soft watercolour-like backgrounds, gentle warm light, delicate line work, nostalgic and peaceful atmosphere.',
   pixel: 'Redraw this photo as detailed 32-bit pixel art: crisp visible pixels, limited palette with dithering, retro video-game sprite scene.',
   aquarelle: 'Repaint this photo as a delicate watercolour painting: translucent washes, soft bleeding edges, white paper showing through, light pencil underdrawing.',
-  clay: 'Rebuild this photo as a claymation / stop-motion scene: everything modelled in plasticine with fingerprints and soft rounded shapes, miniature set, studio lighting, Aardman style.'
+  clay: 'Rebuild this photo as a claymation / stop-motion scene: everything modelled in plasticine with fingerprints and soft rounded shapes, miniature set, studio lighting, Aardman style.',
+  /* 29.10.2026 — looks d'AVATAR (Studio Avatars & marionnettes) : le visage est animé ensuite, donc il doit rester reconnaissable. */
+  feutre: 'Remake this person as a handmade felt hand-puppet (Muppet / Sesame-Street quality): soft fuzzy felt fabric with visible fibres, big round sewn-on button-like eyes, stitched seams, simple rounded face with the same hair colour and hairstyle, warm studio lighting, plain background.',
+  peluche: 'Remake this person as a cute plush toy / stuffed doll: soft velvety fabric, embroidered eyes and tiny stitched mouth, rounded squishy proportions, the same hair colour and hairstyle, soft studio lighting, plain background.',
+  lego: 'Remake this person as a plastic brick-toy minifigure head and torso: glossy yellow-toned moulded plastic, simple printed face with the same hair shape and colour as a moulded hairpiece, bright studio lighting, plain background.'
 };
-function promptCartoon(style, extra) {
+/* Un look d'avatar doit pouvoir être ANIMÉ après coup : tête de face, bouche fermée, même cadrage (MediaPipe doit retrouver le visage). */
+const KEEP_AVATAR = ' The head must stay perfectly frontal, centred, at the same size and position as in the photo, with a calm neutral expression: mouth closed, eyes open, looking straight ahead, ears and hair visible, plain simple background, so the face can be animated afterwards.';
+function promptCartoon(style, extra, avatar) {
   const base = CARTOON_IA[String(style || '').toLowerCase()] || CARTOON_IA.cartoon;
   const e = extra ? ' ' + String(extra).slice(0, 200) + '.' : '';
-  return base + e + KEEP_SUBJECT;
+  return base + e + KEEP_SUBJECT + (avatar ? KEEP_AVATAR : '');
 }
 /* ---------------- ✨ MAGIE IA : transformations 1-clic (reverse-engineering des
    apps virales : AI Mirror, ToonApp, AI Catch, Donna IA Musique, AI Music) ------- */
@@ -899,7 +905,7 @@ async function editImageChain(env, kind, imgDataUrl, h, opts) {
   const errs = [];
   opts = opts || {};
   /* Le cartoon a une consigne PAR STYLE (galerie du client) ; les autres gardent leur consigne. */
-  const prompt = kind === 'cartoon' ? promptCartoon(opts.style, opts.extra) : PROMPTS[kind];
+  const prompt = kind === 'cartoon' ? promptCartoon(opts.style, opts.extra, opts.avatar) : PROMPTS[kind];
   const entetes = (prov) => Object.assign({ 'x-crea-provider': prov }, kind === 'cartoon' ? { 'x-crea-style': (CARTOON_IA[String(opts.style || '').toLowerCase()] ? String(opts.style).toLowerCase() : 'cartoon') } : {}, h);
   /* 1. Gemini (gratuit) */
   try {
@@ -1413,6 +1419,7 @@ export default {
     const optsEdit = kind === 'cartoon' ? {
       style: (body && typeof body.style === 'string') ? body.style.slice(0, 24) : '',
       extra: (body && typeof body.prompt === 'string') ? body.prompt.slice(0, 200) : '',
+      avatar: !!(body && body.avatar === true),
       petite: preparerPetite(body && body.image_petite, image)
     } : {};
     try { return await editImageChain(env, kind, image, h, optsEdit); }

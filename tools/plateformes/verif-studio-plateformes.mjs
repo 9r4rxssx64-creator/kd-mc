@@ -6,7 +6,7 @@
    Par appareil et par moteur :
      - premier dessin (barre du bas prête) < 6 s ; 0 erreur JavaScript ; la page ne déborde pas en largeur ;
      - la barre du bas est ENTIÈRE dans l'écran, rien ne recouvre ses boutons, chaque bouton fait ≥ 40 px au toucher et répond à un VRAI toucher ;
-     - chacun des 9 studios s'ouvre (section active), sans erreur ni débordement ;
+     - chacun des 10 studios s'ouvre (section active), sans erreur ni débordement ;
      - Studio Cartoon : la galerie des styles IA (≥ 10 puces) est là, dans l'écran, et chaque puce est ≥ 44 px au toucher ;
      - la pastille de version est visible (vX.Y.Z) et dans l'écran ;
      - zones de toucher < 44 px sur les écrans Photo / Cartoon / Faire vivre (téléphones) : aucune, hors pastille de version.
@@ -71,9 +71,9 @@ for (const m of voulus) {
 }
 if (!Object.keys(lanceurs).length) { console.log('  ❌ aucun moteur disponible : rien à mesurer'); process.exit(1); }
 
-/* les 9 studios de la barre du bas, dans l'ordre de l'écran (data-go) */
-const STUDIOS = ['photo', 'video', 'anim', 'aivid', 'cam', 'fam', 'mine', 'magic', 'mini'];
-const NOMS = { photo: 'Studio Photo', video: 'Vidéo', anim: 'Studio Cartoon', aivid: 'Faire vivre / danse', cam: 'Caméra', fam: 'Famille', mine: 'Mes créations', magic: 'Magie', mini: 'Mini' };
+/* les 10 studios de la barre du bas, dans l'ordre de l'écran (data-go) */
+const STUDIOS = ['photo', 'video', 'anim', 'aivid', 'cam', 'fam', 'mine', 'magic', 'mini', 'avatar'];
+const NOMS = { photo: 'Studio Photo', video: 'Vidéo', anim: 'Studio Cartoon', aivid: 'Faire vivre / danse', cam: 'Caméra', fam: 'Famille', mine: 'Mes créations', magic: 'Magie', mini: 'Mini', avatar: 'Avatars & marionnettes' };
 
 async function ouvrir(moteur, ap) {
   const br = lanceurs[moteur];
@@ -148,7 +148,7 @@ async function scenario(moteur, ap) {
       st.galerie = await p.evaluate(() => { const W = Math.round(window.visualViewport ? visualViewport.width : innerWidth); const chips = [...document.querySelectorAll('#animStyles .chip')].map((c) => c.getBoundingClientRect());
         return { n: chips.length, dehors: chips.filter((q) => q.left < -1 || q.right > W + 1).length, minCote: chips.length ? Math.min(...chips.map((q) => Math.min(q.width, q.height))) : 0, visibles: chips.filter((q) => q.width > 0 && q.height > 0).length }; }).catch(() => ({ n: 0, dehors: 0, minCote: 0, visibles: 0 }));
     }
-    if (['photo', 'anim', 'aivid'].includes(go) && out.geo.W >= 340 && out.geo.W <= 520) (await petitesCibles(p)).forEach((x) => { if (!out.petites.includes(NOMS[go] + ':' + x)) out.petites.push(NOMS[go] + ':' + x); });
+    if (['photo', 'anim', 'aivid', 'avatar'].includes(go) && out.geo.W >= 340 && out.geo.W <= 520) (await petitesCibles(p)).forEach((x) => { if (!out.petites.includes(NOMS[go] + ':' + x)) out.petites.push(NOMS[go] + ':' + x); });
     out.studios.push(st);
   }
   await ctx.close();
@@ -170,18 +170,18 @@ for (const ap of MATRICE) {
     ok(A.porte, `${tag} : la porte (prénom + nom + code) s'affiche d'abord — aucune consultation sans compte`);
     ok(A.erreurs.length === 0, `${tag} : 0 erreur JavaScript` + (A.erreurs.length ? ' — ' + A.erreurs.slice(0, 2).join(' | ') : ''));
     ok(g.deborde <= 2, `${tag} : la page ne déborde pas en largeur (${g.deborde} px)`);
-    ok(g.barreDans && g.sortis.length === 0 && g.n >= 9, `${tag} : barre du bas entière dans l'écran (${g.n} studios${g.sortis.length ? ', dehors : ' + g.sortis.join(',') : ''})`);
+    ok(g.barreDans && g.sortis.length === 0 && g.n >= 10, `${tag} : barre du bas entière dans l'écran (${g.n} studios${g.sortis.length ? ', dehors : ' + g.sortis.join(',') : ''})`);
     ok(A.recouverts.length === 0, `${tag} : rien ne recouvre un bouton de la barre` + (A.recouverts.length ? ' — recouverts : ' + A.recouverts.join(',') : ''));
     if (touch) ok(g.minCote >= 40, `${tag} : boutons de la barre ≥ 40 px au toucher (${Math.round(g.minCote)})`);
     const muets = A.studios.filter((s) => !s.a || !s.actif).map((s) => NOMS[s.go]);
-    ok(muets.length === 0, `${tag} : les 9 studios s'ouvrent au ${touch ? 'toucher' : 'clic'}` + (muets.length ? ' — MUETS : ' + muets.join(', ') : ''));
+    ok(muets.length === 0, `${tag} : les 10 studios s'ouvrent au ${touch ? 'toucher' : 'clic'}` + (muets.length ? ' — MUETS : ' + muets.join(', ') : ''));
     const fautifs = A.studios.filter((s) => s.erreurs || s.deborde).map((s) => NOMS[s.go] + (s.erreurs ? ' (' + s.erreurs + ' erreur JS)' : '') + (s.deborde ? ' (déborde)' : ''));
     ok(fautifs.length === 0, `${tag} : aucun studio ne jette d'erreur ni ne déborde` + (fautifs.length ? ' — ' + fautifs.join(', ') : ''));
     const gal = (A.studios.find((s) => s.go === 'anim') || {}).galerie || { n: 0, dehors: 0, minCote: 0, visibles: 0 };
     ok(gal.n >= 10 && gal.visibles >= 10 && gal.dehors === 0, `${tag} : Studio Cartoon — galerie de ${gal.n} styles IA, ${gal.visibles} visibles, ${gal.dehors} hors écran`);
     if (touch) ok(gal.minCote >= 43.5, `${tag} : chaque style de la galerie ≥ 44 px au toucher (${Math.round(gal.minCote)})`);
     ok(/^v\d+\.\d+/.test(g.version) && g.versionDans, `${tag} : pastille de version visible et dans l'écran (${g.version || 'absente'})`);
-    if (g.W >= 340 && g.W <= 520) ok(A.petites.length === 0, `${tag} : aucune zone de toucher < 44 px sur Photo / Cartoon / Faire vivre (hors pastille)` + (A.petites.length ? ' — ' + A.petites.slice(0, 6).join(' | ') : ''));
+    if (g.W >= 340 && g.W <= 520) ok(A.petites.length === 0, `${tag} : aucune zone de toucher < 44 px sur Photo / Cartoon / Faire vivre / Avatars (hors pastille)` + (A.petites.length ? ' — ' + A.petites.slice(0, 6).join(' | ') : ''));
   }
 }
 for (const b of Object.values(lanceurs)) await b.close();

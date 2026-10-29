@@ -1,6 +1,6 @@
 /* GARDE (Kevin 22.10.2026, « tout tester partout ») — Créa Studio sur la matrice d'appareils.
  * 1. Statique : l'outil (tools/plateformes/verif-studio-plateformes.mjs) a ses appareils (iPhone de Kevin portrait + paysage, Android, tablette,
- *    portable bas, grand écran), ses mesures (premier dessin, 0 erreur JS, débordement, barre du bas dans l'écran, rien ne recouvre, 9 studios,
+ *    portable bas, grand écran), ses mesures (premier dessin, 0 erreur JS, débordement, barre du bas dans l'écran, rien ne recouvre, 10 studios,
  *    galerie des styles, 44 px, pastille de version), ses moteurs (webkit/firefox dits absents) et son sabotage (STUDIO_DIR) ;
  *    le robot gratuit WebKit/Firefox existe au dépôt public ; le Studio porte les correctifs du 25.10 (barre sur deux rangées sous 520 px,
  *    galerie qui s'enroule, boutons d'outils 44 px, pastille qui suit la hauteur de la barre).
@@ -13,7 +13,7 @@ const R = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'); cons
 let ko = 0; const t = (c, m) => { if (!c) ko++; console.log((c ? 'OK ' : 'FAIL ') + m); };
 const o = lire('tools/plateformes/verif-studio-plateformes.mjs');
 t(/iPhone 14 Pro paysage 844x390/.test(o) && /Pixel 7/.test(o) && /Galaxy S9\+ paysage/.test(o) && /iPad/.test(o) && /Lenovo/.test(o) && /1920x1080/.test(o) && /360 px/.test(o), 'la matrice couvre iPhone (celui de Kevin), Android, tablette, portable bas, navigateur étroit, grand écran');
-t(/pageerror/.test(o) && /deborde/.test(o) && /barreDans/.test(o) && /recouverts/.test(o) && /< 6000/.test(o) && /43\.5/.test(o) && /#animStyles \.chip/.test(o) && /vbadge/.test(o) && /STUDIOS = \['photo', 'video', 'anim', 'aivid', 'cam', 'fam', 'mine', 'magic', 'mini'\]/.test(o), 'mesures : premier dessin, 0 erreur JS, débordement, barre dans l\'écran, rien ne recouvre, 9 studios, galerie, 44 px, pastille');
+t(/pageerror/.test(o) && /deborde/.test(o) && /barreDans/.test(o) && /recouverts/.test(o) && /< 6000/.test(o) && /43\.5/.test(o) && /#animStyles \.chip/.test(o) && /vbadge/.test(o) && /STUDIOS = \['photo', 'video', 'anim', 'aivid', 'cam', 'fam', 'mine', 'magic', 'mini', 'avatar'\]/.test(o), 'mesures : premier dessin, 0 erreur JS, débordement, barre dans l\'écran, rien ne recouvre, 10 studios, galerie, 44 px, pastille');
 t(/gateName/.test(o) && /gateCode/.test(o) && /hors_ligne_test/.test(o) && /r\.abort\(\)/.test(o), 'compte local fictif par la porte, domaine et IA coupés (aucun réseau)');
 t(/webkit/.test(o) && /firefox/.test(o) && /absent ici/.test(o) && /STUDIO_DIR/.test(o), 'WebKit et Firefox prévus, moteur absent DIT, sabotage prévu');
 const w = lire('.github/workflows/studio-plateformes.yml');

@@ -267,6 +267,12 @@
   /* 👤 Mes mini-moi : galerie de personnages gardés, 1 tap = rechargé */
   .mini-persos{display:flex;gap:10px;overflow-x:auto;padding:8px 14px 4px;-webkit-overflow-scrolling:touch}
   .mini-persos::-webkit-scrollbar{display:none}
+  /* 🎭 Avatars & marionnettes (29.10) : le canvas prend la place de la photo, les rangées de choix s'enroulent (jamais cachées par un défilement) */
+  #avCanvas{touch-action:manipulation;background:#111}
+  #s-avatar .toolrow{flex-wrap:wrap;justify-content:center;overflow-x:visible}
+  #s-avatar .textedit textarea{font-size:16px}
+  #avZoomRow{padding:2px 18px;display:flex;align-items:center;gap:10px}
+  #avZoom{flex:1;min-height:44px}
   .mini-perso{position:relative;flex:0 0 auto}
   .mini-perso .mp-go{display:flex;flex-direction:column;align-items:center;gap:4px;
     width:72px;min-height:88px;padding:4px;border-radius:14px;background:rgba(255,255,255,.06);
@@ -974,6 +980,104 @@
     </div>
   </section>
 
+  <!-- ============ 🎭 AVATARS & MARIONNETTES — une photo, une vidéo ou un personnage qui vit (29.10) ============ -->
+  <section class="studio" id="s-avatar">
+    <div class="canvas-wrap" id="avWrap">
+      <div class="empty" id="avEmpty">
+        <div class="big">🎭</div>
+        <h2>Avatars &amp; marionnettes</h2>
+        <p>Fais <b>vivre</b> une photo, une vidéo ou un personnage : il parle avec ta voix, copie tes grimaces, change de look. Le visage reste <b>le même</b> — c'est ta vraie photo qui bouge.</p>
+        <button class="bigbtn" id="avBtnPhoto">📷 Une photo</button>
+        <button class="bigbtn" id="avBtnVideo">🎞️ Une vidéo (ou le tour de la tête)</button>
+        <button class="bigbtn" id="avBtnPerso">🐼 Un personnage</button>
+        <button class="bigbtn" id="avBtnMain">🐶 Un animal ou un dessin <small style="font-weight:500">(je touche les yeux et la bouche)</small></button>
+        <button class="bigbtn ghost" id="avBtnImport">📦 Ouvrir un avatar gardé</button>
+      </div>
+      <canvas class="viewer hidden" id="avCanvas" width="540" height="960" aria-label="Ton avatar"></canvas>
+    </div>
+    <div class="panel hidden" id="avPanel">
+      <div class="hint" id="avHint"></div>
+      <div class="toolrow">
+        <button class="chip" id="avBtnPhoto2"><span class="ic">📷</span>Photo</button>
+        <button class="chip" id="avBtnVideo2"><span class="ic">🎞️</span>Vidéo</button>
+        <button class="chip" id="avBtnMain2"><span class="ic">🐶</span>Animal / dessin</button>
+        <button class="chip" id="avBtnPerso2"><span class="ic">🐼</span>Personnage</button>
+      </div>
+
+      <div id="avSecPerso" class="hidden">
+        <div class="hint">🐼 Le personnage :</div>
+        <div class="toolrow" id="avPersos"></div>
+        <div class="hint">🎨 La teinte :</div>
+        <div class="toolrow" id="avTeintes"></div>
+        <div class="hint">🎩 Un accessoire :</div>
+        <div class="toolrow" id="avAccess"></div>
+        <div class="hint">🌈 Le fond :</div>
+        <div class="toolrow" id="avFonds"></div>
+      </div>
+
+      <div id="avSecLook" class="hidden">
+        <div class="hint">🎨 Le look (le visage reste reconnaissable) :</div>
+        <div class="toolrow" id="avLooks"></div>
+        <div id="avZoomRow"><span class="hint" style="padding:0">🔍 Zoom</span><input type="range" id="avZoom" min="60" max="200" value="100" aria-label="Zoom sur le visage"></div>
+        <div class="toolrow">
+          <button class="chip" id="avLunettes"><span class="ic">😎</span>Lunettes (sourcils plus doux)</button>
+          <button class="chip hidden" id="avReplacer"><span class="ic">🎯</span>Replacer les yeux et la bouche</button>
+        </div>
+      </div>
+
+      <div id="avSecVie" class="hidden">
+        <div class="hint">😀 L'humeur :</div>
+        <div class="toolrow" id="avHumeurs"></div>
+        <div class="hint">🎬 Comment il prend vie :</div>
+        <div class="toolrow" id="avModes">
+          <button class="chip on" data-v="texte"><span class="ic">✍️</span>Je tape</button>
+          <button class="chip" data-v="micro"><span class="ic">🎙️</span>Ma voix</button>
+          <button class="chip" data-v="fichier"><span class="ic">📂</span>Un son</button>
+          <button class="chip" data-v="camera"><span class="ic">📷</span>Me copier</button>
+        </div>
+        <div id="avTexteBloc">
+          <div class="textedit"><textarea id="avScript" rows="3" style="width:100%;box-sizing:border-box" placeholder="Ce que ton avatar va dire… (ex : Salut, moi c'est Kevin !)" maxlength="600"></textarea></div>
+          <div class="hint">🔊 La voix :</div>
+          <div class="toolrow" id="avVoix"></div>
+        </div>
+        <div id="avMicroBloc" class="hidden" style="padding:2px 14px"><button class="bigbtn ghost" id="avMicroBtn">🎙️ Enregistrer ma voix</button></div>
+        <div id="avFichierBloc" class="hidden" style="padding:2px 14px">
+          <button class="bigbtn ghost" id="avBtnSon">📂 Choisir un son (ou une vidéo)</button>
+          <button class="bigbtn ghost hidden" id="avVoixVideo">🔊 Prendre la voix de la vidéo</button>
+        </div>
+        <div id="avCameraBloc" class="hidden"><div class="hint">📷 La caméra avant copie ton visage en direct (bouche, yeux, sourcils, tête). Ton micro enregistre ta voix. Rien ne quitte ton téléphone.</div></div>
+        <div class="hint">🎚️ La hauteur de la voix :</div>
+        <div class="toolrow" id="avHauteurs">
+          <button class="chip on" data-v="perso"><span class="ic">🎭</span>Celle du personnage</button>
+          <button class="chip" data-v="naturelle"><span class="ic">🙂</span>Naturelle</button>
+          <button class="chip" data-v="grave"><span class="ic">🐻</span>Grave</button>
+          <button class="chip" data-v="aigue"><span class="ic">🐿️</span>Aiguë</button>
+        </div>
+        <div class="hint">📱 Format :</div>
+        <div class="toolrow" id="avFormats">
+          <button class="chip on" data-v="9:16"><span class="ic">📱</span>Story 9:16</button>
+          <button class="chip" data-v="1:1"><span class="ic">⬛</span>Carré</button>
+          <button class="chip" data-v="16:9"><span class="ic">🖥️</span>Paysage</button>
+        </div>
+        <div style="padding:2px 14px">
+          <button class="bigbtn" id="avJouer">▶️ Jouer</button>
+          <button class="bigbtn ghost" id="avEnreg">⏺ Enregistrer la vidéo</button>
+        </div>
+      </div>
+
+      <div id="avSecSortie" class="hidden">
+        <video class="viewer hidden" id="avVideo" playsinline webkit-playsinline controls loop style="width:100%;max-height:50vh"></video>
+        <div id="avSortieBtns" class="hidden" style="padding:2px 14px"><button class="bigbtn" id="avPartager">📤 Partager / enregistrer la vidéo</button></div>
+        <div class="toolrow">
+          <button class="chip" id="avGarder"><span class="ic">💾</span>Garder cet avatar</button>
+          <button class="chip" id="avExporter"><span class="ic">📦</span>Le donner (fichier)</button>
+        </div>
+        <div class="hint hidden" id="avMesTitre">🗂 Mes avatars (touche pour ouvrir, 🗑 pour effacer) :</div>
+        <div class="toolrow" id="avMes"></div>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <!-- BOTTOM NAV -->
@@ -984,6 +1088,7 @@
   <button data-go="anim"><span class="ic">✏️</span>Cartoon</button>
   <button data-go="aivid"><span class="ic">🕺</span>Danse IA</button>
   <button data-go="mini"><span class="ic">🧑‍🎤</span>Mini-moi</button>
+  <button data-go="avatar"><span class="ic">🎭</span>Avatars</button>
   <button data-go="magic"><span class="ic">✨</span>Magie</button>
   <button data-go="fam"><span class="ic">👨‍👩‍👧</span>Famille</button>
   <button data-go="mine"><span class="ic">🗂</span>Mes créas</button>
@@ -1085,6 +1190,11 @@
 <input type="file" id="fileMiniPhotoCam" accept="image/*,image/heic,image/heif" capture="user" class="hidden">
 <input type="file" id="fileMiniAudio" accept="audio/*,.m4a,.caf,.aac,.mp3,.wav,.ogg" class="hidden">
 <input type="file" id="fileMiniDecor" accept="image/*,image/heic,image/heif,.heic,.heif" class="hidden">
+<input type="file" id="avPhoto" accept="image/*,image/heic,image/heif,.heic,.heif" class="hidden">
+<input type="file" id="avPhotoMain" accept="image/*,image/heic,image/heif,.heic,.heif" class="hidden">
+<input type="file" id="avVideo2" accept="video/*" class="hidden">
+<input type="file" id="avSonFichier" accept="audio/*,video/*,.m4a,.caf,.aac,.mp3,.wav,.ogg" class="hidden">
+<input type="file" id="avImport" accept=".json,application/json" class="hidden">
 
 <script>
 /* ============================================================
@@ -1092,7 +1202,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.21.0';
+var APP_VER='v9.22.0';
 document.getElementById('vbadge').textContent=APP_VER;
 /* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
 function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}
@@ -2762,8 +2872,10 @@ function go(name){
   if(name==='mine'&&window.Mine){Mine.refresh();if(window.Account)Account.paint();}
   if(name==='fam'&&window.Fam){Fam.montrer();if(Fam.etat())Fam.charger();}
   if(name!=='cam'&&window.Cam)Cam.stop(true);   /* la caméra ne reste JAMAIS allumée en fond */
+  if(name!=='avatar'&&window.Avatar)Avatar.pause();   /* idem pour la caméra et le son de l'avatar */
   document.querySelectorAll('.studio').forEach(function(s){s.classList.remove('active')});
   $('s-'+name).classList.add('active');
+  if(name==='avatar'&&window.Avatar)Avatar.activer();
   document.querySelectorAll('#bnav button').forEach(function(b){b.classList.toggle('on',b.dataset.go===name)});
 }
 $('btnNew').onclick=function(){
@@ -2772,6 +2884,7 @@ $('btnNew').onclick=function(){
   else if(CUR==='anim')Anim.start();
   else if(CUR==='aivid')AiVid.pick();
   else if(CUR==='mini')Mini.pick();
+  else if(CUR==='avatar'){var ip=$('avPhoto');if(ip)ip.click();}
   else if(CUR==='magic')Magic.pick();
 };
 $('btnExport').onclick=function(){
@@ -2780,6 +2893,7 @@ $('btnExport').onclick=function(){
   else if(CUR==='anim')Anim.export();
   else if(CUR==='aivid')AiVid.export();
   else if(CUR==='mini')Mini.export();
+  else if(CUR==='avatar'&&window.Avatar)Avatar.partager();
   else if(CUR==='magic')Magic.export();
 };
 
@@ -7284,6 +7398,11 @@ try{ Fam.init(); }catch(e){}
 try{ Account.init(); }
 catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)); }catch(_){} }
 </script>
+<!-- 29.10 (Kevin : avatars et marionnettes) : le cœur, le rendu photo, les personnages, puis l'écran — dans cet ordre -->
+<script src="avatar-core.js" defer></script>
+<script src="avatar-rendu.js" defer></script>
+<script src="avatar-persos.js" defer></script>
+<script src="avatar-studio.js" defer></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.18.6" data-color="#c9a227" defer></script>
 </body>

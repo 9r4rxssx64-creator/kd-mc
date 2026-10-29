@@ -214,3 +214,6 @@ Aucune de ces fonctions ne consomme de crédit payant.
 **Preuves mesurées** (navigateur réel, iPhone 390 px) : 12/12 vérifications vertes, 0 erreur JS —
 les 12 styles envoient le bon preset, la vidéo chantée dure exactement la longueur du son (2,996 s
 pour un fichier de 3 s), paroles + instru OK, aucun débordement horizontal.
+
+## 🧸 Avatars (v9.22.0, 29.10.2026) — marionnettes et personnages animés
+Dixième studio (barre du bas : « Avatars »). Une photo, une vidéo ou un tour de la personne → un avatar qui parle, cligne, sourit et bouge la tête, avec des looks (filtres + looks IA feutre / peluche / lego / clay / anime / toon3d) et une voix (texte, micro, fichier ou caméra). Personnages vectoriels (panda, lion, âne, abeille…) et « un animal ou un dessin » en 3 touchés. Détail, API et contrat de la voix clonée : **[AVATARS.md](AVATARS.md)**. Gardes : `test:crea-avatars`, `verif:crea-avatars`, robots publics `avatars-plateformes.yml` et `verif-live-avatars.yml`.

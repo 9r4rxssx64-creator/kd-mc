@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 237 règles — le texte de Kevin, une par une
+## 📜 Les 238 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1036,6 +1036,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 📊 RÈGLE ABSOLUE — RESTER TOUJOURS DANS LES QUOTAS GRATUITS DE TOUS NOS ABONNEMENTS, JAMAIS DE WORKERS PAID SANS LE OUI DE KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve une solution gratuite pour les Workers Paid à 5 €/mois. Crée ce dont tu as besoin gratuit pour rester toujours dans les quotas de tous nos abonnements sans rien dépasser. Toujours. […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-rester-toujours-dans-les-quotas-gratuits-de-tous-nos-abonnements-jamais-de-workers-paid-sans-le-oui-de-kevin-kevin-2026-10-29-absolue-toutes-les-branches)
+
+### 🔑 RÈGLE ABSOLUE — LES CLÉS ET JETONS SE CRÉENT / SE CHANGENT PAR LE LENOVO, SANS REDEMANDER À KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Quand sur le Lenovo il faut changer ou créer une clé, comment faire pour que tu puisses le faire quand même ? C'est c'est moi qui te le demande… C'est juste un problème de règles : […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-les-clés-et-jetons-se-créent-se-changent-par-le-lenovo-sans-redemander-à-kevin-kevin-2026-10-29-absolue-toutes-les-branches)
 
 ---
 

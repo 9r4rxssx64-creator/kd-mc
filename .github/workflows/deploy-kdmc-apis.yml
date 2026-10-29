@@ -46,7 +46,8 @@ jobs:
         run: |
           node --check worker.js
           node --check delegue.js
-          node --test worker.test.mjs delegue.test.mjs
+          node --check adresses.mjs
+          node --test worker.test.mjs delegue.test.mjs delegue-jobs.test.mjs
 
       - name: Install wrangler
         run: npm install -g wrangler@^3.80.0

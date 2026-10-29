@@ -12480,8 +12480,13 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 
 ## 🤝 RÈGLE ABSOLUE — DÉLÉGUER AUX IA GRATUITES, VÉRIFIER, PUIS LIVRER : LE FORFAIT DE KEVIN PENSE ET CONTRÔLE, LE GRATUIT DÉGROSSIT (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES : CLOUD, IPHONE, LENOVO)
 « Trouve une solution pour que on économise au maximum mon forfait de token… intègre toutes les IA gratuites, crée ce qu'il faut pour leur déléguer du travail que tu vérifies avant de mettre en ligne ou d'installer… toujours la plus performante dans le domaine de la question. »
+- 2ᵉ message de Kevin (29.10) : « toutes les branches au courant, et les futures : toujours passer au maximum par les branches gratuites et les robots gratuits pour économiser mon forfait dans les recherches » → réflexe par défaut + file de travaux `jobs.mjs` + agent gratuit du Lenovo `agent.mjs` + `chercheur.mjs` (extraits vérifiés mot pour mot), voir la règle.
 - Outil : `tools/delegue/delegue.mjs` (7 domaines, voies `domaine` / `llm7` / `pollinations`), `verifier.mjs` (le brouillon ne se livre qu'après), `jeton.mjs` ; porte serveur `apis.kd-mc.com/delegue` (`services/kdmc-apis/delegue.js`, jetons à empreinte en D1 `kdmc-delegue`, IA gratuites seulement) ; règle complète : `.claude/rules/delegue-gratuit.md`.
 
 ## 📊 RÈGLE ABSOLUE — RESTER TOUJOURS DANS LES QUOTAS GRATUITS DE TOUS NOS ABONNEMENTS, JAMAIS DE WORKERS PAID SANS LE OUI DE KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve une solution gratuite pour les Workers Paid à 5 €/mois. Crée ce dont tu as besoin gratuit pour rester toujours dans les quotas de tous nos abonnements sans rien dépasser. Toujours. Rappelle-toi, note-le. »
 - Plafonds écrits dans `tools/quotas/plafonds.json`, robot de mesure `mesure-quotas.yml` (D1 par base et par jour, Workers AI), règles de lecture bon marché ; détail : `.claude/rules/quotas-gratuits.md`.
+
+## 🔑 RÈGLE ABSOLUE — LES CLÉS ET JETONS SE CRÉENT / SE CHANGENT PAR LE LENOVO, SANS REDEMANDER À KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Quand sur le Lenovo il faut changer ou créer une clé, comment faire pour que tu puisses le faire quand même ? C'est c'est moi qui te le demande… C'est juste un problème de règles : modifie-les. »
+- Règle : `.claude/rules/cles-par-le-lenovo.md` (mission au pont pour `pc-config`, droit minimal, pose directe dans les coffres, ancienne clé révoquée, preuve réelle ; la clé n'apparaît jamais dans le chat, le pont ni un commit ; seuls mot de passe, code reçu, captcha et paiement restent à Kevin). Remplace « ne jamais recréer un jeton soi-même » (`cloudflare-compte-principal.md`) et « Kevin garde seul … » (`pont-lenovo-manipulations.md`).

@@ -20,6 +20,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
 - Film de preuve : 3D | marionnette sans WebGL, côte à côte.
 
+## Créa Studio v9.22.4 — Avatars : l'état de l'enregistrement est mesurable (pistes son, contexte audio) (2026-10-29)
+- `Avatar.etat().sortieInfo` dit combien de pistes son la vidéo contient et l'état du son ; le robot l'affiche pour lever le doute sur Firefox sans carte son.
+
 ## Créa Studio v9.22.3 — Avatars : la voix et le look IA ne passent plus par un fichier du navigateur (2026-10-29)
 - La voix du service et l'image du look IA sont lues comme des octets (plus de Blob créé dans la page, illisible sur certains moteurs) ; la raison d'un échec de look est gardée dans `Avatar.etat()` ; le robot règle l'autorisation du son de Firefox.
 

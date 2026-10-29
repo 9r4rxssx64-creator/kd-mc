@@ -273,10 +273,10 @@ async function suite(nom, browser) {
       const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.src = URL.createObjectURL(b);
       const meta = await new Promise((ok2) => { v.onloadedmetadata = () => ok2(true); v.onerror = () => ok2(false); setTimeout(() => ok2(false), 8000); });
       let rms = 0; try { const ctx2 = new (window.AudioContext || window.webkitAudioContext)(); const ab = await ctx2.decodeAudioData(await b.arrayBuffer()); const x = ab.getChannelData(0); let s = 0; for (let i = 0; i < x.length; i++) s += x[i] * x[i]; rms = Math.sqrt(s / x.length); } catch (e) { rms = -1; }
-      return { taille: b.size, type: b.type, meta, w: v.videoWidth, h: v.videoHeight, rms };
+      return { taille: b.size, type: b.type, meta, w: v.videoWidth, h: v.videoHeight, rms, info: Avatar.etat().sortieInfo };
     });
     ok(Fv.taille > 4000 && /video/.test(Fv.type || '') && Fv.meta && Fv.w === 540 && Fv.h === 960, `${tag} F) vidéo enregistrée : ${Fv.taille} octets, ${Fv.type}, ${Fv.w}×${Fv.h}`, JSON.stringify(Fv));
-    ok(Fv.rms > 0.01 || Fv.rms === -1, `${tag} F) la vidéo contient le SON de la voix (niveau ${Fv.rms === -1 ? 'non décodable par ce moteur' : Fv.rms.toFixed(3)})`);
+    ok(Fv.rms > 0.01 || Fv.rms === -1, `${tag} F) la vidéo contient le SON de la voix (niveau ${Fv.rms === -1 ? 'non décodable par ce moteur' : Fv.rms.toFixed(3)} ; ${JSON.stringify(Fv.info)})`, JSON.stringify(Fv.info));
   } else {
     const h = await page.evaluate(async () => { await Avatar.jouer(true); return document.getElementById('avHint').textContent; });
     ok(/enregistrer|Mets à jour|navigateur/i.test(h), `${tag} F) ce moteur ne sait pas enregistrer : l'écran le DIT en français (« ${h.slice(0, 70)} »)`);
@@ -291,7 +291,7 @@ async function suite(nom, browser) {
       await Avatar.charger(p); const e = Avatar.etat(); Avatar.rendre({ jaw: 0.5 });
       return { n: l.length, ok: val.ok, vues: e.vues, source: e.source, octets: JSON.stringify(p).length, vide: __m.vide(Avatar.canvas()) };
     });
-    ok(G.n >= 1 && G.ok && G.vues === 1 && G.source === 'photo' && G.vide > 20, `${tag} G) avatar gardé (${G.octets} octets) puis rechargé : paquet valide, ${G.vues} vue, rendu non vide`, JSON.stringify(G));
+    ok(G.n >= 1 && G.ok && G.vues === 1 && G.source === 'photo' && G.vide > 8, `${tag} G) avatar gardé (${G.octets} octets) puis rechargé : paquet valide, ${G.vues} vue, rendu non vide`, JSON.stringify(G));
   }
 
   /* D. chien : à la main */

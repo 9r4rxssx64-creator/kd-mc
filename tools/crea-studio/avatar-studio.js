@@ -493,6 +493,7 @@
     rec.ondataavailable = function (e) { if (e.data && e.data.size) parts.push(e.data); };
     var fini = new Promise(function (ok) { rec.onstop = ok; });
     S.enregistrement = rec; rec.start(250);
+    S.infoSortie = { pistesAudio: flux.getAudioTracks().length, contexte: c.state, mime: rec.mimeType || mime || '' };
     var lect = lancerLecture(dest); if (!lect) { rec.stop(); throw new Error('Le son n\'a pas pu démarrer.'); }
     aide('⏺ J\'enregistre… ' + S.son.duree.toFixed(1) + ' s');
     await attendre(Math.round((S.son.duree + 0.6) * 1000));
@@ -708,7 +709,7 @@
     version: '1.0.0', Vision: Vision, Voix: Voix, Core: C,
     pause: pause, activer: activer, choisirPerso: choisirPerso, depuisPhoto: depuisPhoto, depuisVideo: depuisVideo, appliquerLook: appliquerLook,
     jouer: jouer, garder: garder, charger: charger, exporter: exporterPaquet, partager: partager, definirHumeur: function (h) { if (C.HUMEURS[h]) { S.humeur = h; chipOn('avHumeurs', '.chip', h); } },
-    etat: function () { return { source: S.source, vues: S.vues.length, yaws: S.vues.map(function (v) { return +v.yaw.toFixed(3); }), manuel: S.vues.map(function (v) { return !!v.manuel; }), rendu: rendu ? rendu.mode() : (S.source === 'perso' ? '2d-perso' : null), look: S.look, lunettes: !!S.lunettes, looksRetrouves: S.vues.filter(function (v) { return !!v.ptsLook; }).length, texturesLook: S.vues.filter(function (v) { return !!v.texture; }).length, mode: S.mode, perso: S.persoId, params: derniersP, son: S.son ? { duree: S.son.duree, frames: S.son.frames.length } : null, camera: !!S.camera, enregistre: !!S.sortie, occupe: S.occupe, delegue: Vision.delegue() , erreurLook: S.erreurLook || '', panneVision: S.panneVision || '', erreurVision: Vision.erreur()}; },
+    etat: function () { return { source: S.source, vues: S.vues.length, yaws: S.vues.map(function (v) { return +v.yaw.toFixed(3); }), manuel: S.vues.map(function (v) { return !!v.manuel; }), rendu: rendu ? rendu.mode() : (S.source === 'perso' ? '2d-perso' : null), look: S.look, lunettes: !!S.lunettes, looksRetrouves: S.vues.filter(function (v) { return !!v.ptsLook; }).length, texturesLook: S.vues.filter(function (v) { return !!v.texture; }).length, mode: S.mode, perso: S.persoId, params: derniersP, son: S.son ? { duree: S.son.duree, frames: S.son.frames.length } : null, camera: !!S.camera, enregistre: !!S.sortie, occupe: S.occupe, delegue: Vision.delegue() , sortieInfo: S.infoSortie || null, erreurLook: S.erreurLook || '', panneVision: S.panneVision || '', erreurVision: Vision.erreur()}; },
     rendre: function (P) { var t = (performance.now() - t0) / 1000; if (P) { var sauv = S.camera; S.camera = { params: C.assainir(P) }; dessiner(t); S.camera = sauv; } else dessiner(t); },
     vue0: function () { return S.vues[0] ? S.vues[0].original : null; }, cadre: function () { return rendu ? rendu.cadre() : null; }, son: function () { return S.son; },
     /* Où est l'ouverture de la bouche à l'écran (pixels de la sortie) pour un réglage donné — sert aux mesures. */

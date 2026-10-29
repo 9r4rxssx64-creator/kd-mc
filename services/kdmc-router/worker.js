@@ -30,7 +30,8 @@ import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-pus
 import { handleInstaller, handlePush, INSTALLER_TAG, ajouterPushAuSW } from './installer.js';   // 📲 installer l'app + 🔔 notifications, sur chaque app
 import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // Bee voit le domaine : pages, liens, documentation, ses pouvoirs (lecture, Kevin seul)
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE } from './bee-arbre.js';
-import { reponseDirecte } from './bee-direct.js';   // météo, heure, date, calcul, conversion SANS IA quand la demande est nette (Kevin 17.10)
+import { reponseDirecte } from './bee-direct.js';
+import { handleRaccourci } from './bee-raccourci.js';   // Kevin 29.10 « Go tout » : Bee appelée par Siri / Raccourcis, LECTURE SEULE, jeton par appareil (voir ce fichier)   // météo, heure, date, calcul, conversion SANS IA quand la demande est nette (Kevin 17.10)
 import { outilsAtelier, imageGratuite, RE_ATELIER, REGLES_ATELIER } from './bee-atelier.js';   // documents, agenda, brouillon de mail, images — gratuit, Kevin seul (Kevin 17.10)
 import { outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, intentionOuvrir, corrigerTexte } from './bee-ouvrir.js';   // Bee OUVRE n'importe quelle app du domaine sur l'écran de Kevin (Kevin 17.10)
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
@@ -727,6 +728,16 @@ const ROUTEUR = {
        et le serveur JETAIT le caractère de Bee (« ne prétends pas avoir agi »). Ici : la session
        admin est vérifiée PAR LE DOMAINE (Face ID ou code), le caractère est fixé côté serveur,
        et le client ne peut envoyer que des messages « user » / « assistant ». */
+    /* 📲 BEE PAR SIRI / RACCOURCIS (Kevin 29.10) : un JETON par appareil (créé par Kevin seul sur /__javis/raccourci), LECTURE SEULE — voir bee-raccourci.js. */
+    if (url.pathname === '/__javis/raccourci' || url.pathname.startsWith('/__javis/raccourci/')) {
+      return handleRaccourci(request, url, env, {
+        adminSession: (r) => adminSession(r, env),
+        limite: (cle) => limiteTous(env && env.LIMITE_BEE, cle),
+        planningCourt: () => planningCourtKevin(env),
+        planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)),
+        caractere: BEE_CARACTERE + ' Nous sommes le ' + dateMonaco() + ' (heure de Monaco).',
+      });
+    }
     if (url.pathname === '/__javis/ai') return avecJournal(env, ctx, request, 'ai', () => handleBeeIa(request, env, ctx));
     if (url.pathname === '/__javis/moi') return handleBeeMoi(request, env);
     if (url.pathname === '/__javis/fil') return avecJournal(env, ctx, request, 'fil', () => handleFil(request, env, outilsBee(env, ctx)));
@@ -4580,6 +4591,11 @@ function dateMonaco(d) {
      · le type de question est deviné par mots-clés (0 appel IA), plus de « conseil » : 1 appel par
        question dans le cas normal, Qwen gratuit d'abord (règle Kevin 05.09) ;
      · tout tient dans 22 s. */
+/* Les horaires de Kevin sur 3 jours, en clair (jamais un nom de collègue) : pour « mon brief », en direct (Bee) et par Siri (bee-raccourci.js). */
+async function planningCourtKevin(env) {
+  const pl = prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 3);
+  return pl && pl.source ? pl.jours.slice(0, 3).map((j) => j.libelle + ' : ' + j.texte).join('\n') : '';
+}
 const BEE_BUDGET_MS = 22000;
 async function handleBeeIa(request, env, ctx) {
   const JB = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: Object.assign({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }, o && o.ok && (st || 200) < 300 ? { 'set-cookie': MARQUEUR } : {}) });
@@ -4612,7 +4628,7 @@ async function handleBeeIa(request, env, ctx) {
     if (io) return JB({ ok: true, text: io.texte, provider: 'domaine', gratuit: true, outils: ['ouvrir'], ouvrir: [{ url: io.url, libelle: io.libelle }] });
   }
   /* DEMANDE NETTE = RÉPONSE EXACTE SANS IA (météo, heure, date, calcul, conversion) : jamais limitée par un palier gratuit (mesuré 18.10 : après 2 questions, les IA à outils étaient en pause). BEE_DIRECT = '0' coupe. */
-  { const d = await reponseDirecte(messages[messages.length - 1].content, env, { planningCourt: async () => { const pl = prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 3); return pl && pl.source ? pl.jours.slice(0, 3).map((j) => j.libelle + ' : ' + j.texte).join('\n') : ''; } });
+  { const d = await reponseDirecte(messages[messages.length - 1].content, env, { planningCourt: () => planningCourtKevin(env) });
     if (d) return JB({ ok: true, text: d.texte, provider: 'domaine', gratuit: true, outils: [d.outil] }); }
   let caractere = (b && b.mascotte === 'donkey' ? BOURRICOT_CARACTERE : BEE_CARACTERE) + ' Nous sommes le ' + dateMonaco() + ' (heure de Monaco).';
   /* BEE CONNAÎT TA JOURNÉE (audit externe 02.10) : une question sur son planning reçoit les FAITS du PDF,
@@ -4972,6 +4988,7 @@ function decrirePouvoirs(ex) {
   const L = ['Fermé par tes règles : le coffre et les clés (chiffrés sur ton appareil), le code admin, l\'argent réel du robot, le planning, supprimer ou publier dans l\'arbre, déployer du code (je t\'écris alors la consigne pour Claude Code).', '', 'Mes outils de LECTURE (gratuits, que je lance moi-même) :'];
   for (const d of DEFINITIONS.concat(lect.filter((x) => !DEFINITIONS.some((y) => y.name === x.name)))) L.push('• ' + d.name + ' — ' + String(d.description).split(/\.\s/)[0].slice(0, 150));
   L.push('• point du jour — dis « mon brief » : la date, la météo et tes horaires, d\'un coup, sans IA');
+  L.push('• Siri — pour m\'appeler à la voix sans ouvrir l\'app (lecture seule), ouvre https://kd-mc.com/__javis/raccourci : tu crées ton jeton et tu fabriques le raccourci « Bee » en 2 minutes');
   L.push('', 'Mes ACTIONS (je les prépare, tu les confirmes avec ✅ — rien ne part avant) :');
   for (const k of ACTIONS_BEE) L.push('• ' + k + ' — ' + CATALOGUE_BEE[k].titre + (CATALOGUE_BEE[k].risque === 'eleve' ? ' (risque élevé)' : ''));
   return L.join('\n');

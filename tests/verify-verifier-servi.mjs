@@ -30,6 +30,14 @@ ok('2b. page propre : rien à signaler', propre.sousPastille === false && propre
 ok('2c. version lue (data-app-ver et badge)', propre.appVer === 'v9.9.9' && propre.badges.includes('v9.9.9'));
 const large = await (async () => { const b2 = await chromium.launch(exe ? { executablePath: exe } : {}); const p2 = await b2.newPage({ viewport: { width: 390, height: 844 } }); await p2.goto(f('large.html', '<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0"><div id="trop" class="bandeau" style="width:700px;height:20px">x</div><p>court</p></body>')); const r = await p2.evaluate(mesurerServi); await b2.close(); return r; })();
 ok('2d. débordement : le plus large élément est nommé avec ses nombres', large.debordeur && large.debordeur.s === 'div#trop.bandeau' && large.debordeur.droite === 700 && propre.debordeur === null, JSON.stringify(large.debordeur));
+/* 2e (29.10, light iPhone « déborde 52 » mais « table#grid » désignée) : une grille large DANS une zone qui défile ne déborde pas la page ;
+   le robot doit nommer le vrai responsable, et ne rien nommer quand seule la grille contenue dépasse. */
+const zone = '<div class="scroll" style="overflow-x:auto"><table id="grid" style="width:1800px"><tr><td>x</td></tr></table></div>';
+const contenu = await (async () => { const b3 = await chromium.launch(exe ? { executablePath: exe } : {}); const p3 = await b3.newPage({ viewport: { width: 390, height: 844 } });
+  const lit = async (nom, corps) => { await p3.goto(f(nom, '<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="margin:0">' + corps + '</body>')); return p3.evaluate(mesurerServi); };
+  const r = { seul: await lit('zone.html', zone), avec: await lit('zone-coupable.html', zone + '<div id="coupable" style="width:442px;height:10px"></div>') }; await b3.close(); return r; })();
+ok('2e. une grille contenue dans une zone qui défile n’est pas le responsable ; le vrai l’est', contenu.seul.debordeur === null && contenu.avec.debordeur && contenu.avec.debordeur.s === 'div#coupable' && contenu.avec.debordeur.droite === 442,
+  JSON.stringify({ seul: contenu.seul.debordeur, avec: contenu.avec.debordeur }));
 const sortie = JSON.stringify(propre) + JSON.stringify(piege);
 ok('3. aucun texte de page dans la mesure', !/secret|Dupont|Léa/.test(sortie), sortie.slice(0, 120));
 const wf = readFileSync(new URL('../.github/workflows/verifier-servi.yml', import.meta.url), 'utf8');

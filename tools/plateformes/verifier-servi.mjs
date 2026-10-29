@@ -36,11 +36,13 @@ export function mesurerServi() {
   /* versions : jamais un texte libre, seulement ce qui ressemble à « v1.2.3 » */
   const motV = /^v\d+(?:\.\d+)+$/i;
   const badges = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim())).map((e) => (e.textContent || '').trim()).slice(0, 3);
-  /* le plus large élément qui dépasse l'écran (débordement horizontal) : sélecteur + nombres, jamais de texte */
+  /* le plus large élément qui dépasse l'écran (débordement horizontal) : sélecteur + nombres, jamais de texte.
+     29.10 : un élément contenu par un parent qui coupe ou fait défiler (grille dans .scroll) ne fait pas déborder la page : ignoré. */
   const L = document.documentElement.clientWidth; let deb = null;
+  const contenu = (e) => { for (let a = e.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) if (getComputedStyle(a).overflowX !== 'visible') return true; return false; };
   for (const e of document.querySelectorAll('body *')) {
     const r = e.getBoundingClientRect(); if (r.width < 2 || r.right <= L + 1 || !vis(e)) continue;
-    const st = getComputedStyle(e); if (st.position === 'fixed') continue;
+    const st = getComputedStyle(e); if (st.position === 'fixed' || contenu(e)) continue;
     if (!deb || r.right > deb.droite) deb = { s: sel(e), droite: Math.round(r.right), largeur: Math.round(r.width), parent: e.parentElement ? sel(e.parentElement) : '' };
   }
   return {

@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.23';
+  var JAVIS_VER = 'v1.24';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -1234,6 +1234,16 @@
     var esp = debut.lastIndexOf(' ');
     return esp > 0 ? debut.slice(0, esp) : debut;
   }
+  /* LA 1RE PHRASE PART SEULE (« Go tout » 29.10, idée du Jarvis maison vu par Kevin : « TTS en streaming phrase par phrase », docs/latency.md du dépôt) :
+     la voix gratuite fabrique le son d'un texte en un bloc, donc plus la réponse est longue, plus Bee se tait avant de parler. On coupe après la 1re phrase
+     (30 à 160 signes, suivie d'une majuscule : pas après « M. » ni « 3,5 »), on demande les DEUX sons en même temps, et le 2e passe dès que le 1er finit. */
+  function enMorceaux(t) {
+    if (t.length <= 150) return [t];
+    var m = /^[\s\S]{30,160}?[.!?…](?=\s+[A-ZÀ-Ý«"'(]|\s*$)/.exec(t);
+    if (!m) return [t];
+    var debut = m[0].trim(), reste = t.slice(m[0].length).trim();
+    return reste ? [debut, reste] : [debut];
+  }
   function speak(root, text) {
     var on = true;
     try { on = localStorage.getItem(STORAGE_VOICE) !== '0'; } catch (_) {}
@@ -1251,52 +1261,65 @@
     a._abandon = false;
     a.removeAttribute('crossorigin');
     var id = _parole, repli = false, joue = false;
+    var morceaux = enMorceaux(text), courant = 0;
     var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
     function versTelephone() {
       if (repli || id !== _parole) return; repli = true;
       /* on COUPE la demande au domaine (audit externe 02.10 : abandonnée, elle continuait côté serveur) */
       try { if (ctrl) ctrl.abort(); } catch (_) {}
       try { a._abandon = true; a.pause(); a.removeAttribute('src'); a.load(); } catch (_) {}
-      voixTelephone(root, text);
+      voixTelephone(root, morceaux.slice(courant).join(' '));   /* si le 1er morceau a déjà parlé, le téléphone dit seulement la suite */
     }
-    a.onended = function () { if (id === _parole) stopTalking(root); };
     a.onerror = function () { if (!a._abandon && id === _parole && !joue) versTelephone(); };
     /* le son ne vient jamais : on ne la laisse pas muette (6 s : la voix gratuite met ~1,3 s, mesuré 3.10) */
     setTimeout(function () { if (!repli && !joue && id === _parole) versTelephone(); }, 6000);
-    var url = adresseVoix() + '?v=' + voixDe() + '&l=fr&gratuit=1&t=' + encodeURIComponent(text), type = 'audio/mpeg';
-    fetch(url, ctrl ? { signal: ctrl.signal } : {})
-      .then(function (r) {
-        type = (r.headers.get('content-type') || '').split(';')[0];
+    function demander(t) {
+      var url = adresseVoix() + '?v=' + voixDe() + '&l=fr&gratuit=1&t=' + encodeURIComponent(t);
+      return fetch(url, ctrl ? { signal: ctrl.signal } : {}).then(function (r) {
+        var type = (r.headers.get('content-type') || '').split(';')[0];
         if (!r.ok || !/^audio\//.test(type)) throw new Error('pas un son');
-        return r.arrayBuffer();
-      })
-      .then(function (donnees) {
-        if (repli || id !== _parole) return;
-        if (a._url) { try { URL.revokeObjectURL(a._url); } catch (_) {} }
-        a._url = URL.createObjectURL(new Blob([donnees], { type: type }));
-        /* VOIX RÉELLEMENT DIFFÉRENTES (règle Kevin 18.05) : quand la belle voix (MP3) n'est pas là, Bee et
-           Bourricot reçoivent la MÊME voix gratuite (WAV) — Bourricot la prend alors plus grave et plus posée. */
-        var grave = mascCfg().gen === 'm' && type === 'audio/wav';
-        try { a.preservesPitch = !grave; a.webkitPreservesPitch = !grave; a.mozPreservesPitch = !grave; } catch (_) {}
-        a.src = a._url;
-        a.playbackRate = grave ? 0.86 : 1;
-        _voixAudio = a;
-        var p = a.play();
-        joue = true;
-        if (p && p.catch) p.catch(function () { joue = false; versTelephone(); });
-        /* la bouche : le même fichier, décodé à côté (jamais branché sur le haut-parleur) */
-        try {
-          var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-          var oc = new OAC(1, 1, 44100), fini = function (ab) {
-            if (!ab || repli || id !== _parole) return;
-            var stop = lipSync(a, allMouths(root), analyseurHorsLigne(a, ab.getChannelData(0), ab.sampleRate));
-            if (stop) { if (_lipStop) { try { _lipStop(); } catch (_) {} } _lipStop = stop; }
-          };
-          var pr = oc.decodeAudioData(donnees.slice(0), fini, function () {});
-          if (pr && pr.then) pr.then(fini, function () {});
-        } catch (_) { /* pas de décodage : la bouche bat en rythme (CSS) */ }
-      })
-      .catch(function () { if (!(ctrl && ctrl.signal.aborted)) versTelephone(); });
+        return r.arrayBuffer().then(function (donnees) { return { donnees: donnees, type: type }; });
+      });
+    }
+    function jouer(i, son) {
+      if (repli || id !== _parole) return;
+      courant = i;
+      var donnees = son.donnees, type = son.type;
+      if (a._url) { try { URL.revokeObjectURL(a._url); } catch (_) {} }
+      a._url = URL.createObjectURL(new Blob([donnees], { type: type }));
+      /* VOIX RÉELLEMENT DIFFÉRENTES (règle Kevin 18.05) : quand la belle voix (MP3) n'est pas là, Bee et
+         Bourricot reçoivent la MÊME voix gratuite (WAV) — Bourricot la prend alors plus grave et plus posée. */
+      var grave = mascCfg().gen === 'm' && type === 'audio/wav';
+      try { a.preservesPitch = !grave; a.webkitPreservesPitch = !grave; a.mozPreservesPitch = !grave; } catch (_) {}
+      a.onended = function () {
+        if (id !== _parole) return;
+        if (i + 1 < morceaux.length) suite(i + 1); else stopTalking(root);
+      };
+      a.src = a._url;
+      a.playbackRate = grave ? 0.86 : 1;
+      _voixAudio = a;
+      var p = a.play();
+      joue = true;
+      if (p && p.catch) p.catch(function () { joue = false; versTelephone(); });
+      /* la bouche : le même fichier, décodé à côté (jamais branché sur le haut-parleur) */
+      try {
+        var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        var oc = new OAC(1, 1, 44100), fini = function (ab) {
+          if (!ab || repli || id !== _parole || courant !== i) return;
+          var stop = lipSync(a, allMouths(root), analyseurHorsLigne(a, ab.getChannelData(0), ab.sampleRate));
+          if (stop) { if (_lipStop) { try { _lipStop(); } catch (_) {} } _lipStop = stop; }
+        };
+        var pr = oc.decodeAudioData(donnees.slice(0), fini, function () {});
+        if (pr && pr.then) pr.then(fini, function () {});
+      } catch (_) { /* pas de décodage : la bouche bat en rythme (CSS) */ }
+    }
+    var sons = morceaux.map(demander);              /* tous demandés tout de suite : le 2e se fabrique pendant que le 1er parle */
+    function suite(i) {
+      courant = i;                                  /* si le son manque, le téléphone reprend ICI */
+      sons[i].then(function (son) { jouer(i, son); }, function () { if (!(ctrl && ctrl.signal.aborted)) versTelephone(); });
+    }
+    sons.slice(1).forEach(function (pr) { pr.catch(function () {}); });   /* un 2e son qui échoue pendant que le 1er parle : traité à son tour */
+    suite(0);
   }
 
   /* ⚠ « apex.kd-mc.com » N'EXISTE PAS (mesuré 27.09 : le nom ne se résout même pas) — l'adresse
@@ -2080,6 +2103,7 @@
     if (APP_MODE) { panel.classList.add('javis-open'); } else { ennui(wrap); }
     if (APP_MODE && QUESTION_ADRESSE) setTimeout(function () { askJavis(wrap, QUESTION_ADRESSE); }, 300);
     if (APP_MODE && !QUESTION_ADRESSE) { suggestions(wrap); bonjourDuJour(wrap); }
+    window.__javisParler = function (t) { speak(wrap, t); };   /* pour les gardes (verify-javis-bee-reelle) : faire parler Bee sans passer par le serveur */
 
     /* OUVRIR AU DOIGT (Kevin 16.10 : « quand je le touche il bouge mais c'est tout ») : Bee saute dès que le doigt se pose ; sur iPhone le « clic »
        qui suit peut se perdre. On ouvre donc AUSSI quand le doigt se lève (bouge < 12 px, < 1 s) ; le clic qui suit ne referme pas (dédoublonné). */

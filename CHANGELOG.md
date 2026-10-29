@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Javis / Bee v1.24 — la voix commence dès la 1re phrase (2026-10-29)
+- Une réponse de plus de 150 signes est coupée après sa première phrase : le son de la 1re phrase part seul pendant que la suite se fabrique (les deux sons sont demandés en même temps, le 2e enchaîne). Une réponse courte reste UN son ; si le 2e son manque, le téléphone dit seulement la suite.
+- Mesuré en navigateur : Bee parle après 477 ms au lieu de ~3 084 ms (réponse entière) avec une voix de test à 12 ms par signe. Garde : `tests/verify-javis-bee-reelle.mjs` (section « la 1re phrase part seule », rouge si on ne coupe jamais). Copies : `javis/`, `arbre/` ; `javis/sw.js` = javis-v1.24.
+- Même jour, côté serveur : « mon brief » / « le point du jour » donne date + météo + horaires sans IA (PR 5257).
 ## Apex Chat 1.1.350 (29.10.2026)
 - Entrée par le domaine : un refus « appareil » renvoie `pass_appareil`, `requete_appareil` et `source` (familles seulement) pour nommer la paire coupable quand le robot échoue.
 

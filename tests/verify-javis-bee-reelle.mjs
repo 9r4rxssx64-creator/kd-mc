@@ -115,6 +115,7 @@ function pourLeTest(f) {
 /* Bee est servie par Lingua en production : on détourne vers les vrais fichiers du dépôt.
    `casse` permet de simuler un fichier absent pour éprouver le repli. */
 let voixKO = false;
+let ttsLenteurParSigne = 0, ttsPanneDuSecond = false; const ttsTextes = [];
 /* Un son FORT puis SILENCIEUX : si la bouche suit vraiment l'amplitude, elle doit être
    grande ouverte pendant la 1re seconde et presque fermée ensuite. Un minuteur, lui,
    donnerait la même chose des deux côtés — c'est ce qui distingue un VRAI lip-sync. */
@@ -189,9 +190,13 @@ async function ouvre({ casse = null, avec3D = false } = {}) {
   /* Sa voix : en production c'est le domaine qui la fabrique. Ici on sert un VRAI son
      (fort puis silencieux) pour pouvoir MESURER que la bouche suit l'amplitude —
      et pas un minuteur. `muet: true` simule une voix injoignable (test du repli). */
-  await page.route(/lingua\.kd-mc\.com\/__lingua\/tts/, (route) => {
+  await page.route(/lingua\.kd-mc\.com\/__lingua\/tts/, async (route) => {
     ttsDemandes++;
+    const texte = new URL(route.request().url()).searchParams.get('t') || '';
+    ttsTextes.push(texte);
     if (voixKO) return route.fulfill({ status: 503, body: 'indisponible' });
+    if (ttsLenteurParSigne) await new Promise((r) => setTimeout(r, ttsLenteurParSigne * texte.length));   /* la voix gratuite met plus de temps pour un texte plus long */
+    if (ttsPanneDuSecond && ttsTextes.length >= 2 && texte === ttsTextes[1]) return route.fulfill({ status: 503, body: 'indisponible' });
     return route.fulfill({ status: 200, contentType: 'audio/mpeg',
       headers: { 'access-control-allow-origin': '*' }, body: sonDeTest() });
   });
@@ -693,6 +698,52 @@ if (FFMPEG) {
   chk(erreurs.length === 0, erreurs.length ? `ERREURS JS : ${erreurs[0]}` : 'aucune erreur JS malgré la voix en panne');
   await ctx.close();
   voixKO = false;
+}
+
+/* === 4 ter bis. LA 1RE PHRASE PART SEULE (« Go tout » 29.10) : Bee commence à parler dès que la 1re phrase est prête ===================== */
+{
+  const LONG = 'Bonjour Kevin, voici ton point du jour. Il fait 18 degrés à Monaco avec un grand soleil et très peu de vent sur la côte. Demain, le temps restera beau, avec un petit risque de pluie en fin de soirée seulement. Ton planning : lundi de 14h à 22h, mardi repos.';
+  ttsLenteurParSigne = 12;                             /* 12 ms par signe : le texte entier met ~3,3 s, la 1re phrase ~0,5 s */
+  ttsTextes.length = 0;
+  const { ctx, page, erreurs } = await ouvre();
+  await page.waitForSelector('#javis-launcher .bee-rig', { timeout: 8000 }).catch(() => {});
+  await page.waitForFunction(() => typeof window.__javisParler === 'function', null, { timeout: 8000 }).catch(() => {});
+  const m = await page.evaluate(async (texte) => {
+    const plays = [];
+    const orig = HTMLMediaElement.prototype.play;
+    const t0 = performance.now();
+    HTMLMediaElement.prototype.play = function () { if (/^blob:/.test(this.src || '')) plays.push(Math.round(performance.now() - t0)); return orig.apply(this, arguments); };
+    window.__javisParler(texte);
+    await new Promise((r) => setTimeout(r, 9000));
+    HTMLMediaElement.prototype.play = orig;
+    return { plays };
+  }, LONG);
+  const [t1, t2] = [ttsTextes[0] || '', ttsTextes[1] || ''];
+  chk(ttsTextes.length === 2 && t1.length < 170 && /[.!?…]$/.test(t1), `la réponse longue est coupée après la 1re phrase : 2 sons demandés (${ttsTextes.length}), le 1er de ${t1.length} signes`);
+  chk(`${t1} ${t2}`.replace(/\s+/g, ' ').trim() === LONG.replace(/\s+/g, ' ').trim(), 'rien ne se perd : 1er morceau + 2e morceau = la réponse entière');
+  chk(m.plays.length >= 2 && m.plays[0] < 2000, `Bee commence à parler en ${m.plays[0]} ms (avant : ~${12 * LONG.length} ms, la réponse entière) ; le 2e morceau enchaîne (${m.plays.length} sons lus)`);
+  chk(m.plays.length >= 2 && m.plays[1] > m.plays[0], 'le 2e morceau passe APRÈS le 1er (jamais en même temps)');
+  chk(erreurs.length === 0, erreurs.length ? `ERREURS JS : ${erreurs[0]}` : 'aucune erreur JS (voix par morceaux)');
+  /* une réponse COURTE reste UN seul son (rien de plus à demander) */
+  ttsTextes.length = 0;
+  await page.evaluate(() => window.__javisParler('Il est dix heures.'));
+  await dors(1200);
+  chk(ttsTextes.length === 1, `une réponse courte = 1 seul son demandé (${ttsTextes.length})`);
+  await ctx.close();
+  /* le 2e son manque : le téléphone dit la SUITE (pas tout depuis le début) */
+  ttsTextes.length = 0; ttsPanneDuSecond = true;
+  const r2 = await ouvre();
+  await r2.page.waitForFunction(() => typeof window.__javisParler === 'function', null, { timeout: 8000 }).catch(() => {});
+  const dit = await r2.page.evaluate(async (texte) => {
+    let d = null;
+    window.speechSynthesis.speak = function (u) { d = String(u && u.text || ''); };
+    window.__javisParler(texte);
+    await new Promise((r) => setTimeout(r, 9000));
+    return d;
+  }, LONG);
+  chk(!!dit && ttsTextes[1] && dit.replace(/\s+/g, ' ').trim() === ttsTextes[1].replace(/\s+/g, ' ').trim(), `le 2e son manque : le téléphone dit seulement la suite (« ${String(dit).slice(0, 40)}… »)`, dit);
+  await r2.ctx.close();
+  ttsPanneDuSecond = false; ttsLenteurParSigne = 0;
 }
 
 /* === 4 quater. audit Bee 27.09 : UNE seule voix, le bon cerveau, et les boutons ON/OFF ======== */

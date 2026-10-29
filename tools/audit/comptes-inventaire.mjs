@@ -65,11 +65,21 @@ export function analyser(fiches) {
   return { total: fiches.length, actives: actives.length, renvois, robots, kevin, doublons, sansNomComplet };
 }
 
+/* 29.10.2026 (Kevin : « vérifie qu'il n'y a plus d'historique de personne, aucune connexion suspecte… ») : SANS_NOMS=1 = le robot tourne au dépôt PUBLIC (journal lisible par tous) →
+   aucun nom ni identifiant d'une personne : initiales + empreinte courte ; Kevin et les robots restent nommés (utile pour fusionner / nettoyer). */
+export const SANS_NOMS = process.env.SANS_NOMS === '1';
+import { createHash } from 'node:crypto';
+export const empreinteCourte = (u) => createHash('sha256').update(String(u)).digest('hex').slice(0, 6);
+export const initiales = (n) => String(n || '?').split(/\s+/).filter(Boolean).map((x) => x[0].toUpperCase()).join('.') + '.';
+export function ident(a, sans = SANS_NOMS) {
+  if (!sans || estKevin(a) || estRobot(a)) return `${a.uid} « ${a.name || '?'} »`;
+  return `compte ${empreinteCourte(a.uid)} « ${initiales(a.name)} »`;
+}
 const resume = (a) => {
   const apps = Object.keys(a.apps || {}).map((h) => h.replace(/\.kd-mc\.com$/, '')).slice(0, 6).join(',');
   const vu = a.last_seen ? new Date(a.last_seen).toISOString().slice(0, 10) : '?';
   const cree = a.created ? new Date(a.created).toISOString().slice(0, 10) : '?';
-  return `${a.uid} « ${a.name || '?'} » créé ${cree}, vu ${vu}${apps ? ', apps ' + apps : ''}`;
+  return `${ident(a)} créé ${cree}, vu ${vu}${apps ? ', apps ' + apps : ''}`;
 };
 
 async function cf(chemin, token) {
@@ -121,7 +131,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   lignes.push(`ROBOTS (pas des personnes) — ${b.robots.length} :`);
   for (const a of b.robots) lignes.push('  · ' + resume(a));
   lignes.push(`PERSONNES AVEC PLUSIEURS COMPTES — ${b.doublons.length} :`);
-  for (const d of b.doublons) { lignes.push(`  « ${d.nom} » × ${d.comptes.length}`); for (const a of d.comptes) lignes.push('     · ' + resume(a)); }
+  for (const d of b.doublons) { lignes.push(`  « ${SANS_NOMS && !d.comptes.some(estKevin) ? initiales(d.nom) : d.nom} » × ${d.comptes.length}`); for (const a of d.comptes) lignes.push('     · ' + resume(a)); }
   lignes.push(`Comptes sans prénom + nom (un seul mot) — ${b.sansNomComplet.length}`);
   const detail = (a) => resume(a) + ` · ${a.hits || 0} session(s)` + (a.portee ? ' · portée ' + a.portee : '') + (Array.isArray(a.acces) && a.acces.length ? ' · accès ' + a.acces.join('/') : '') + (Array.isArray(a.bloque) && a.bloque.length ? ' · BLOQUÉ ' + a.bloque.join('/') : '') + (a.revoked_at ? ' · session révoquée' : '');
   for (const a of b.sansNomComplet) lignes.push('  · ' + detail(a));   /* « comptes invités » (Kevin 4.10) : ce sont eux, un seul mot, jamais un nom complet */
@@ -138,7 +148,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
      inconnue. On le signale ici ; la réparation se fait par le robot coffre-comptes-reparer-nom.yml (uid + vrai nom). */
   const abimes = fiches.filter((f) => f && f.uid && !f.merged_into && estAbime(f.name));
   lignes.push(`NOMS ABÎMÉS (encodage, à réparer par coffre-comptes-reparer-nom) — ${abimes.length} :`);
-  for (const a of abimes) lignes.push('  · ' + resume(a) + ' → vrai nom probable « ' + relireUtf8(a.name) + ' »');
+  for (const a of abimes) lignes.push('  · ' + resume(a) + (SANS_NOMS ? '' : ' → vrai nom probable « ' + relireUtf8(a.name) + ' »'));
   console.log(lignes.join('\n'));
   /* Annotations : le seul canal lisible depuis une session. 12 lignes par bloc, codes masqués. */
   const sur = lignes.map((l) => l.replace(/[0-9a-f]{16,}/g, '…'));

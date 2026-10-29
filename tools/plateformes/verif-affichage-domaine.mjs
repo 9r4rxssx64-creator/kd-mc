@@ -158,7 +158,10 @@ export async function lectureSeule(ctx) {
   await ctx.route('**/*', (r) => {
     const q = r.request();
     if (q.method() === 'GET' || q.method() === 'HEAD' || q.method() === 'OPTIONS' || ECRITURE_PERMISE.test(q.url())) return r.continue();
-    return r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"lecture_seule":true}' });
+    /* 29.10.2026 : sans en-têtes CORS, cette fausse réponse faisait « refuser » par WebKit tout POST vers une autre origine (« due to access control checks »)
+       → de fausses erreurs JS (146 sur apex-ai, pont 1356) que le robot fabriquait lui-même. */
+    const origine = q.headers().origin || '*';
+    return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': origine, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS' }, body: '{"ok":true,"lecture_seule":true}' });
   });
 }
 
@@ -222,7 +225,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
             } catch (e) { /* un onglet qui ne se laisse pas toucher : compté comme mort */ explo.morts++; }
           }
         }
-        const ligne = { app: h, ecran: nom, admin, st, ms: Date.now() - t0, js: js.length, jsEx: [...new Set(js)].slice(0, 2), err, ...(m || {}), explo };
+        const ligne = { app: h, ecran: nom, admin, st, ms: Date.now() - t0, js: js.length, jsEx: [...new Set(js)].slice(0, 2).concat(reseau.slice(0, 2).map((x) => 'rés ' + x)), err, ...(m || {}), explo };
         res.push(ligne);
         const pb = m ? [m.cache && `${m.cache} caché(s)`, m.haut && `haut coupé ×${m.haut}`, tel && m.encoche && 'haut sous l\'encoche iPhone', m.deborde && `déborde +${m.deborde}px`, tel && m.petit && `${m.petit} < 44px`, js.length && `${js.length} err JS`].filter(Boolean) : [err || 'échec'];
         journal(`${pb.length ? '❌' : '✅'} ${h} · ${nom} · HTTP ${st} · ${ligne.ms} ms${pb.length ? ' · ' + pb.join(' · ') : ''}`);

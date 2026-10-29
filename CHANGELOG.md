@@ -15,6 +15,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
 - Film de preuve : 3D | marionnette sans WebGL, côte à côte.
 
+## Créa Studio v9.22.1 — Avatars : lecture de fichier robuste (Safari / Firefox), meilleurs looks feutre et peluche (2026-10-29)
+- Premier run sur trois moteurs (dépôt public) : Chromium 100 % ; WebKit refusait la lecture d'un fichier (« I/O read operation failed »), Firefox ne rendait pas le visage. Lecture des octets par trois voies, image par adresse `data:` en repli, diagnostic de la panne du suivi de visage dans `Avatar.etat()`. Service crea-ai : consignes feutre / peluche réécrites après avoir regardé les vrais rendus.
+
 ## Créa Studio v9.22.0 — Avatars : marionnettes et personnages animés à partir d'une photo, d'une vidéo ou d'un tour de la personne (2026-10-29)
 - Demande de Kevin (29.10) : créer des marionnettes / avatars / personnages animés avec looks et filtres, identiques à la personne ou en personnages, avec une voix (voix clonée branchée plus tard par une autre branche), gratuit, au meilleur niveau.
 - Nouveau 10ᵉ studio « Avatars » : la vraie photo déformée sur un maillage de 478 points (MediaPipe, gratuit, dans le navigateur) — bouche avec intérieur, dents, paupières, sourcils, regard, tête ; suivi des lèvres sur la voix ; caméra « je te copie » ; vidéo avec le son ; 8 personnages vectoriels ; 3 touchés pour un animal ou un dessin ; tour de la personne en vidéo → meilleures vues ; looks IA (service crea-ai `avatar:true` + `feutre`, `peluche`, `lego`) avec re-détection du visage ; « Garder » sur l'appareil.

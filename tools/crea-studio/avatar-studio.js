@@ -51,6 +51,12 @@
   /* ------------------------------------------------------------------------
      2. LA VOIX : d'où elle vient, comment on la décode, la change de hauteur, la « lit » pour synchroniser les lèvres
   ------------------------------------------------------------------------ */
+  /* lire les octets d'un fichier : trois voies (certains moteurs refusent l'une ou l'autre : « I/O read operation failed ») */
+  async function lireOctets(blob) {
+    try { return await blob.arrayBuffer(); } catch (e1) { /* voie 2 */ }
+    try { return await new Response(blob).arrayBuffer(); } catch (e2) { /* voie 3 */ }
+    return new Promise(function (ok, ko) { var r = new FileReader(); r.onload = function () { ok(r.result); }; r.onerror = function () { ko(new Error('Fichier illisible')); }; r.readAsArrayBuffer(blob); });
+  }
   var Voix = (function () {
     var fournisseurs = [], auChangement = null;
     function ajouter(f) {
@@ -64,7 +70,7 @@
     function ctx() { return racine.AudioBus ? racine.AudioBus.context() : new (racine.AudioContext || racine.webkitAudioContext)(); }
     async function decoder(blob) {
       var c = ctx(); if (!c) throw new Error('Ce navigateur ne sait pas lire le son.');
-      var buf = await blob.arrayBuffer();
+      var buf = await lireOctets(blob);
       var ab = await new Promise(function (ok, ko) { var p = c.decodeAudioData(buf.slice(0), ok, ko); if (p && p.then) p.then(ok, ko); });
       var n = ab.length, mono = new Float32Array(n), k, i;
       for (k = 0; k < ab.numberOfChannels; k++) { var d = ab.getChannelData(k); for (i = 0; i < n; i++) mono[i] += d[i] / ab.numberOfChannels; }
@@ -239,7 +245,16 @@
     aide(A.PERSOS[id].emoji + ' ' + A.PERSOS[id].nom + ' est prêt : donne-lui une voix, ou copie tes grimaces avec la caméra.');
   }
   function lireImageFichier(file) {
-    return new Promise(function (ok, ko) { var im = new Image(); im.onload = function () { ok(im); try { URL.revokeObjectURL(im.src); } catch (e) { /* ok */ } }; im.onerror = function () { ko(new Error('Image illisible')); }; im.src = URL.createObjectURL(file); });
+    var charge = function (src, nettoyer) { return new Promise(function (ok, ko) { var im = new Image(); im.onload = function () { ok(im); if (nettoyer) { try { URL.revokeObjectURL(src); } catch (e) { /* ok */ } } }; im.onerror = function () { ko(new Error('Image illisible')); }; im.src = src; }); };
+    var voie1 = null; try { voie1 = URL.createObjectURL(file); } catch (e) { voie1 = null; }
+    var essai1 = voie1 ? charge(voie1, true) : Promise.reject(new Error('pas d\'adresse'));
+    return essai1.catch(function () {
+      /* repli : on lit les octets nous-mêmes puis on les donne à l'image en adresse « data: » */
+      return lireOctets(file).then(function (buf) {
+        var u = new Uint8Array(buf), bin = '', i; for (i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+        return charge('data:' + (file.type || 'image/jpeg') + ';base64,' + btoa(bin), false);
+      });
+    });
   }
   async function depuisPhoto(file, opts) {
     opts = opts || {};
@@ -249,9 +264,9 @@
       var im = await lireImageFichier(file), cv = canvasDe(im, 1600);
       ouvrirPanneau(); S.source = null; aide('🔎 Je cherche le visage…');
       if (!opts.manuel) racine.aiShow && racine.aiShow('🔎 Je cherche le visage… (la première fois, je télécharge le suivi de visage : une dizaine de Mo, une seule fois)');
-      var det = null, panne = '';
+      var det = null, panne = ''; S.panneVision = '';
       if (!opts.manuel) { try { det = await Vision.image(cv); } catch (e) { panne = String((e && e.message) || e); } }
-      racine.aiHide && racine.aiHide();
+      racine.aiHide && racine.aiHide(); S.panneVision = panne || (det ? '' : 'aucun visage rendu');
       if (det) {
         var pts = det.lm.map(function (p) { return [p.x * cv.width, p.y * cv.height]; });
         var pose = C.poseDepuisMatrice(det.matrice, false);
@@ -681,7 +696,7 @@
     version: '1.0.0', Vision: Vision, Voix: Voix, Core: C,
     pause: pause, activer: activer, choisirPerso: choisirPerso, depuisPhoto: depuisPhoto, depuisVideo: depuisVideo, appliquerLook: appliquerLook,
     jouer: jouer, garder: garder, charger: charger, exporter: exporterPaquet, partager: partager, definirHumeur: function (h) { if (C.HUMEURS[h]) { S.humeur = h; chipOn('avHumeurs', '.chip', h); } },
-    etat: function () { return { source: S.source, vues: S.vues.length, yaws: S.vues.map(function (v) { return +v.yaw.toFixed(3); }), manuel: S.vues.map(function (v) { return !!v.manuel; }), rendu: rendu ? rendu.mode() : (S.source === 'perso' ? '2d-perso' : null), look: S.look, lunettes: !!S.lunettes, looksRetrouves: S.vues.filter(function (v) { return !!v.ptsLook; }).length, texturesLook: S.vues.filter(function (v) { return !!v.texture; }).length, mode: S.mode, perso: S.persoId, params: derniersP, son: S.son ? { duree: S.son.duree, frames: S.son.frames.length } : null, camera: !!S.camera, enregistre: !!S.sortie, occupe: S.occupe, delegue: Vision.delegue() }; },
+    etat: function () { return { source: S.source, vues: S.vues.length, yaws: S.vues.map(function (v) { return +v.yaw.toFixed(3); }), manuel: S.vues.map(function (v) { return !!v.manuel; }), rendu: rendu ? rendu.mode() : (S.source === 'perso' ? '2d-perso' : null), look: S.look, lunettes: !!S.lunettes, looksRetrouves: S.vues.filter(function (v) { return !!v.ptsLook; }).length, texturesLook: S.vues.filter(function (v) { return !!v.texture; }).length, mode: S.mode, perso: S.persoId, params: derniersP, son: S.son ? { duree: S.son.duree, frames: S.son.frames.length } : null, camera: !!S.camera, enregistre: !!S.sortie, occupe: S.occupe, delegue: Vision.delegue() , panneVision: S.panneVision || '', erreurVision: Vision.erreur()}; },
     rendre: function (P) { var t = (performance.now() - t0) / 1000; if (P) { var sauv = S.camera; S.camera = { params: C.assainir(P) }; dessiner(t); S.camera = sauv; } else dessiner(t); },
     vue0: function () { return S.vues[0] ? S.vues[0].original : null; }, cadre: function () { return rendu ? rendu.cadre() : null; }, son: function () { return S.son; },
     /* Où est l'ouverture de la bouche à l'écran (pixels de la sortie) pour un réglage donné — sert aux mesures. */

@@ -100,7 +100,7 @@ const MESURES = `(() => {
     saturation(c, y0 = 0.2, y1 = 0.8) { const A = lire(c), W = A.width, H = A.height; let s = 0, k = 0; for (let y = Math.floor(H * y0); y < Math.floor(H * y1); y += 2) for (let x = 0; x < W; x += 2) { const i = (y * W + x) * 4, mx = Math.max(A.data[i], A.data[i + 1], A.data[i + 2]), mn = Math.min(A.data[i], A.data[i + 1], A.data[i + 2]); s += mx ? (mx - mn) / mx : 0; k++; } return s / k; },
     vide(c) { const A = lire(c); let s = 0, s2 = 0, k = 0; for (let i = 0; i < A.data.length; i += 16) { const l = A.data[i] * 0.3 + A.data[i + 1] * 0.59 + A.data[i + 2] * 0.11; s += l; s2 += l * l; k++; } const m = s / k; return Math.sqrt(Math.max(0, s2 / k - m * m)); },
     png(c) { return c.toDataURL('image/png').split(',')[1]; },
-    async fichier(url, nom, type) { const b = await (await fetch(url)).blob(); return new File([b], nom, { type: type || b.type }); },
+    async fichier(url, nom, type) { const r = await fetch(url); const buf = await r.arrayBuffer(); return new File([buf], nom, { type: type || r.headers.get('content-type') || 'image/jpeg' }); },
     async wav(b64) { const bin = atob(b64), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new Blob([u], { type: 'audio/wav' }); },
     frequence(buffer) { const x = buffer.getChannelData(0), N = 8192, re = new Float64Array(N), im = new Float64Array(N), d0 = Math.floor((x.length - N) / 2); for (let i = 0; i < N; i++) re[i] = x[d0 + i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / N)); AvatarCore.fft(re, im); let best = 1, bv = 0; for (let k = 1; k < N / 2; k++) { const v = Math.hypot(re[k], im[k]); if (v > bv) { bv = v; best = k; } } return best * buffer.sampleRate / N; }
   };
@@ -154,7 +154,7 @@ async function suite(nom, browser) {
   const t0 = Date.now();
   await page.evaluate(async () => { await Avatar.depuisPhoto(await __m.fichier('/fix/fictif-homme.jpg', 'homme.jpg', 'image/jpeg')); });
   const dureeDetect = Date.now() - t0; const E = await page.evaluate(() => Avatar.etat());
-  ok(E.source === 'photo' && E.vues === 1 && E.manuel[0] === false && !!E.rendu, `${tag} C) photo « homme » : visage trouvé par MediaPipe (${E.delegue || '?'}), rendu ${E.rendu}, en ${dureeDetect} ms (modèle compris)`, JSON.stringify(E).slice(0, 200));
+  ok(E.source === 'photo' && E.vues === 1 && E.manuel[0] === false && !!E.rendu, `${tag} C) photo « homme » : visage trouvé par MediaPipe (${E.delegue || '?'}), rendu ${E.rendu}, en ${dureeDetect} ms (modèle compris)`, JSON.stringify(E).slice(0, 200) + (E.panneVision || E.erreurVision ? ' | panne: ' + E.panneVision + ' / ' + E.erreurVision : ''));
   if (E.source === 'photo' && !E.manuel[0]) {
     const C = await page.evaluate(() => {
       Avatar.rendre({}); const neutre = __m.copie(Avatar.canvas()), cadre = Avatar.cadre(), orig = Avatar.vue0();

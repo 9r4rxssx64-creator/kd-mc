@@ -1,0 +1,18 @@
+{
+  "_note": "Plafonds des forfaits GRATUITS que Kevin utilise, écrits d'après les pages officielles des fournisseurs (relevés le 29.10.2026 ; un chiffre qui change chez eux se corrige ICI, une seule fois). Jamais un chiffre inventé : « inconnu » veut dire non vérifié. seuil_orange / seuil_rouge = part du plafond qui déclenche l'alerte ; en dessous de seuil_orange, tout va bien.",
+  "seuil_orange": 0.5,
+  "seuil_rouge": 0.8,
+  "cloudflare": {
+    "compte": "425377ca5c9259cbbef9d8b11cfbfee0",
+    "workers_requetes_par_jour": 100000,
+    "d1_lignes_lues_par_jour": 5000000,
+    "d1_lignes_ecrites_par_jour": 100000,
+    "d1_stockage_total_octets": 5000000000,
+    "kv_lectures_par_jour": 100000,
+    "kv_ecritures_par_jour": 1000,
+    "workers_ai_neurones_par_jour": 10000,
+    "crons_par_compte": 5
+  },
+  "github": { "actions_depot_prive_minutes_par_mois": 2000, "actions_depot_public": "illimité" },
+  "ia_gratuites": { "llm7_et_pollinations": "limite par minute, non écrite : attendre une fois puis changer de voie", "porte_delegue_appels_par_jour_par_jeton": 300 }
+}

@@ -1,0 +1,40 @@
+name: Mesure — quotas gratuits D1 et Workers AI (qui mange les lignes lues ?)
+
+# Kevin 29.10.2026 : « trouve une solution gratuite pour les Workers Paid à 5 €/mois… reste toujours dans les quotas de tous nos abonnements ».
+# Le 25.10, D1 (5 M lignes lues par jour pour TOUT le compte) a coupé le pont, Apex Chat et kdmc-vente. Ce robot lit l'API Analytics de Cloudflare
+# (GraphQL, lecture seule) : lignes lues / écrites PAR BASE et PAR JOUR, neurones Workers AI, comparés à tools/quotas/plafonds.json (orange 50 %, rouge 80 %).
+# Dépôt PUBLIC (minutes illimitées), jeton Cloudflare du dépôt, lancé à la main (jamais de cron GitHub : les vérifications se font à chaque livraison). Aucun appel au domaine.
+on:
+  workflow_dispatch:
+    inputs:
+      jours:
+        description: "Nombre de jours à lire (1 = aujourd'hui seulement)"
+        default: "3"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mesure-quotas
+  cancel-in-progress: false
+
+jobs:
+  mesure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      JOURS_ENTREE: ${{ inputs.jours }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Lire D1 et Workers AI (API Analytics, lecture seule)
+        shell: bash -eo pipefail {0}
+        run: |
+          trap 'echo "::error title=Mesure quotas::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || { echo "::error::jeton Cloudflare absent des secrets"; exit 1; }
+          JOURS="$JOURS_ENTREE"; case "$JOURS" in ''|*[!0-9]*) JOURS=3;; esac
+          node tools/audit/mesure-quotas.mjs "$JOURS"

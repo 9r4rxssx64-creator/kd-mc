@@ -12479,3 +12479,7 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ## 🤝 RÈGLE ABSOLUE — DÉLÉGUER AUX IA GRATUITES, VÉRIFIER, PUIS LIVRER : LE FORFAIT DE KEVIN PENSE ET CONTRÔLE, LE GRATUIT DÉGROSSIT (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES : CLOUD, IPHONE, LENOVO)
 « Trouve une solution pour que on économise au maximum mon forfait de token… intègre toutes les IA gratuites, crée ce qu'il faut pour leur déléguer du travail que tu vérifies avant de mettre en ligne ou d'installer… toujours la plus performante dans le domaine de la question. »
 - Outil : `tools/delegue/delegue.mjs` (7 domaines, voies `domaine` / `llm7` / `pollinations`), `verifier.mjs` (le brouillon ne se livre qu'après), `jeton.mjs` ; porte serveur `apis.kd-mc.com/delegue` (`services/kdmc-apis/delegue.js`, jetons à empreinte en D1 `kdmc-delegue`, IA gratuites seulement) ; règle complète : `.claude/rules/delegue-gratuit.md`.
+
+## 📊 RÈGLE ABSOLUE — RESTER TOUJOURS DANS LES QUOTAS GRATUITS DE TOUS NOS ABONNEMENTS, JAMAIS DE WORKERS PAID SANS LE OUI DE KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Trouve une solution gratuite pour les Workers Paid à 5 €/mois. Crée ce dont tu as besoin gratuit pour rester toujours dans les quotas de tous nos abonnements sans rien dépasser. Toujours. Rappelle-toi, note-le. »
+- Plafonds écrits dans `tools/quotas/plafonds.json`, robot de mesure `mesure-quotas.yml` (D1 par base et par jour, Workers AI), règles de lecture bon marché ; détail : `.claude/rules/quotas-gratuits.md`.

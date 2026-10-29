@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 236 règles — le texte de Kevin, une par une
+## 📜 Les 237 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1032,6 +1032,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🤝 RÈGLE ABSOLUE — DÉLÉGUER AUX IA GRATUITES, VÉRIFIER, PUIS LIVRER : LE FORFAIT DE KEVIN PENSE ET CONTRÔLE, LE GRATUIT DÉGROSSIT (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES : CLOUD, IPHONE, LENOVO)
 « Trouve une solution pour que on économise au maximum mon forfait de token… intègre toutes les IA gratuites, crée ce qu'il faut pour leur déléguer du travail que tu vérifies avant de mettre en […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-déléguer-aux-ia-gratuites-vérifier-puis-livrer-le-forfait-de-kevin-pense-et-contrôle-le-gratuit-dégrossit-kevin-2026-10-29-absolue-toutes-les-branches-cloud-iphone-lenovo)
+
+### 📊 RÈGLE ABSOLUE — RESTER TOUJOURS DANS LES QUOTAS GRATUITS DE TOUS NOS ABONNEMENTS, JAMAIS DE WORKERS PAID SANS LE OUI DE KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Trouve une solution gratuite pour les Workers Paid à 5 €/mois. Crée ce dont tu as besoin gratuit pour rester toujours dans les quotas de tous nos abonnements sans rien dépasser. Toujours. […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-rester-toujours-dans-les-quotas-gratuits-de-tous-nos-abonnements-jamais-de-workers-paid-sans-le-oui-de-kevin-kevin-2026-10-29-absolue-toutes-les-branches)
 
 ---
 

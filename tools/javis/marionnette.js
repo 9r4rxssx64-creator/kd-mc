@@ -597,8 +597,12 @@
      5. UN PERSONNAGE SUIVI
      ------------------------------------------------------------------------- */
   var suivis = [], boucle = 0, dernier = 0;
+  /* 29.10 (Kevin : « c'est pas vraiment un personnage animé, il n'y a que la bouche qui bouge », capture sur son PC Windows) : le réglage
+     « réduire les animations » du SYSTÈME (Windows l'active tout seul en économie d'énergie) coupait toute la marionnette ET la 3D — Bee restait
+     une image plate avec une bouche posée dessus. Kevin veut qu'ils bougent « partout, toujours » : seul un choix VOLONTAIRE du métier (localStorage
+     kdmc_calme = 1) les rend immobiles, jamais le réglage du système. */
   var REDUIT = false;
-  try { REDUIT = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (_) {}
+  try { REDUIT = localStorage.getItem('kdmc_calme') === '1'; } catch (_) {}
 
   /* ---------------------------------------------------------------------------
      5 bis. LA 3D D'OFFICE — le même personnage, en vrai volume (Kevin 3.10 : « 3D d'office partout, pas de bouton »).

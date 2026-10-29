@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.24';
+  var JAVIS_VER = 'v1.25';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -312,6 +312,12 @@
       'background:radial-gradient(60% 55% at 50% 66%,#ff5d6c 0%,#8a3018 60%,#53200f 100%);' +
       'border:2px solid #3a1c10;opacity:0;pointer-events:none}' +
       '.disc-mouth.talking{opacity:1;animation:javis-mouth .27s ease-in-out infinite alternate}' +
+      /* JAMAIS de 2ᵉ bouche posée sur le dessin (Kevin 29.10 : « une bouche en plus, c'est très moche, quelque chose de collé dessus ») : la VRAIE bouche du
+         dessin s'ouvre par la marionnette (mâchoire) ou la 3D ; ce rond n'est plus qu'un capteur invisible (le lip-sync y écrit l'ouverture, la marionnette la lit).
+         Si ni l'une ni l'autre ne tourne, c'est le CORPS ENTIER qui bouge pendant qu'elle parle (balancement + souffle), jamais une pièce rapportée. */
+      '.bee-rig .disc-mouth,.bee-rig .disc-mouth.talking{opacity:0!important;animation:none!important}' +
+      '.bee-rig.talk:not(.mrn-on) .rig-base{transform-origin:50% 90%;animation:javis-corps-parle .6s ease-in-out infinite alternate}' +
+      '@keyframes javis-corps-parle{0%{transform:translateY(0) rotate(-1.8deg) scale(1.006,.994)}100%{transform:translateY(-1.4%) rotate(1.8deg) scale(.994,1.01)}}' +
       '@keyframes javis-mouth{0%{transform:translate(-50%,-50%) scale(1.02,.96)}100%{transform:translate(-50%,-50%) scale(1.38,1.52)}}' +
       /* sommeil + réactions */
       '.bee-rig.dort .rig-lid{opacity:1}' +
@@ -336,7 +342,7 @@
       '@keyframes javis-pense{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}' +
       '.bee-rig.rx-coucou .rig-look{animation:javis-coucou 1.4s ease-in-out}' +
       '@keyframes javis-coucou{0%,100%{transform:rotate(0)}25%{transform:rotate(-9deg)}50%{transform:rotate(7deg)}75%{transform:rotate(-5deg)}}' +
-      '@media (prefers-reduced-motion:reduce){.rig-look,.bee-rig.vivant .rig-base,.bee-rig.dort .rig-base,.rig-zzz,.rig-wl,.rig-wr,.disc-mouth.talking,.bee-rig.rx-poke .rig-look,.bee-rig.rx-joie .rig-look,.bee-rig.rx-reflechit .rig-look,.bee-rig.rx-coucou .rig-look{animation:none;transition:none}}' +
+      'html.javis-calme :is(.rig-look,.bee-rig.vivant .rig-base,.bee-rig.talk .rig-base,.bee-rig.dort .rig-base,.rig-zzz,.rig-wl,.rig-wr,.disc-mouth.talking,.bee-rig.rx-poke .rig-look,.bee-rig.rx-joie .rig-look,.bee-rig.rx-reflechit .rig-look,.bee-rig.rx-coucou .rig-look){animation:none;transition:none}' +
       /* mouvements du corps entier (portés de Lingua : danse, saut, vol, marche) */
       '.bee-rig.mv-dance{animation:javis-dance 1.05s ease-in-out infinite}' +
       '.bee-rig.mv-jump{animation:javis-jump .85s cubic-bezier(.36,.07,.19,.97) infinite}' +
@@ -373,9 +379,9 @@
       '.javis-typing i{width:7px;height:7px;border-radius:50%;background:#f6b73c;opacity:.4;animation:javis-dot 1.1s ease-in-out infinite}' +
       '.javis-typing i:nth-child(2){animation-delay:.18s}.javis-typing i:nth-child(3){animation-delay:.36s}' +
       '@keyframes javis-dot{0%,100%{opacity:.35;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}' +
-      '@media (prefers-reduced-motion:reduce){.javis-spark{display:none}.javis-bubble,.javis-typing i{animation:none}' +
-      '#javis-launcher,body.javis-app #javis-launcher,.bee-rig[class*="mv-"],#javis-panel.javis-open,.disc-mouth,#javis-root.javis-ecoute #javis-launcher{animation:none!important}' +
-      'body.javis-app #javis-launcher{transition:none}}' +
+      'html.javis-calme .javis-spark{display:none}html.javis-calme :is(.javis-bubble,.javis-typing i){animation:none}' +
+      'html.javis-calme :is(#javis-launcher,body.javis-app #javis-launcher,.bee-rig[class*="mv-"],#javis-panel.javis-open,.disc-mouth,#javis-root.javis-ecoute #javis-launcher){animation:none!important}' +
+      'html.javis-calme body.javis-app #javis-launcher{transition:none}' +
       /* ---- habillage du widget ---- */
       '#javis-launcher{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 96px);' +
       'z-index:2147483000;width:68px;height:68px;border:0;border-radius:50%;padding:0;cursor:pointer;' +
@@ -653,6 +659,9 @@
     } catch (_) {}
   }
 
+  /* « Calme » = un choix VOLONTAIRE du métier (localStorage kdmc_calme = 1). Le réglage « réduire les animations » du SYSTÈME ne coupe plus Bee :
+     Windows l'active tout seul en économie d'énergie, et Kevin n'avait plus qu'une image plate avec une bouche posée dessus (29.10, capture). */
+  try { if (localStorage.getItem('kdmc_calme') === '1') document.documentElement.classList.add('javis-calme'); } catch (_) {}
   /* Petit son (porté de Lingua : tone) — muet si la voix est coupée */
   var AC = null;
   /* iPhone EN MODE SILENCIEUX (Kevin 01.10 : « Il n'y a pas de sons », capture : cloche barrée).
@@ -1237,9 +1246,11 @@
   /* LA 1RE PHRASE PART SEULE (« Go tout » 29.10, idée du Jarvis maison vu par Kevin : « TTS en streaming phrase par phrase », docs/latency.md du dépôt) :
      la voix gratuite fabrique le son d'un texte en un bloc, donc plus la réponse est longue, plus Bee se tait avant de parler. On coupe après la 1re phrase
      (30 à 160 signes, suivie d'une majuscule : pas après « M. » ni « 3,5 »), on demande les DEUX sons en même temps, et le 2e passe dès que le 1er finit. */
+  /* 29.10 (retour de Kevin : « elle met un peu de temps à commencer ») : mesuré sur la vraie voix, ~1,3 s fixes + ~7 ms par signe ; le 1er morceau est donc
+     COURT : la 1re phrase dès 18 signes (jusqu'à 110), à défaut le 1er membre de phrase (virgule, deux-points) entre 25 et 90 signes. */
   function enMorceaux(t) {
-    if (t.length <= 150) return [t];
-    var m = /^[\s\S]{30,160}?[.!?…](?=\s+[A-ZÀ-Ý«"'(]|\s*$)/.exec(t);
+    if (t.length <= 90) return [t];
+    var m = /^[\s\S]{18,110}?[.!?…](?=\s+[A-ZÀ-Ý«"'(]|\s*$)/.exec(t) || /^[\s\S]{25,90}?[,;:](?=\s)/.exec(t);
     if (!m) return [t];
     var debut = m[0].trim(), reste = t.slice(m[0].length).trim();
     return reste ? [debut, reste] : [debut];
@@ -1251,7 +1262,8 @@
     if (!on || !text) return;
     sonMemeEnSilencieux();
     voixStop();
-    startTalking(root);
+    /* elle ne bouge la bouche et le corps QUE quand le son sort (29.10 : avant, elle « parlait » ~2 s dans le vide pendant que la voix se fabriquait,
+       puis se taisait — Kevin : « elle bouge un petit peu au début… le visuel ne tient pas tout le long ») */
 
     /* 1) SA voix (le domaine la fabrique) + VRAI lip-sync — SANS le moteur audio (3.10, Kevin : « il n'y a
           pas de sons »). Le son est TÉLÉCHARGÉ (fetch, même adresse que la page), joué par UN lecteur ordinaire
@@ -1260,7 +1272,8 @@
     var a = _voixEl || (_voixEl = new Audio());
     a._abandon = false;
     a.removeAttribute('crossorigin');
-    var id = _parole, repli = false, joue = false;
+    var id = _parole, repli = false, joue = false, parle = false;
+    function debut() { if (parle || id !== _parole) return; parle = true; startTalking(root); }
     var morceaux = enMorceaux(text), courant = 0;
     var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
     function versTelephone() {
@@ -1268,6 +1281,7 @@
       /* on COUPE la demande au domaine (audit externe 02.10 : abandonnée, elle continuait côté serveur) */
       try { if (ctrl) ctrl.abort(); } catch (_) {}
       try { a._abandon = true; a.pause(); a.removeAttribute('src'); a.load(); } catch (_) {}
+      debut();
       voixTelephone(root, morceaux.slice(courant).join(' '));   /* si le 1er morceau a déjà parlé, le téléphone dit seulement la suite */
     }
     a.onerror = function () { if (!a._abandon && id === _parole && !joue) versTelephone(); };
@@ -1300,7 +1314,7 @@
       _voixAudio = a;
       var p = a.play();
       joue = true;
-      if (p && p.catch) p.catch(function () { joue = false; versTelephone(); });
+      if (p && p.then) p.then(debut, function () { joue = false; versTelephone(); }); else debut();
       /* la bouche : le même fichier, décodé à côté (jamais branché sur le haut-parleur) */
       try {
         var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
@@ -1888,7 +1902,7 @@
         if (ok && j.ouvrir && j.ouvrir.length) j.ouvrir.slice(0, 3).forEach(function (o) { carteOuvrir(root, o, j.ouvrir.length === 1); });
         if (ok && j.cartes && j.cartes.length) j.cartes.slice(0, 4).forEach(function (c) { carteAtelier(root, c); });
         allRigs(root).forEach(function (r) { react(r, ok ? 'joie' : 'triste', ok ? 1200 : 1600); });
-        if (ok) { tone([660, 880], .2); vibrate(8); }
+        if (ok) vibrate(8);   /* plus de « bip » à chaque réponse (Kevin 29.10 : « un bip retentit régulièrement, on ne sait pas pourquoi ») : elle parle, c'est le signal */
         /* seule une VRAIE réponse entre dans la mémoire : un message d'erreur de Bee repartait à l'IA
            comme si elle l'avait dit (audit complet 30.09) */
         if (ok) { var h = loadHistory(); h.push({ role: 'assistant', content: out }); saveHistory(h); }
@@ -2049,7 +2063,7 @@
         setTimeout(function () {
           if (!document.contains(wrap)) return;
           var calme = false;
-          try { calme = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
+          try { calme = localStorage.getItem('kdmc_calme') === '1'; } catch (_) {}
           /* relu À CHAQUE tour : après un changement de personnage, l'ancien dessin n'existe plus */
           var gros = wrap.querySelector('#javis-launcher .bee-rig');
           var repos = Date.now() - DERNIER_GESTE > REPOS_CLIPS;
@@ -2129,7 +2143,6 @@
         var tactile = false; try { tactile = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches); } catch (_) {}
         setTimeout(function () { if (!tactile) input.focus(); }, 150);
         allRigs(wrap).forEach(function (r) { react(r, 'coucou', 1400); });
-        tone([620, 820], .16);
         var b = document.querySelector('.javis-bubble'); if (b) b.remove();
         suggestions(wrap);   /* Bee flottante dans une app : elle montre d'emblée ce qu'on peut lui demander ICI (Kevin 15.10) */
       }
@@ -3163,8 +3176,12 @@
      5. UN PERSONNAGE SUIVI
      ------------------------------------------------------------------------- */
   var suivis = [], boucle = 0, dernier = 0;
+  /* 29.10 (Kevin : « c'est pas vraiment un personnage animé, il n'y a que la bouche qui bouge », capture sur son PC Windows) : le réglage
+     « réduire les animations » du SYSTÈME (Windows l'active tout seul en économie d'énergie) coupait toute la marionnette ET la 3D — Bee restait
+     une image plate avec une bouche posée dessus. Kevin veut qu'ils bougent « partout, toujours » : seul un choix VOLONTAIRE du métier (localStorage
+     kdmc_calme = 1) les rend immobiles, jamais le réglage du système. */
   var REDUIT = false;
-  try { REDUIT = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (_) {}
+  try { REDUIT = localStorage.getItem('kdmc_calme') === '1'; } catch (_) {}
 
   /* ---------------------------------------------------------------------------
      5 bis. LA 3D D'OFFICE — le même personnage, en vrai volume (Kevin 3.10 : « 3D d'office partout, pas de bouton »).

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Javis / Bee v1.25 — un vrai personnage animé, plus de bouche posée, plus de bip (2026-10-29)
+- Retour de Kevin (deux captures de son PC Windows) : « une bouche en plus, collée dessus, c'est très moche ; il n'y a que la bouche qui bouge ; elle bouge au début puis plus ; un bip retentit ; elle met du temps à commencer ». Reproduit en navigateur : le réglage système « réduire les animations » (Windows l'allume seul en économie d'énergie) coupait la marionnette ET la 3D → image plate + rond brun posé sur le visage.
+- Corrigé : ce réglage n'immobilise plus Bee (seul le choix volontaire `kdmc_calme = 1` le fait) ; le rond posé n'est plus jamais visible (la vraie bouche s'ouvre par la mâchoire / la 3D) ; sans WebGL, le corps entier se balance pendant qu'elle parle ; le corps ne « parle » que quand le son sort (plus ~2 s dans le vide) ; plus de bip à la réponse ni à l'ouverture ; 1er morceau de voix plus court (18 à 110 signes, ou 1er membre de phrase).
+- Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 16 contrôles, 5 sabotages rouges), `test:marionnette` (réduire les animations ne coupe plus), `verify-javis-bee-reelle`.
+
 ## CMCteams light v1.115 — la barre du haut ne fait plus déborder la page sur iPhone (2026-10-29)
 - Mesuré en ligne par le robot public Servi (iPhone 13, Safari, connecté admin, run 40857034043) : la page débordait de 52 px, à cause du choix d'équipe (`select#boardSel`, 428 px sur un écran de 390) qui prend la largeur de son plus long libellé. Les listes de la barre du haut ne dépassent plus l'écran (`header select{max-width:100%}`), toujours 44 px de haut.
 - Garde : `tests/verify-light-entete-largeur.mjs` (375/390/412 px, libellé très long ; rouge sous `SABOTAGE=1`), dans `test:ci`. CMCteams v9.990 contrôlé par le même robot : 0 débordement, rien à changer.

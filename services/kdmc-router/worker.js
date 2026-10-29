@@ -126,7 +126,7 @@ const ROUTES = {
   'cmcteams.kd-mc.com': '/CMCteams',
   'apex-ai.kd-mc.com': '/CMCteams/apex-ai-v13',
   'apex-chat.kd-mc.com': '/CMCteams/messaging-app',
-  'la-detente.kd-mc.com': '/CMCteams/la-detente',
+  'la-detente.kd-mc.com': '/CMCteams/shops/la-detente', // boutique de textile (Kevin 29.10 « montre la boutique ») ; le pack identité reste dans la-detente/
   'chez-lolo.kd-mc.com': '/CMCteams/shops/chez-lolo',
   'dashboard.kd-mc.com': '/CMCteams/shops/dashboard',
   'sourcing.kd-mc.com': '/CMCteams/shops/sourcing',

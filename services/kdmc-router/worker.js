@@ -4988,7 +4988,7 @@ function decrirePouvoirs(ex) {
   const L = ['Fermé par tes règles : le coffre et les clés (chiffrés sur ton appareil), le code admin, l\'argent réel du robot, le planning, supprimer ou publier dans l\'arbre, déployer du code (je t\'écris alors la consigne pour Claude Code).', '', 'Mes outils de LECTURE (gratuits, que je lance moi-même) :'];
   for (const d of DEFINITIONS.concat(lect.filter((x) => !DEFINITIONS.some((y) => y.name === x.name)))) L.push('• ' + d.name + ' — ' + String(d.description).split(/\.\s/)[0].slice(0, 150));
   L.push('• point du jour — dis « mon brief » : la date, la météo et tes horaires, d\'un coup, sans IA');
-  L.push('• Siri — pour m\'appeler à la voix sans ouvrir l\'app (lecture seule), ouvre https://kd-mc.com/__javis/raccourci : tu crées ton jeton et tu fabriques le raccourci « Bee » en 2 minutes');
+  L.push('• Siri — pour m\'appeler à la voix sans ouvrir l\'app, ouvre https://kd-mc.com/__javis/raccourci : tu crées ton jeton et tu fabriques le raccourci « Bee » (je LIS et te réponds) ; le raccourci « Bee, fais ceci » ouvre l\'app avec ta phrase : je prépare l\'action et rien ne part avant ton ✅');
   L.push('', 'Mes ACTIONS (je les prépare, tu les confirmes avec ✅ — rien ne part avant) :');
   for (const k of ACTIONS_BEE) L.push('• ' + k + ' — ' + CATALOGUE_BEE[k].titre + (CATALOGUE_BEE[k].risque === 'eleve' ? ' (risque élevé)' : ''));
   return L.join('\n');

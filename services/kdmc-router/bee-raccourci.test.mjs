@@ -56,6 +56,7 @@ const jetonDe = (html) => { const m = html.match(/class="jeton">([A-Z0-9-]+)</);
   const h = await r.text();
   ok(r.status === 200 && /Bee avec Siri/.test(h) && !/<script/i.test(h) && /noindex/.test(r.headers.get('x-robots-tag') || '') && /form-action 'self'/.test(r.headers.get('content-security-policy') || ''), '1b. Kevin voit la page : sans script, noindex, CSP fermée', r.status);
   ok(/Bearer/.test(h) && /Énoncer le texte/.test(h) && /Obtenir le contenu de l'URL/.test(h) && /44|POST/.test(h), '1c. la page explique le raccourci pas à pas (en français simple)');
+  ok(/Bee, fais ceci/.test(h) && /javis\.kd-mc\.com\/\?q=/.test(h) && /rien ne part avant que tu touches/.test(h), '1c2. la page explique le raccourci B « fais ceci » : il ouvre Bee avec la phrase, et rien ne part sans ✅');
   r = await formulaire('/__javis/raccourci/jeton', { nom: 'iPhone de Kevin' }, {});
   ok(r.status === 403, '1d. un inconnu ne peut pas créer de jeton', r.status);
   r = await formulaire('/__javis/raccourci/jeton', { nom: 'pirate' }, Object.assign({}, KEVIN, { origin: 'https://site-pirate.example' }));

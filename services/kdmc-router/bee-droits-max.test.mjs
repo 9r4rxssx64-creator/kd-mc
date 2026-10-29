@@ -136,7 +136,7 @@ ok(!/openai|anthropic|api\.openai|stripe/i.test(MAXSRC), '5g. 0 € : aucun mote
 /* ───────── 6. FERMÉS PAR KEVIN (« Ferme pour l'instant », 23.10) : trois verrous, aucun ne suffit seul ───────── */
 { ok(droitsMaxOuverts({ BEE_DROITS_MAX: '1' }) && !droitsMaxOuverts({}) && !droitsMaxOuverts({ BEE_DROITS_MAX: '0' }) && !droitsMaxOuverts({ BEE_DROITS_MAX: 'oui' }), '6. fermé PAR DÉFAUT : seul "1" ouvre (absent, "0", "oui" = fermé)');
   const wr = readFileSync(new URL('./wrangler.toml', import.meta.url), 'utf8');
-  ok(/^BEE_DROITS_MAX = "0"/m.test(wr), '6b. la configuration du routeur le pose à "0"');
+  ok(/^BEE_DROITS_MAX = "1"/m.test(wr), '6b. la configuration du routeur le pose à "1" (rouvert le 29.10 : « avec ma validation ») — le code, lui, reste fermé sans cette variable');
   const prop = (await carte('crée le compte de Nina Roux', 'compte_creer', { prenom: 'Nina', nom: 'Roux', telephone: '0611223344' })).p;
   ok(prop && prop.jeton, '6c. (ouvert) une proposition signée existe');
   const envF = Object.assign({}, env, { BEE_DROITS_MAX: '0' });

@@ -12487,6 +12487,13 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 « Trouve une solution gratuite pour les Workers Paid à 5 €/mois. Crée ce dont tu as besoin gratuit pour rester toujours dans les quotas de tous nos abonnements sans rien dépasser. Toujours. Rappelle-toi, note-le. »
 - Plafonds écrits dans `tools/quotas/plafonds.json`, robot de mesure `mesure-quotas.yml` (D1 par base et par jour, Workers AI), règles de lecture bon marché ; détail : `.claude/rules/quotas-gratuits.md`.
 
+## 🐝 RÈGLE ABSOLUE — BEE A TOUTES LES COMPÉTENCES, ACTIONS ET AUTORISATIONS DE LA LISTE, MAIS RIEN NE PART SANS LA VALIDATION DE KEVIN (Kevin 2026-10-29, ABSOLUE)
+« Toutes les compétences, actions, autorisations etc. Avec ma validation. »
+- Rouvert le 29.10 : créer un compte (code tiré au hasard, vu par Kevin seul) et régler le robot (testnet), fermés le 23.10 (« Ferme pour l'instant ») ; `BEE_DROITS_MAX = "1"` dans `services/kdmc-router/wrangler.toml`. Le code reste fermé par défaut sans cette variable (3 verrous : proposition, exécution après ✅, portes) ; « ferme » = remettre `"0"`.
+- Toute action de Bee garde le même chemin, sans exception : l'IA PROPOSE → le domaine fabrique la carte lui-même → Kevin touche ✅ (session admin prouvée) → le domaine exécute avec SES droits. Jamais d'action par un jeton Siri : le raccourci « Bee » (jeton) LIT seulement ; le raccourci « Bee fais » ouvre `javis.kd-mc.com/?q=<phrase>` et le ✅ se touche dans l'app.
+- Reste impossible, par conception et non par refus : le coffre (chiffré sur l'appareil), le code admin (écrit nulle part), l'argent réel du robot (aucune porte), le planning (écrit seulement dans l'app, d'après le PDF), supprimer ou publier dans l'arbre (gardes « rien ne se perd »). Ouvrir l'un d'eux demande un nouveau oui de Kevin ET une vraie porte.
+- Gardes : `test:bee-droits-max` (6b, 52), `test:bee-raccourci` (1c2, 45), `test:bee-agir`, `test:bee-droits`.
+
 ## 🔑 RÈGLE ABSOLUE — LES CLÉS ET JETONS SE CRÉENT / SE CHANGENT PAR LE LENOVO, SANS REDEMANDER À KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Quand sur le Lenovo il faut changer ou créer une clé, comment faire pour que tu puisses le faire quand même ? C'est c'est moi qui te le demande… C'est juste un problème de règles : modifie-les. »
 - Règle : `.claude/rules/cles-par-le-lenovo.md` (mission au pont pour `pc-config`, droit minimal, pose directe dans les coffres, ancienne clé révoquée, preuve réelle ; la clé n'apparaît jamais dans le chat, le pont ni un commit ; seuls mot de passe, code reçu, captcha et paiement restent à Kevin). Remplace « ne jamais recréer un jeton soi-même » (`cloudflare-compte-principal.md`) et « Kevin garde seul … » (`pont-lenovo-manipulations.md`).

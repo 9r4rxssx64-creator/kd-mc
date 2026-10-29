@@ -124,6 +124,10 @@ export function pageHtml({ jetons, nouveau, adresse, message }) {
     + '<li>Ajoute <b>Obtenir le contenu de l\'URL</b> : adresse <code>' + esc(adresse) + '?texte=1</code> · Méthode <b>POST</b> · En-têtes : ajoute un en-tête nommé <code>Authorization</code> dont la valeur est <code>Bearer</code>, un espace, puis ton jeton collé · Corps de la requête : <b>JSON</b>, ajoute le champ <code>q</code> et choisis <b>Entrée fournie</b>.</li>'
     + '<li>Ajoute <b>Énoncer le texte</b> (ou « Afficher le résultat ») avec <b>Contenu de l\'URL</b>.</li>'
     + '<li>Dis « Dis Siri, Bee » : il demande, tu parles, il répond.</li></ol>'
+    + '<h2>3 · Raccourci B : « Bee, fais ceci » (avec ton ✅)</h2><p>Pour une <b>action</b> (créer un compte, régler le robot, un rappel, fermer une app, corriger une fiche de l\'arbre…), Siri ne fait rien tout seul : il ouvre Bee avec ta phrase, Bee prépare une carte et <b>rien ne part avant que tu touches ✅ Confirmer</b>. Pas de jeton pour celui-là : tu es reconnu par ton Face ID.</p><ol>'
+    + '<li>Nouveau raccourci nommé <b>Bee fais</b>.</li><li>Ajoute <b>Demander une entrée</b> (texte) : « Que dois-je préparer ? ».</li>'
+    + '<li>Ajoute <b>Ouvrir les URL</b> avec l\'adresse <code>https://javis.kd-mc.com/?q=</code> suivie de la variable <b>Entrée fournie</b>.</li>'
+    + '<li>Dis « Dis Siri, Bee fais » : Bee s\'ouvre avec ta phrase et te montre la carte à confirmer.</li></ol>'
     + '<h2>Tes jetons</h2>' + (jetons.length ? '<ul class="c">' + jetons.map(ligne).join('') + '</ul>' : '<p><small>Aucun jeton pour l\'instant.</small></p>')
     + '<p><small>Un jeton ne sert qu\'à poser des questions à Bee. Il n\'ouvre ni ton admin, ni tes apps, ni ton arbre, et tu peux le couper ici à tout moment.</small></p>'
     + '</main></body></html>';

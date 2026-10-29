@@ -7,6 +7,20 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy Apex Chat (Cloudflare Workers) — 29/10/2026 09:29 UTC
+
+- **Branche** : `main` · **Commit** : `665cf03d` · **Run** : `40849623850`
+- **Ce qui a lâché** : Deploy Cloudflare Workers + Infra › Vérification LIVE après déploiement (santé + version)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/40849623850
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::/api/health ne répond pas 200 après déploiement : $(cat /tmp/health.json 2>/dev/null)"^[[0m
+^[[36;1m  echo "::error::Le serveur en ligne annonce '$live' alors que le dépôt est en $VERSION — le déploiement n'a pas pris effet"^[[0m
+##[error]/api/health ne répond pas 200 après déploiement : {"ok":false,"ts":1793266170179,"version":"1.1.350","checks":{"d1":"ko","do":"ok","backup":"unknown"}}
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +542,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

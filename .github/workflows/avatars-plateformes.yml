@@ -1,0 +1,82 @@
+name: Créa Studio AVATARS — vérification réelle sur Chromium + WebKit/Safari + Firefox (suivi de visage, bouche, voix, vidéo)
+
+# Kevin 29.10.2026 (avatars et marionnettes) + règle du 22.10 « tout tester partout ». Ouvre le VRAI Studio (tools/crea-studio/ servi tel quel) avec le VRAI suivi de visage
+# MediaPipe (jsDelivr + Google, comme chez Kevin) sur des visages de personnes FICTIVES (tests/avatars-donnees) et MESURE en pixels : identité de la photo au repos, bouche,
+# paupières, tête, personnages, voix (hauteur mesurée), vidéo enregistrée avec son, avatar gardé/rechargé, look IA et voix IA simulés, caméra simulée (Chromium).
+# AU DÉPÔT PUBLIC (minutes gratuites et illimitées). Aucun secret, aucune connexion, aucune donnée de Kevin ; le domaine et le service IA sont simulés. À la main seulement, jamais de cron.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avatars-plateformes
+  cancel-in-progress: false
+
+jobs:
+  avatars:
+    # 23.10 : un job PAR moteur, en parallèle (le run à trois moteurs d'affilée dépassait 14 min : 17 appareils × 9 studios × 3 moteurs). Gratuit au dépôt public.
+    strategy:
+      fail-fast: false
+      matrix:
+        moteur: [chromium, webkit, firefox]
+    name: avatars (${{ matrix.moteur }})
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium, WebKit et Firefox (téléchargement, lancement, bibliothèques seulement pour ceux qui ne démarrent pas)
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        # 23.10, runs 40005190242 puis 40006199277 : `--with-deps` / `install-deps` (apt, miroir azure lent) a mangé 18 min ou laissé le verrou dpkg pris (apt tourne en ROOT :
+        # un `timeout` d'utilisateur ne peut pas le tuer). Donc : (1) télécharger les navigateurs (pas d'apt) ; (2) essayer de LANCER chaque moteur tel quel ;
+        # (3) seulement pour ceux qui ne démarrent pas, installer leurs bibliothèques sous `sudo timeout` (root tue root) ; (4) relancer pour savoir ce qui marche.
+        timeout-minutes: 16
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          moteur="${{ matrix.moteur }}"
+          for essai in 1 2; do
+            if timeout 240 ./node_modules/.bin/playwright install "$moteur" > "/tmp/dl-$moteur.log" 2>&1; then break; fi
+            echo "::warning title=avatars-plateformes::téléchargement $moteur essai $essai en échec : $(tail -n 2 "/tmp/dl-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
+          done
+          lancer() { node -e "(async()=>{const p=require('playwright');try{const b=await p['$1'].launch();await b.close();process.exit(0);}catch(e){console.error(String(e.message).split('\n')[0].slice(0,200));process.exit(1);}})()" 2>/tmp/lance.log; }
+          OK=""
+          for moteur in "$moteur"; do
+            if ! lancer "$moteur"; then
+              echo "::warning title=avatars-plateformes::$moteur ne démarre pas tel quel ($(cat /tmp/lance.log | cut -c1-160)) : installation de ses bibliothèques (6 min au plus)"
+              sudo timeout -k 20 360 env "PATH=$PATH" ./node_modules/.bin/playwright install-deps "$moteur" > "/tmp/deps-$moteur.log" 2>&1 || echo "::warning title=avatars-plateformes::bibliothèques $moteur incomplètes : $(tail -n 2 "/tmp/deps-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
+            fi
+            if lancer "$moteur"; then OK="${OK:+$OK,}$moteur"; else echo "::warning title=avatars-plateformes::$moteur ne se lance pas : $(cat /tmp/lance.log | cut -c1-200)"; fi
+          done
+          echo "Moteurs qui se lancent : $OK"
+          echo "::notice title=avatars-plateformes::moteurs qui se lancent : $OK"
+          [ -n "$OK" ] || { echo "::error title=avatars-plateformes::${{ matrix.moteur }} ne se lance pas"; exit 1; }
+          echo "ENGINES_OK=$OK" >> "$GITHUB_ENV"
+
+      - name: Ffmpeg (la caméra simulée de Chromium : un visage vidéo fabriqué depuis nos pièces d'essai)
+        if: matrix.moteur == 'chromium'
+        timeout-minutes: 5
+        run: command -v ffmpeg >/dev/null 2>&1 || { sudo timeout -k 20 240 apt-get install -y --no-install-recommends ffmpeg >/tmp/ffmpeg.log 2>&1 || echo "::warning title=avatars-plateformes::ffmpeg indisponible : la caméra simulée sera sautée (dit dans le journal)"; }
+
+      - name: Les avatars, mesurés pour de vrai
+        timeout-minutes: 20   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles
+        env:
+          ENGINES: ${{ env.ENGINES_OK }}
+          CAPTURES: /tmp/avatars-rendus
+        run: node tests/verif-crea-avatars-navigateur.mjs
+
+      - name: Les rendus, à regarder (personnes fictives, personnages, chien)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: avatars-rendus-${{ matrix.moteur }}-${{ github.run_id }}
+          path: /tmp/avatars-rendus/
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: warn

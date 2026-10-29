@@ -28,7 +28,7 @@ Contrat unique : `Avatar.Voix.ajouter({ id, nom, emoji, fabriquer(texte) → Pro
 Une personne réelle n'est copiée qu'avec son accord. Les paquets restent sur l'appareil (IndexedDB) ; rien n'est envoyé au service IA sauf l'image pour un look IA.
 
 ## Gardes (tout est dans `test:ci` sauf le navigateur)
-- `npm run test:crea-avatars` : 77 contrôles Node sur de vrais points de visage (fixtures fictives `tests/fixtures/avatars/`) + 7 sabotages rouges.
+- `npm run test:crea-avatars` : 77 contrôles Node sur de vrais points de visage (fixtures fictives `tests/avatars-donnees/`) + 7 sabotages rouges.
 - `npm run verif:crea-avatars` (Chromium + vrai MediaPipe, 28 contrôles, 6 sabotages) ; `avatars-plateformes.yml` (public : Chromium, WebKit, Firefox).
 - `verif-live-avatars.yml` (public, admin en lecture) + `test:verif-live-avatars-robot(-sabotage)`.
 - `test:studio-plateformes` (10 studios), `test:crea-cartoon-styles` (K3 : `avatar:true`).

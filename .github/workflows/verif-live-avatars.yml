@@ -1,0 +1,77 @@
+name: Vérif RÉELLE — Studio AVATARS comme Kevin (looks IA du vrai service, voix, parcours complet)
+
+# Kevin 29.10.2026 (avatars et marionnettes) : « va voir ce qui se fait de mieux… la meilleure qualité, toujours gratuit ». Règles « Réel toujours » et « Connecte-toi réel comme moi » :
+# le code admin vient du SECRET (empreinte, jamais écrite ni journalisée) et part au DOMAINE (/__admin/login) comme quand Kevin le tape ; le pass obtenu sert au vrai service
+# crea-ai (looks Toon 3D / Anime / Marionnette feutre / Peluche / Brique / Argile avec la consigne « avatar », voix du service). Le visage envoyé est celui d'une personne FICTIVE
+# (tests/avatars-donnees) : aucune vraie personne dans un journal public. Les rendus sont déposés en artefact pour être REGARDÉS : un nombre ne dit pas si c'est beau.
+# AU DÉPÔT PUBLIC (minutes gratuites et illimitées). À la main seulement (jamais de cron : règle absolue), par l'API. Coût : 7 images klein/Workers AI (quota gratuit du jour).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verif-live-avatars
+  cancel-in-progress: false
+
+jobs:
+  verif:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Avatars, connecté en admin, vrai service (looks IA + voix + parcours)
+        id: robot
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          CAPTURES: /tmp/avatars-live
+        # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee` (toujours 0) et un robot qui dit « ÉCHEC » ressortirait vert.
+        shell: bash -euo pipefail {0}
+        run: |
+          set +e
+          stdbuf -oL -eL node tests/verif-live-avatars.mjs 2>&1 | tee /tmp/verif-avatars.log
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Les rendus, à regarder (visage fictif + looks de l'IA + parcours)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: avatars-live-rendus-${{ github.run_id }}
+          path: /tmp/avatars-live/
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Rapport lisible depuis l'agent (annotations, nombres seulement)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/verif-avatars.log ] || { echo "::notice title=Vérif Avatars::(pas de journal : rien n'a tourné)"; exit 0; }
+          grep -aE '✅|❌|⚠|ℹ️|=== VÉRIF' /tmp/verif-avatars.log \
+            | grep -avE 'code admin|pinhash|PIN_HASH' | sed -E 's/[0-9a-f]{16,}/…/g' \
+            | head -40 > /tmp/rap.txt || tail -40 /tmp/verif-avatars.log > /tmp/rap.txt
+          split -l 12 -d /tmp/rap.txt /tmp/bl_
+          n=0
+          for f in /tmp/bl_*; do
+            n=$((n+1))
+            msg=$(sed -e 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::notice title=Vérif Avatars ${n}::${msg}"
+          done
+          echo "::notice title=Vérif Avatars bilan::${n} bloc(s) publiés en annotations"
+
+      - name: Verdict
+        if: always()
+        run: test "${{ steps.robot.outputs.rc }}" = "0"

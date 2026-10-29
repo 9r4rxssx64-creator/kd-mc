@@ -59,10 +59,11 @@ jobs:
           [ -n "$OK" ] || { echo "::error title=avatars-plateformes::${{ matrix.moteur }} ne se lance pas"; exit 1; }
           echo "ENGINES_OK=$OK" >> "$GITHUB_ENV"
 
-      - name: Ffmpeg (la caméra simulée de Chromium : un visage vidéo fabriqué depuis nos pièces d'essai)
+      - name: "Ffmpeg (la caméra simulée de Chromium, un visage vidéo fabriqué depuis nos pièces d'essai)"
         if: matrix.moteur == 'chromium'
         timeout-minutes: 5
-        run: command -v ffmpeg >/dev/null 2>&1 || { sudo timeout -k 20 240 apt-get install -y --no-install-recommends ffmpeg >/tmp/ffmpeg.log 2>&1 || echo "::warning title=avatars-plateformes::ffmpeg indisponible : la caméra simulée sera sautée (dit dans le journal)"; }
+        run: |
+          command -v ffmpeg >/dev/null 2>&1 || { sudo timeout -k 20 240 apt-get install -y --no-install-recommends ffmpeg >/tmp/ffmpeg.log 2>&1 || echo "::warning title=avatars-plateformes::ffmpeg indisponible : la caméra simulée sera sautée (dit dans le journal)"; }
 
       - name: Les avatars, mesurés pour de vrai
         timeout-minutes: 20   # un moteur figé ne tient plus le robot : l'étape s'arrête, les annotations restent lisibles

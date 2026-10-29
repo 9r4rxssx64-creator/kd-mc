@@ -179,7 +179,10 @@ try {
       ok(E.look === 'feutre' && E.textures >= 1, `E) parcours complet dans la vraie page : photo → look IA « feutre » appliqué en ${E.ms} ms (${E.textures} texture, visage re-trouvé ${E.retrouves}/1) ; rendus déposés pour être regardés`);
     } else ok(false, `E) parcours complet : arrêté à l'étape « ${E.etape} »`, JSON.stringify(E).slice(0, 300));
   }
-  ok(fautes.length === 0, 'F) 0 erreur JavaScript pendant tout le parcours', fautes.slice(0, 3).join(' | '));
+  /* les erreurs de l'abeille / du widget Javis posés sur la page (autre terrain, partagé) sont DITES à part : elles ne sont pas celles des avatars */
+  const partagees = fautes.filter((e) => /javis\.kd-mc\.com|lingua\.kd-mc\.com\/bee|javis-widget/i.test(e)), siennes = fautes.filter((e) => !partagees.includes(e));
+  ok(siennes.length === 0, 'F) 0 erreur JavaScript des avatars pendant tout le parcours', siennes.slice(0, 3).join(' | '));
+  if (partagees.length) dire(`⚠️ hors avatars (abeille / widget Javis, élément commun du domaine) : ${partagees.length} erreur(s) — ${partagees[0].slice(0, 220)}`);
 } catch (e) { ok(false, 'exception du robot', e && e.stack); }
 await browser.close();
 fin(echecs ? 1 : 0);

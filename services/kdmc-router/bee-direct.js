@@ -20,6 +20,8 @@ export function intentionDirecte(message) {
   const t = norm(brut).replace(/[?!.]+$/g, '').trim();
   if (!t || t.split(' ').length > 14 || COMPOSEE.test(t.replace(/\bpas de\b/, ''))) return null;
   let m;
+  /* le point du jour : « mon brief », « le point du jour », « ma journée », « mon programme » (date + météo + planning, sans IA) */
+  if (/^(?:donne[- ]moi |fais[- ]moi |bonjour bee )?(?:mon |le |un )?(?:brief|point)(?: (?:du )?(?:jour|matin|journee|soir))?$|^(?:ma journee|ma journee d'?aujourd'?hui|mon programme(?: du jour| d'?aujourd'?hui)?|quoi de neuf aujourd'?hui|le point sur ma journee)$/.test(t)) return { outil: 'brief_jour', args: {} };
   /* date */
   if (/^(?:dis[- ]moi )?(?:quel jour (?:sommes|est)[- ]nous(?: aujourd'?hui)?|on est quel jour|quelle est la date(?: d'?aujourd'?hui)?|la date(?: d'?aujourd'?hui)?|quelle date (?:sommes[- ]nous|est[- ]on))$/.test(t)) return { outil: 'date_heure', args: {} };
   /* heure */
@@ -55,12 +57,12 @@ export function intentionDirecte(message) {
 }
 
 /* Exécute l'outil exact ; rend { texte, outil } ou null si l'outil échoue (l'IA reprendra la main). `ctx` = contexte des outils (planning absent ici). */
-export async function reponseDirecte(message, env) {
+export async function reponseDirecte(message, env, ctx) {
   if (String(env && env.BEE_DIRECT) === '0') return null;
   const i = intentionDirecte(message);
   if (!i) return null;
   try {
-    const exe = executeurs({});
+    const exe = executeurs(ctx || {});
     const texte = String(await exe[i.outil](i.args)).trim();
     if (!texte) return null;
     return { texte, outil: i.outil };

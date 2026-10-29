@@ -350,6 +350,14 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
   await dors(1600);
   const arret = await etat();
   chk(arret.op === 1 && arret.w === repos.w && arret.tf === '', `0,7 s après l'arrêt : Bee est pleine et à sa taille (opacité ${arret.op}, ${arret.w} px)`);
+  /* chat OUVERT : on lit, on fait défiler, le chat ne s'efface pas (demande du Lenovo, pont 1085) */
+  const frO = n.page.frames().find((f) => /__javis\/cadre/.test(f.url()));
+  await frO.locator('#javis-launcher').click();
+  await n.page.waitForFunction(() => document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect().width > 250, null, { timeout: 5000 }).catch(() => {});
+  await n.page.evaluate(() => window.scrollBy(0, 300));
+  await dors(250);
+  const ouvertDefile = await etat();
+  chk(ouvertDefile.op === 1 && ouvertDefile.tf === '' && ouvertDefile.w > 250, `chat OUVERT + page qui défile : le chat ne s'efface pas (opacité ${ouvertDefile.op}, ${ouvertDefile.w} px)`);
   await n.ctx.close();
 }
 

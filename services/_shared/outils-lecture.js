@@ -299,6 +299,15 @@ export function executeurs(ctx) {
   return {
     meteo, date_heure, calcul, rechercher, lire_page, convertir, heure_ailleurs, dates,
     planning: async () => { if (!ctx || typeof ctx.planning !== 'function') throw new Error('planning indisponible'); return String(await ctx.planning()); },
+    /* LE POINT DU JOUR (idée du « Jarvis maison » vu par Kevin 29.10 : « brief météo/agenda au premier démarrage de la journée ») : date + météo + horaires des 3 prochains jours, en UNE réponse, sans IA.
+       Pas dans DEFINITIONS (le budget de jetons des IA gratuites est serré) : atteint seulement par la reconnaissance directe de bee-direct. Le planning vient de ctx.planningCourt (Kevin seul). */
+    brief_jour: async () => {
+      const p = [await date_heure()];
+      try { p.push(String(await meteo({ dans_jours: 0 })).trim()); } catch (_) { /* météo muette : on donne le reste */ }
+      if (ctx && typeof ctx.planningCourt === 'function') { try { const t = String((await ctx.planningCourt()) || '').trim(); if (t) p.push('Ton planning :\n' + t); } catch (_) { /* sans planning */ } }
+      if (p.length < 2) throw new Error('rien à dire');
+      return 'Voici ton point du jour.\n' + p.join('\n\n');
+    },
   };
 }
 /** Répond avec des outils. Rend { text, provider, outils:[noms], tours } — ou null si aucune IA à outils n'a pu répondre

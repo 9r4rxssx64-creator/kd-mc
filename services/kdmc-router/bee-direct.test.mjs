@@ -107,5 +107,24 @@ for (const q of NON) ok(I(q) === null, '1b. « ' + q.slice(0, 60) + ' » → pas
 { reset(); const r4 = await bee('Convertis 20 USD en EUR'); ok(reseau.every((u) => !/api\.openai\.com|api\.anthropic\.com|perplexity/i.test(u)) && r4.j.provider === 'domaine' && /18[,.]4/.test(r4.j.text) && /Banque centrale/.test(r4.j.text), '4d. devises : taux de la BCE (mock), 0 € : aucun moteur payant appelé', reseau.join(' ') + ' → ' + JSON.stringify(r4.j).slice(0, 150)); }
 ok(await reponseDirecte('quelle heure est-il', {}) !== null && await reponseDirecte('quelle heure est-il', { BEE_DIRECT: '0' }) === null, '4e. reponseDirecte : l\'interrupteur est respecté');
 
+/* ───── 5. LE POINT DU JOUR (Kevin 29.10, vidéo « Jarvis maison » : brief météo/agenda de la journée) : date + météo + planning, sans IA ───── */
+{ const oui = ['mon brief', 'Mon brief du jour', 'le point du jour', 'Brief du matin', 'ma journée', 'Mon programme du jour', "quoi de neuf aujourd'hui ?", 'donne-moi mon brief'];
+  const non = ['mon brief et la météo', 'explique mon brief', 'ce point est important', 'le point de vue de Luka', 'le programme de la soirée', 'brief sur la guerre'];
+  ok(oui.every((m) => (intentionDirecte(m) || {}).outil === 'brief_jour'), '5a. « mon brief / le point du jour / ma journée » → le point du jour', oui.filter((m) => (intentionDirecte(m) || {}).outil !== 'brief_jour').join(' | '));
+  ok(non.every((m) => (intentionDirecte(m) || {}).outil !== 'brief_jour'), '5b. une phrase composée ou autre sujet n\'est PAS prise pour le brief', non.filter((m) => (intentionDirecte(m) || {}).outil === 'brief_jour').join(' | '));
+  reset();
+  const avec = await reponseDirecte('mon brief', {}, { planningCourt: async () => 'lundi 19 octobre : 14h-22h\nmardi 20 octobre : repos' });
+  ok(avec && avec.outil === 'brief_jour' && /point du jour/.test(avec.texte) && /Nous sommes le/.test(avec.texte) && /°C/.test(avec.texte) && /Ton planning/.test(avec.texte) && /14h-22h/.test(avec.texte), '5c. le brief donne la date, la météo ET le planning', avec && avec.texte);
+  const sans = await reponseDirecte('mon brief', {});
+  ok(sans && /Nous sommes le/.test(sans.texte) && /°C/.test(sans.texte) && !/Ton planning/.test(sans.texte), '5d. sans planning (une autre app) : date + météo seulement, rien d\'inventé');
+  METEO_PANNE = true; const panne = await reponseDirecte('mon brief', {}, { planningCourt: async () => 'lundi : repos' }); METEO_PANNE = false;
+  ok(panne && /Nous sommes le/.test(panne.texte) && /Ton planning/.test(panne.texte) && !/°C/.test(panne.texte), '5e. météo en panne : le brief donne quand même la date et le planning');
+  METEO_PANNE = true; const rien = await reponseDirecte('mon brief', {}); METEO_PANNE = false;
+  ok(rien === null, '5f. météo muette ET pas de planning : pas de « brief » réduit à la date, l\'IA reprend la main comme avant');
+  const r5 = await bee('Mon brief du jour');
+  ok(r5.st === 200 && r5.j.provider === 'domaine' && (r5.j.outils || []).includes('brief_jour') && /point du jour/.test(r5.j.text) && reseau.every((u) => !/cerebras|groq|openai|anthropic/i.test(u)), '5g. de bout en bout : fournisseur « domaine », aucune IA appelée', r5.j && r5.j.text);
+  const r6 = await bee('Mon brief du jour', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
+  ok(r6.st === 403 && !(r6.j && r6.j.text), '5h. un autre compte : 403, aucun brief'); }
+
 console.log(`\n${pass} ✓ / ${fail} ✗`);
 process.exit(fail ? 1 : 0);

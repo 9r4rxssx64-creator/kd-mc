@@ -154,23 +154,7 @@
     tete.appendChild(act); tete.appendChild(fer); r.appendChild(tete);
     dessine = empreinte(D);
     if (!D) { r.appendChild(el('p', 'bf-vide', 'Chargement… (si ça dure : ta session admin a peut-être expiré, reconnecte-toi).')); return; }
-    /* 14.10 (Kevin « CMCteams et light en même temps, aussi les autres apps du domaine ») : qui est en ligne MAINTENANT, dans quelle app */
-    var live = D.enLigne || [];
-    if (live.length) {
-      var lv = el('div', 'bf-live'); lv.setAttribute('data-enligne', String(live.length));
-      lv.appendChild(el('b', null, '🟢 ' + live.length + ' en ligne maintenant'));
-      /* 16.10 (Kevin : « toutes infos cliquables ») : un nom en ligne ouvre SA carte (historique, déconnecter, fiche) */
-      var lvl = el('div', 'bf-livel');
-      live.forEach(function (x) {
-        var lib = x.nom + (x.app ? ' · ' + String(x.app).replace(/-/g, ' ') : '');
-        if (!x.uid) { lvl.appendChild(el('span', 'bf-qui', lib)); return; }
-        var bq = el('button', 'bf-qui', lib); bq.type = 'button';
-        bq.onclick = function () { filtre = 'alertes'; ouvert = 'perso:u:' + x.uid; dessiner(); setTimeout(function () { var c = document.querySelector('#boite-fen .bf-c.ouv'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'start' }); }, 30); };
-        lvl.appendChild(bq);
-      });
-      lv.appendChild(lvl);
-      r.appendChild(lv);
-    }
+    /* 29.10 (Kevin : « les connectés à plusieurs endroits, ça ne sert à rien ») : « qui est en ligne » n'est plus montré dans la boîte des messages ; il vit dans le tableau de bord admin (bandeau « En ligne maintenant », qui lit D.enLigne). */
     /* puces : un clic = les messages d'une seule app */
     var puces = el('div', 'bf-puces');
     function puce(id, lib, n) { var b = el('button', 'bf-p' + (filtre === id ? ' on' : ''), lib + (n ? ' · ' + n : '')); b.type = 'button'; b.onclick = function () { filtre = id; dessiner(); }; puces.appendChild(b); }

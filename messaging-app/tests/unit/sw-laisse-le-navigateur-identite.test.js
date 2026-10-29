@@ -19,6 +19,14 @@ describe('laisserLeNavigateur', () => {
   });
 });
 
+describe('laisserLeNavigateur : entrée par le domaine (29.10.2026)', () => {
+  it('POST /api/auth/sso-from-kdmc (même origine) → oui, mais pas les autres routes /api/auth', () => {
+    expect(sw.laisserLeNavigateur({ url: O + '/api/auth/sso-from-kdmc' }, O)).toBe(true);
+    for (const p of ['/api/auth/login', '/api/auth/sso-from-kdmc/x', '/api/auth/sso-apex']) expect(sw.laisserLeNavigateur({ url: O + p }, O)).toBe(false);
+    expect(sw.laisserLeNavigateur({ url: 'https://autre.exemple/api/auth/sso-from-kdmc' }, O)).toBe(false);
+  });
+});
+
 describe('sw.js branche la règle AVANT respondWith', () => {
   it('le gestionnaire fetch rend la main d’abord', () => {
     const src = readFileSync(join(racine, 'sw.js'), 'utf8');

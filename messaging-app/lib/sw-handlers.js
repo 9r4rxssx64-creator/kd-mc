@@ -13,7 +13,7 @@
  *   - OFFLINE_CACHE  : fallback HTML hors-ligne
  */
 
-export const CACHE_VERSION = 'apex-chat-v1.1.350';
+export const CACHE_VERSION = 'apex-chat-v1.1.352';
 export const STATIC_CACHE = `${CACHE_VERSION}-static`;
 export const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 export const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
@@ -153,11 +153,12 @@ export async function handleFetchSWR(request, { fetch, caches, response }) {
 
 /* 24.10.2026 (cloud-installer, tâche 60, mesuré run 40096801435) : le service worker re-fetchait lui-même les appels d'identité du domaine (`/__sso/whoami`…) ;
    dans un Chromium émulé iPhone le SW garde l'agent réel (Linux) et le routeur refusait le laissez-passer lié à la famille « iphone » (cause « appareil »).
-   Ces appels ne se cachent jamais : on NE répond PAS, le navigateur fait lui-même la requête, comme sans service worker. */
+   Ces appels ne se cachent jamais : on NE répond PAS, le navigateur fait lui-même la requête, comme sans service worker.
+   29.10.2026 : même règle pour POST /api/auth/sso-from-kdmc (robot « toutes les fonctions » : pass iphone, requête vue « linux » par le routeur = agent du SW, 1 entrée sur 3 refusée). */
 export function laisserLeNavigateur(request, origine) {
   try {
     const u = new URL(request.url);
-    return (!origine || u.origin === origine) && u.pathname.startsWith('/__');
+    return (!origine || u.origin === origine) && (u.pathname.startsWith('/__') || u.pathname === '/api/auth/sso-from-kdmc');
   } catch { return false; }
 }
 

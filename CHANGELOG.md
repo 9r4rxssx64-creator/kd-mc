@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.352 (29.10.2026)
+- Le service worker laisse le navigateur faire POST /api/auth/sso-from-kdmc (agent de la page conservé) : l'entrée par le domaine n'est plus refusée « appareil » quand l'agent du service worker diffère de celui de la page (robot).
+
+---
+
 ## Javis / Bee v1.26 — une vraie petite marionnette complète et vivante, sur tous les appareils (2026-10-29)
 - Retour de Kevin : « Je voulais un vrai mini personnage animé, une vraie petite marionnette animée, complète, vivante. » Avant : sans WebGL (PC en économie d'énergie, vieux téléphones), Bee retombait sur une image fixe qui se balance.
 - Ajouté : un 2ᵉ dessinateur en canvas 2D (`rendu2D`, maillage grossier + zone fine du visage, ~30 images/s) : le squelette complet (oreilles/antennes, mèche, bras, jambes, yeux, mâchoire, tête, corps) bouge aussi SANS WebGL. Clignement des yeux peint dans le canvas (`paupieres`, couleur prise entre les yeux). Parole beaucoup plus vivante : bras qui gesticulent, jambes qui rebondissent (+10° en 2D, +18° en 3D), antennes (+24°/+22°), ailes (+16°), queue, tête qui dodeline ; même mouvement dans le moteur 3D (`HUMEURS.parle`).

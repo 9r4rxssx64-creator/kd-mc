@@ -1299,7 +1299,12 @@ export default {
       return durcirReponse(new Response(null, { status: 301, headers: { location: u.toString() } }));
     }
     try { await chargerFermees(env); } catch { /* jamais bloquant : sans la liste, rien n'est fermé en général */ }
-    const rep = durcirReponse(await ROUTEUR.fetch(request, env, ctx));
+    let rep = durcirReponse(await ROUTEUR.fetch(request, env, ctx));
+    /* Le dessin des mascottes se lit depuis les autres adresses du domaine (la marionnette de Bee le pose sur un maillage) : il faut l'en-tête CORS. */
+    if ((request.method === 'GET' || request.method === 'HEAD') && rep && rep.status === 200 && !rep.webSocket && DESSIN_MASCOTTE.test(cheminNormal(u.pathname)) && !rep.headers.get('access-control-allow-origin')) {
+      const h = new Headers(rep.headers); h.set('access-control-allow-origin', '*');
+      rep = new Response(rep.body, { status: rep.status, statusText: rep.statusText, headers: h });
+    }
     /* staging.kd-mc.com (22.10) : environnement de TEST — jamais indexé, quelle que soit la réponse. */
     if (/^staging\.kd-mc\.com$/i.test(new URL(request.url).hostname) && rep && !rep.webSocket && rep.status !== 101) {
       const h = new Headers(rep.headers); h.set('x-robots-tag', 'noindex, nofollow, noarchive');
@@ -2062,7 +2067,13 @@ function porteDe(cheminCMC) {
 /* 22.10.2026 (audit Apex AI, tâche 20 — mesuré : apex-ai.kd-mc.com/assets/json/manifest-Dnqu29nu.json → 401) : Apex AI (Vite) déclare son
    manifeste sous un nom à EMPREINTE ; seul « manifest.json » exact passait → l'iPhone n'avait ni nom ni icône à l'installation.
    On accepte « manifest-<lettres/chiffres>.json » : toujours des métadonnées d'installation, aucun contenu. */
+/* 29.10.2026 (Kevin : « le corps de Bee ne bouge pas » ; mesuré dans son Chrome : 0 canvas) — le DESSIN des mascottes (Bee, Bourricot : base.webp, ailes…) est
+   une image d'illustration, sans aucune donnée. La marionnette la lit depuis une autre adresse du domaine en CORS « anonymous » : SANS cookie. La porte lui
+   répondait 401 et, depuis la bascule du 15.10, aucune réponse ne portait Access-Control-Allow-Origin → pas de texture, pas de canvas, personnage plat.
+   Elle reste ouverte comme les icônes (même nature) et reçoit l'en-tête CORS (voir `fetch` plus bas). Garde : rig-cors.test.mjs. */
+const DESSIN_MASCOTTE = /\/(bee|donkey)\/v\d+\/rig\/[a-z0-9-]+\.webp$/;
 function libreSansFiche(cheminCMC) {
+  if (DESSIN_MASCOTTE.test(cheminNormal(cheminCMC))) return true;
   return /\/(manifest(-[A-Za-z0-9_]+)?\.json|[^/]*\.webmanifest|sw\.js|lib\/sw-handlers\.js|robots\.txt|(apple-touch-icon|favicon|icon)[^/]*\.(png|svg|ico))$/.test(cheminNormal(cheminCMC));
 }
 /* 🔒 AUCUNE CONSULTATION SANS COMPTE, NULLE PART (Kevin 3.10.2026 : « Aucune consultation sans compte nulle part »).

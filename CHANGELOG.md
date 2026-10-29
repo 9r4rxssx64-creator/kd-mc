@@ -9,6 +9,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Routeur du domaine — le dessin des mascottes se lit depuis toutes les adresses : la marionnette de Bee marche enfin en vrai (2026-10-29)
+- Retour de Kevin : « le corps ne bouge pas » (le Lenovo, dans SON Chrome : marionnette active, 0 canvas, 0 élément animé). Cause : l'image du dessin (`…/bee/v2/rig/base.webp`) demandée par la marionnette depuis une autre adresse du domaine part SANS cookie ; la porte répondait 401 et aucune réponse ne portait plus l'en-tête CORS depuis le 15.10 → pas de texture, dessin plat.
+- Corrigé dans `services/kdmc-router/worker.js` : les images du dessin des mascottes (`/bee|donkey/vN/rig/*.webp`, illustrations sans donnée) passent la porte comme les icônes et portent `Access-Control-Allow-Origin: *`. Tout le reste de Lingua reste fermé (401).
+- Garde : `npm run test:rig-cors` (12 contrôles, 2 sabotages rouges).
+
 ## Javis / Bee v1.26 — une vraie petite marionnette complète et vivante, sur tous les appareils (2026-10-29)
 - Retour de Kevin : « Je voulais un vrai mini personnage animé, une vraie petite marionnette animée, complète, vivante. » Avant : sans WebGL (PC en économie d'énergie, vieux téléphones), Bee retombait sur une image fixe qui se balance.
 - Ajouté : un 2ᵉ dessinateur en canvas 2D (`rendu2D`, maillage grossier + zone fine du visage, ~30 images/s) : le squelette complet (oreilles/antennes, mèche, bras, jambes, yeux, mâchoire, tête, corps) bouge aussi SANS WebGL. Clignement des yeux peint dans le canvas (`paupieres`, couleur prise entre les yeux). Parole beaucoup plus vivante : bras qui gesticulent, jambes qui rebondissent (+10° en 2D, +18° en 3D), antennes (+24°/+22°), ailes (+16°), queue, tête qui dodeline ; même mouvement dans le moteur 3D (`HUMEURS.parle`).

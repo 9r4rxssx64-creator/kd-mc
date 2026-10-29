@@ -345,6 +345,18 @@
     #bnav button{flex:1 0 20%;min-width:0}
   }
   #animStyles{flex-wrap:wrap;overflow-x:visible}
+  /* 29.10 (mesuré par verif-affichage-domaine, iPhone paysage 844×342) : l'accueil d'un studio (grande icône,
+     texte, 2 boutons) mesurait ~210 px pour ~150 px de scène → « Prendre une photo » passait SOUS la barre du
+     bas, hors de portée. En écran bas : icône + titre sur une ligne, texte masqué, boutons côte à côte,
+     et la zone défile si malgré tout elle ne tient pas. */
+  @media (max-height:480px){
+    .empty{max-width:none;width:100%;max-height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;
+      padding:8px 14px;margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+    .empty .big{font-size:30px;margin:0}
+    .empty h2{margin:0;font-size:17px}
+    .empty p{display:none}
+    .empty .bigbtn{width:auto;flex:1 1 220px;margin-top:0}
+  }
 </style>
 </head>
 <body>
@@ -1202,7 +1214,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.22.7';
+var APP_VER='v9.22.8';
 document.getElementById('vbadge').textContent=APP_VER;
 /* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
 function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}

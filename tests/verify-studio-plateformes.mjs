@@ -20,10 +20,11 @@ const w = lire('.github/workflows/studio-plateformes.yml');
 t(/workflow_dispatch/.test(w) && !/schedule:/.test(w) && /moteur: \[chromium, webkit, firefox\]/.test(w) && /KDMC_RUNNER/.test(w) && /verif-studio-plateformes\.mjs/.test(w) && /EXIGE_PLAYWRIGHT/.test(w), 'robot gratuit : 3 moteurs, à la main, sans cron, interrupteur Lenovo');
 const h = lire('tools/crea-studio/index.html');
 t(/@media \(max-width:520px\)\{\s*#bnav\{flex-wrap:wrap/.test(h) && /#animStyles\{flex-wrap:wrap/.test(h) && /\.tbtn\{\s*min-width:44px;height:44px/.test(h) && /--navh/.test(h) && /function majNavH/.test(h), 'le Studio porte les correctifs : barre sur deux rangées, galerie enroulée, outils 44 px, pastille qui suit la barre');
+t(/@media \(max-height:480px\)\{\s*\.empty\{/.test(h) && /out\.accueil/.test(o) && /844x342/.test(o), 'accueil des studios : écran bas (iPhone paysage 844×342) — boutons visibles, mesure + appareil dans la matrice');
 const pk = lire('package.json');
 t(/"verif:studio-plateformes"/.test(pk) && /npm run test:studio-plateformes/.test(pk), 'les scripts existent et la garde est dans test:ci');
 const r = spawnSync(process.execPath, ['tools/plateformes/verif-studio-plateformes.mjs'], { cwd: R, encoding: 'utf8', timeout: 300000,
-  env: { ...process.env, ENGINES: 'chromium', PLAT: '390x844 \\(celui de Kevin\\)|360 px' } });
+  env: { ...process.env, ENGINES: 'chromium', PLAT: '390x844 \\(celui de Kevin\\)|360 px|844x342' } });
 const sortie = (r.stdout || '') + (r.stderr || '');
 if (/playwright absent/.test(sortie)) console.log('SKIP Playwright absent : la partie réelle est confiée au robot du dépôt public');
 else if (/aucun moteur disponible/.test(sortie)) console.log('SKIP aucun Chromium ici : la partie réelle est confiée au robot du dépôt public');

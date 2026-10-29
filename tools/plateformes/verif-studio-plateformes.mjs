@@ -44,6 +44,7 @@ const MATRICE = [
   { nom: 'iPhone 13 paysage', dev: 'iPhone 13 landscape', moteurs: ['webkit', 'chromium'] },
   { nom: 'iPhone 14 Pro portrait 390x844 (celui de Kevin)', vp: { width: 390, height: 844 }, tactile: true, moteurs: ['webkit', 'chromium'] },
   { nom: 'iPhone 14 Pro paysage 844x390 (celui de Kevin)', vp: { width: 844, height: 390 }, tactile: true, moteurs: ['webkit', 'chromium'] },
+  { nom: 'iPhone paysage 844x342 (Safari, barres visibles : la scène la plus basse)', vp: { width: 844, height: 342 }, tactile: true, moteurs: ['webkit', 'chromium'] },
   { nom: 'iPhone SE (petit 375)', dev: 'iPhone SE', moteurs: ['webkit', 'chromium'] },
   { nom: 'Android Pixel 7', dev: 'Pixel 7', moteurs: ['chromium'] },
   { nom: 'Android Galaxy S9+ paysage', dev: 'Galaxy S9+ landscape', moteurs: ['chromium'] },
@@ -137,6 +138,8 @@ async function scenario(moteur, ap) {
       version: vb ? (vb.textContent || '').trim() : '', versionDans: !!vq && vq.width > 0 && vq.left >= 0 && vq.right <= W + 1 && vq.bottom <= innerHeight + 1 && getComputedStyle(vb).visibility !== 'hidden' };
   });
   out.recouverts = await p.evaluate(() => [...document.querySelectorAll('#bnav button[data-go]')].filter((t) => { const q = t.getBoundingClientRect(); if (!q.width || !q.height) return false; const e = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return !(e && (e === t || t.contains(e))); }).map((t) => t.dataset.go));
+  /* 29.10 : l'accueil du Studio Photo (2 gros boutons) ne doit JAMAIS passer sous la barre du bas, même sur l'écran le plus bas */
+  out.accueil = await p.evaluate(() => [...document.querySelectorAll('#photoEmpty .bigbtn')].filter((t) => { const q = t.getBoundingClientRect(); const nav = document.getElementById('bnav').getBoundingClientRect(); if (!q.width) return true; const e = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return q.bottom > nav.top + 1 || q.top < 0 || !(e && (e === t || t.contains(e))); }).map((t) => t.textContent.trim().slice(0, 24)));
   out.studios = []; out.petites = [];
   for (const go of STUDIOS) {
     const e0 = erreurs.length;
@@ -171,6 +174,7 @@ for (const ap of MATRICE) {
     ok(A.erreurs.length === 0, `${tag} : 0 erreur JavaScript` + (A.erreurs.length ? ' — ' + A.erreurs.slice(0, 2).join(' | ') : ''));
     ok(g.deborde <= 2, `${tag} : la page ne déborde pas en largeur (${g.deborde} px)`);
     ok(g.barreDans && g.sortis.length === 0 && g.n >= 10, `${tag} : barre du bas entière dans l'écran (${g.n} studios${g.sortis.length ? ', dehors : ' + g.sortis.join(',') : ''})`);
+    ok(A.accueil.length === 0, `${tag} : l'accueil Photo — ses boutons sont tous visibles et touchables au-dessus de la barre` + (A.accueil.length ? ' — cachés : ' + A.accueil.join(', ') : ''));
     ok(A.recouverts.length === 0, `${tag} : rien ne recouvre un bouton de la barre` + (A.recouverts.length ? ' — recouverts : ' + A.recouverts.join(',') : ''));
     if (touch) ok(g.minCote >= 40, `${tag} : boutons de la barre ≥ 40 px au toucher (${Math.round(g.minCote)})`);
     const muets = A.studios.filter((s) => !s.a || !s.actif).map((s) => NOMS[s.go]);

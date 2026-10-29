@@ -26,6 +26,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
 - Film de preuve : 3D | marionnette sans WebGL, côte à côte.
 
+## Créa Studio v9.22.8 — iPhone en paysage : l'accueil des studios ne passe plus sous la barre du bas (2026-10-29)
+- Mesuré par le robot d'affichage du domaine (iPhone paysage 844×342) : « Prendre une photo » de l'accueil Photo était entièrement SOUS la barre du bas, hors de portée (scène ≈ 150 px pour ≈ 210 px de contenu). Écran bas (< 480 px de haut) : icône + titre sur une ligne, texte masqué, boutons côte à côte, zone qui défile si besoin. Mesure après : 0 recouvrement sur 7 écrans.
+- Garde : `verif-studio-plateformes.mjs` (appareil « iPhone paysage 844×342 » + mesure `accueil`), vert 39/39 ; sabotage : avec le Studio d'avant → rouge (« Choisir une photo, Prendre une photo » cachés).
+
 ## Créa Studio v9.22.7 — Avatars : si le son du navigateur est bloqué, l'app le dit au lieu de faire une vidéo muette (2026-10-29)
 - Mesuré sur Firefox du robot (aucune carte son) : le son reste « suspendu » même après un toucher, la vidéo sortait muette sans prévenir. L'app affiche maintenant « Le son du navigateur est bloqué : touche l'écran puis refais la vidéo ». Le robot le dit honnêtement (ℹ️) au lieu d'un faux rouge ; test confié au Lenovo / iPhone réel.
 

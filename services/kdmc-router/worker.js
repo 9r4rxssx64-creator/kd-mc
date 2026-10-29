@@ -1013,6 +1013,7 @@ const ROUTEUR = {
     }
     /* ✉️ LE BOUTON « ÉCRIRE À L'ADMIN » sur toute page HTML de toute app (Kevin 3.10 : « toutes les apps du domaine doivent pouvoir contacter l'admin
        depuis leur compte »). Posé ICI, dans la couche partagée : la prochaine adresse l'a sans qu'on y pense. */
+    if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '')) outHeaders.set('accept-ch', 'Sec-CH-UA-Model, Sec-CH-UA-Platform-Version');   /* 29.10 : le modèle exact de l'appareil (Chrome le masque sinon) */
     if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '') && host !== 'admin.kd-mc.com') {
       return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }), String(env && env.BEE_PARTOUT) === '0' ? '' : PARTOUT_TAG, { hote: host, dest: request.headers.get('sec-fetch-dest') || '', nonce: String(env && env.BEE_PARTOUT) !== '0' && marqueurKevin(request) ? nonceBee() : '' });
     }
@@ -3402,6 +3403,10 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   const os = /iphone|ipad|ios/i.test(ua) ? 'iOS' : /android/i.test(ua) ? 'Android' : /mac/i.test(ua) ? 'macOS' : /windows/i.test(ua) ? 'Windows' : /linux/i.test(ua) ? 'Linux' : '';
   /* Détail « espion » : modèle + versions + opérateur + géo fine + fuseau. */
   const D = uaParse(ua);
+  /* 29.10 (Kevin : « vérifie si c'est une tablette Lenovo… mon matériel ») : Chrome Android réduit son user-agent (« Android 10; K ») et cache le modèle ;
+     l'indice client Sec-CH-UA-Model (demandé par Accept-CH sur les pages HTML) le rend. Sans lui, une tablette inconnue ressemble à n'importe quel Android. */
+  const chModel = String(request.headers.get('sec-ch-ua-model') || '').replace(/^"|"$/g, '').replace(/[^\w .+\/-]/g, '').trim().slice(0, 40);
+  if (chModel && D.os === 'Android') D.model = chModel;
   const NET = ispInfo(cf);
   const devFull = [D.model, D.os + (D.osv ? ' ' + D.osv : ''), D.br + (D.brv ? ' ' + D.brv : '')].filter(function (x) { return x && x.trim(); }).join(' · ');
   const place = [cf.city, cf.region, cf.country].filter(Boolean).join(', ');
@@ -3485,7 +3490,9 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   acc.hours[hh] = (acc.hours[hh] || 0) + 1;
   /* devKey VOLONTAIREMENT sans version : sinon chaque mise à jour d'iOS/navigateur
      compterait comme un « nouvel appareil » → alerte push à chaque update (spam). */
-  const devKey = device + (os ? '·' + os : '');
+  /* Admin (Kevin) : l'appareil se compte au MODÈLE (« Lenovo TB-J606F·Android »), pas au genre (« mobile·Android ») — un appareil de plus sur ma fiche
+     doit se voir et alerter (journal admin + push « Nouvel appareil »). Les autres comptes gardent la clé grossière (pas de spam à chaque mise à jour). */
+  const devKey = (uid === CANON_UID && D.model && D.model !== 'Autre' && D.model !== 'Android') ? D.model + '·' + (os || D.os) : device + (os ? '·' + os : '');
   const newDevice = (acc.devices || []).indexOf(devKey) < 0;
   if (newDevice) structural = true;
   acc.devices = Array.from(new Set([...(acc.devices || []), devKey])).slice(-10);

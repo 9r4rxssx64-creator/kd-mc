@@ -300,13 +300,23 @@ export function pose(piece, anim, t) {
    ------------------------------------------------------------------------- */
 export const HUMEUR_REACTION = { joie: 'saute', fete: 'saute', danse: 'saute', saute: 'saute', coucou: 'coucou', salut: 'coucou', poke: 'surprise' };
 export const HUMEURS = {
-  /* il parle : la bouche suit la voix, la tête hoche, une main accompagne */
-  parle: (rl, sx, t, c) => ({
-    tete: { r: [4 * c.niveau * S(P2 * 1.3 * t), 6 * c.niveau * S(P2 * 0.5 * t), 3 * c.niveau * S(P2 * 0.7 * t)] },
-    corps: { r: [0, 3 * c.niveau * S(P2 * 0.5 * t), 0] },
-    bras: { r: [0, 0, sx * 14 * c.niveau * Math.max(0, S(P2 * 0.9 * t + (sx > 0 ? 0 : 2)))] },
-    bouche: { s: [1 + 0.15 * c.ouv, 0.45 + 1.0 * c.ouv, 1] },
-  })[rl],
+  /* il parle — UNE VRAIE PETITE MARIONNETTE (Kevin 29.10 : « complète, vivante ») : la bouche suit la voix, la tête hoche et penche, un bras puis l'autre
+     fait un geste pour expliquer, le corps se balance et rebondit sur les syllabes fortes, les jambes se dandinent d'un pied sur l'autre,
+     antennes / oreilles rebondissent, les ailes frémissent, la queue remue — plus la voix est forte, plus tout s'anime. */
+  parle: (rl, sx, t, c) => {
+    const n = c.niveau, ge = Math.max(0, S(P2 * 0.4 * t + (sx > 0 ? 0 : Math.PI)));
+    return ({
+      tete: { r: [5 * n * S(P2 * 1.6 * t), 8 * n * S(P2 * 0.45 * t), 6 * n * S(P2 * 0.6 * t)] },
+      corps: { r: [2 * n * S(P2 * 1.1 * t), 5 * n * S(P2 * 0.5 * t), 3 * S(P2 * 0.55 * t)], p: [0, 0.006 * (0.3 + n) * ab(S(P2 * 1.9 * t)), 0] },
+      bras: { r: [-8 * ge * n, 0, sx * (8 * n + 26 * ge * (0.5 + n))] },
+      jambe: { r: [9 * S(P2 * 0.6 * t + (sx > 0 ? Math.PI : 0)), 0, 0] },
+      antenne: { r: [6 * n * S(P2 * 2.4 * t), 0, sx * 10 * (0.5 + n) * S(P2 * 2.2 * t)] },
+      oreille: { r: [0, 0, sx * 10 * (0.5 + n) * S(P2 * 2.2 * t)] },
+      aile: { r: [0, -sx * 14 * n * S(P2 * 18 * t), 0] },
+      queue: { r: [0, 24 * n * S(P2 * 1.2 * t), 0] },
+      bouche: { s: [1 + 0.15 * c.ouv, 0.45 + 1.0 * c.ouv, 1] },
+    })[rl];
+  },
   triste: (rl, sx) => ({
     tete: { r: [16, 0, 0] }, corps: { r: [3, 0, 0], s: [1, 0.985, 1] },
     yeux: { s: [1, 0.7, 1] }, bouche: { s: [0.8, 0.45, 1] },

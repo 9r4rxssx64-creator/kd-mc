@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.25';
+  var JAVIS_VER = 'v1.26';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -2613,7 +2613,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.0';
+  var VERSION = '2.1';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -2995,10 +2995,17 @@
         if (ty === 'bras') return o.geste ? 7 * S1(t * 11) : r * 0.4;
         if (ty === 'jambe') return 1.5 * S1(t * 1.2 + alt);
         return r;
-      case 'parle':
-        if (ty === 'bras') return 8 + (8 + 12 * NIV) * S1(t * 5.2 + alt);
-        if (ty === 'oreille' || ty === 'antenne') return r + 5 * S1(t * 6.5 + ph);
+      case 'parle': {
+        /* UNE VRAIE PETITE MARIONNETTE QUI PARLE (Kevin 29.10 : « complète, vivante ») : chaque membre a son rôle.
+           Les bras font des GESTES (un bras puis l'autre se lève, retombe, comme quelqu'un qui explique), les jambes se
+           dandinent d'un pied sur l'autre, les antennes rebondissent sur chaque syllabe, plus fort quand la voix monte. */
+        var ge = Math.max(0, S1(t * 2.4 + (o.cote < 0 ? 0 : Math.PI)));           /* ~0,4 geste/s, un bras après l'autre */
+        if (ty === 'bras') return 6 + (10 + 14 * NIV) * ge * ge + 4 * S1(t * 7.5 + alt) * (0.4 + NIV);
+        if (ty === 'jambe') return 6 * S1(t * 2.6 + alt) + 2 * NIV * S1(t * 9 + alt);   /* dandinement : un pied puis l'autre */
+        if (ty === 'oreille' || ty === 'antenne') return r + (6 + 9 * NIV) * S1(t * 7.5 + ph) + 5 * NIV * S1(t * 13 + ph);
+        if (ty === 'queue') return r + 10 * NIV * S1(t * 5.5);
         return r;
+      }
       case 'danse':
         if (ty === 'bras') return 38 + 26 * S1(t * 6 + alt);
         if (ty === 'jambe') return 12 * S1(t * 6 + alt);
@@ -3056,7 +3063,13 @@
   /* Le tronc et la tête : un balancement, une respiration, un hochement en parlant. */
   function poseTronc(h, t, niveau) {
     var p = { corps: 1.4 * S1(t * 0.9), tete: 2.6 * S1(t * 0.7 + 1), souffle: 0.016 * S1(t * PI2 / 3.8), dy: 0 };
-    if (h === 'parle') { p.tete += 3.2 * S1(t * 7.5) * (0.4 + niveau); p.corps += 1.2 * S1(t * 3.1); p.souffle = 0.012 * niveau; }
+    if (h === 'parle') {
+      /* la tête hoche sur la voix, penche d'un côté puis de l'autre ; le corps se balance, rebondit sur les syllabes fortes et respire plus fort */
+      p.tete += 4.2 * S1(t * 7.5) * (0.4 + niveau) + 3.4 * S1(t * 1.7);
+      p.corps += 1.6 * S1(t * 3.1) + 2.4 * S1(t * 2.6);
+      p.dy = -0.007 * (0.3 + niveau) * Math.abs(S1(t * 3.9));
+      p.souffle = 0.016 * (0.4 + niveau);
+    }
     else if (h === 'danse') { p.corps = 7 * S1(t * 6); p.tete = -6 * S1(t * 6); }
     else if (h === 'marche') { p.corps = 3 * S1(t * PI2 / 0.8); p.dy = -0.006 * Math.abs(S1(t * PI2 / 0.8)); }
     else if (h === 'joie') { p.tete = 5 * S1(t * 9); p.dy = -0.01 * Math.abs(S1(t * 9)); }
@@ -3082,6 +3095,7 @@
      ------------------------------------------------------------------------- */
   var gl = null, glCanvas = null, prog = null, bPos = null, bUv = null, bTri = null, aPos = -1, aUv = -1;
   var textures = {}, perdu = false;
+  function peutDeux() { try { return !!document.createElement('canvas').getContext('2d'); } catch (_) { return false; } }
   function initGL() {
     if (gl || perdu) return gl;
     try {
@@ -3118,7 +3132,24 @@
   function lisible(img) {
     try { return !!img.crossOrigin || new URL(img.src, location.href).origin === location.origin; } catch (_) { return false; }
   }
+  /* SANS WebGL (29.10, Kevin : « je voulais une vraie petite marionnette animée, complète, vivante » — le repli d'avant ne faisait que balancer l'image) :
+     le MÊME maillage, les mêmes os, mais dessiné triangle par triangle dans un canvas 2D. Ici la « texture » est l'image elle-même. */
+  function texture2D(nom, img, ok, ko) {
+    var T = textures[nom];
+    if (T && T.tex) return ok(T.tex);
+    if (echecs[nom] && Date.now() - echecs[nom] < 300000) return ko();
+    if (T) { T.att.push([ok, ko]); return; }
+    T = textures[nom] = { tex: null, att: [[ok, ko]] };
+    function fin(im) { T.tex = im; var a = T.att; T.att = []; for (var i = 0; i < a.length; i++) a[i][0](im); }
+    function echec() { echecs[nom] = Date.now(); var a = T.att; delete textures[nom]; for (var i = 0; i < a.length; i++) a[i][1](); }
+    var im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = function () { fin(im); };
+    im.onerror = function () { if (img.complete && img.naturalWidth) fin(img); else echec(); };   /* repli : l'image déjà affichée (le canvas devient « teinté », sans importance : on ne le relit pas) */
+    im.src = img.currentSrc || img.src;
+  }
   function texture(nom, img, ok, ko) {
+    if (!gl) return texture2D(nom, img, ok, ko);
     var T = textures[nom];
     if (T && T.tex) return ok(T.tex);
     if (echecs[nom] && Date.now() - echecs[nom] < 300000) return ko();
@@ -3277,6 +3308,9 @@
       /* la vraie bouche dessinée s'ouvre (mâchoire) : le rond rose posé par-dessus n'a plus lieu d'être — sauf dans
          « Regarde sa bouche, puis imite » de Lingua (.pron-bee), où sa forme ENSEIGNE la prononciation */
       '.mrn-on:not(.pron-bee) .disc-mouth{opacity:0!important}' +
+      /* les paupières jaunes posées par-dessus ne servent plus (29.10 : « une tache collée ») : elles sont PEINTES dans le dessin, à la bonne place, de la vraie couleur de la peau
+         (sauf « Regarde sa bouche » de Lingua) */
+      '.mrn-on:not(.pron-bee) .rig-lid{opacity:0!important}' +
       '.bee-rig.vid .mrn-canvas{display:none}' +
       'canvas.mrn-image{display:inline-block}' +
       /* Le corps bouge maintenant pour de vrai : l'ancienne respiration « d'un bloc »
@@ -3336,7 +3370,8 @@
   function attacher(img) {
     if (REDUIT || perdu || img._mrn) return;
     var nom = squeletteDe(img.getAttribute('src') || img.src);
-    if (!nom || !SQUELETTES[nom] || !initGL()) return;
+    if (!nom || !SQUELETTES[nom]) return;
+    if (!initGL() && !peutDeux()) return;
     if (SQUELETTES[nom].pose) return attacherImage(img, nom);
     var look = img.parentNode;
     if (!look) return;
@@ -3453,6 +3488,7 @@
     var X = EXPRESSIONS[h] || EXPRESSIONS.repos, fx = dt ? Math.min(1, dt * 10) : 1;
     var ex = e.expr || (e.expr = { sx: 1, sy: 1, r: 0, vx: 0, vy: 0 });
     ex.sx += (X.sx - ex.sx) * fx; ex.sy += (X.sy - ex.sy) * fx; ex.r += (X.r - ex.r) * fx;
+
     var rg = e.regard || { x: 0, y: 0 };
     if (!rg.actif && !e.sansHasard && dt) {                 /* personne ne le guide : un coup d'œil de temps en temps */
       e.prochainCoupDoeil = (e.prochainCoupDoeil || 0) - dt;
@@ -3493,6 +3529,103 @@
     return out;
   }
 
+  /* Le maillage du rendu 2D : un point sur deux dans chaque sens (26 × 26 cases au lieu de 52 × 52 = 1 352 triangles au lieu de 5 408). Un navigateur sans
+     WebGL est aussi un ordinateur sans carte graphique : le CPU dessine chaque triangle, il faut quatre fois moins de travail pour la même souplesse
+     (les os tournent de quelques degrés : la déformation est douce, une case double ne s'y voit pas). */
+  function maillageGrossier() {
+    var L = N + 1, out = [], i, j, di, dj;
+    for (j = 0; j + 2 <= N; j += 2) for (i = 0; i + 2 <= N; i += 2) {
+      /* le VISAGE (yeux qui se ferment, bouche qui s'ouvre) garde le maillage fin : des yeux de 100 px ne tiennent pas dans des cases de 67 px */
+      var gx = -MARGE + (i + 1) / N * (1 + 2 * MARGE), gy = -MARGE + (j + 1) / N * (1 + 2 * MARGE);
+      var visage = gx > 0.14 && gx < 0.86 && gy > 0.1 && gy < 0.62;
+      if (visage) {
+        for (dj = 0; dj < 2; dj++) for (di = 0; di < 2; di++) {
+          var a1 = (j + dj) * L + i + di, b1 = a1 + 1, c1 = a1 + L, d1 = c1 + 1;
+          out.push(a1, b1, c1, b1, d1, c1);
+        }
+      } else {
+        var a = j * L + i, b = a + 2, c = a + 2 * L, d = c + 2;
+        out.push(a, b, c, b, d, c);
+      }
+    }
+    return new Uint16Array(out);
+  }
+  /* LE RENDU 2D (sans WebGL) : l'image entière, puis seulement les triangles qui ont BOUGÉ, chacun repris dans l'image d'origine par une transformation
+     affine (3 points → 3 points). Par continuité du maillage, tout point d'arrivée non couvert par un triangle déplacé est couvert par un triangle immobile,
+     donc identique à l'image : rien à effacer. Chaque triangle est agrandi d'un demi-pixel pour qu'aucune couture ne se voie. */
+  function rendu2D(e, out, S, px) {
+    var cx = e.cx, im = e.tex, W = im.naturalWidth || im.width || 1024, H = im.naturalHeight || im.height || 1024;
+    var tri = S.tri2 || (S.tri2 = maillageGrossier()), uv = S.uv, base = S.base, n = tri.length, k, i0, i1, i2;
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+    cx.clearRect(0, 0, px, px);
+    cx.drawImage(im, 0, 0, W, H, 0, 0, px, px);
+    var seuil = 0.0006;
+    for (k = 0; k < n; k += 3) {
+      i0 = tri[k]; i1 = tri[k + 1]; i2 = tri[k + 2];
+      var bouge = Math.abs(out[i0 * 2] - base[i0 * 2]) + Math.abs(out[i0 * 2 + 1] - base[i0 * 2 + 1]) > seuil ||
+                  Math.abs(out[i1 * 2] - base[i1 * 2]) + Math.abs(out[i1 * 2 + 1] - base[i1 * 2 + 1]) > seuil ||
+                  Math.abs(out[i2 * 2] - base[i2 * 2]) + Math.abs(out[i2 * 2 + 1] - base[i2 * 2 + 1]) > seuil;
+      if (!bouge) continue;
+      var u0 = uv[i0 * 2] * W, v0 = uv[i0 * 2 + 1] * H, u1 = uv[i1 * 2] * W, v1 = uv[i1 * 2 + 1] * H, u2 = uv[i2 * 2] * W, v2 = uv[i2 * 2 + 1] * H;
+      var x0 = out[i0 * 2] * px, y0 = out[i0 * 2 + 1] * px, x1 = out[i1 * 2] * px, y1 = out[i1 * 2 + 1] * px, x2 = out[i2 * 2] * px, y2 = out[i2 * 2 + 1] * px;
+      var det = (u1 - u0) * (v2 - v0) - (u2 - u0) * (v1 - v0);
+      if (det > -1e-6 && det < 1e-6) continue;
+      /* hors du canvas : inutile */
+      if ((x0 < -2 && x1 < -2 && x2 < -2) || (y0 < -2 && y1 < -2 && y2 < -2) || (x0 > px + 2 && x1 > px + 2 && x2 > px + 2) || (y0 > px + 2 && y1 > px + 2 && y2 > px + 2)) continue;
+      var a = ((x1 - x0) * (v2 - v0) - (x2 - x0) * (v1 - v0)) / det, c = ((x2 - x0) * (u1 - u0) - (x1 - x0) * (u2 - u0)) / det;
+      var b = ((y1 - y0) * (v2 - v0) - (y2 - y0) * (v1 - v0)) / det, d = ((y2 - y0) * (u1 - u0) - (y1 - y0) * (u2 - u0)) / det;
+      var tx = x0 - a * u0 - c * v0, ty = y0 - b * u0 - d * v0;
+      /* le triangle d'arrivée, agrandi d'un demi-pixel depuis son centre */
+      var gx = (x0 + x1 + x2) / 3, gy = (y0 + y1 + y2) / 3;
+      function gro(x, y) { var dx = x - gx, dy = y - gy, l = Math.sqrt(dx * dx + dy * dy) || 1; return [x + dx / l * 0.6, y + dy / l * 0.6]; }
+      var p0 = gro(x0, y0), p1 = gro(x1, y1), p2 = gro(x2, y2);
+      cx.save();
+      cx.beginPath(); cx.moveTo(p0[0], p0[1]); cx.lineTo(p1[0], p1[1]); cx.lineTo(p2[0], p2[1]); cx.closePath(); cx.clip();
+      cx.setTransform(a, b, c, d, tx, ty);
+      /* seulement le rectangle de l'image d'origine qui couvre ce triangle (+ 2 px de marge) */
+      var sx = Math.max(0, Math.min(u0, u1, u2) - 2), sy = Math.max(0, Math.min(v0, v1, v2) - 2);
+      var sw = Math.min(W, Math.max(u0, u1, u2) + 2) - sx, sh = Math.min(H, Math.max(v0, v1, v2) + 2) - sy;
+      if (sw > 0 && sh > 0) cx.drawImage(im, sx, sy, sw, sh, sx, sy, sw, sh);
+      cx.restore();
+    }
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  /* LES PAUPIÈRES, PEINTES DANS LE DESSIN : au clignement (ou pendant le sommeil), un ovale de la couleur RÉELLE de la peau (relevée juste au-dessus de l'œil, sur le dessin déjà
+     déformé) recouvre l'œil à l'endroit où le maillage l'a mené, penché avec la tête, et un trait de cil le ferme. Rien n'est posé en HTML par-dessus : plus de tache. */
+  function paupieres(e, S, M, px) {
+    var cls = e.rig && e.rig.classList;
+    if (!cls || !e.cx || e.image) return;
+    var ferme = cls.contains('blink') || cls.contains('dort');
+    if (!ferme) { e.peau = null; return; }
+    var os = S.os, cx = e.cx, k, o, m, yeux = [], d;
+    for (k = 0; k < os.length; k++) {
+      o = os[k]; if (o.type !== 'oeil' || !o.ellipse) continue;
+      m = M[k];
+      var ax = o.a[0] / 1024, ay = o.a[1] / 1024, sc = Math.sqrt(m[0] * m[0] + m[1] * m[1]) || 1;
+      yeux.push({ x: (m[0] * ax + m[2] * ay + m[4]) * px, y: (m[1] * ax + m[3] * ay + m[5]) * px, ang: Math.atan2(m[1], m[0]),
+                  rx: o.ellipse[2] / 1024 * px * 0.92 * sc, ry: o.ellipse[3] / 1024 * px * 0.9 * sc });
+    }
+    if (!yeux.length) return;
+    /* la couleur de la peau : relevée UNE fois par clignement, entre les deux yeux, un peu au-dessus (jamais au bord de la tête, où l'on tombe sur le fond) */
+    if (!e.peau) {
+      var mx = 0, my = 0, mr = 0;
+      yeux.forEach(function (y) { mx += y.x / yeux.length; my += y.y / yeux.length; mr += y.ry / yeux.length; });
+      e.peau = 'rgb(253,214,70)';
+      try {
+        d = cx.getImageData(Math.max(0, Math.min(px - 1, Math.round(mx))), Math.max(0, Math.min(px - 1, Math.round(my - mr * 0.55))), 1, 1).data;
+        if (d[3] > 200) e.peau = 'rgb(' + d[0] + ',' + d[1] + ',' + d[2] + ')';
+      } catch (_) { /* canvas illisible : jaune du dessin */ }
+    }
+    yeux.forEach(function (y) {
+      cx.save(); cx.translate(y.x, y.y); cx.rotate(y.ang);
+      cx.fillStyle = e.peau; cx.beginPath(); cx.ellipse(0, 0, y.rx, y.ry, 0, 0, 6.2832); cx.fill();
+      cx.strokeStyle = 'rgba(74,38,14,.92)'; cx.lineWidth = Math.max(1.2, px * 0.012); cx.lineCap = 'round';
+      cx.beginPath(); cx.moveTo(-y.rx * 0.84, 0); cx.quadraticCurveTo(0, y.ry * 0.6, y.rx * 0.84, 0); cx.stroke();
+      cx.restore();
+    });
+  }
+
   function dessiner(e, now, dt) {
     var S = e.S, t = now - e.t0 + e.ph, h = humeurDe(e);
     /* Taille réelle à l'écran (re-mesurée au plus une fois par seconde). */
@@ -3529,8 +3662,10 @@
       quitter3D(e);                                 /* la 3D lâche en route : retour au 2D, dans la même image */
       out = poser(e, h, t, 0, niveau); M = e.M;
     }
-    /* Rendu dans le contexte partagé, puis copie dans le canvas du personnage. */
     var px2 = e.cv.width;
+    if (!gl) { rendu2D(e, out, S, px2); }
+    else {
+    /* Rendu dans le contexte partagé, puis copie dans le canvas du personnage. */
     /* largeur ET hauteur : un canvas neuf mesure 300 × 150 — vérifier la seule largeur laissait, pour un personnage
        de 300 px pile, une hauteur de 150 et un dessin zoomé, coupé (trouvé le 3.10, garde « fidélité ») */
     if (glCanvas.width !== px2 || glCanvas.height !== px2) { glCanvas.width = px2; glCanvas.height = px2; }
@@ -3547,6 +3682,8 @@
     gl.drawElements(gl.TRIANGLES, S.tri.length, gl.UNSIGNED_SHORT, 0);
     e.cx.clearRect(0, 0, px2, px2);
     e.cx.drawImage(glCanvas, 0, 0);
+    }
+    paupieres(e, S, M, px2);
 
     /* Le calque des paupières + bouche reçoit le mouvement de la tête. */
     if (e.tete) {
@@ -3574,7 +3711,7 @@
         if (pause && e.rig.closest && e.rig.closest('#javis-root')) continue;
         if (!e.vu || (!e.p3d && /(^|\s)vid(\s|$)/.test(e.rig.className))) continue;
         /* petit personnage (bouton flottant) : 30 images/s suffisent */
-        if (e.taille && e.taille < 140 && e.dern && now - e.dern < 1 / 31) { actif = true; continue; }
+        if (((e.taille && e.taille < 140) || !gl) && e.dern && now - e.dern < 1 / 31) { actif = true; continue; }
         try { dessiner(e, now, e.dern ? Math.min(0.1, now - e.dern) : dt); e.dern = now; actif = true; }
         catch (err) { detacher(e, true); }
       }
@@ -3611,8 +3748,9 @@
     humeur: humeur,
     balayer: balayer,
     /* pour les tests : combien de personnages bougent, et combien d'images chacun */
-    etat: function () { return suivis.map(function (e) { return { nom: e.nom, images: e.vue || 0, humeur: humeurDe(e), taille: e.taille, image: !!e.image, p3d: !!(e.p3d && e.p3d.ok), ctx3D: e.p3d ? e.ctx3D : null }; }); },
-    actif: function () { return !!gl && !perdu && !REDUIT; },
+    etat: function () { return suivis.map(function (e) { return { nom: e.nom, oeil: e.expr ? +e.expr.sy.toFixed(2) : null, images: e.vue || 0, humeur: humeurDe(e), taille: e.taille, image: !!e.image, p3d: !!(e.p3d && e.p3d.ok), ctx3D: e.p3d ? e.ctx3D : null }; }); },
+    actif: function () { return (!!gl || peutDeux()) && !perdu && !REDUIT; },
+    mode: function () { return gl ? 'webgl' : 'canvas2d'; },
     /* la 3D d'office : veut-on la lancer (sinon l'appelant garde ses vidéos / dessins) ? où en est le moteur ? */
     prefere3D: prefere3D,
     moteur3D: function () { return P3D.etat; },

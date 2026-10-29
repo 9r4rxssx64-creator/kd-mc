@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Javis / Bee v1.26 — une vraie petite marionnette complète et vivante, sur tous les appareils (2026-10-29)
+- Retour de Kevin : « Je voulais un vrai mini personnage animé, une vraie petite marionnette animée, complète, vivante. » Avant : sans WebGL (PC en économie d'énergie, vieux téléphones), Bee retombait sur une image fixe qui se balance.
+- Ajouté : un 2ᵉ dessinateur en canvas 2D (`rendu2D`, maillage grossier + zone fine du visage, ~30 images/s) : le squelette complet (oreilles/antennes, mèche, bras, jambes, yeux, mâchoire, tête, corps) bouge aussi SANS WebGL. Clignement des yeux peint dans le canvas (`paupieres`, couleur prise entre les yeux). Parole beaucoup plus vivante : bras qui gesticulent, jambes qui rebondissent (+10° en 2D, +18° en 3D), antennes (+24°/+22°), ailes (+16°), queue, tête qui dodeline ; même mouvement dans le moteur 3D (`HUMEURS.parle`).
+- Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
+- Film de preuve : 3D | marionnette sans WebGL, côte à côte.
+
 ## Javis / Bee v1.25 — un vrai personnage animé, plus de bouche posée, plus de bip (2026-10-29)
 - Retour de Kevin (deux captures de son PC Windows) : « une bouche en plus, collée dessus, c'est très moche ; il n'y a que la bouche qui bouge ; elle bouge au début puis plus ; un bip retentit ; elle met du temps à commencer ». Reproduit en navigateur : le réglage système « réduire les animations » (Windows l'allume seul en économie d'énergie) coupait la marionnette ET la 3D → image plate + rond brun posé sur le visage.
 - Corrigé : ce réglage n'immobilise plus Bee (seul le choix volontaire `kdmc_calme = 1` le fait) ; le rond posé n'est plus jamais visible (la vraie bouche s'ouvre par la mâchoire / la 3D) ; sans WebGL, le corps entier se balance pendant qu'elle parle ; le corps ne « parle » que quand le son sort (plus ~2 s dans le vide) ; plus de bip à la réponse ni à l'ouverture ; 1er morceau de voix plus court (18 à 110 signes, ou 1er membre de phrase).

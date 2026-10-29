@@ -6,7 +6,8 @@
  *
  *   A. le réglage SYSTÈME « réduire les animations » (Windows l'allume seul en économie d'énergie) n'immobilise plus Bee : marionnette + 3D tournent ;
  *   B. jamais de 2ᵉ bouche visible, ni en marionnette, ni en repli sans WebGL ;
- *   C. sans WebGL : c'est le CORPS ENTIER qui se balance pendant qu'elle parle (animation CSS), pas une pièce rapportée ;
+ *   C. sans WebGL : la MÊME marionnette est dessinée en canvas 2D (le maillage, triangle par triangle) — jamais une simple image qu'on balance ;
+ *   G. chaque membre vit pendant qu'elle parle (antennes, bras, jambes, tête, corps, ailes) : une vraie petite marionnette, complète, vivante ;
  *   D. le corps ne « parle » QUE quand le son sort (avant : ~2 s de bouche dans le vide pendant que la voix se fabriquait) ;
  *   E. aucun « bip » (oscillateur) à la réponse ;
  *   F. le choix VOLONTAIRE « calme » (kdmc_calme = 1) reste possible : image d'avant, immobile.
@@ -43,7 +44,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/__sso/whoami') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ ok: true, uid: 'kdmc_admin', name: 'Kevin DESARZENS', verified: true, admin: true })); }
   if (p === '/') { res.writeHead(200, { 'content-type': 'text/html' }); return res.end('<!doctype html><meta charset=utf-8><body style="background:#0b0b10"><script src="/javis-widget.js"></script>'); }
   if (p === '/javis-widget.js') { res.writeHead(200, { 'content-type': TYPES['.js'] }); return res.end(fs.readFileSync(WIDGET)); }
-  const f = join(ROOT, 'javis', p.replace(/^\//, ''));
+  const f = p === '/perso3d.js' && process.env.BEE_P3D ? process.env.BEE_P3D : join(ROOT, 'javis', p.replace(/^\//, ''));
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end('nope'); }
   res.writeHead(200, { 'content-type': TYPES[f.slice(f.lastIndexOf('.'))] || 'text/plain' }); res.end(fs.readFileSync(f));
 });
@@ -66,7 +67,7 @@ async function session({ reduit = false, sansGL = false, calme = false, delaiVoi
   await page.route('**/lingua.kd-mc.com/**', (r) => {
     const u = new URL(r.request().url());
     if (u.pathname.startsWith('/__lingua/tts')) return setTimeout(() => r.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'content-type': 'audio/wav' }, body: SON }), delaiVoix);
-    const f = u.pathname === '/marionnette.js' && process.env.BEE_MRN ? process.env.BEE_MRN : join(ROOT, 'lingua', decodeURIComponent(u.pathname));
+    const f = u.pathname === '/marionnette.js' && process.env.BEE_MRN ? process.env.BEE_MRN : u.pathname === '/perso3d.js' && process.env.BEE_P3D ? process.env.BEE_P3D : join(ROOT, 'lingua', decodeURIComponent(u.pathname));
     if (fs.existsSync(f) && fs.statSync(f).isFile()) return r.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'content-type': TYPES[f.slice(f.lastIndexOf('.'))] || 'application/octet-stream' }, body: fs.readFileSync(f) });
     return r.fulfill({ status: 404, body: '' });
   });
@@ -114,16 +115,68 @@ async function demande(page) {
   await ctx.close();
 }
 
-/* ── B + C : sans WebGL — le repli ne pose JAMAIS de bouche, il balance le corps entier ── */
+/* ── B + C : sans WebGL — la MÊME marionnette, dessinée en canvas 2D (plus une image qu'on balance) ── */
 {
   const { ctx, page, err } = await session({ sansGL: true });
   await demande(page);
   await dors(2600);
   const s = await etat(page);
-  chk(!s.canvas && !s.mrn, `C. sans WebGL : pas de canvas (${s.canvas}), le dessin d'avant reste`);
-  chk(s.parle && /javis-corps-parle/.test(s.anim), `C. sans WebGL : le CORPS ENTIER se balance pendant qu'elle parle (animation « ${s.anim} »)`);
+  chk(s.canvas && s.mrn && /mrn-on/.test(s.cls), `C. sans WebGL : la marionnette tourne quand même, en canvas 2D (canvas=${s.canvas}, mrn=${s.mrn}, ${s.cls.replace('bee-rig ', '')})`);
+  chk(await page.evaluate(() => KdmcMarionnette.mode() === 'canvas2d'), 'C. et c\'est bien le rendu 2D du maillage (mode canvas2d)');
+  chk(s.parle, `D. elle parle (talk=${s.parle}) quand le son sort`);
   chk(s.mouthOp === '0', `B. sans WebGL non plus : aucune bouche posée par-dessus (opacité ${s.mouthOp})`);
+  const h2 = async () => page.evaluate(() => { const c = document.querySelector('#javis-head .bee-rig canvas'); if (!c) return 0; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let v = 0; for (let i = 0; i < d.length; i += 53) v = (v * 31 + d[i]) >>> 0; return v; });
+  const hs2 = new Set(); for (let i = 0; i < 6; i++) { hs2.add(await h2()); await dors(120); }
+  chk(hs2.size >= 4, `C. sans WebGL, le corps bouge réellement image après image (${hs2.size} images différentes sur 6)`);
+  /* H. le clignement est PEINT dans le dessin (de la couleur de la peau) : plus de paupière HTML posée par-dessus (« une tache collée ») */
+  const lire = () => page.evaluate(() => { const c = document.querySelector('#javis-head .bee-rig canvas'); const w = c.width; const d = c.getContext('2d').getImageData(Math.round(w * 0.3), Math.round(w * 0.25), Math.round(w * 0.4), Math.round(w * 0.2)).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] + d[i + 1] + d[i + 2]; return s; });
+  const ouvert = await lire();
+  await page.evaluate(() => document.querySelector('#javis-head .bee-rig').classList.add('blink'));
+  await dors(300);
+  const clin = await lire();
+  const lid = await page.evaluate(() => getComputedStyle(document.querySelector('#javis-head .rig-lid')).opacity);
+  await page.evaluate(() => document.querySelector('#javis-head .bee-rig').classList.remove('blink'));
+  chk(Math.abs(clin - ouvert) / ouvert > 0.03, `H. au clignement le dessin change (paupières peintes : ${((clin - ouvert) / ouvert * 100).toFixed(1)} %)`);
+  chk(lid === '0', `H. et la paupière HTML posée par-dessus reste invisible (opacité ${lid})`);
   chk(!err.length, 'aucune erreur JS (sans WebGL)');
+  await ctx.close();
+}
+/* dernier recours (ni WebGL ni canvas 2D) : le corps entier se balance — la règle existe, jamais une pièce rapportée */
+{
+  const src = fs.readFileSync(WIDGET, 'utf8');
+  chk(/\.bee-rig\.talk:not\(\.mrn-on\) \.rig-base\{[^}]*animation:javis-corps-parle/.test(src), 'dernier recours : la règle « le corps entier se balance » est dans le widget');
+}
+
+/* ── G : CHAQUE MEMBRE VIT pendant qu'elle parle (Kevin 29.10 : « une vraie petite marionnette animée, complète, vivante ») ── */
+{
+  const { ctx, page, err } = await session({});
+  await demande(page); await dors(1500);
+  /* ce que la PAROLE ajoute au repos : on compare chaque membre à lui-même au repos (sinon le geste de base, toujours là, ferait passer le contrôle) */
+  const amp = await page.evaluate(() => {
+    const out = { d2: {}, d3: {} };
+    for (const h of ['repos', 'parle']) {
+      const o = out.d2[h] = {};
+      KdmcMarionnette._sequence('bee/v2', h, 8, 1 / 30, (pos, t, S, ang) => { for (const k in ang) { const a = o[k] || (o[k] = [1e9, -1e9]); a[0] = Math.min(a[0], ang[k]); a[1] = Math.max(a[1], ang[k]); } });
+    }
+    for (const piece of KdmcPerso3D._pieces('bee')) {
+      const a = out.d3[piece] = [[1e9, -1e9], [1e9, -1e9], [1e9, -1e9]];
+      for (let t = 0; t < 8; t += 1 / 30) {
+        const p = KdmcPerso3D._pose('bee', piece, 'parle', t, { niveau: 0.6, ouv: 0.5 }), r = KdmcPerso3D._pose('bee', piece, 'repos', t, { niveau: 0.6, ouv: 0.5 });
+        for (let j = 0; j < 3; j++) { const dl = p.r[j] - r.r[j]; a[j][0] = Math.min(a[j][0], dl); a[j][1] = Math.max(a[j][1], dl); }
+      }
+    }
+    return out;
+  });
+  const d = (h, k) => (amp.d2[h][k] ? amp.d2[h][k][1] - amp.d2[h][k][0] : 0);
+  const plus = (k) => d('parle', k) - d('repos', k);                         /* ce que la parole ajoute */
+  const m2 = { antennes: Math.min(plus('antG'), plus('antD')), 'un bras': Math.max(plus('brasG'), plus('brasD')), jambes: Math.min(plus('jambeG'), plus('jambeD')), tête: plus('tete'), corps: plus('corps') };
+  const seuil2 = { antennes: 8, 'un bras': 6, jambes: 6, tête: 5, corps: 2 };
+  for (const k of Object.keys(seuil2)) chk(m2[k] >= seuil2[k], `G. marionnette 2D : ${k} — la parole ajoute ${m2[k].toFixed(1)}° de mouvement en 8 s (≥ ${seuil2[k]}°)`);
+  const d3 = (piece) => Math.max(...(amp.d3[piece] || [[0, 0]]).map((x) => x[1] - x[0]));
+  const m3 = { 'jambes 3D': Math.min(d3('jambeG'), d3('jambeD')), 'antennes 3D': Math.min(d3('antenneG'), d3('antenneD')), 'ailes 3D': Math.min(d3('aileG'), d3('aileD')), 'bras 3D': Math.max(d3('brasG'), d3('brasD')), 'tête 3D': d3('tete'), 'corps 3D': d3('corps') };
+  const seuil3 = { 'jambes 3D': 9, 'antennes 3D': 10, 'ailes 3D': 6, 'bras 3D': 12, 'tête 3D': 8, 'corps 3D': 4 };
+  for (const k of Object.keys(seuil3)) chk(m3[k] >= seuil3[k], `G. ${k} : la parole ajoute ${m3[k].toFixed(1)}° de mouvement en 8 s (≥ ${seuil3[k]}°)`);
+  chk(!err.length, 'aucune erreur JS (membres)');
   await ctx.close();
 }
 

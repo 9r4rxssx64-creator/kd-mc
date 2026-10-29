@@ -22,18 +22,35 @@ let echecs = 0;
 const ok = (c, m, d) => { if (!c) echecs++; dire(`${c ? '✅' : '❌'} ${m}${!c && d ? ' — ' + String(d).slice(0, 500) : ''}`); };
 const fin = (code) => {
   if (RESUME) { try { appendFileSync(RESUME, '## Pièces d\'essai du Studio Avatars (personnes fictives)\n\n' + lignes.map((l) => '- ' + l).join('\n') + '\n'); } catch (_) { /* pas de résumé */ } }
-  dire(code ? `=== PORTRAITS FICTIFS : ÉCHEC (${echecs})` : '=== PORTRAITS FICTIFS : OK');
+  dire(code ? `=== PORTRAITS FICTIFS : ÉCHEC (${echecs})` : '=== PORTRAITS FICTIFS : OK');   /* (même mot-clé pour le jeu « mascottes » : le robot ne change pas de rapport) */
   process.exit(code);
 };
 if (!/^[0-9a-f]{64}$/.test(HASH)) { dire('❌ Code admin absent (secret CI) : rien à fabriquer.'); fin(1); }
 mkdirSync(CAPTURES, { recursive: true });
 
-const PIECES = [
+const PORTRAITS = [
   ['portrait-femme', 'Studio photograph, frontal head-and-shoulders portrait of a fictional adult woman with shoulder-length brown hair, neutral relaxed expression, mouth closed, eyes open looking straight at the camera, soft even lighting, plain light grey background, photorealistic, sharp focus'],
   ['portrait-homme', 'Studio photograph, frontal head-and-shoulders portrait of a fictional adult man with short dark hair and no beard, neutral relaxed expression, mouth closed, eyes open looking straight at the camera, soft even lighting, plain light grey background, photorealistic, sharp focus'],
   ['portrait-barbe', 'Studio photograph, frontal head-and-shoulders portrait of a fictional middle-aged man with short grey hair, a trimmed beard and glasses, neutral relaxed expression, mouth closed, looking straight at the camera, soft even lighting, plain light grey background, photorealistic'],
   ['animal-chien', 'Photograph, frontal close-up portrait of a golden retriever dog looking straight at the camera, mouth closed, plain light background, soft even lighting, photorealistic'],
 ];
+/* JEU=mascottes (pont 1307, javis-bee, Kevin 29.10 : « Bee et Bourricot beaucoup plus mignons ») : 4 styles × 2 vues × 2 personnages, planches de référence, texte → image gratuit */
+const MIGNON = 'chibi proportions with a huge round head about 60% of the total height, very large glossy eyes with bright white highlights, rosy blushing cheeks, a tiny gentle smile, soft rounded shapes, warm golden rim light from behind, soft warm cream-to-peach gradient background (no black background), centred full body, clean character design reference sheet, high quality';
+const PERSOS = {
+  bee: 'a cute honey bee character, honey-yellow and black stripes, round fuzzy body, small translucent glittering wings, tiny antennae',
+  bourricot: 'a cute baby donkey character, soft grey fur with a beige muzzle and belly, long floppy ears with pink inside, short fluffy mane',
+};
+const STYLES = [
+  ['3d', '3D animated movie style, soft subsurface-scattering skin, smooth glossy plastic-and-fur materials'],
+  ['peluche', 'soft plush toy style, velvety fabric, visible gentle stitching, squishy marshmallow materials'],
+  ['vinyle', 'collectible designer vinyl toy style, smooth satin vinyl, pastel colours, tiny shiny details'],
+  ['conte', 'storybook illustration style, painterly soft shading, gentle watercolour textures, magical glow'],
+];
+const VUES = [['face', 'front view, facing the camera'], ['trois-quarts', 'three-quarter view, turned slightly to the left']];
+const MASCOTTES = [];
+for (const [pn, pd] of Object.entries(PERSOS)) for (const [sn, sd] of STYLES) for (const [vn, vd] of VUES) MASCOTTES.push([`${pn}-${sn}-${vn}`, `${pd}, ${sd}, ${vd}, ${MIGNON}`]);
+const PIECES = process.env.JEU === 'mascottes' ? MASCOTTES : PORTRAITS;
+const RATIO = process.env.JEU === 'mascottes' ? '1:1' : '9:16';
 
 const browser = await chromium.launch(process.env.PW_EXE ? { executablePath: process.env.PW_EXE } : {});
 const ctx = await browser.newContext({ serviceWorkers: 'block' });
@@ -60,10 +77,10 @@ try {
   ok(c.ok && !!c.token, 'connexion ADMIN au domaine', 'pas de pass rendu (HTTP ' + c.st + ')');
   if (!c.ok || !c.token) { await browser.close(); fin(1); }
   for (const [nom, prompt] of PIECES) {
-    const r = await page.evaluate(async ({ IA, PASS, prompt }) => {
+    const r = await page.evaluate(async ({ IA, PASS, prompt, ratio }) => {
       const t0 = performance.now();
       try {
-        const x = await fetch(IA + '/bg', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + PASS }, body: JSON.stringify({ prompt, ratio: '9:16' }) });
+        const x = await fetch(IA + '/bg', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + PASS }, body: JSON.stringify({ prompt, ratio }) });
         const ct = x.headers.get('content-type') || ''; const ms = Math.round(performance.now() - t0);
         if (!/image/.test(ct)) return { st: x.status, ms, txt: (await x.text()).slice(0, 400) };
         const b = await x.blob();
@@ -71,7 +88,7 @@ try {
         const dim = await new Promise((res) => { const im = new Image(); im.onload = () => res([im.naturalWidth, im.naturalHeight]); im.onerror = () => res([0, 0]); im.src = URL.createObjectURL(b); });
         return { st: x.status, ms, ct, octets: b.size, dim, provider: x.headers.get('x-crea-provider') || '', b64 };
       } catch (e) { return { st: 0, ms: Math.round(performance.now() - t0), txt: String((e && e.message) || e) }; }
-    }, { IA, PASS: c.token, prompt });
+    }, { IA, PASS: c.token, prompt, ratio: RATIO });
     const bon = r.st === 200 && r.b64 && (LOCAL || r.octets > 20000);
     ok(bon, `${nom} : image rendue (HTTP ${r.st}, ${r.octets || 0} octets, ${r.dim ? r.dim.join('×') : '?'}, ${r.ms} ms, moteur « ${r.provider || '?'} »)`, r.txt);
     if (bon) writeFileSync(join(CAPTURES, nom + (/png/.test(r.ct) ? '.png' : '.jpg')), Buffer.from(r.b64, 'base64'));

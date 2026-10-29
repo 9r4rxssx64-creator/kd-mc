@@ -7,6 +7,10 @@ name: Pièces d'essai du Studio Avatars — portraits de personnes fictives (tex
 
 on:
   workflow_dispatch:
+    inputs:
+      jeu:
+        description: "portraits (pièces d'essai) ou mascottes (4 styles mignons de Bee et Bourricot, pont 1307)"
+        default: portraits
 
 permissions:
   contents: read
@@ -18,7 +22,7 @@ concurrency:
 jobs:
   fabriquer:
     runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -36,6 +40,7 @@ jobs:
         env:
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
           CAPTURES: /tmp/portraits
+          JEU: ${{ inputs.jeu || 'portraits' }}
         shell: bash -euo pipefail {0}
         run: |
           set +e

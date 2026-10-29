@@ -8,8 +8,8 @@ import { empreinte, urlSure, JOBS_MAX_ATTENTE } from './delegue.js';
 function d1() {
   const s = new DatabaseSync(':memory:');
   s.exec(`CREATE TABLE jetons (hash TEXT PRIMARY KEY, nom TEXT NOT NULL, cree INTEGER NOT NULL, expire INTEGER NOT NULL, plafond_jour INTEGER NOT NULL DEFAULT 300, revoque INTEGER NOT NULL DEFAULT 0);
-    CREATE TABLE jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, cree INTEGER NOT NULL, de TEXT NOT NULL, pour TEXT NOT NULL, domaine TEXT NOT NULL DEFAULT 'resume', consigne TEXT NOT NULL, urls TEXT NOT NULL DEFAULT '[]', max_pages INTEGER NOT NULL DEFAULT 6, statut TEXT NOT NULL DEFAULT 'attente', prise_par TEXT, prise_le INTEGER, fini_le INTEGER, resultat TEXT);
-    CREATE INDEX ix_jobs_attente ON jobs(statut, pour, id);`);
+    CREATE TABLE jobs (id INTEGER PRIMARY KEY AUTOINCREMENT, cree INTEGER NOT NULL, de TEXT NOT NULL, pour TEXT NOT NULL, domaine TEXT NOT NULL DEFAULT 'resume', consigne TEXT NOT NULL, urls TEXT NOT NULL DEFAULT '[]', max_pages INTEGER NOT NULL DEFAULT 6, statut TEXT NOT NULL DEFAULT 'attente', prise_par TEXT, prise_le INTEGER, fini_le INTEGER, resultat TEXT, cle TEXT);
+    CREATE INDEX ix_jobs_attente ON jobs(statut, pour, id); CREATE INDEX ix_jobs_cle ON jobs(cle, id);`);
   const stmt = (sql, p = []) => ({ bind: (...x) => stmt(sql, x), first: async () => s.prepare(sql).get(...p) ?? null, all: async () => ({ results: s.prepare(sql).all(...p) }), run: async () => { s.prepare(sql).run(...p); return {}; } });
   return { prepare: (sql) => stmt(sql), _s: s };
 }
@@ -55,10 +55,26 @@ test('refus : secret, e-mail, téléphone, consigne trop courte, trop de travaux
   assert.equal((await appel(e, '', T1, { ...OK, consigne: 'écris à jean.dupont@example.com pour savoir' })).status, 422);
   assert.equal((await appel(e, '', T1, { ...OK, consigne: 'appelle le +33 6 12 34 56 78 demain' })).status, 422);
   assert.equal((await appel(e, '', T1, { ...OK, consigne: 'a' })).status, 400);
-  for (let i = 0; i < JOBS_MAX_ATTENTE; i++) assert.equal((await appel(e, '', T1, OK)).status, 201);
-  assert.equal((await appel(e, '', T1, OK)).status, 429);
+  for (let i = 0; i < JOBS_MAX_ATTENTE; i++) assert.equal((await appel(e, '', T1, { ...OK, consigne: OK.consigne + ' ' + i })).status, 201);
+  assert.equal((await appel(e, '', T1, { ...OK, consigne: OK.consigne + ' encore' })).status, 429);
 });
 test('le résultat qui ressemble à un secret est refusé', async () => {
   const e = await env(); const id = (await (await appel(e, '', T1, OK)).json()).id; await appel(e, '/next?pour=lenovo', T2);
   assert.equal((await appel(e, `/${id}/resultat`, T2, { resultat: { t: 'sk-' + 'a1'.repeat(20) } })).status, 422);
+});
+
+test('pas deux fois le même travail : en attente, en cours ou rendu depuis < 24 h = le même numéro, quelle que soit la branche', async () => {
+  const e = await env();
+  const a = await (await appel(e, '', T1, OK)).json(); assert.equal(a.deja, false);
+  const b = await (await appel(e, '', T2, { ...OK, consigne: '  ' + OK.consigne.toUpperCase() + '  ' })).json();
+  assert.equal(b.id, a.id); assert.equal(b.deja, true); assert.equal(b.statut, 'attente'); assert.equal(b.demande_par, 'arbre-cloud');
+  await appel(e, '/next?pour=lenovo', T2);
+  assert.equal((await (await appel(e, '', T1, OK)).json()).statut, 'en_cours');
+  await appel(e, `/${a.id}/resultat`, T2, { resultat: { ok: 1 } });
+  assert.equal((await (await appel(e, '', T1, OK)).json()).deja, true, 'rendu depuis moins de 24 h');
+  e.DELEGUE._s.prepare('UPDATE jobs SET fini_le = ? WHERE id = ?').run(Date.now() - 2 * 86400000, a.id);
+  const c = await (await appel(e, '', T1, OK)).json(); assert.equal(c.deja, false, 'rendu depuis plus de 24 h : on peut refaire'); assert.notEqual(c.id, a.id);
+  assert.equal((await (await appel(e, '', T1, { ...OK, force: true })).json()).deja, false, 'force : refait exprès');
+  assert.equal((await (await appel(e, '', T1, { ...OK, pour: 'autre-pc' })).json()).deja, false, 'une autre machine = un autre travail');
+  assert.equal((await (await appel(e, '', T1, { ...OK, urls: ['https://example.org/b'] })).json()).deja, false, 'd\'autres adresses = un autre travail');
 });

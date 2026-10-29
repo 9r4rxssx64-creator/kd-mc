@@ -93,8 +93,15 @@ export async function handleJobs(request, env) {
       if (attente && attente.n >= JOBS_MAX_ATTENTE) return non(429, 'trop_de_travaux', `${JOBS_MAX_ATTENTE} travaux déjà en attente pour toi`);
       const domaine = ['code', 'revue', 'resume', 'traduction', 'raisonnement', 'redaction', 'general'].includes(c.domaine) ? c.domaine : 'resume';
       const maxPages = Math.min(JOBS_MAX_PAGES, Math.max(1, parseInt(c.max_pages, 10) || 6));
-      const r = await db.prepare('INSERT INTO jobs (cree, de, pour, domaine, consigne, urls, max_pages) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id').bind(Date.now(), nom, pour, domaine, consigne, JSON.stringify(urls), maxPages).first();
-      return rep({ ok: true, id: r && r.id }, 201);
+      /* PAS DEUX FOIS LE MÊME TRAVAIL (Kevin 29.10 : « qu'on ne travaille pas sur la même chose ») : même machine, même consigne, mêmes adresses = le travail déjà en attente, en cours, ou
+         rendu depuis moins de 24 h est renvoyé (`deja: true`) — quelle que soit la branche qui le demande. `force: true` pour refaire exprès. */
+      const cle = await empreinte([pour, domaine, consigne.toLowerCase().replace(/\s+/g, ' '), [...urls].sort().join('|')].join('\n'));
+      if (!c.force) {
+        const d = await db.prepare("SELECT id, statut, de FROM jobs WHERE cle = ? AND (statut IN ('attente', 'en_cours') OR (statut = 'fait' AND fini_le > ?)) ORDER BY id DESC LIMIT 1").bind(cle, Date.now() - 86400000).first();
+        if (d) return rep({ ok: true, id: d.id, deja: true, statut: d.statut, demande_par: d.de });
+      }
+      const r = await db.prepare('INSERT INTO jobs (cree, de, pour, domaine, consigne, urls, max_pages, cle) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id').bind(Date.now(), nom, pour, domaine, consigne, JSON.stringify(urls), maxPages, cle).first();
+      return rep({ ok: true, id: r && r.id, deja: false }, 201);
     }
     if (chemin[0] === 'next' && request.method === 'GET') {   // l'agent PREND le plus ancien travail qui lui est destiné (atomique : un seul preneur)
       const pour = q.get('pour') || nom;

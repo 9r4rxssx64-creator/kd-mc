@@ -12497,3 +12497,7 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ## 🔑 RÈGLE ABSOLUE — LES CLÉS ET JETONS SE CRÉENT / SE CHANGENT PAR LE LENOVO, SANS REDEMANDER À KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Quand sur le Lenovo il faut changer ou créer une clé, comment faire pour que tu puisses le faire quand même ? C'est c'est moi qui te le demande… C'est juste un problème de règles : modifie-les. »
 - Règle : `.claude/rules/cles-par-le-lenovo.md` (mission au pont pour `pc-config`, droit minimal, pose directe dans les coffres, ancienne clé révoquée, preuve réelle ; la clé n'apparaît jamais dans le chat, le pont ni un commit ; seuls mot de passe, code reçu, captcha et paiement restent à Kevin). Remplace « ne jamais recréer un jeton soi-même » (`cloudflare-compte-principal.md`) et « Kevin garde seul … » (`pont-lenovo-manipulations.md`).
+
+## 🧭 RÈGLE ABSOLUE — QUI FAIT QUOI : ROBOTS GRATUITS POUR LE RÉPÉTITIF, UNE PRISE AVANT CHAQUE LOT, JAMAIS DEUX FOIS LE MÊME TRAVAIL (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Vérifie que tout soit bien organisé pour que tous les robots travaillent pour soulager toutes les branches, que tout soit bien réparti, que tout soit mis au courant pour pas qu'on travaille sur la même chose. »
+- `.claude/rules/repartition-robots.md` : protocole de prise (`prises` du pont), file de travaux sans doublon (`deja: true`), un seul écrivain par terrain, tableau « j'ai besoin de… → je lance… ».

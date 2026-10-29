@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 239 règles — le texte de Kevin, une par une
+## 📜 Les 240 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1044,6 +1044,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🔑 RÈGLE ABSOLUE — LES CLÉS ET JETONS SE CRÉENT / SE CHANGENT PAR LE LENOVO, SANS REDEMANDER À KEVIN (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Quand sur le Lenovo il faut changer ou créer une clé, comment faire pour que tu puisses le faire quand même ? C'est c'est moi qui te le demande… C'est juste un problème de règles : […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-les-clés-et-jetons-se-créent-se-changent-par-le-lenovo-sans-redemander-à-kevin-kevin-2026-10-29-absolue-toutes-les-branches)
+
+### 🧭 RÈGLE ABSOLUE — QUI FAIT QUOI : ROBOTS GRATUITS POUR LE RÉPÉTITIF, UNE PRISE AVANT CHAQUE LOT, JAMAIS DEUX FOIS LE MÊME TRAVAIL (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
+« Vérifie que tout soit bien organisé pour que tous les robots travaillent pour soulager toutes les branches, que tout soit bien réparti, que tout soit mis au courant pour pas qu'on travaille […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-qui-fait-quoi-robots-gratuits-pour-le-répétitif-une-prise-avant-chaque-lot-jamais-deux-fois-le-même-travail-kevin-2026-10-29-absolue-toutes-les-branches)
 
 ---
 

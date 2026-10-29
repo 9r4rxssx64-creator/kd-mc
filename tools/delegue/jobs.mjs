@@ -27,7 +27,7 @@ if (process.argv[1] && /(^|[\\/])jobs\.mjs$/.test(process.argv[1])) {
       for (let i = 0; i < a.length; i++) {
         if (a[i] === '--pour') { c.pour = a[++i]; mode = null; } else if (a[i] === '--consigne') { c.consigne = a[++i]; mode = null; } else if (a[i] === '--domaine') { c.domaine = a[++i]; mode = null; } else if (a[i] === '--pages') { c.max_pages = Number(a[++i]); mode = null; } else if (a[i] === '--urls') mode = 'urls'; else if (mode === 'urls') c.urls.push(a[i]);
       }
-      console.log(JSON.stringify(await poster(c)));
+      const r = await poster(c); if (r.deja) console.error(`↩️  même travail déjà ${r.statut === 'fait' ? 'rendu' : r.statut === 'en_cours' ? 'en cours' : 'en attente'} (n° ${r.id}, demandé par ${r.demande_par}) : ne le refais pas, lis-le avec « jobs.mjs lire ${r.id} »`); console.log(JSON.stringify(r));
     } else if (cmd === 'lire') console.log(JSON.stringify((await lire(a[0])).job, null, 2));
     else if (cmd === 'lister') console.log(JSON.stringify((await lister(a[0])).jobs, null, 2));
     else { console.error('usage : jobs.mjs poster --pour lenovo --consigne "…" --urls <https://…>… | lire <id> | lister [n]'); process.exit(2); }

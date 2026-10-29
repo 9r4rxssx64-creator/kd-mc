@@ -1,0 +1,19 @@
+# Qui fait quoi : les robots gratuits portent le travail répétitif, chaque branche garde son terrain, personne ne refait ce qui est fait (Kevin 29.10.2026, absolue, TOUTES LES BRANCHES)
+- « Vérifie que tout soit bien organisé pour que tous les robots travaillent pour soulager toutes les branches, que tout soit bien réparti, que tout soit mis au courant pour qu'on ne travaille pas sur la même chose. » Combiner avec `delegue-gratuit.md` (réflexe gratuit d'abord) et `domaine-complet.md` (je pense à tout le domaine).
+- **AVANT de commencer un lot** (recherche, mesure, vérification, correction partagée) : (1) `node tools/delegue/jobs.mjs lister` et le pont `SELECT cle,qui,note FROM prises ORDER BY ts DESC LIMIT 15` — quelqu'un l'a-t-il déjà ? (2) sinon je POSE MA PRISE : `INSERT OR IGNORE INTO prises (cle, qui, ts, note) VALUES ('<type>:<objet>:<précision>', '<moi>', <ms>, '<ce que je fais>')` puis je relis la ligne : si `qui` n'est pas moi, je m'arrête et je lis ce que l'autre a fait ; (3) un fichier PARTAGÉ (abeille, « Vue admin », pastille, routeur, `tools/shared/*`) = « JE PRENDS <fichier> » au pont avant d'y toucher ; (4) je libère (la prise passe en « TERMINÉ <date> » dans sa note) à la fin.
+- **La file de travaux ne crée pas de doublon** : même machine + même consigne + mêmes adresses = le travail déjà en attente, en cours ou rendu depuis moins de 24 h est renvoyé avec `deja: true` (« ne le refais pas, lis-le »), quelle que soit la branche. `force` seulement pour refaire exprès.
+- **Un seul écrivain par terrain** (inchangé) : l'arbre = `arbre-cloud` (les chercheurs rapportent seulement) ; le Lenovo = `pc-config` (configuration, clés, manipulations connectées) / `arbre-pc` (archives) / `pc-connecteurs` (Gmail, formulaires) ; Apex = `apex-cloud` ; Studio = `studio-crea` ; Bee = `javis-bee` ; domaine, pont, robots publics, règles transversales = `cloud-installer`.
+- **Qui soulage qui (gratuit d'abord, dans l'ordre de ce qu'il faut)** :
+  | J'ai besoin de… | Je lance | Ça tourne où |
+  |---|---|---|
+  | lire / comparer des pages publiques, repérer des actes, des prix, des fiches | `jobs.mjs poster --pour lenovo …` (agent gratuit, navigateur neuf) ou `chercheur.mjs` (pages statiques) | Lenovo / session |
+  | un premier jet de code, un résumé, une traduction, une relecture | `delegue.mjs <domaine>` puis `verifier.mjs` | llm7, pollinations, porte du domaine |
+  | voir ce qui est VRAIMENT servi, connecté admin, derrière la porte | `verifier-servi.yml` | dépôt public (gratuit) |
+  | vérifier une app sur iPhone / Android / Safari / Firefox | `*-plateformes.yml`, `verif-affichage-domaine.yml`, `verif-appareils.yml` | dépôt public |
+  | vérifier en réel une fonction connectée comme Kevin | `verif-live-*.yml`, `voir-comme-kevin.yml`, `verif-reelle.yml` | dépôt public (secret CI) |
+  | mesurer un quota (D1, KV, requêtes, IA) | `mesure-quotas.yml`, `mesure-kv.yml`, `mesure-worker.yml` | dépôt public |
+  | publier / déployer | `publier-local.mjs --envoyer` puis `deploy-<robot>.yml` | dépôt public |
+  | nettoyer mes comptes de test | `supprimer-compte-test-public.yml` | dépôt public |
+  | faire dans le Chrome connecté de Kevin (clé, formulaire, compte) | mission au pont → `pc-config` / `pc-connecteurs` / `arbre-pc` (règle `cles-par-le-lenovo.md`) | Lenovo |
+- **Mettre au courant, sans spam** : une règle nouvelle = UN message à `toutes` au pont (que la table `prises` et l'état du moment portent ensuite) + la ligne dans `ETAT-DU-MOMENT.md` ; une branche qui démarre lit l'état du moment et les règles : pas de message individuel à chacune. Vérifier qu'elles l'ont lu : `SELECT lu_par FROM messages WHERE id = <n>` (lecture par clé primaire).
+- Bilan de fin de tour de chaque branche : « gratuit essayé : oui/non (quoi) · prise posée : oui/non · doublon évité : oui/non ».

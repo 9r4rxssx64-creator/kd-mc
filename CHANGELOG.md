@@ -11,7 +11,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ## Routeur du domaine — le dessin des mascottes se lit depuis toutes les adresses : la marionnette de Bee marche enfin en vrai (2026-10-29)
 - Retour de Kevin : « le corps ne bouge pas » (le Lenovo, dans SON Chrome : marionnette active, 0 canvas, 0 élément animé). Cause : l'image du dessin (`…/bee/v2/rig/base.webp`) demandée par la marionnette depuis une autre adresse du domaine part SANS cookie ; la porte répondait 401 et aucune réponse ne portait plus l'en-tête CORS depuis le 15.10 → pas de texture, dessin plat.
-- Corrigé dans `services/kdmc-router/worker.js` : les images du dessin des mascottes (`/bee|donkey/vN/rig/*.webp`, illustrations sans donnée) passent la porte comme les icônes et portent `Access-Control-Allow-Origin: *`. Tout le reste de Lingua reste fermé (401).
+- Corrigé dans `services/kdmc-router/worker.js` : les images du dessin des mascottes (`/bee|donkey/[vN/]rig/*.webp`, illustrations sans donnée) passent la porte comme les icônes et portent `Access-Control-Allow-Origin: *`. Tout le reste de Lingua reste fermé (401).
 - Garde : `npm run test:rig-cors` (12 contrôles, 2 sabotages rouges).
 
 ## Javis / Bee v1.26 — une vraie petite marionnette complète et vivante, sur tous les appareils (2026-10-29)

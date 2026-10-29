@@ -2071,7 +2071,7 @@ function porteDe(cheminCMC) {
    une image d'illustration, sans aucune donnée. La marionnette la lit depuis une autre adresse du domaine en CORS « anonymous » : SANS cookie. La porte lui
    répondait 401 et, depuis la bascule du 15.10, aucune réponse ne portait Access-Control-Allow-Origin → pas de texture, pas de canvas, personnage plat.
    Elle reste ouverte comme les icônes (même nature) et reçoit l'en-tête CORS (voir `fetch` plus bas). Garde : rig-cors.test.mjs. */
-const DESSIN_MASCOTTE = /\/(bee|donkey)\/v\d+\/rig\/[a-z0-9-]+\.webp$/;
+const DESSIN_MASCOTTE = /\/(bee|donkey)(\/v\d+)?\/rig\/[a-z0-9-]+\.webp$/;
 function libreSansFiche(cheminCMC) {
   if (DESSIN_MASCOTTE.test(cheminNormal(cheminCMC))) return true;
   return /\/(manifest(-[A-Za-z0-9_]+)?\.json|[^/]*\.webmanifest|sw\.js|lib\/sw-handlers\.js|robots\.txt|(apple-touch-icon|favicon|icon)[^/]*\.(png|svg|ico))$/.test(cheminNormal(cheminCMC));

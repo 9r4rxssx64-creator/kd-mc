@@ -20,12 +20,14 @@ const demande = async (hote, chemin, dest) => {
 };
 const base = await demande('lingua.kd-mc.com', '/bee/v2/rig/base.webp', 'image');
 const aile = await demande('lingua.kd-mc.com', '/bee/v2/rig/wing-l.webp', 'image');
-const ane = await demande('lingua.kd-mc.com', '/donkey/v2/rig/base.webp', 'image');
+const ane = await demande('lingua.kd-mc.com', '/donkey/rig/base.webp', 'image');   /* le VRAI chemin de Bourricot (mesuré en ligne : pas de « v2 ») */
+const ancienne = await demande('lingua.kd-mc.com', '/bee/rig/wing-r.webp', 'image');
 const ailleurs = await demande('javis.kd-mc.com', '/bee/v2/rig/base.webp', 'image');
 ok(base.st === 200 && /CONTENU .*\/bee\/v2\/rig\/base\.webp/.test(base.t), '1a. base.webp de Bee servie sans session (200)');
 ok(base.acao === '*', '1b. … avec Access-Control-Allow-Origin (' + (base.acao || 'absent') + ')');
 ok(aile.st === 200 && aile.acao === '*', '1c. une aile (wing-l.webp) : 200 + CORS');
 ok(ane.st === 200 && ane.acao === '*', '1d. le dessin de Bourricot : 200 + CORS');
+ok(ancienne.st === 200 && ancienne.acao === '*', '1d2. l\'ancien dossier de Bee (bee/rig/, sans v2) : 200 + CORS');
 ok(ailleurs.st === 200 && ailleurs.acao === '*', '1e. même chose depuis javis.kd-mc.com (le widget l\'y lit aussi)');
 ok(!/^same-site$/.test(base.corp), '1f. pas de cross-origin-resource-policy qui l\'interdise à une autre adresse du domaine (' + (base.corp || 'absent') + ')');
 const appjs = await demande('lingua.kd-mc.com', '/app.js', 'script');

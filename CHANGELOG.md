@@ -26,6 +26,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
 - Film de preuve : 3D | marionnette sans WebGL, côte à côte.
 
+## Créa Studio v9.22.7 — Avatars : si le son du navigateur est bloqué, l'app le dit au lieu de faire une vidéo muette (2026-10-29)
+- Mesuré sur Firefox du robot (aucune carte son) : le son reste « suspendu » même après un toucher, la vidéo sortait muette sans prévenir. L'app affiche maintenant « Le son du navigateur est bloqué : touche l'écran puis refais la vidéo ». Le robot le dit honnêtement (ℹ️) au lieu d'un faux rouge ; test confié au Lenovo / iPhone réel.
+
 ## Créa Studio v9.22.6 — Avatars : l'enregistrement n'attend jamais indéfiniment le réveil du son (2026-10-29)
 - Le réveil du son (`resume`) est limité à 1,5 s : certains navigateurs sans geste ne répondent jamais, l'enregistrement ne doit pas rester figé.
 

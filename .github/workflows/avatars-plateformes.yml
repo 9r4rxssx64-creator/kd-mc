@@ -59,6 +59,14 @@ jobs:
           [ -n "$OK" ] || { echo "::error title=avatars-plateformes::${{ matrix.moteur }} ne se lance pas"; exit 1; }
           echo "ENGINES_OK=$OK" >> "$GITHUB_ENV"
 
+      - name: "Carte son virtuelle (pour mesurer le son des vidéos : sans carte son, Firefox et Safari gardent le son suspendu)"
+        timeout-minutes: 4
+        run: |
+          sudo timeout -k 20 150 apt-get install -y --no-install-recommends pulseaudio >/tmp/pulse.log 2>&1 || echo "::warning title=avatars-plateformes::pulseaudio non installé : le son ne sera pas mesurable"
+          pulseaudio -D --exit-idle-time=-1 >/tmp/pulse-start.log 2>&1 || true
+          pactl load-module module-null-sink sink_name=robot >/dev/null 2>&1 || true
+          echo "cartes son : $(pactl list short sinks 2>/dev/null | wc -l)"
+
       - name: "Ffmpeg (la caméra simulée de Chromium, un visage vidéo fabriqué depuis nos pièces d'essai)"
         if: matrix.moteur == 'chromium'
         timeout-minutes: 5

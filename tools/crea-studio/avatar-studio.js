@@ -496,6 +496,7 @@
     var fini = new Promise(function (ok) { rec.onstop = ok; });
     S.enregistrement = rec; rec.start(250);
     S.infoSortie = { pistesAudio: flux.getAudioTracks().length, contexte: c.state, mime: rec.mimeType || mime || '' };
+    if (c.state !== 'running') dire('🔇 Le son du navigateur est bloqué : touche l\'écran puis refais la vidéo pour qu\'elle ait le son.', 4500);
     var lect = lancerLecture(dest); if (!lect) { rec.stop(); throw new Error('Le son n\'a pas pu démarrer.'); }
     aide('⏺ J\'enregistre… ' + S.son.duree.toFixed(1) + ' s');
     await attendre(Math.round((S.son.duree + 0.6) * 1000));

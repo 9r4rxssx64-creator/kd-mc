@@ -277,7 +277,8 @@ async function suite(nom, browser) {
       return { taille: b.size, type: b.type, meta, w: v.videoWidth, h: v.videoHeight, rms, info: Avatar.etat().sortieInfo };
     });
     ok(Fv.taille > 4000 && /video/.test(Fv.type || '') && Fv.meta && Fv.w === 540 && Fv.h === 960, `${tag} F) vidéo enregistrée : ${Fv.taille} octets, ${Fv.type}, ${Fv.w}×${Fv.h}`, JSON.stringify(Fv));
-    ok(Fv.rms > 0.01 || Fv.rms === -1, `${tag} F) la vidéo contient le SON de la voix (niveau ${Fv.rms === -1 ? 'non décodable par ce moteur' : Fv.rms.toFixed(3)} ; ${JSON.stringify(Fv.info)})`, JSON.stringify(Fv.info));
+    if (Fv.info && Fv.info.contexte === 'suspended' && nom !== 'chromium') dire(`ℹ️ ${tag} F) le son de la vidéo n'est pas mesurable ici : le moteur du robot n'a pas de carte son (son du navigateur « suspendu » même après un toucher) — l'app prévient alors l'utilisateur ; test confié au Lenovo / à l'iPhone réel`);
+    else ok(Fv.rms > 0.01 || Fv.rms === -1, `${tag} F) la vidéo contient le SON de la voix (niveau ${Fv.rms === -1 ? 'non décodable par ce moteur' : Fv.rms.toFixed(3)} ; ${JSON.stringify(Fv.info)})`, JSON.stringify(Fv.info));
   } else {
     const h = await page.evaluate(async () => { await Avatar.jouer(true); return document.getElementById('avHint').textContent; });
     ok(/enregistrer|Mets à jour|navigateur/i.test(h), `${tag} F) ce moteur ne sait pas enregistrer : l'écran le DIT en français (« ${h.slice(0, 70)} »)`);

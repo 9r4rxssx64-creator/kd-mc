@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Tor en clair v1.10 — le titre n'est plus sous la pastille « ← Portail » du routeur (2026-10-30)
+- Mesuré par le robot public Servi (connecté admin, 5 écrans) : sur tor.kd-mc.com le premier titre h1 passait SOUS la pastille fixe « ← Portail » que le routeur pose en haut à gauche de toute page qui n'a pas son propre lien vers le portail.
+- Corrigé : l'en-tête de Tor porte son lien de retour (`data-kdmc-retour`, 44 px) avant le titre ; le routeur n'ajoute plus rien. Dossiers avait déjà son lien ; Studio n'était pas touché (premier texte non recouvert).
+- Garde : `tests/verify-favicons-journal.mjs` (règle « lien de retour à nous dans l'en-tête, avant le titre » + sabotage) — 17 OK / 10 sabotages.
+
 ## Apex Chat 1.1.356 (30.10.2026)
 - La télémétrie vers Firebase se tait 24 h après un refus 401/403 (les règles exigent une identité que la page n'a pas) : plus de lignes rouges à chaque ouverture.
 

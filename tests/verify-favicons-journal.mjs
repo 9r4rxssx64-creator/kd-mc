@@ -7,6 +7,8 @@
  *  2. JOURNAL DU DOMAINE (Apex Chat → admin.kd-mc.com/log) : l'envoi passe par K._accessEnvoi, qui demande un pass FRAIS au
  *     domaine (K._domainePass, /__sso/pass) avant le premier envoi de la page (jamais le pass rangé, périmé possible : 1 × 401 mesuré le 30.10), N'APPELLE PAS sans pass (plus de 401 quand il n'y a pas de
  *     session du domaine) et redemande UN pass frais sur 401. Plus aucun fetch direct de l'adresse hors de ce point.
+ *  2b. RETOUR AU PORTAIL À NOUS (Tor en clair) : lien data-kdmc-retour dans l'en-tête, avant le titre — sinon le routeur pose sa
+ *     pastille fixe « ← Portail » en haut à gauche, sur le h1 (mesuré par Servi le 30.10 sur 5 écrans).
  *  3. VERSIONS COHÉRENTES : Créa Studio APP_VER = CACHE_VERSION du sw.js ; Apex Chat index = package.json = sw = API.
  *  --sabotage : chaque règle est rejouée sur une copie cassée et DOIT rougir (prouvée discriminante).
  * node tests/verify-favicons-journal.mjs [--sabotage]
@@ -28,6 +30,17 @@ export function regleFavicon(html) {
   return {
     present: !!lien,
     hrefSain: !!lien && /href=["'](data:image\/svg\+xml,|[A-Za-z0-9_./-]+\.(png|svg|ico))/.test(lien[0]),
+  };
+}
+/* 30.10 (Servi, 5 écrans : « 1er texte h1 · sous pastille OUI » sur tor) : une page qui n'a pas son propre lien vers le portail
+   reçoit du routeur la pastille « ← Portail » fixe en haut à gauche ; un titre collé en haut passe dessous. La page porte donc
+   son lien de retour (data-kdmc-retour, 44 px) DANS l'en-tête, avant le titre : le routeur n'ajoute plus rien. */
+export function regleRetourPortail(html) {
+  const head = (html.match(/<header[\s\S]*?<\/header>/i) || [''])[0];
+  const lien = head.match(/<a[^>]+data-kdmc-retour[^>]*>/i);
+  return {
+    present: !!lien && /href="https:\/\/kd-mc\.com\/"/.test(lien[0]),
+    avantTitre: !!lien && head.indexOf(lien[0]) < head.search(/<h1/i),
   };
 }
 export function regleJournal(src) {
@@ -72,6 +85,9 @@ if (!SABOTAGE) {
     ok(r.present, `${nom} : <link rel="icon"> présent dans <head> (${p})`);
     ok(r.hrefSain, `${nom} : l'icône est un data: SVG ou un fichier image du dossier`);
   }
+  const rp = regleRetourPortail(src['tools/tor/index.html']);
+  ok(rp.present, 'Tor en clair : lien de retour au portail à nous (data-kdmc-retour → https://kd-mc.com/) dans <header>');
+  ok(rp.avantTitre, 'Tor en clair : le lien de retour précède le titre (le routeur ne pose plus sa pastille sur le h1)');
   for (const [m, c] of Object.entries(regleJournal(apex))) ok(c, 'Apex Chat journal : ' + m);
   for (const [m, c] of Object.entries(regleVersions(versions))) ok(c, m);
 } else {
@@ -80,6 +96,8 @@ if (!SABOTAGE) {
   ok(!regleFavicon(sansIcone).present, 'tor sans <link rel="icon"> → rouge');
   const hrefExterne = src['dossiers/index.html'].replace(/href="data:image\/svg\+xml,[^"]*"/, 'href="https://ailleurs.example/icone.png"');
   ok(!regleFavicon(hrefExterne).hrefSain, 'icône servie par un domaine étranger → rouge');
+  const sansRetour = src['tools/tor/index.html'].replace(/<a class="retour"[^>]*>[^<]*<\/a>\n?/, '');
+  ok(!regleRetourPortail(sansRetour).present, 'tor sans lien de retour (pastille du routeur sur le titre) → rouge');
   const ancien = apex.replace(/K\._accessEnvoi = function\(corps\)\{[\s\S]*?\n\};\n/, '')
     .replace(/K\._accessEnvoi\(\{app:'apex-chat'[^\n]*\n/, "    fetch('https://admin.kd-mc.com/log',{method:'POST'}).catch(function(){});\n");
   const rj = regleJournal(ancien);

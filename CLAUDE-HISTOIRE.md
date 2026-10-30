@@ -12526,3 +12526,9 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - `.claude/rules/connexion-par-qr.md` : ordre de préférence (clé d'accès par QR → QR du service → code reçu en dernier), phrase unique à Kevin (« Scanne le code à l'écran avec l'appareil photo de l'iPhone, puis Face ID »), le domaine ne limite jamais la clé d'accès à son appareil d'origine, mesure réelle confiée au Lenovo.
 - Déclencheur : la clé App Store Connect (mission 1293 au pont) ; message à `toutes` au pont. Garde : `tests/verify-connexion-qr.mjs` (`npm run test:connexion-qr`, dans test:ci).
 
+
+## 🔗 RÈGLE ABSOLUE — TOUTES LES BRANCHES EN LIAISON : QUI CONSTATE CORRIGE, L'ÉTAT EST ÉCRIT, ATTENDRE = SE PROGRAMMER LE RETOUR, JAMAIS KEVIN (Kevin 2026-10-30, ABSOLUE, TOUTES LES BRANCHES)
+« J'ai l'impression de consommer pour rien mon forfait pour relancer tout le monde, sinon tout le monde s'arrête et vous ne communiquez plus. Pourquoi deux plateformes ? Que l'arbre cloud et l'arbre de l'ordinateur soient en liaison, toutes les branches. Pourquoi l'ordinateur, après un test réel, ne corrige pas de suite ? Tout le monde doit pouvoir tout faire partout, tenir tout le monde au courant, ne jamais rien perdre. »
+- `.claude/rules/tout-le-monde-corrige.md` : binômes cloud ↔ Lenovo, « qui constate corrige » (quatre exceptions seulement), état écrit (FAIT / EN COURS / ATTEND / PAS PRIS), attente = `send_later` ou rappel propre (3 retours max, pas de cron), forfait : compactage à 35 %.
+- Mesure du 30.10 (`get_session`, valeurs indicatives en équivalent API) : contexte de 300 000 à 664 000 jetons relus à chaque réveil ; « CMCteams et light » 9 249, « Domain Kdmc » 2 794, « Arbre généalogique » 1 673, « Apex cloud » 1 244, « Javis apex » 1 154, « Studio créa » 551, « Poste de recherche » 157, « Sonde » 67.
+- Garde : `tests/verify-tout-le-monde-corrige.mjs` (`npm run test:tout-le-monde-corrige`, dans test:ci).

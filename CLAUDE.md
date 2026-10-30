@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 244 règles — le texte de Kevin, une par une
+## 📜 Les 245 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1064,6 +1064,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 📱 RÈGLE ABSOLUE — CONNEXION PAR QR : KEVIN SCANNE AVEC L'APPAREIL PHOTO DE L'IPHONE, SES CODES NE SE RETAPENT PAS (Kevin 2026-10-29, ABSOLUE, TOUTES LES BRANCHES)
 « Quand j'ai des connexions à faire de compte, mes codes sont sur l'iPhone, donc fais-moi faire avec un code que je scanne, que je fais avec l'appareil photo. Un QR code ou quelque chose comme […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-connexion-par-qr-kevin-scanne-avec-lappareil-photo-de-liphone-ses-codes-ne-se-retapent-pas-kevin-2026-10-29-absolue-toutes-les-branches)
+
+### 🔗 RÈGLE ABSOLUE — TOUTES LES BRANCHES EN LIAISON : QUI CONSTATE CORRIGE, L'ÉTAT EST ÉCRIT, ATTENDRE = SE PROGRAMMER LE RETOUR, JAMAIS KEVIN (Kevin 2026-10-30, ABSOLUE, TOUTES LES BRANCHES)
+« J'ai l'impression de consommer pour rien mon forfait pour relancer tout le monde, sinon tout le monde s'arrête et vous ne communiquez plus. Pourquoi deux plateformes ? Que l'arbre cloud et […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-toutes-les-branches-en-liaison-qui-constate-corrige-létat-est-écrit-attendre-se-programmer-le-retour-jamais-kevin-kevin-2026-10-30-absolue-toutes-les-branches)
 
 ---
 

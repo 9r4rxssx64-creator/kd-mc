@@ -46,6 +46,8 @@ const MATRICE = [
   { nom: 'Android Galaxy S9+ paysage', dev: 'Galaxy S9+ landscape', moteurs: ['chromium'] },
   { nom: 'iPad portrait', dev: 'iPad (gen 7)', moteurs: ['webkit', 'chromium'] },
   { nom: 'Tablette Android paysage', dev: 'Galaxy Tab S4 landscape', moteurs: ['chromium'] },
+  { nom: 'iPad Air portrait 820x1180', vp: { width: 820, height: 1180 }, tactile: true, moteurs: ['webkit', 'chromium'] },
+  { nom: 'iPad Air paysage 1180x820', vp: { width: 1180, height: 820 }, tactile: true, moteurs: ['webkit', 'chromium'] },
   { nom: 'Portable bas 1272x635 (Lenovo)', vp: { width: 1272, height: 635 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
   { nom: 'Portable 1366x768', vp: { width: 1366, height: 768 }, souris: true, moteurs: ['chromium', 'firefox', 'webkit'] },
   /* 23.10 (Lenovo, Chrome de bureau étroit : « à 375 px, défilement horizontal = OUI ») : un navigateur de BUREAU étroit n'est pas un téléphone — il ne dézoome pas, il défile.

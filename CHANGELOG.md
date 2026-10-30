@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.995 + light v1.119 — Chaque équipe « Formation » dit de QUOI, quels groupes, quelles équipes d'origine, quel mois (2026-10-30)
+- Demande de Kevin : « indique toujours la formation de quoi, en rapport à quoi, quelle équipe, parce que le jour où il y en aura plusieurs, il faudra les distinguer, faire des équipes différentes. »
+- Chaque carte Formation porte maintenant une bande de résumé : « 🎓 Formation CRAPS — école de CRAPS · groupes GR1, GR2, GR3 · 19 élèves venus de 6 équipes (CMC Éq.2, …) · Novembre 2026 » ; sous chaque élève : « GR1 · de CMC Éq.3 ». Même phrase dans CMCteams et la light (une seule source : `_cmcFormResume` / `_cmcFormPerso` dans `tools/shared/formations-ecole.js`, copie identique light). Deux écoles = deux cartes qui ne se confondent pas.
+- Garde `test:formations-ecole` : 88 OK ; 18 rouges avec l'ancien code (prouvé discriminant).
 ## CMCteams v9.994 + light v1.118 — Équipes « Formation <JEU> » : départs équitables le vendredi et le samedi (2026-10-30)
 - Demande de Kevin : « une équipe formation CRAPS » (puis poker, blackjack… à chaque école) avec tous les élèves du même jeu, départs équitables sur le mois, seulement le vendredi et le samedi (le reste du temps ils sont en école, pas de départ anticipé). Remplace la règle du 05.10 (« même équipe, départs entre eux ») et l'exception Schwietzer (v9.993/v1.117, retirée : il est dans « Formation EUROPE »).
 - Nouveau fichier partagé `tools/shared/formations-ecole.js` (copie identique `tools/departs/formations-ecole.js`) : groupe du PDF → jeu → équipe « Formation <JEU> », permutation 1..N par jour présent, équité par rang moyen normalisé. Les équipes sont dérivées à l'affichage, jamais écrites. Novembre 2026 : CRAPS 19 élèves (écart ≈ 0,06), EUROPE 10 (4 vendredis/samedis seulement, écart 0,467).

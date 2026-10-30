@@ -311,6 +311,16 @@ form input[type="text"] {
   }
 }
 
+/* v13.4.397 (audit 1533, robot d'affichage : iPhone en paysage + iPad = icônes du haut du chat à 24 et 36 px de large) : au doigt (pointer: coarse),
+ * les icônes du bandeau font 44 px de large à TOUTE largeur, pas seulement ≤ 400 px. La souris garde le bandeau compact. */
+@media (pointer: coarse) {
+  .ax-chat-header .ax-btn-icon {
+    min-width: 44px !important;
+    width: 44px !important;
+    flex-shrink: 0 !important;
+  }
+}
+
 /* v13.4.94 — FIX iOS Safari auto-zoom triple stack (Kevin "Zoom tjs UX") :
    1. -webkit-text-size-adjust:100% sur html : empêche Safari iOS de zoomer le texte
       automatiquement quand l'écran tourne ou quand un input prend le focus.

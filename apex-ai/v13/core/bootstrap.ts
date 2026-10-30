@@ -20,7 +20,7 @@
  * - Promesses .catch() systématique
  */
 
-export const APP_VER = 'v13.4.396';
+export const APP_VER = 'v13.4.397';
 export const ADMIN_ID = 'kdmc_admin';
 
 import { logRedaction } from '../services/observability/log-redaction-wrapper.js';

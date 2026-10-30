@@ -431,6 +431,7 @@
   "tools/arbre/research-web.mjs",
   "tools/arbre/research.mjs",
   "tools/arbre/session/coherence-textes.mjs",
+  "tools/arbre/session/moissonneur.mjs",
   "tools/arbre/session/navigateur.mjs",
   "tools/arbre/session/plan-robots.mjs",
   "tools/arbre/session/relecture-modifs.mjs",

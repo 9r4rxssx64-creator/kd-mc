@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex AI v13.4.397 (30.10.2026)
+- Icônes du bandeau du chat (mode, mémoire, effacer, menu) : 44 px de large au doigt à toute largeur (iPhone paysage, iPad), la souris garde le bandeau compact.
+
+---
+
 ## CMCteams v9.993 + light v1.117 — Schwietzer prend ses départs avec l'équipe jusqu'à ses vacances (2026-10-30)
 - Demande de Kevin (capture de novembre, groupe « GR1 EUROPE ») : « Mets Schwietzer avec les autres pour les départs jusqu'à ces vacances. » ‹employé› est seul de son groupe (‹employé› et ‹employé› en CP jours 1 à 17) : tous ses numéros portaient ¹ (suite d'un seul) et doublaient le 1 de l'équipe.
 - Nouveau fichier partagé `tools/shared/departs-exceptions.js` (copie identique `tools/departs/departs-exceptions.js`) : tableau tenu à la main `{ "2026-10": { "‹employé›": [[1, 10]] } }` ; sur ces jours la personne compte dans l'ÉQUIPE (fin de roster), les autres jours et les autres mois ne bougent pas. Il revient à son groupe au jour 18.

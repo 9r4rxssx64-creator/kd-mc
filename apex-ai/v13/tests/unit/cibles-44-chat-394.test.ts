@@ -41,4 +41,13 @@ describe('chat : cibles tactiles ≥ 44 px', () => {
     expect(regle).toMatch(/\.ax-tabbar \{ gap: 0;/);
     expect(regle).toMatch(/\.ax-tabbar__item \{ min-width: 44px;/);
   });
+  it('icônes du bandeau (v13.4.397, robot d\'affichage : iPhone paysage + iPad = 24/36 px) : 44 px de large au doigt, à toute largeur', () => {
+    const css = lire('assets/css/rescue.css');
+    const i = css.indexOf('@media (pointer: coarse) {');
+    expect(i).toBeGreaterThan(-1);
+    const regle = css.slice(i, css.indexOf('}\n}', i));
+    expect(regle).toMatch(/\.ax-chat-header \.ax-btn-icon/);
+    expect(regle).toMatch(/width: 44px !important/);
+    expect(regle).toMatch(/min-width: 44px !important/);
+  });
 });

@@ -391,6 +391,7 @@
   "tests/verify-seances-individuel.mjs",
   "tests/verify-seances.mjs",
   "tests/verify-secrets-cmc.mjs",
+  "tests/verify-seed-firebase-perime.mjs",
   "tests/verify-seed-remplace-import-perime.mjs",
   "tests/verify-studio-voix.mjs",
   "tests/verify-sw-identite.mjs",

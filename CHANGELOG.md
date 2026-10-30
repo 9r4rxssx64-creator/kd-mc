@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex AI 13.4.397 — service worker rétabli (30.10.2026)
+- `sw.js` remis dans le paquet publié (il avait disparu en 13.4.396, hors-ligne et mises à jour coupés ~2 h) ; garde ajoutée.
+
+---
+
 ## CMCteams v9.995 + light v1.119 — Chaque équipe « Formation » dit de QUOI, quels groupes, quelles équipes d'origine, quel mois (2026-10-30)
 - Demande de Kevin : « indique toujours la formation de quoi, en rapport à quoi, quelle équipe, parce que le jour où il y en aura plusieurs, il faudra les distinguer, faire des équipes différentes. »
 - Chaque carte Formation porte maintenant une bande de résumé : « 🎓 Formation CRAPS — école de CRAPS · groupes GR1, GR2, GR3 · 19 élèves venus de 6 équipes (CMC Éq.2, …) · Novembre 2026 » ; sous chaque élève : « GR1 · de CMC Éq.3 ». Même phrase dans CMCteams et la light (une seule source : `_cmcFormResume` / `_cmcFormPerso` dans `tools/shared/formations-ecole.js`, copie identique light). Deux écoles = deux cartes qui ne se confondent pas.

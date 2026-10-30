@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.993 + light v1.117 — Schwietzer prend ses départs avec l'équipe jusqu'à ses vacances (2026-10-30)
+- Demande de Kevin (capture de novembre, groupe « GR1 EUROPE ») : « Mets Schwietzer avec les autres pour les départs jusqu'à ces vacances. » ‹employé› est seul de son groupe (‹employé› et ‹employé› en CP jours 1 à 17) : tous ses numéros portaient ¹ (suite d'un seul) et doublaient le 1 de l'équipe.
+- Nouveau fichier partagé `tools/shared/departs-exceptions.js` (copie identique `tools/departs/departs-exceptions.js`) : tableau tenu à la main `{ "2026-10": { "‹employé›": [[1, 10]] } }` ; sur ces jours la personne compte dans l'ÉQUIPE (fin de roster), les autres jours et les autres mois ne bougent pas. Il revient à son groupe au jour 18.
+- CMCteams : `_cmcDepJour` (departs-groupes.js) + `calcDepPos` ; light : `_computeGroupe` (même règle, même ordre). Garde `test:departs-exceptions` (dans `test:ci`) : rouge sous `SABOTAGE=1` (doublons de numéros), vert avec ; app = light case par case (135 cases) ; numéros identiques dès le jour 11 et en octobre.
+
 ## Tor en clair v1.10 — le titre n'est plus sous la pastille « ← Portail » du routeur (2026-10-30)
 - Mesuré par le robot public Servi (connecté admin, 5 écrans) : sur tor.kd-mc.com le premier titre h1 passait SOUS la pastille fixe « ← Portail » que le routeur pose en haut à gauche de toute page qui n'a pas son propre lien vers le portail.
 - Corrigé : l'en-tête de Tor porte son lien de retour (`data-kdmc-retour`, 44 px) avant le titre ; le routeur n'ajoute plus rien. Dossiers avait déjà son lien ; Studio n'était pas touché (premier texte non recouvert).

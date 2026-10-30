@@ -286,6 +286,7 @@
   "tests/verify-departs-ancre.mjs",
   "tests/verify-departs-boot-robuste.mjs",
   "tests/verify-departs-cycle.mjs",
+  "tests/verify-departs-exceptions.mjs",
   "tests/verify-departs-groupes.mjs",
   "tests/verify-departs-integrity.mjs",
   "tests/verify-docs-a-la-demande.mjs",

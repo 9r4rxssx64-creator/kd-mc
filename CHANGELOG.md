@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.355 — le journal du domaine part avec un pass FRAIS : plus aucun 401 (2026-10-30)
+- Mesuré par le Lenovo dans le Chrome de Kevin (pont 1442) après la 1.1.354 : dossiers 0 et tor 0 requête ≥ 400 (tâche 80 tenue), mais sur Apex Chat un `POST admin.kd-mc.com/log` répondait encore 401 UNE fois avant `/__sso/pass` : le pass RANGÉ (`localStorage kdmc_sso_token`) partait en premier et était périmé.
+- Corrigé : `K._accessEnvoi` demande un pass frais au domaine avant le premier envoi de la page, le garde en mémoire (`K._accessPassMemo`) pour les envois suivants, et sur 401 le vide et n'en redemande qu'un. Plus aucune lecture du pass rangé dans ce bloc (`K._accessPassRange` retirée).
+- Garde : `tests/verify-favicons-journal.mjs` (règle « premier envoi avec un pass FRAIS, jamais le pass rangé » + sabotage qui remet le pass rangé → rouge). 15 OK / 9 sabotages.
+- Vu dans la même mesure, pas de cette livraison : `POST /log` 503 (studio + apex-chat) et `HEAD /?_v=` 503 → cloud-installer (worker kdmc-access / Cloudflare) ; `POST /api/keys/device` 403 et Firebase `ax_telemetry_in` 401 ×2 → apex-cloud.
+
 ## Apex Chat 1.1.354 + Dossiers v1.0.2 + Tor en clair v1.9 + Créa Studio v9.22.10 — tâche 80 du pont : plus de favicon 404 ni de 401 vers le journal du domaine (2026-10-30)
 - Mesuré le 24.10 dans le Chrome admin de Kevin (pont 970) : dossiers, studio et tor n'avaient pas de `<link rel="icon">` → `/favicon.ico` 404 à chaque ouverture ; Apex Chat appelait `admin.kd-mc.com/log` sans pass du domaine → 401. Favicon : SVG en `data:` (dossiers, tor ; CSP `img-src data:` déjà permis, 0 fichier, 0 requête) et `icon-192.png` du manifeste (studio). Journal : `K._accessEnvoi` demande le pass au domaine (`/__sso/pass`, comme la caisse admin de la PR 5197), n'appelle pas sans pass, redemande un pass frais une fois sur 401.
 - Garde : `tests/verify-favicons-journal.mjs` (favicon présent et sain sur les 3 pages, journal sans fetch direct, versions Studio = sw et Apex index = package = sw = API ; rouge sous `--sabotage`), dans `test:ci` (`test:favicons-journal`).

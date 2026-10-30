@@ -3521,8 +3521,8 @@
       "etat": "actif",
       "maj": "2026-10-30",
       "attend_kevin": null,
-      "attend_session": "pc-config : mesure requêtes ≥ 400 (pont 1426/1428)",
-      "note": "30.10 : PR #5279 fusionnée (e8b9ec7), publiée, servi vérifié (Servi) ; tâche 80 faite ; mesure Chrome Kevin confiée à pc-config"
+      "attend_session": "apex-cloud : /api/keys/device 403 + Firebase 401 ; cloud-installer : /log 503",
+      "note": "30.10 : Apex Chat 1.1.355 (pass frais avant /log, mesure Lenovo 1442) en PR ; tâche 80 faite"
     }
   },
   "messages": [

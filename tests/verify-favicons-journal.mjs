@@ -4,8 +4,8 @@
  *     Sans lui, le navigateur demande /favicon.ico, le routeur répond 404 à chaque ouverture (mesuré le 24.10 dans le
  *     Chrome admin de Kevin : « dossiers 3, studio 3, tor 7 » requêtes en échec). dossiers et tor : icône SVG en data:
  *     (CSP img-src data: déjà permis, aucun fichier ni requête en plus) ; studio : icon-192.png déjà dans le manifeste.
- *  2. JOURNAL DU DOMAINE (Apex Chat → admin.kd-mc.com/log) : l'envoi passe par K._accessEnvoi, qui demande le pass au
- *     domaine (K._domainePass, /__sso/pass) quand il manque, N'APPELLE PAS sans pass (plus de 401 quand il n'y a pas de
+ *  2. JOURNAL DU DOMAINE (Apex Chat → admin.kd-mc.com/log) : l'envoi passe par K._accessEnvoi, qui demande un pass FRAIS au
+ *     domaine (K._domainePass, /__sso/pass) avant le premier envoi de la page (jamais le pass rangé, périmé possible : 1 × 401 mesuré le 30.10), N'APPELLE PAS sans pass (plus de 401 quand il n'y a pas de
  *     session du domaine) et redemande UN pass frais sur 401. Plus aucun fetch direct de l'adresse hors de ce point.
  *  3. VERSIONS COHÉRENTES : Créa Studio APP_VER = CACHE_VERSION du sw.js ; Apex Chat index = package.json = sw = API.
  *  --sabotage : chaque règle est rejouée sur une copie cassée et DOIT rougir (prouvée discriminante).
@@ -40,6 +40,7 @@ export function regleJournal(src) {
     'sur 401 : un pass frais, puis un seul nouvel envoi': /status === 401[\s\S]*?K\._accessPassFrais\(\)[\s\S]*?envoi\(t2\)/.test(bloc),
     'aucun autre fetch direct vers admin.kd-mc.com/log': !/fetch\(['"]https:\/\/admin\.kd-mc\.com\/log/.test(horsBloc),
     'K._accessLog passe par K._accessEnvoi': /K\._accessEnvoi\(\{app:'apex-chat'/.test(horsBloc),
+    'premier envoi avec un pass FRAIS du domaine, jamais le pass rangé (30.10 : 1 × 401 mesuré sinon)': /var pass = K\._accessPassMemo;/.test(bloc) && !/_accessPassRange|localStorage/.test(bloc),
   };
 }
 export function regleVersions({ studioHtml, studioSw, apexHtml, apexPkg, apexSw, apexApi }) {
@@ -86,6 +87,8 @@ if (!SABOTAGE) {
   ok(!rj['aucun autre fetch direct vers admin.kd-mc.com/log'], 'fetch direct de admin.kd-mc.com/log → rouge');
   const sansGarde = apex.replace(/(K\._accessEnvoi = function\(corps\)\{[\s\S]*?)if\(!t\) return null;/, '$1if(!t) t = "";');
   ok(!regleJournal(sansGarde)["sans pass : aucun appel (return null avant l'envoi)"], 'envoi même sans pass → rouge');
+  const passRange = apex.replace('var pass = K._accessPassMemo;', "var pass = localStorage.getItem('kdmc_sso_token') || '';");
+  ok(!regleJournal(passRange)['premier envoi avec un pass FRAIS du domaine, jamais le pass rangé (30.10 : 1 × 401 mesuré sinon)'], 'pass rangé envoyé en premier (401 possible) → rouge');
   const sansRetry = apex.replace(/status === 401/, 'status === 599');
   ok(!regleJournal(sansRetry)['sur 401 : un pass frais, puis un seul nouvel envoi'], 'plus de nouvel essai sur 401 → rouge');
   const swDecale = { ...versions, studioSw: versions.studioSw.replace(/crea-studio-v[\d.]+/, 'crea-studio-v0.0.0') };

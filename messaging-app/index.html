@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.354",
+  "softwareVersion": "v1.1.355",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -490,7 +490,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.354';
+const __APEX_CHAT_VERSION__ = 'v1.1.355';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -837,7 +837,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.354" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
+  <div id="splash-version" data-ver="v1.1.355" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -851,7 +851,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.354</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.355</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -1645,14 +1645,10 @@ K._domaineEntrer = async function(){
    admin (PR 5197) : s'il manque, demander le pass au domaine (/__sso/pass, cookie) ; sans pass = aucune session du domaine
    = rien à journaliser et AUCUN appel (plus de 401 dans la console) ; sur 401, redemander UN pass frais et refaire l'appel
    une seule fois. Fail-open, jamais bloquant. Garde : tests/verify-favicons-journal.mjs. */
-/* Le pass du domaine rangé sur l'appareil ; '' s'il manque ou si le stockage est fermé (navigation privée, quota). */
-K._accessPassRange = function(){
-  try{
-    return localStorage.getItem('kdmc_sso_token') || '';
-  }catch(_){
-    return '';   // stockage inaccessible (navigation privée, quota plein) : même chose qu'« aucun pass »
-  }
-};
+/* Le pass validé pendant CETTE page (30.10, mesure Lenovo : un pass rangé périmé partait en premier et faisait un 401 avant
+   /__sso/pass). On ne part donc jamais avec le pass rangé : le premier envoi se fait avec un pass FRAIS du domaine, gardé en
+   mémoire pour les envois suivants de la page ; un 401 le vide et en redemande un seul. */
+K._accessPassMemo = '';
 /* Un pass frais demandé au domaine (cookie) ; '' si le domaine ne connaît pas la personne ou ne répond pas. */
 K._accessPassFrais = function(){
   if(!K._domainePass) return Promise.resolve('');
@@ -1668,11 +1664,15 @@ K._accessEnvoi = function(corps){
     return fetch(URL_LOG, { method:'POST', credentials:'include', mode:'cors', keepalive:true,
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + t }, body: JSON.stringify(corps) });
   }
-  var pass = K._accessPassRange();
+  var pass = K._accessPassMemo;
   return (pass ? Promise.resolve(pass) : K._accessPassFrais()).then(function(t){
     if(!t) return null;   // aucune session du domaine : rien à journaliser, pas d'appel
+    K._accessPassMemo = t;
     return envoi(t).then(function(r){
-      if(r && r.status === 401) return K._accessPassFrais().then(function(t2){ return (t2 && t2 !== t) ? envoi(t2) : r; });
+      if(r && r.status === 401){
+        K._accessPassMemo = '';
+        return K._accessPassFrais().then(function(t2){ if(!t2 || t2 === t) return r; K._accessPassMemo = t2; return envoi(t2); });
+      }
       return r;
     });
   }).catch(function(){
@@ -19599,6 +19599,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.354", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.355", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

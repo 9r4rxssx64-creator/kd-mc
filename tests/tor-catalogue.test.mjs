@@ -125,7 +125,8 @@ t('la page n\'appelle aucun serveur (CSP connect-src \'none\', 0 ressource exter
     .map(m => m[1])
     .filter(u => !/^https:\/\/(apps\.apple\.com|www\.torproject\.org|www\.internet-signalement\.gouv\.fr|app\.tuta\.com|coffre\.kd-mc\.com|ahmia\.fi)/.test(u));
   const fichesSrc = new Set(fiches.map(f => f.s));
-  const inattendus = ext.filter(u => !fichesSrc.has(u));
+  /* 30.10 : le lien « ← Portail » de l'en-tête (Tor v1.10, data-kdmc-retour) est une NAVIGATION vers le portail du domaine : la page n'appelle toujours aucun serveur (connect-src 'none'), donc seul ce lien exact est admis */
+  const inattendus = ext.filter(u => !fichesSrc.has(u) && u !== 'https://kd-mc.com/');
   assert.equal(inattendus.length, 0, 'lien externe inattendu : ' + inattendus.join(', '));
 });
 

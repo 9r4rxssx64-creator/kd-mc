@@ -64,6 +64,7 @@ export function html(d) {
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'none'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests" />
 <title>${esc(d.titre)}</title>
 <meta name="description" content="${esc(desc)}" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%230b0d12%27/%3E%3Cpath d=%27M16 18h14l5 5h13v23H16z%27 fill=%27none%27 stroke=%27%23c9a227%27 stroke-width=%274%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E" type="image/svg+xml" />
 <link rel="stylesheet" href="dossiers.css" />
 </head>
 <body>
@@ -93,7 +94,7 @@ export function html(d) {
 </main>
 <script src="dossiers.js"></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="dossiers" data-version="v1.0.1" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="dossiers" data-version="v1.0.2" data-color="#c9a227" defer></script>
 </body>
 </html>
 `;

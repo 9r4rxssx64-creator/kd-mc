@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-29",
+  "maj": "2026-10-30",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -3512,6 +3512,17 @@
       "maj": "2026-10-22",
       "attend_kevin": null,
       "attend_session": null
+    },
+    "pont-check": {
+      "titre": "pont-check : contrôle du pont D1 + tâche 80",
+      "branche": "claude/pont-check-tache-80",
+      "sujet": "favicons dossiers/tor/studio + journal domaine Apex Chat ; contrôle du pont",
+      "surfaces": [],
+      "etat": "actif",
+      "maj": "2026-10-30",
+      "attend_kevin": null,
+      "attend_session": "cloud-installer : fusion PR #5279 ; studio-crea : relecture",
+      "note": "30.10 : PR #5279 remise au niveau de main (Apex Chat 1.1.354, Créa Studio v9.22.10, leçon 798) ; attend fusion cloud-installer puis publier-local --envoyer + mesure Lenovo"
     }
   },
   "messages": [

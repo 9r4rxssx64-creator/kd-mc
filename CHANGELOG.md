@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.354 + Dossiers v1.0.2 + Tor en clair v1.9 + Créa Studio v9.22.10 — tâche 80 du pont : plus de favicon 404 ni de 401 vers le journal du domaine (2026-10-30)
+- Mesuré le 24.10 dans le Chrome admin de Kevin (pont 970) : dossiers, studio et tor n'avaient pas de `<link rel="icon">` → `/favicon.ico` 404 à chaque ouverture ; Apex Chat appelait `admin.kd-mc.com/log` sans pass du domaine → 401. Favicon : SVG en `data:` (dossiers, tor ; CSP `img-src data:` déjà permis, 0 fichier, 0 requête) et `icon-192.png` du manifeste (studio). Journal : `K._accessEnvoi` demande le pass au domaine (`/__sso/pass`, comme la caisse admin de la PR 5197), n'appelle pas sans pass, redemande un pass frais une fois sur 401.
+- Garde : `tests/verify-favicons-journal.mjs` (favicon présent et sain sur les 3 pages, journal sans fetch direct, versions Studio = sw et Apex index = package = sw = API ; rouge sous `--sabotage`), dans `test:ci` (`test:favicons-journal`).
+
+---
+
 ## Apex Chat 1.1.353 (29.10.2026)
 - Le service worker (toutes origines : l'API est sur workers.dev) laisse le navigateur faire POST /api/auth/sso-from-kdmc (agent de la page conservé) : l'entrée par le domaine n'est plus refusée « appareil » quand l'agent du service worker diffère de celui de la page (robot).
 

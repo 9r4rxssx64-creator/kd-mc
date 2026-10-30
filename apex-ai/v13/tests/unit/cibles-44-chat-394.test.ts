@@ -34,4 +34,11 @@ describe('chat : cibles tactiles ≥ 44 px', () => {
     expect(lien).toMatch(/min-height:44px/);
     expect(lien).not.toMatch(/padding:11px 14px/);
   });
+  it('barre d\'onglets (v13.4.396, robot d\'affichage : iPhone SE 320 px, 7 onglets = 42 px) : jamais sous 44 px de large', () => {
+    const src = lire('features/chat/chat-view-template.ts');
+    const bloc = src.slice(src.indexOf('@media (max-width: 360px) {', src.indexOf('.ax-tabbar__item:active')));
+    const regle = bloc.slice(0, bloc.indexOf('}\n      }') + 1);
+    expect(regle).toMatch(/\.ax-tabbar \{ gap: 0;/);
+    expect(regle).toMatch(/\.ax-tabbar__item \{ min-width: 44px;/);
+  });
 });

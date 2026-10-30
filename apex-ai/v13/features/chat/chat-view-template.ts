@@ -158,6 +158,11 @@ export function buildChatShellHtml(opts: ChatShellOpts): string {
         -webkit-tap-highlight-color: transparent;
       }
       .ax-tabbar__item:active { transform: scale(0.90); }
+      /* v13.4.396 (audit 1533, robot d'affichage : iPhone SE 320 px, 7 onglets admin = 42×52 px) : moins d'espace entre les onglets, jamais sous 44 px de large */
+      @media (max-width: 360px) {
+        .ax-tabbar { gap: 0; padding-left: 0; padding-right: 0; }
+        .ax-tabbar__item { min-width: 44px; }
+      }
       .ax-tabbar__ico {
         font-size: 19px;
         line-height: 1;

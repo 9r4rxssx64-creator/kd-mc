@@ -43,6 +43,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Gardes : `tests/verify-bee-corps.mjs` (`npm run test:bee-corps`, 33 contrôles A–H), `test:marionnette` (84 : sans WebGL → canvas 2D, 8 images différentes sur 8), sabotage rouge (appel des paupières retiré).
 - Film de preuve : 3D | marionnette sans WebGL, côte à côte.
 
+## Mascottes Bee et Bourricot (3D animé) détourées et découpées — pièces pour javis-bee (2026-10-30)
+- Mission `javis-bee` (pont 1502) : fond transparent + pièces mobiles. Fabriqué gratuitement en local (`rembg` isnet-general-use + découpe géométrique) : Bee = `base` + `wing-l` + `wing-r` (ailes translucides gardées) ; Bourricot = `base` + `ear-l` + `ear-r` (crinière intacte) ; + les 4 planches détourées en entier. Fiche `assemblage.json` (boîtes, pivots, ordre de dessin : pièces derrière puis base ; chaque pièce se prolonge sous le corps, donc aucune fente en tournant).
+- Mesuré : remontage au repos = planche détourée (≈ 0,15 % de pixels de bord différents) ; ailes ±25° et oreilles ±22° sans fente ni reste de pièce. Pas de queue de Bourricot (invisible de face) : dit dans le LISEZ-MOI.
+- Garde : `npm run test:crea-mascottes-decoupe` (dans test:ci : fichiers, WebP sans perte avec transparence, tailles = fiche, pivots dans leur pièce, ordre ; 5 sabotages vus). Dossier : `tests/avatars-donnees/mascottes/decoupe/`.
+
 ## Créa Studio v9.22.9 — une seule pastille de version, toujours la vraie (2026-10-29)
 - Mesuré en ligne par `verifier-servi` (v9.22.8) : « badge v9.22.8/v9.18.6 » — deux pastilles, la seconde (module partagé) figée sur une vieille version. Le module lit désormais `APP_VER` (`data-version-global`) et s'efface quand la pastille du Studio est là (`data-own-badge="#vbadge"`), comme l'Arbre.
 - Garde : `test:studio-plateformes` vérifie que la balise du module suit `APP_VER` et la bulle propre ; rouge sur la balise d'avant.

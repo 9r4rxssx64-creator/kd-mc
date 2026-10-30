@@ -1,0 +1,104 @@
+{
+ "cadre": [
+  1024,
+  1024
+ ],
+ "note": "Coordonnees dans le cadre 1024x1024 de la planche de face. Chaque piece est rognee a sa boite (x,y = coin haut-gauche). Ordre de dessin, du fond vers l avant : pieces \"derriere\" puis base.webp. pivot = point de charniere dans le cadre.",
+ "fabrique": "rembg isnet-general-use (gratuit, local) + decoupe geometrique ; aucune IA payante",
+ "bee": {
+  "ordre": [
+   "wing-l",
+   "wing-r",
+   "base"
+  ],
+  "base": {
+   "x": 225,
+   "y": 63,
+   "w": 579,
+   "h": 908
+  },
+  "wing-l": {
+   "x": 84,
+   "y": 367,
+   "w": 223,
+   "h": 267,
+   "pivot": [
+    241,
+    500
+   ],
+   "derriere": true
+  },
+  "wing-r": {
+   "x": 728,
+   "y": 367,
+   "w": 217,
+   "h": 267,
+   "pivot": [
+    788,
+    501
+   ],
+   "derriere": true
+  }
+ },
+ "bourricot": {
+  "ordre": [
+   "ear-l",
+   "ear-r",
+   "base"
+  ],
+  "base": {
+   "x": 304,
+   "y": 47,
+   "w": 433,
+   "h": 928
+  },
+  "ear-l": {
+   "x": 224,
+   "y": 25,
+   "w": 201,
+   "h": 310,
+   "pivot": [
+    365,
+    272
+   ],
+   "derriere": true
+  },
+  "ear-r": {
+   "x": 600,
+   "y": 24,
+   "w": 202,
+   "h": 311,
+   "pivot": [
+    659,
+    272
+   ],
+   "derriere": true
+  }
+ },
+ "detoure": {
+  "bee-3d-face": {
+   "x": 0,
+   "y": 0,
+   "w": 1024,
+   "h": 1024
+  },
+  "bee-3d-trois-quarts": {
+   "x": 0,
+   "y": 0,
+   "w": 1024,
+   "h": 1024
+  },
+  "bourricot-3d-face": {
+   "x": 0,
+   "y": 0,
+   "w": 1024,
+   "h": 1024
+  },
+  "bourricot-3d-trois-quarts": {
+   "x": 0,
+   "y": 0,
+   "w": 1024,
+   "h": 1024
+  }
+ }
+}

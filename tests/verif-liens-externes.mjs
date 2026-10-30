@@ -5,7 +5,7 @@
  * Ce qu'il fait : lit les sources HTML des pages publiques du dépôt (pas les archives, tests, pages de recherche de l'arbre, outils
  * d'administration ; attention : écrire ici le chemin du dossier de l'arbre ou d'un fichier privé rendrait ce test PRIVÉ pour
  * l'exporteur du dépôt public, et le robot ne partirait pas — vu le 30.10), relève chaque href=https://… qui ne pointe pas vers kd-mc.com, l'ouvre (HEAD puis GET, format iPhone) et classe :
- *   OK (2xx/3xx) · PORTE (401/403/429/503, anti-robot ou site en panne : constat) · PRIVÉ (dépôt GitHub privé : 404 pour un anonyme, normal)
+ *   OK (2xx/3xx) · PORTE (401/403/405/429/503 ou site connu anti-robot : constat) · PRIVÉ (dépôt GitHub privé : 404 pour un anonyme, normal)
  *   · MORT (404/410/autre 4xx/5xx : ÉCHEC) · RÉSEAU (DNS, délai, TLS : constat).
  * Sont ignorés : <link rel="preconnect|dns-prefetch|preload|modulepreload"> (racines d'API, jamais des liens à cliquer), schema.org, w3.org,
  * ogp.me, polices Google (préchargement).
@@ -18,6 +18,9 @@ import { join, relative } from 'node:path';
 export const EXCL = /node_modules|\/tests?\/|\/archives?\/|_archive|\/audit\/|\/dist\/|\/\.git\/|\/backups?\/|\/old\/|arbre\/research|tools\/pont|tools\/cloudflare|tools\/firebase|tools\/apex-ios|iRemoteHub\/docs|apex-ai\/v13\/|staging|pipeline|scratch/i;
 export const IGNORE_URL = /kd-mc\.com|localhost|127\.0\.0\.1|example\.|schema\.org|w3\.org\/\d|ogp\.me|googleapis\.com\/css|fonts\.gstatic|fonts\.googleapis\.com$/i;
 export const PRIVE = /^https:\/\/github\.com\/9r4rxssx64-creator\/cmcteams(\/|$)/i;
+/* Sites qui refusent tout robot (boucle de redirections, en-têtes de connexion géants, 405 sur GET) : on constate « porte », on ne crie pas « mort ».
+   Mesuré le 30.10 au dépôt public : apps.apple.com (boucle), console.cloud.google.com / accounts.google.com (UND_ERR_HEADERS_OVERFLOW). */
+export const ANTI_ROBOT = /^https?:\/\/(?:[a-z0-9-]+\.)*(?:apps\.apple\.com|console\.cloud\.google\.com|accounts\.google\.com|instagram\.com|geneanet\.org|facebook\.com)\//i;
 const TAG = /<(a|link|area)\b[^>]*>/gi;
 
 /* Les liens d'un document : {url, rel} — on saute les balises de préchargement. */
@@ -37,8 +40,9 @@ export function liensDe(html) {
 }
 export function classer(u, r) {
   if (PRIVE.test(u)) return 'prive';
+  if (ANTI_ROBOT.test(u) && (r.s === 0 || r.s === 405 || r.s === 403 || r.s === 429)) return 'porte';
   if (r.s === 0) return 'reseau';
-  if (r.s === 401 || r.s === 403 || r.s === 429 || r.s === 503) return 'porte';
+  if (r.s === 401 || r.s === 403 || r.s === 405 || r.s === 429 || r.s === 503) return 'porte';
   if (r.s >= 200 && r.s < 400) return 'ok';
   return 'mort';
 }
@@ -53,6 +57,8 @@ if (process.argv.includes('--selftest')) {
   ok(!l.some((u) => u.includes('kd-mc.com')), 'liens internes laissés au robot verif-live-liens');
   ok(classer('https://github.com/9r4rxssx64-creator/cmcteams/pull/1', { s: 404 }) === 'prive', 'dépôt privé en 404 anonyme = privé, pas mort');
   ok(classer('https://x.test/', { s: 404 }) === 'mort' && classer('https://x.test/', { s: 500 }) === 'mort', '404 et 500 = mort');
+  ok(classer('https://apps.apple.com/fr/app/x/id1', { s: 0 }) === 'porte' && classer('https://accounts.google.com/x', { s: 0 }) === 'porte', 'App Store / Google connexion injoignables par un robot = porte, pas réseau');
+  ok(classer('https://x.test/', { s: 405 }) === 'porte', '405 (méthode refusée au robot) = porte');
   ok(classer('https://x.test/', { s: 403 }) === 'porte' && classer('https://x.test/', { s: 0 }) === 'reseau' && classer('https://x.test/', { s: 301 }) === 'ok', '403 porte, 0 réseau, 3xx ok');
   ok(EXCL.test(['arbre','research','x.html'].join('/')) && EXCL.test(['_archive_v12','a.html'].join('/')) && !EXCL.test('tools/tor/index.html') && !EXCL.test('kdmc-home/outils/index.html'), 'exclusions : recherche de l\'arbre et archives dehors, Tor et Outils dedans');
   console.log(`\n${ko ? '❌' : '✅'} selftest liens externes : ${ko} KO`); process.exit(ko ? 1 : 0);

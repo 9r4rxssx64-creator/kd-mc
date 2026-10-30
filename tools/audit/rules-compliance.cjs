@@ -149,6 +149,9 @@ const REGISTRE = [
   // Règle « FORMATION / ÉCOLE DE JEUX : MÊME ÉQUIPE, MAIS DÉPARTS ENTRE EUX » (Kevin 5.10.2026, PDF octobre « GR1 CRAPS ») :
   // garde = lecture du vrai PDF + contre-épreuve « chaque numéro = groupe tournant seul » (app + light), parité app ⇄ light.
   [/FORMATION \/ ÉCOLE DE JEUX/i, ['npm:test:departs-groupes', 'npm:test:departs-compare']],
+  // Règle « FORMATION <JEU> : UNE ÉQUIPE À PART, DÉPARTS ÉQUITABLES LE VENDREDI ET LE SAMEDI » (Kevin 30.10.2026, remplace celle du 5.10) :
+  // garde = algorithme pur + app + light case par case (test:formations-ecole, rouge sous SABOTAGE=1) + parité app ⇄ light.
+  [/FORMATION <JEU>/i, ['npm:test:formations-ecole', 'npm:test:departs-groupes', 'npm:test:departs-compare']],
   // Règle « INSCRIPTION UNIQUE DU DOMAINE » (Kevin 7.10.2026) : conditions une fois par compte, porte unique, refus hors planning.
   // Règle « DÉPARTS : LES SÉRIES » (Kevin 7.10.2026 soir, « 4235-2351-3514 ») : son exemple exact verrouillé.
   [/DÉPARTS : LES SÉRIES/i, ['npm:test:departs-cycle', 'npm:test:departs-render', 'npm:test:verif-live-robot']],

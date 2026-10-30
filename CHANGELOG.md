@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.994 + light v1.118 — Équipes « Formation <JEU> » : départs équitables le vendredi et le samedi (2026-10-30)
+- Demande de Kevin : « une équipe formation CRAPS » (puis poker, blackjack… à chaque école) avec tous les élèves du même jeu, départs équitables sur le mois, seulement le vendredi et le samedi (le reste du temps ils sont en école, pas de départ anticipé). Remplace la règle du 05.10 (« même équipe, départs entre eux ») et l'exception Schwietzer (v9.993/v1.117, retirée : il est dans « Formation EUROPE »).
+- Nouveau fichier partagé `tools/shared/formations-ecole.js` (copie identique `tools/departs/formations-ecole.js`) : groupe du PDF → jeu → équipe « Formation <JEU> », permutation 1..N par jour présent, équité par rang moyen normalisé. Les équipes sont dérivées à l'affichage, jamais écrites. Novembre 2026 : CRAPS 19 élèves (écart ≈ 0,06), EUROPE 10 (4 vendredis/samedis seulement, écart 0,467).
+- CMCteams : `calcDepPos` rend le départ de formation d'abord, carte « Formation <JEU> » dans Départs, élèves sortis des équipes (les numéros des équipes sont inchangés, contre-épreuve sans groupes). Light : tableaux `YYYY-MM-ecole-<JEU>`, élèves retirés des tableaux d'équipe.
+- Gardes : `test:formations-ecole` (68 OK, 8 rouges sous `SABOTAGE=1`), `test:departs-groupes` réécrit (23 OK), `test:departs-compare` (183/183 tableaux, 0 écart).
 ## Apex AI v13.4.397 (30.10.2026)
 - Icônes du bandeau du chat (mode, mémoire, effacer, menu) : 44 px de large au doigt à toute largeur (iPhone paysage, iPad), la souris garde le bandeau compact.
 

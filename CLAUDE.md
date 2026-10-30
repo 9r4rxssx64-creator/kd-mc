@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 245 règles — le texte de Kevin, une par une
+## 📜 Les 246 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -922,7 +922,7 @@ JAMAIS afficher message erreur technique brut a l utilisateur final.
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-contrôler-tout-partout-sur-le-vrai-sans-rien-oublier-kevin-2026-10-03-absolue)
 
 ### 🎓 RÈGLE MÉTIER ABSOLUE — FORMATION / ÉCOLE DE JEUX : MÊME ÉQUIPE, MAIS DÉPARTS ENTRE EUX (Kevin 2026-10-05, ABSOLUE)
-**« Lorsque des personnes sont en formation, école de jeux, donne un algorithme de départ, en gardant les personnes dans les mêmes équipes mais ils sortent des départs de l'équipe. Eux ont des […]
+⚠️ **REMPLACÉE le 30.10.2026** par « FORMATION <JEU> : UNE ÉQUIPE À PART, DÉPARTS ÉQUITABLES LE VENDREDI ET LE SAMEDI » (fin de ce fichier). Le texte ci-dessous reste comme histoire ; ce qui […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-formation-école-de-jeux-même-équipe-mais-départs-entre-eux-kevin-2026-10-05-absolue)
 
 ### 🪪 RÈGLE ABSOLUE — INSCRIPTION UNIQUE DU DOMAINE : CONDITIONS UNE SEULE FOIS PAR COMPTE, VALABLES PARTOUT ; AUCUN ACCÈS SANS INSCRIPTION COMPLÈTE ET ACCORD ; CMCteams / LIGHT = MATRICULE SBM + NOM DU PLANNING, SINON REFUS (Kevin 2026-10-07, ABSOLUE)
@@ -1068,6 +1068,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🔗 RÈGLE ABSOLUE — TOUTES LES BRANCHES EN LIAISON : QUI CONSTATE CORRIGE, L'ÉTAT EST ÉCRIT, ATTENDRE = SE PROGRAMMER LE RETOUR, JAMAIS KEVIN (Kevin 2026-10-30, ABSOLUE, TOUTES LES BRANCHES)
 « J'ai l'impression de consommer pour rien mon forfait pour relancer tout le monde, sinon tout le monde s'arrête et vous ne communiquez plus. Pourquoi deux plateformes ? Que l'arbre cloud et […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-toutes-les-branches-en-liaison-qui-constate-corrige-létat-est-écrit-attendre-se-programmer-le-retour-jamais-kevin-kevin-2026-10-30-absolue-toutes-les-branches)
+
+### 🎓 RÈGLE MÉTIER ABSOLUE — FORMATION <JEU> : UNE ÉQUIPE À PART, DÉPARTS ÉQUITABLES LE VENDREDI ET LE SAMEDI SEULEMENT (Kevin 2026-10-30, ABSOLUE, REMPLACE LA RÈGLE DU 05.10 ET L'EXCEPTION SCHWIETZER)
+**« On va modifier dans les équipes CMC Team, c'est Light. Tu vas intégrer toutes les personnes d'école de CRAPS dans une seule équipe. Tu vas créer une équipe formation CRAPS. Et quand il y a […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-formation-jeu-une-équipe-à-part-départs-équitables-le-vendredi-et-le-samedi-seulement-kevin-2026-10-30-absolue-remplace-la-règle-du-0510-et-lexception-schwietzer)
 
 ---
 

@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.28';
+  var JAVIS_VER = 'v1.29';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -1367,6 +1367,33 @@
     'mes apps|mon domaine|accueil|portail': 'https://kd-mc.com',
   };
 
+  /* « Pourquoi il me manque Rotaplan et Croupier ? Pas de tuile ! » (Kevin 30.10, iPhone) : Bee répondait « ils ne sont pas référencés » (faux : ils sont sur le portail,
+     rangés dans le menu déroulant « Les boutiques »). Une question « où est / il me manque / pas de tuile » sur une app du portail reçoit donc la VRAIE place, sans passer par le
+     cerveau. Source = le portail (kdmc-home/index.html) ; garde : tests/verify-bee-ou-est-la-tuile.mjs relit le portail et exige que chaque ligne y soit, dans ce dossier. */
+  var TUILES_RANGEES = [
+    { re: 'rota ?plan|roto ?plan', nom: 'Rotaplan', dossier: '🛍️ Les boutiques' },
+    { re: 'croupier', nom: 'Devenir croupier', dossier: '🛍️ Les boutiques' },
+    { re: 'chez ?lolo', nom: 'Chez Lolo', dossier: '🛍️ Les boutiques' },
+    { re: 'la d[ée]tente', nom: 'La Détente', dossier: '🛍️ Les boutiques' },
+    { re: 'world ?monitor', nom: 'World Monitor', dossier: 'Recherche & création' },
+    { re: 'osint', nom: 'OSINT', dossier: 'Recherche & création' },
+    { re: 'dossiers? publics?', nom: 'Dossiers publics', dossier: 'Recherche & création' },
+    { re: 'cr[ée]a ?studio', nom: 'Créa Studio', dossier: 'Recherche & création' },
+    { re: 'outils gratuits', nom: 'Mes outils gratuits', dossier: 'Recherche & création' }
+  ];
+  var RE_OU_EST = /(?:manque|manquent|trouve pas|trouvent pas|vois pas|voit pas|pas de (?:tuile|carte|bouton|lien)|o[uù] (?:est|sont|se trouve|se trouvent|trouver)|j'ai pas|je n'ai pas|pourquoi)/;
+  function tuilesRangees(t) {
+    if (t.length > 140 || !RE_OU_EST.test(t)) return null;
+    var vus = [];
+    TUILES_RANGEES.forEach(function (x) { if (new RegExp(x.re, 'iu').test(t)) vus.push(x); });
+    if (!vus.length) return null;
+    var dossiers = []; vus.forEach(function (x) { if (dossiers.indexOf(x.dossier) < 0) dossiers.push(x.dossier); });
+    var noms = vus.map(function (x) { return x.nom; });
+    var liste = noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms[0];
+    return liste + (noms.length > 1 ? ' sont bien sur ton portail' : ' est bien sur ton portail') + ' : ' + (dossiers.length > 1 ? 'dans les menus déroulants « ' + dossiers.join(' » et « ') + ' »' : 'dans le menu déroulant « ' + dossiers[0] + ' »') +
+      '. Les tuiles sont rangées dedans, touche le menu pour le déplier. Je t\'ouvre le portail ?';
+  }
+
   /* Une fenêtre ouverte SANS lien de retour vers cette page. window.open(…, 'noopener') rend
      TOUJOURS null (norme HTML) : Bee disait « touche le bouton » alors que l'onglet était déjà
      ouvert, et un toucher en ouvrait un deuxième (audit complet 30.09, 9 apps sur 9). */
@@ -1523,6 +1550,8 @@
         return true;
       }
     }
+    var ou = tuilesRangees(t);
+    if (ou) { respond(ou, 'https://kd-mc.com/'); return true; }
     /* (après les apps : « affiche mon planning » OUVRE CMCteams) — une vraie question sur QUAND / AVEC QUI (pas « je travaille sur un projet »), et jamais une ACTION
        (« échange mon planning samedi » reste pour Apex) */
     if (RE_JOURNEE.test(t) && t.length <= 70 && !RE_APEX.test(t)
@@ -2667,7 +2696,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.1';
+  var VERSION = '2.2';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -3506,7 +3535,10 @@
       }
       suivis.push(etat);
       dessiner(etat, performance.now() / 1000, 0);   /* première image tout de suite… */
-      etat.rig.classList.add('mrn-on');                /* …puis seulement on cache l'ancienne */
+      /* …puis seulement on cache l'ancienne — ET SEULEMENT SI quelque chose a été dessiné. Un cadre encore caché (la tête du chat de Bee, fermé)
+         mesure 0 px : dessiner() sort sans rien peindre, et cacher l'image laissait un rond crème VIDE (Kevin 30.10, iPhone). On attend alors
+         le premier vrai dessin (voir dessiner) ; d'ici là l'ancienne image reste visible. */
+      if (etat.taille) etat.rig.classList.add('mrn-on'); else etat.attendre = true;
       demarrer();
       monter3D(etat);                                  /* …et la 3D prend le relais dès que son moteur est là */
     }, function () { img._mrn = false; });
@@ -3730,6 +3762,7 @@
       if (e.cv.width !== px || e.cv.height !== px) { e.cv.width = px; e.cv.height = px; }
     }
     if (!e.taille) return;
+    if (e.attendre) { e.attendre = false; e.rig.classList.add('mrn-on'); }   /* le 1er dessin a lieu juste après : on peut cacher l'ancienne image */
     /* Le volume de sa voix (0..1), posé par le lip-sync de Bee sur <html> : plus elle
        parle fort, plus elle hoche la tête et gesticule. Sans lip-sync (Lingua) : 0,5. */
     var niveau = 0.5;

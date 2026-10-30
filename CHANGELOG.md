@@ -76,6 +76,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 ## Javis / Bee v1.27 — mise à jour automatique et autonome partout dans le domaine (2026-10-29)
+## Javis / Bee v1.29 — la tête de Bee n'est plus un rond vide, et Bee dit la vraie place des tuiles rangées (2026-10-30)
+- Demande : capture de Kevin (iPhone) — (A) la tête de Bee dans le chat était un disque crème vide ; (B) à « Pourquoi il me manque Rotaplan et Croupier ? Pas de tuile ! » Bee répondait « pas référencés » (faux : tuiles du portail, rangées dans le menu « Les boutiques »).
+- A : marionnette 2.2 — une image n'est cachée que si quelque chose a été dessiné ; un cadre encore caché (0 px) garde l'ancienne image jusqu'au 1er vrai dessin (garde `test:marionnette` bloc H, rouge avec l'ancien code). Le contrôle des plateformes (`verif-plateformes-bee.mjs`) mesure maintenant le centre de chaque tête (WebKit : 164/164 au robot public).
+- B : intention locale `tuilesRangees` (table `TUILES_RANGEES` : Rotaplan, Devenir croupier, Chez Lolo, La Détente, World Monitor, OSINT, Dossiers publics, Créa Studio, Mes outils gratuits) ; garde `test:bee-ou-est-la-tuile` (relit le portail, rouge si une tuile quitte son dossier).
+
 ## Javis / Bee v1.28 — « 3D animé » : Bee et Bourricot prennent le dessin choisi par Kevin, animé par la marionnette (2026-10-30)
 - Demande : Kevin a choisi « Bee : 3D animé · Bourricot : 3D animé » (Studio créa, message 1506 du pont) ; le Studio a livré les planches détourées et découpées (`tests/avatars-donnees/mascottes/decoupe/`).
 - Fait : `tools/javis/composer-rig-v3.mjs` pose chaque planche sur son fond crème → `lingua/bee/v3/rig/base.webp`, `lingua/donkey/v3/rig/base.webp` (1024 × 1024) ; deux squelettes mesurés (`bee/v3` : antennes, AILES, bras, jambes, yeux, mâchoire, tête, corps ; `donkey/v3` : OREILLES, mèche, bras, jambes…) ; le widget les montre sans pièce posée par-dessus ni vidéo ; le modèle 3D maison ne les remplace pas (le dessin choisi EST le style) ; cache `javis/sw.js` = v1.28.

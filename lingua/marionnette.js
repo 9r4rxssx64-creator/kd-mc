@@ -34,7 +34,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.1';
+  var VERSION = '2.2';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -873,7 +873,10 @@
       }
       suivis.push(etat);
       dessiner(etat, performance.now() / 1000, 0);   /* première image tout de suite… */
-      etat.rig.classList.add('mrn-on');                /* …puis seulement on cache l'ancienne */
+      /* …puis seulement on cache l'ancienne — ET SEULEMENT SI quelque chose a été dessiné. Un cadre encore caché (la tête du chat de Bee, fermé)
+         mesure 0 px : dessiner() sort sans rien peindre, et cacher l'image laissait un rond crème VIDE (Kevin 30.10, iPhone). On attend alors
+         le premier vrai dessin (voir dessiner) ; d'ici là l'ancienne image reste visible. */
+      if (etat.taille) etat.rig.classList.add('mrn-on'); else etat.attendre = true;
       demarrer();
       monter3D(etat);                                  /* …et la 3D prend le relais dès que son moteur est là */
     }, function () { img._mrn = false; });
@@ -1097,6 +1100,7 @@
       if (e.cv.width !== px || e.cv.height !== px) { e.cv.width = px; e.cv.height = px; }
     }
     if (!e.taille) return;
+    if (e.attendre) { e.attendre = false; e.rig.classList.add('mrn-on'); }   /* le 1er dessin a lieu juste après : on peut cacher l'ancienne image */
     /* Le volume de sa voix (0..1), posé par le lip-sync de Bee sur <html> : plus elle
        parle fort, plus elle hoche la tête et gesticule. Sans lip-sync (Lingua) : 0,5. */
     var niveau = 0.5;

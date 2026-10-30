@@ -107,6 +107,44 @@
       ]
     }
   };
+  /* LE « 3D ANIMÉ » (Kevin 29.10 : « Bee : 3D animé · Bourricot : 3D animé ») : les planches détourées du Studio, UNE image carrée
+     par personnage (tools/javis/composer-rig-v3.mjs), ailes et oreilles comprises — ce sont des os, pas des pièces posées par-dessus.
+     Mesuré à la main sur la planche 1024 × 1024 (30.10). */
+  SQUELETTES['bee/v3'] = {
+    os: [
+      { id: 'antG', parent: 'tete', a: [446, 168], trace: [[446, 168], [402, 112], [346, 84], [304, 88]], r: 30, f: 22, cote: -1, sens: 'haut', type: 'antenne' },
+      { id: 'antD', parent: 'tete', a: [586, 166], trace: [[586, 166], [630, 104], [690, 82], [732, 88]], r: 30, f: 22, cote: 1, sens: 'haut', type: 'antenne' },
+      { id: 'aileG', parent: 'tete', a: [250, 500], trace: [[250, 500], [180, 492], [108, 470]], r: 62, f: 26, cote: -1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-20, 20] },
+      { id: 'aileD', parent: 'tete', a: [786, 500], trace: [[786, 500], [858, 492], [926, 470]], r: 62, f: 26, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-20, 20] },
+      { id: 'brasG', parent: 'corps', a: [318, 702], trace: [[318, 702], [286, 782], [252, 862]], r: 46, f: 24, cote: -1, sens: 'bas', type: 'bras' },
+      { id: 'brasD', parent: 'corps', a: [712, 702], trace: [[712, 702], [750, 782], [790, 862]], r: 46, f: 24, cote: 1, sens: 'bas', type: 'bras' },
+      { id: 'jambeG', parent: 'corps', a: [398, 900], trace: [[398, 900], [376, 950]], r: 44, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
+      { id: 'jambeD', parent: 'corps', a: [632, 900], trace: [[632, 900], [656, 950]], r: 44, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
+      { id: 'oeilG', parent: 'visage', a: [390, 402], ellipse: [390, 402, 70, 64], f: 22, type: 'oeil', cote: -1 },
+      { id: 'oeilD', parent: 'visage', a: [642, 402], ellipse: [642, 402, 68, 64], f: 22, type: 'oeil', cote: 1 },
+      { id: 'machoire', parent: 'visage', a: [518, 512], ellipse: [518, 538, 60, 24], f: 18, type: 'machoire', amp: 0.024 },
+      { id: 'visage', parent: 'tete', a: [516, 470], ellipse: [516, 470, 215, 150], f: 40, type: 'visage' },
+      { id: 'tete', parent: 'corps', a: [515, 650], ellipse: [515, 410, 285, 275], f: 34, type: 'tete' },
+      { id: 'corps', parent: null, a: [515, 935], ellipse: [515, 790, 225, 170], f: 40, type: 'corps' }
+    ]
+  };
+  SQUELETTES['donkey/v3'] = {
+    os: [
+      { id: 'oreilleG', parent: 'tete', a: [346, 288], trace: [[346, 288], [304, 176], [264, 62]], r: 56, f: 26, cote: -1, sens: 'haut', type: 'oreille' },
+      { id: 'oreilleD', parent: 'tete', a: [680, 288], trace: [[680, 288], [724, 176], [764, 62]], r: 56, f: 26, cote: 1, sens: 'haut', type: 'oreille' },
+      { id: 'meche', parent: 'tete', a: [516, 215], trace: [[516, 215], [516, 112]], r: 76, f: 22, cote: 0, sens: 'haut', type: 'meche' },
+      { id: 'brasG', parent: 'corps', a: [396, 748], trace: [[396, 748], [406, 836]], r: 30, f: 40, cote: -1, sens: 'bas', type: 'bras' },
+      { id: 'brasD', parent: 'corps', a: [632, 748], trace: [[632, 748], [622, 836]], r: 30, f: 40, cote: 1, sens: 'bas', type: 'bras' },
+      { id: 'jambeG', parent: 'corps', a: [430, 872], trace: [[430, 872], [436, 950]], r: 48, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
+      { id: 'jambeD', parent: 'corps', a: [598, 872], trace: [[598, 872], [600, 950]], r: 48, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
+      { id: 'oeilG', parent: 'visage', a: [416, 490], ellipse: [416, 490, 56, 62], f: 18, type: 'oeil', cote: -1 },
+      { id: 'oeilD', parent: 'visage', a: [630, 490], ellipse: [630, 490, 58, 62], f: 18, type: 'oeil', cote: 1 },
+      { id: 'machoire', parent: 'visage', a: [520, 672], ellipse: [520, 706, 104, 42], f: 22, type: 'machoire', amp: 0.028 },
+      { id: 'visage', parent: 'tete', a: [520, 525], ellipse: [520, 525, 195, 185], f: 40, type: 'visage' },
+      { id: 'tete', parent: 'corps', a: [519, 720], ellipse: [519, 455, 215, 255], f: 34, type: 'tete' },
+      { id: 'corps', parent: null, a: [515, 960], ellipse: [515, 850, 168, 135], f: 40, type: 'corps' }
+    ]
+  };
   /* LES 12 IMAGES FIXES de Lingua (salut, fête, lecture, doigt levé — pour chaque dessin) :
      elles bougent elles aussi, chacune avec SON geste (la main qui fait coucou, les bras
      levés qui dansent, le pied qui tape en lisant, le doigt qui s'agite), et les ailes
@@ -215,7 +253,7 @@
   /* L'image d'un personnage → son squelette. Lingua écrit « bee/v2/rig/base.webp »,
      le widget « https://lingua.kd-mc.com/bee/v2/rig/base.webp » : on lit la fin. */
   function squeletteDe(src) {
-    var s = String(src || ''), m = s.match(/(bee\/v2|bee|donkey)\/rig\/base\.webp(?:[?#].*)?$/);
+    var s = String(src || ''), m = s.match(/(bee\/v3|donkey\/v3|bee\/v2|bee|donkey)\/rig\/base\.webp(?:[?#].*)?$/);
     if (m) return m[1];
     m = s.match(/(bee\/v2|bee|donkey)\/(wave|party|read|point)\.webp(?:[?#].*)?$/);
     return m ? m[1] + ':' + m[2] : '';
@@ -356,7 +394,7 @@
   var BORNES_FIXES = { bras: [-16, 16], jambe: [-10, 10], aile: [-8, 8], oreille: [-14, 14], antenne: [-16, 16],
                        queue: [-24, 24], meche: [-6, 6] };
   function borne(o, v, fixe) {
-    var b = fixe || o.type === 'aile' ? BORNES_FIXES[o.type] : (o.bornes || BORNES[o.type]);
+    var b = o.type === 'aile' && o.bornes ? o.bornes : fixe || o.type === 'aile' ? BORNES_FIXES[o.type] : (o.bornes || BORNES[o.type]);
     return b ? Math.max(b[0], Math.min(b[1], v)) : v;
   }
   /* « ouvre » d'un os, au repos, selon son type ; les tics sont des petits gestes
@@ -392,7 +430,7 @@
   function cible(o, h, t, ph, tic) {
     var r = poseRepos(o, t, ph, tic), ty = o.type, alt = o.cote < 0 ? 0 : Math.PI;
     /* les ailes (dessinées dans les images fixes) battent toujours, plus vite à la fête */
-    if (ty === 'aile') return h === 'dort' ? 0 : (h === 'fete' || h === 'danse' || h === 'joie' ? 7 : 5) * S1(t * (h === 'fete' ? 22 : 15) + alt);
+    if (ty === 'aile') return h === 'dort' ? 0 : (o.amp || 1) * (h === 'fete' || h === 'danse' || h === 'joie' || h === 'vole' ? 7 : 5) * S1(t * (h === 'fete' ? 22 : 15) + alt);
     switch (h) {
       case 'salut':                                        /* la main qui fait coucou */
         if (ty === 'bras') return o.geste ? 10 * S1(t * 7) : r * 0.5;
@@ -677,7 +715,7 @@
     if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 1500 }); else setTimeout(go, 300);
   }
   /* Le fond du carré, pour que la 3D remplace le dessin sans changer le décor : la couleur du bord de l'image (crème). */
-  var FONDS = { 'bee/v2': '#fdf7e7', 'bee': '#fee2ae', 'donkey': '#fee8b8' };
+  var FONDS = { 'bee/v3': '#fdf7e7', 'donkey/v3': '#fee8b8', 'bee/v2': '#fdf7e7', 'bee': '#fee2ae', 'donkey': '#fee8b8' };
   function fondDe(e) {
     var def = FONDS[String(e.nom || '').split(':')[0]] || '#fdf7e7';
     try {
@@ -696,6 +734,7 @@
   function monter3D(etat) {
     if (etat.p3d || !prefere3D()) return;
     if (etat.rig && etat.rig.closest && etat.rig.closest('.pron-bee')) return;   /* « Regarde sa bouche » : le dessin ENSEIGNE la prononciation */
+    if (/\/v3(:|$)/.test(etat.nom)) return;   /* 30.10 : le style choisi par Kevin (« 3D animé », Studio créa) EST le dessin : on l'anime, on ne le remplace pas par le modèle 3D maison */
     charger3D(function () {
       if (etat.p3d || suivis.indexOf(etat) < 0 || !etat.cv) return;
       var p = window.KdmcPerso3D.creer(/^donkey/.test(etat.nom) ? 'bourricot' : 'bee');
@@ -1148,7 +1187,7 @@
   /* ---------------------------------------------------------------------------
      6. TROUVER LES PERSONNAGES, PARTOUT, TOUT SEUL
      ------------------------------------------------------------------------- */
-  var attente = 0, RE_IMG = /(bee\/v2|bee|donkey)\/(rig\/base|wave|party|read|point)\.webp/;
+  var attente = 0, RE_IMG = /(bee\/v3|donkey\/v3|bee\/v2|bee|donkey)\/(rig\/base|wave|party|read|point)\.webp/;
   function balayer() {
     attente = 0;
     var l = document.querySelectorAll('img');

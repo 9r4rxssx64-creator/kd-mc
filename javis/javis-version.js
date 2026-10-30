@@ -1,1 +1,1 @@
-window.__javisVerServie = 'v1.27';
+window.__javisVerServie = 'v1.28';

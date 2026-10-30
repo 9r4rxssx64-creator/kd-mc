@@ -5,6 +5,7 @@ let ok = 0, ko = 0; const t = (c, m) => { if (c) { ok++; console.log('  ✅ ' + 
 const regle = existsSync('.claude/rules/tout-le-monde-corrige.md') ? readFileSync('.claude/rules/tout-le-monde-corrige.md', 'utf8') : '';
 t(/Qui constate corrige/.test(regle) && /Binômes/.test(regle), 'la règle dit : qui constate corrige, binômes');
 t(/FAIT/.test(regle) && /EN COURS/.test(regle) && /ATTEND/.test(regle) && /PAS PRIS EN CHARGE/.test(regle), 'la règle impose les quatre rubriques FAIT / EN COURS / ATTEND / PAS PRIS EN CHARGE');
+t(/VÉRIFIÉ puis MIS EN LIGNE/.test(regle) && /BRANCHE PRÊTE/.test(regle) && /des deux côtés/.test(regle), 'tout travail est vérifié par l\'autre côté puis mis en ligne (BRANCHE PRÊTE → PR → publication → vérif réelle)');
 t(/send_later/.test(regle) && /3 retours/.test(regle) && /pas de cron/i.test(regle), 'attendre = se programmer le retour (send_later, 3 retours max, pas de cron)');
 t(/tout-le-monde-corrige/.test(readFileSync('CLAUDE-HISTOIRE.md', 'utf8')), 'la règle est dans CLAUDE-HISTOIRE');
 const s = JSON.parse(readFileSync('.claude/settings.json', 'utf8'));

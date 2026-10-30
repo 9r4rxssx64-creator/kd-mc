@@ -104,7 +104,7 @@ async function demande(page) {
   const parle = await etat(page);
   chk(parle.parle, `D. dès que le son sort, le corps parle (talk=${parle.parle})`);
   chk(parle.mrn && parle.canvas && /mrn-on/.test(parle.cls), `A. malgré « réduire les animations », la marionnette tourne (mrn=${parle.mrn}, canvas=${parle.canvas}, ${parle.cls.replace('bee-rig ', '')})`);
-  chk(/p3d-on/.test(parle.cls), 'A. et la 3D d\'office aussi (p3d-on)');
+  chk(!/p3d-on/.test(parle.cls), 'A. Bee porte le dessin « 3D animé » du Studio, animé tel quel : le modèle 3D maison ne le remplace pas (pas de p3d-on)');
   chk(parle.mouthOp === '0', `B. aucune 2ᵉ bouche visible pendant qu'elle parle (opacité ${parle.mouthOp})`);
   chk(parle.osc === avant.osc, `E. aucun « bip » (oscillateur) à la réponse ni pendant qu'elle parle (${parle.osc - avant.osc} nouveau ; le toucher du bouton, voulu par Kevin, en fait un avant)`);
   /* le visuel TIENT tout le long : le dessin du canvas continue de changer pendant toute la parole (pas seulement au début) */
@@ -156,9 +156,10 @@ async function demande(page) {
     const out = { d2: {}, d3: {} };
     for (const h of ['repos', 'parle']) {
       const o = out.d2[h] = {};
-      KdmcMarionnette._sequence('bee/v2', h, 8, 1 / 30, (pos, t, S, ang) => { for (const k in ang) { const a = o[k] || (o[k] = [1e9, -1e9]); a[0] = Math.min(a[0], ang[k]); a[1] = Math.max(a[1], ang[k]); } });
+      KdmcMarionnette._sequence('bee/v3', h, 8, 1 / 30, (pos, t, S, ang) => { for (const k in ang) { const a = o[k] || (o[k] = [1e9, -1e9]); a[0] = Math.min(a[0], ang[k]); a[1] = Math.max(a[1], ang[k]); } });
     }
-    for (const piece of KdmcPerso3D._pieces('bee')) {
+    /* 30.10 : Bee porte le dessin « 3D animé » du Studio (bee/v3) : pas de modèle 3D maison à mesurer ici (ses poses sont mesurées par verify-perso3d, E) */
+    for (const piece of (window.KdmcPerso3D ? KdmcPerso3D._pieces('bee') : [])) {
       const a = out.d3[piece] = [[1e9, -1e9], [1e9, -1e9], [1e9, -1e9]];
       for (let t = 0; t < 8; t += 1 / 30) {
         const p = KdmcPerso3D._pose('bee', piece, 'parle', t, { niveau: 0.6, ouv: 0.5 }), r = KdmcPerso3D._pose('bee', piece, 'repos', t, { niveau: 0.6, ouv: 0.5 });
@@ -175,7 +176,8 @@ async function demande(page) {
   const d3 = (piece) => Math.max(...(amp.d3[piece] || [[0, 0]]).map((x) => x[1] - x[0]));
   const m3 = { 'jambes 3D': Math.min(d3('jambeG'), d3('jambeD')), 'antennes 3D': Math.min(d3('antenneG'), d3('antenneD')), 'ailes 3D': Math.min(d3('aileG'), d3('aileD')), 'bras 3D': Math.max(d3('brasG'), d3('brasD')), 'tête 3D': d3('tete'), 'corps 3D': d3('corps') };
   const seuil3 = { 'jambes 3D': 9, 'antennes 3D': 10, 'ailes 3D': 6, 'bras 3D': 12, 'tête 3D': 8, 'corps 3D': 4 };
-  for (const k of Object.keys(seuil3)) chk(m3[k] >= seuil3[k], `G. ${k} : la parole ajoute ${m3[k].toFixed(1)}° de mouvement en 8 s (≥ ${seuil3[k]}°)`);
+  const a3d = await page.evaluate(() => !!window.KdmcPerso3D);
+  if (a3d) for (const k of Object.keys(seuil3)) chk(m3[k] >= seuil3[k], `G. ${k} : la parole ajoute ${m3[k].toFixed(1)}° de mouvement en 8 s (≥ ${seuil3[k]}°)`);
   chk(!err.length, 'aucune erreur JS (membres)');
   await ctx.close();
 }

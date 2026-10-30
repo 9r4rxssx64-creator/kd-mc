@@ -32,6 +32,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 ## Javis / Bee v1.27 — mise à jour automatique et autonome partout dans le domaine (2026-10-29)
+## Javis / Bee v1.28 — « 3D animé » : Bee et Bourricot prennent le dessin choisi par Kevin, animé par la marionnette (2026-10-30)
+- Demande : Kevin a choisi « Bee : 3D animé · Bourricot : 3D animé » (Studio créa, message 1506 du pont) ; le Studio a livré les planches détourées et découpées (`tests/avatars-donnees/mascottes/decoupe/`).
+- Fait : `tools/javis/composer-rig-v3.mjs` pose chaque planche sur son fond crème → `lingua/bee/v3/rig/base.webp`, `lingua/donkey/v3/rig/base.webp` (1024 × 1024) ; deux squelettes mesurés (`bee/v3` : antennes, AILES, bras, jambes, yeux, mâchoire, tête, corps ; `donkey/v3` : OREILLES, mèche, bras, jambes…) ; le widget les montre sans pièce posée par-dessus ni vidéo ; le modèle 3D maison ne les remplace pas (le dessin choisi EST le style) ; cache `javis/sw.js` = v1.28.
+- Reconnaissance : `RE_IMG` et `squeletteDe` connaissent `bee/v3` et `donkey/v3` (sans cela la marionnette ne les trouvait pas).
+- Gardes : `test:marionnette` (17 squelettes, mâchoire, yeux, plis ≤ plafonds, sabotage rouge), `test:javis-bee` (planches présentes, widget + squelette), `test:bee-corps`, `test:perso3d`, `test:crea-mascottes-decoupe`.
+
 - Retour de Kevin : « Javis n'est pas à jour de partout sur l'ordinateur, il est toujours en 26. Vérifie les mises à jour en temps réel, qu'elles soient automatiques et autonomes, de partout : chaque application, chaque page, chaque fenêtre, chaque image, chaque vue. »
 - Cause mesurée : dans les autres apps Bee vit dans un cadre dont le widget vient de javis.kd-mc.com ; pour savoir si une version plus récente est servie elle relisait son fichier par `fetch` depuis une AUTRE adresse (401 + pas de CORS) → jamais de nouvelle version vue ; et la mise à jour automatique n'existait que dans l'app installée.
 - Corrigé : (1) `javis-version.js` (une ligne, fabriquée par `npm run sync:javis` depuis `JAVIS_VER`) lu par une balise `<script>` (part avec la session, pas de CORS) ; (2) mise à jour automatique : app installée = tout de suite ; cadre = dès que le chat est fermé ou l'onglet caché, sans toucher aux caches ni service workers de l'origine ; page qui porte Bee (arbre…) = onglet caché et page calme seulement (jamais pendant une saisie, un formulaire ou une fenêtre ouverte) ; (3) le robot Servi lit maintenant la version de Bee (page + cadre) sur chaque adresse, et accepte `ecrans` pour une mesure de masse.

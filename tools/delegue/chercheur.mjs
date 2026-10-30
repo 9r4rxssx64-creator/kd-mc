@@ -25,12 +25,12 @@ export function htmlEnTexte(html, base) {
 
 /** Lecture réseau simple (sans navigateur) : pages statiques. { texte, liens } ou lève une erreur lisible. */
 export async function lirePageFetch(url, { fetchImpl = fetch } = {}) {
-  const r = await fetchImpl(url, { redirect: 'follow', signal: AbortSignal.timeout(20000), headers: { 'user-agent': 'Mozilla/5.0 (compatible; recherche-documentaire)', accept: 'text/html,text/plain,application/json' } });
+  const r = await fetchImpl(url, { redirect: 'follow', signal: AbortSignal.timeout(20000), headers: { 'user-agent': 'Mozilla/5.0 (compatible; recherche-documentaire)', accept: 'text/html,text/plain,application/json,application/xml' } });
   if (r.url && !urlSure(r.url)) throw new Error('redirigée hors des adresses permises');
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const type = String(r.headers.get('content-type') || '');
   /* v30.10 : les API publiques gratuites (fichier INSEE des décès, matchID…) répondent en JSON : on les lit comme du texte (le filtre « extrait mot pour mot » vaut aussi pour elles) */
-  if (!/(text\/(html|plain)|application\/(json|[a-z.+-]*\+json))/i.test(type)) throw new Error('type non lu : ' + type.slice(0, 40));
+  if (!/(text\/(html|plain|xml)|application\/(json|xml|[a-z.+-]*\+(json|xml)))/i.test(type)) throw new Error('type non lu : ' + type.slice(0, 40));
   const brut = (await r.text()).slice(0, LIMITES.octets);
   return /html/i.test(type) ? htmlEnTexte(brut, r.url || url) : { texte: brut, liens: [] };
 }

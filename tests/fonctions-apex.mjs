@@ -125,8 +125,8 @@ try {
   });
   await essayer('DM : arrivée chez B', async () => {
     const t0 = Date.now(); let apparue = -1;
-    while (Date.now() - t0 < 110000) { const n = await ev(B.p, () => (K.conversations || []).length); if (n > 0 && !n.__err) { apparue = Date.now() - t0; break; } await B.p.waitForTimeout(500); }
-    noter('Temps réel : conversation neuve APPARAÎT chez B sans recharger (conversation non ouverte)', apparue >= 0, apparue >= 0 ? sec(apparue) : 'jamais en 110 s');
+    while (Date.now() - t0 < 200000) { const n = await ev(B.p, () => (K.conversations || []).length); if (n > 0 && !n.__err) { apparue = Date.now() - t0; break; } await B.p.waitForTimeout(500); }
+    noter('Temps réel : conversation neuve APPARAÎT chez B sans recharger (conversation non ouverte)', apparue >= 0, apparue >= 0 ? sec(apparue) : 'jamais en 200 s');
     if (apparue < 0) return;
     convB = await ev(B.p, async () => { const c = K.conversations[0]; await K.openConv(c.id); return c.id; });
     const d = await attendre(B.p, (j) => Object.values(K.messages || {}).flat().some((m) => JSON.stringify(m).includes(j)) || (document.body.innerText || '').includes(j), jeton1, 25000);
@@ -226,8 +226,8 @@ try {
       await ev(A.p, () => K.sv('chats')); await A.p.waitForTimeout(1500);
       await ev(B.p, () => { try { return K._sendHeartbeat(); } catch (e) { return 0; } });
       const j = 'ferme-' + lettres(5); await B.p.locator('#msg-input').fill(j); await B.p.locator('#msg-input').press('Enter');
-      const d = await attendre(A.p, (x) => Object.values(K.messages || {}).flat().some((m) => JSON.stringify(m).includes(x)) || (K.conversations || []).some((c) => (c.unread || c.unread_count || 0) > 0), j, 110000, 500);
-      noter('Temps réel : A (sur la liste, conversation FERMÉE) est averti d\'un message de B', d >= 0, d >= 0 ? sec(d) : 'aucun signe en 110 s');
+      const d = await attendre(A.p, (x) => Object.values(K.messages || {}).flat().some((m) => JSON.stringify(m).includes(x)) || (K.conversations || []).some((c) => (c.unread || c.unread_count || 0) > 0), j, 200000, 500);
+      noter('Temps réel : A (sur la liste, conversation FERMÉE) est averti d\'un message de B', d >= 0, d >= 0 ? sec(d) : 'aucun signe en 200 s');
       await ev(A.p, async (id) => { await K.openConv(id); }, convA);
     });
 

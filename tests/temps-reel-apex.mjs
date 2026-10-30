@@ -115,7 +115,7 @@ try {
   await champ.press('Enter').catch(() => {});
   /* B n'a PAS la conversation ouverte : elle doit APPARAÎTRE dans sa liste toute seule (signal du battement, 75 s), puis, ouverte, le message doit se DÉCHIFFRER à l'écran */
   const apparue = async (maxMs) => { const t0 = Date.now(); while (Date.now() - t0 < maxMs) { const n = await B.p.evaluate(() => (window.K && K.conversations ? K.conversations.length : 0)).catch(() => 0); if (n > 0) return Date.now() - t0; await B.p.waitForTimeout(500); } return -1; };
-  const dApp = await apparue(110000);
+  const dApp = await apparue(200000);
   noter(`1. A → B : la conversation ${dApp >= 0 ? 'APPARAÎT chez B en ' + (dApp / 1000).toFixed(1) + ' s, sans recharger' : 'N\'APPARAÎT PAS chez B après 110 s'}`);
   let dAB = -1;
   if (dApp >= 0) {

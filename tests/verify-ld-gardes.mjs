@@ -23,6 +23,7 @@ globalThis.fetch = async (u, o = {}) => {
   if (s.includes('/print_providers.json')) return new Response(JSON.stringify([{ id: 1 }]), { status: 200 });
   if (s.includes('/variants.json')) return new Response(JSON.stringify({ variants: [{ id: 11, title: 'Black / M', options: { color: 'Black', size: 'M' } }] }), { status: 200 });
   if (s.endsWith('/orders.json')) return new Response(JSON.stringify({ id: 'ord123' }), { status: 200 });
+  if (s.includes('image.pollinations.ai')) return globalThis.__polliKo ? new Response('{"error":"FREE_LIMIT"}', { status: 402, headers: { 'content-type': 'application/json' } }) : new Response(new Uint8Array(3000), { status: 200, headers: { 'content-type': 'image/jpeg' } });
   if (s.includes('generativelanguage')) return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: 'QUJD' } }] } }] }), { status: 200 });
   return new Response('null', { status: 200 });
 };
@@ -93,7 +94,28 @@ const cleG = [...lignes.keys()].find(c => c.startsWith('g:'));
 lignes.set(cleG, 150);
 r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '6.6.6.6' }), envG);
 chk(r.status === 429, '12. au-delà de 150/jour au total → 429');
+/* 30.10.2026 : images GRATUITES d'abord (Gemini gratuit = 429 sur les 5 modèles, mesuré). */
+lignes.clear(); appels.length = 0;
+const appelsAI = [];
+const AI = { async run(m, e) { appelsAI.push(m); if (globalThis.__aiKo) throw new Error('quota'); return m.includes('img2img') ? new Uint8Array(3000).buffer : { image: 'QUJD' }; } };
+const envL = { LD_DB: D1, AI };
+r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '7.7.7.7' }), envL);
+let j = await r.json();
+chk(r.status === 200 && j.model === 'workers-ai-flux' && !appels.some(u => u.includes('generativelanguage')), '13a. sans clé Gemini : image fabriquée par Workers AI (gratuit), aucun appel Gemini');
+globalThis.__aiKo = true; appels.length = 0;
+r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '7.7.7.8' }), envL);
+j = await r.json();
+chk(r.status === 200 && j.model === 'pollinations-flux' && /^data:image\/jpeg;base64,/.test(j.image), '13b. Workers AI en panne → relais Pollinations (gratuit, sans clé)');
+globalThis.__polliKo = true;
+r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '7.7.7.9' }), envL);
+chk(r.status === 502, '13c. toutes les sources gratuites en panne, pas de clé → 502 lisible (plus de 500 « clé non configurée »)');
+globalThis.__aiKo = false; globalThis.__polliKo = false; appelsAI.length = 0;
+lignes.set([...lignes.keys()].find(c => c.startsWith('g:')), 40);
+r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '7.7.7.10' }), envL);
+j = await r.json();
+chk(j.model === 'pollinations-flux' && appelsAI.length === 0, '13d. au-delà de 40 images/jour, Workers AI n\'est plus appelé (forfait gratuit des neurones protégé)');
 const toml = fs.readFileSync(path.join(RACINE, 'shops/la-detente/worker/wrangler.toml'), 'utf8');
+chk(/\[ai\]\s*\nbinding = "AI"/.test(toml), '13e. wrangler.toml lie Workers AI (binding AI)');
 chk(/binding = "LD_DB"/.test(toml), '13. wrangler.toml lie la base D1 (LD_DB)');
 
 /* ---------- Clients ---------- */

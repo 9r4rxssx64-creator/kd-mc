@@ -88,12 +88,22 @@ async function ouvrir(moteur, ap, avecCours) {
   }, avecCours);
   const p = await ctx.newPage(); const erreurs = [];
   p.on('pageerror', (e) => erreurs.push('js: ' + String(e.message).slice(0, 120)));
-  p.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::ERR|favicon|manifest|ERR_FAILED|status of 40[134]|403|NetworkError|Load failed|hors_ligne_test/i.test(m.text())) erreurs.push('console: ' + m.text().slice(0, 120)); });
+  const attente = [];
+  p.on('console', (m) => {
+    if (m.type() !== 'error' || /Failed to load resource|net::ERR|favicon|manifest|ERR_FAILED|status of 40[134]|403|NetworkError|Load failed|hors_ligne_test/i.test(m.text())) return;
+    const txt = 'console: ' + m.text().slice(0, 120);
+    /* 30.10 : le moteur 3D (three.js) ne marche qu'en WebGL2. Un navigateur SANS WebGL2 (Firefox du dépôt public, vieux téléphone) le dit dans la console
+       et Lingua garde la marionnette 2D — ce n'est pas une erreur de Lingua. On ne passe sous silence ce message QUE si la page n'a vraiment pas de WebGL2 ;
+       s'il y en a un et que le moteur échoue quand même, l'erreur reste rouge. */
+    if (/WebGLRenderer/i.test(m.text())) attente.push(p.evaluate(() => { try { return !document.createElement('canvas').getContext('webgl2'); } catch (e) { return true; } }).then((sans) => { if (!sans) erreurs.push(txt); }, () => { erreurs.push(txt); }));
+    else erreurs.push(txt);
+  });
   await p.goto(base + '/', { waitUntil: 'domcontentloaded' });
   let pret = false;
   for (let k = 0; k < 80 && !pret; k++) { pret = await p.evaluate(() => document.querySelectorAll('.tabbar .tab').length >= 6).catch(() => false); if (!pret) await p.waitForTimeout(250); }
   if (!pret) throw new Error('la barre d\'onglets ne s\'est pas dessinée en 20 s');
   await p.waitForTimeout(900);
+  await Promise.all(attente);
   return { ctx, p, erreurs, touch: !!opts.hasTouch };
 }
 

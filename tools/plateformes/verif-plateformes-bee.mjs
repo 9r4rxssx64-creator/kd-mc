@@ -87,6 +87,27 @@ async function surface(page, nom, plat, moteur, mode, tact, bruitHarnais) {
   const dessin = Date.now() - t0;
   ok(await page.locator('#javis-launcher .bee-rig').count() > 0, `${tag} : Bee est dessinée`);
   ok(dessin < 6000, `${tag} : premier dessin en ${dessin} ms (< 6 s)`);
+  /* Kevin 30.10 (iPhone, v1.28) : l'avatar de Bee était un ROND BLANC VIDE alors que tout « marchait » (l'image d'origine est cachée dès que la marionnette est
+     allumée, et un canvas resté vide ne se voyait pas). On regarde donc les PIXELS RÉELS de chaque dessin visible : du noir (rayures, yeux), pas un rond crème. */
+  if (process.env.SABOTAGE_VIDE) await page.addStyleTag({ content: '.bee-rig canvas,.bee-rig img{visibility:hidden!important}' });   /* un rond vide : le contrôle doit rougir */
+  await page.waitForTimeout(2500);
+  const vides = [];
+  const rigs = await page.locator('.bee-rig:visible').all(); console.log('     dessins visibles :', rigs.length);
+  for (const el of rigs) {
+    const bb = await el.boundingBox();   /* Bee bouge sans arrêt : pas d'attente de « stabilité », on photographie la zone */
+    const png = bb && bb.width > 4 ? await page.screenshot({ clip: { x: Math.max(0, bb.x), y: Math.max(0, bb.y), width: Math.min(bb.width, 400), height: Math.min(bb.height, 400) }, timeout: 6000 }).catch(() => null) : null;
+    if (!png) continue;
+    const sombres = await page.evaluate(async (b64) => {
+      const im = new Image(); im.src = 'data:image/png;base64,' + b64; await im.decode();
+      const c = document.createElement('canvas'); c.width = 32; c.height = 32; const x = c.getContext('2d'); x.drawImage(im, 0, 0, 32, 32);
+      const d = x.getImageData(8, 8, 16, 16).data; let n = 0;   /* le CENTRE seulement : le fond de la page autour n'est pas le dessin */
+      for (let i = 0; i < d.length; i += 4) if (Math.hypot(d[i] - 255, d[i + 1] - 248, d[i + 2] - 231) > 90) n++;   /* tout ce qui n'est pas la crème du rond : rayures, ailes, yeux, pelage */
+      return n;
+    }, png.toString('base64'));
+    console.log('     pixels du dessin au centre :', sombres); if (process.env.CAPTURE_BEE) await page.screenshot({ path: process.env.CAPTURE_BEE + '-' + mode + '-' + moteur + '.png' });
+    if (sombres < 10) vides.push(sombres);
+  }
+  ok(!vides.length, `${tag} : le dessin de Bee n'est pas un rond vide${vides.length ? ' (' + vides.length + ' vide(s), ' + vides[0] + ' pixel(s) au centre)' : ''}`);
   if (mode === 'hote') {
     let m = await page.evaluate(MESURE);
     ok(m['#javis-launcher'] && m['#javis-launcher'].vu && m['#javis-launcher'].dedans, `${tag} : le rond flottant est dans l'écran`);
@@ -137,7 +158,12 @@ for (const [moteur, nav] of Object.entries(lanceurs)) {
       if (!ctx) break;
       await ctx.addInitScript(() => { try { localStorage.setItem('kdmc_perso3d', '0'); } catch (_) { /* rien */ } });
       const page = await ctx.newPage();
-      await page.route(/lingua\.kd-mc\.com\/.*/, (rt) => rt.fulfill({ status: 404, body: '' }));
+      /* les VRAIS dessins (dépôt) servis comme le fait le domaine, avec CORS : sans eux le contrôle « pas un rond vide » ne verrait qu'une image cassée (30.10) ; le reste de lingua reste coupé */
+      await page.route(/lingua\.kd-mc\.com\/.*/, (rt) => {
+        const u = new URL(rt.request().url()); const f = path.join(ROOT, 'lingua', decodeURIComponent(u.pathname));
+        if (/^\/(bee|donkey)(\/v\d+)?\/rig\/[\w.-]+\.webp$/.test(u.pathname) && fs.existsSync(f)) return rt.fulfill({ status: 200, contentType: 'image/webp', headers: { 'access-control-allow-origin': '*' }, body: fs.readFileSync(f) });
+        return rt.fulfill({ status: 404, body: '' });
+      });
       /* un TÉMOIN sans Bee, avec la même CSP et les mêmes scripts d'init : une erreur qu'il produit aussi vient de l'outil de test (Firefox + CSP), pas de Bee */
       const bruitHarnais = new Set();
       if (mode === 'app') {

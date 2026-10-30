@@ -3521,8 +3521,8 @@
       "etat": "actif",
       "maj": "2026-10-30",
       "attend_kevin": null,
-      "attend_session": "cloud-installer : fusion PR #5279 ; studio-crea : relecture",
-      "note": "30.10 : PR #5279 remise au niveau de main (Apex Chat 1.1.354, Créa Studio v9.22.10, leçon 798) ; attend fusion cloud-installer puis publier-local --envoyer + mesure Lenovo"
+      "attend_session": "pc-config : mesure requêtes ≥ 400 (pont 1426/1428)",
+      "note": "30.10 : PR #5279 fusionnée (e8b9ec7), publiée, servi vérifié (Servi) ; tâche 80 faite ; mesure Chrome Kevin confiée à pc-config"
     }
   },
   "messages": [

@@ -97,11 +97,13 @@ chk(r.status === 429, '12. au-delà de 150/jour au total → 429');
 /* 30.10.2026 : images GRATUITES d'abord (Gemini gratuit = 429 sur les 5 modèles, mesuré). */
 lignes.clear(); appels.length = 0;
 const appelsAI = [];
-const AI = { async run(m, e) { appelsAI.push(m); if (globalThis.__aiKo) throw new Error('quota'); return m.includes('img2img') ? new Uint8Array(3000).buffer : { image: 'QUJD' }; } };
+const promptsAI = [];
+const AI = { async run(m, e) { appelsAI.push(m); if (globalThis.__aiKo) throw new Error('quota'); if (m.includes('m2m100')) return { translated_text: 'EN ' + e.text }; promptsAI.push(e.prompt); return m.includes('img2img') ? new Uint8Array(3000).buffer : { image: 'QUJD' }; } };
 const envL = { LD_DB: D1, AI };
 r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '7.7.7.7' }), envL);
 let j = await r.json();
 chk(r.status === 200 && j.model === 'workers-ai-flux' && !appels.some(u => u.includes('generativelanguage')), '13a. sans clé Gemini : image fabriquée par Workers AI (gratuit), aucun appel Gemini');
+chk(appelsAI.some(m => m.includes('m2m100')) && promptsAI.some(p => /^EN /.test(p) && /sticker/.test(p)), '13f. la demande est traduite en anglais (gratuit) avant le dessin, le style « sticker » est gardé');
 globalThis.__aiKo = true; appels.length = 0;
 r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '7.7.7.8' }), envL);
 j = await r.json();

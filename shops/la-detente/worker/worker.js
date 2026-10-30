@@ -26,6 +26,18 @@ function b64(buf) {
 }
 function b64VersOctets(t) { const s = atob(t); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
 /* Sources gratuites, dans l'ordre. Chacune rend { model, mime, data } ou lève une erreur courte. */
+// La demande du client est en français ; les moteurs d'images suivent mieux l'anglais.
+// Traduction gratuite (Workers AI m2m100) ; en cas d'échec, on garde le texte d'origine.
+const AI_TRAD = '@cf/meta/m2m100-1.2b';
+async function versAnglais(env, t) {
+  if (!env.AI) return t;
+  try {
+    const o = await env.AI.run(AI_TRAD, { text: t.slice(0, 500), source_lang: 'french', target_lang: 'english' });
+    const s = o && typeof o.translated_text === 'string' ? o.translated_text.trim() : '';
+    return s.length > 1 ? s : t;
+  } catch (e) { return t; }
+}
+
 async function genPollinations(texte) {
   const url = POLLI + encodeURIComponent(texte.slice(0, 900)) + '?width=1024&height=1024&nologo=true';
   const r = await fetch(url, { headers: { Accept: 'image/*' } });
@@ -131,6 +143,9 @@ export default {
       if (m) inputImage = { mimeType: m[1], data: m[2] };
     }
 
+    const aiOk = _nJour <= AI_JOUR;
+    if (aiOk) prompt = await versAnglais(env, prompt);
+
     let parts;
     if (inputImage) {
       const edit = prompt + '. Modifie/retravaille l\'image fournie selon cette consigne. Conserve le sujet principal et la composition sauf indication contraire. Rendu net, haute qualité, prêt pour impression textile.';
@@ -143,7 +158,6 @@ export default {
 
     const errors = [];
     const texte = parts[parts.length - 1].text;
-    const aiOk = _nJour <= AI_JOUR;
     const sources = inputImage ? (aiOk ? [() => genWorkersAI(env, texte, inputImage)] : [])
       : (aiOk ? [() => genWorkersAI(env, texte, null), () => genPollinations(texte)] : [() => genPollinations(texte)]);
     for (const src of sources) {

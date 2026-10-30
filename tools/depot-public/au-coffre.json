@@ -362,6 +362,7 @@
   "tests/verify-pipeline-sessions.mjs",
   "tests/verify-pit-boss-import.mjs",
   "tests/verify-planning-guarantee.test.mjs",
+  "tests/verify-planning-kv-deploiement.mjs",
   "tests/verify-pointage-bouton.mjs",
   "tests/verify-portail-delai-sorties.mjs",
   "tests/verify-portes-anonymes.mjs",

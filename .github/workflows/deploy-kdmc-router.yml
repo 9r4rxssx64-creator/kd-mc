@@ -187,6 +187,17 @@ jobs:
           echo "le token CLOUDFLARE_API_TOKEN doit inclure Zone:DNS:Edit +"
           echo "Workers Routes:Edit sur la zone kd-mc.com."
 
+      # Planning servi = planning fusionné (Kevin 30.10 « VERIFI reel », mesuré : la V2 de novembre fusionnée mais le KV gardait le
+      # planning du 12.10 — le routeur sert le KV D'ABORD). Lecture avant écriture : copie identique = 0 écriture KV.
+      # Production seulement : un déploiement de branche ne touche jamais aux données servies.
+      - name: Planning (données RH) → KV du routeur, relu à l'identique
+        if: ${{ github.ref_name == 'main' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash -eo pipefail {0}
+        run: bash tools/ci/deposer-donnees-rh-kv.sh
+
       - name: SSO — injecte le secret de signature (auto, fail-open si absent)
         working-directory: services/kdmc-router
         env:

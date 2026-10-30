@@ -16,13 +16,15 @@ t(/morte=!rvv&&!ordi/.test(code) && /Aucune session vivante/.test(code), 'une br
 t(/SELECT branche,dernier_id,maj FROM curseurs/.test(code) && /function etatBranche/.test(code) && /function dessinerSante/.test(code), 'bandeau « Santé des branches » : l\'état vient des preuves (curseur du pont + dernier message)');
 /* essai réel de la règle : une branche vivante sans pont_id dans reveils n'est PAS « morte » ; sans aucun signe, elle l'est */
 { const src = code.match(/const tms=[\s\S]*?function etatBranche\(k\)\{[\s\S]*?\n  \}/)[0];
-  const f = new Function('NONLUS', 'CURS', 'MSGS', 'REVEILS', src + '; return etatBranche;');
+  const f = new Function('NONLUS', 'CURS', 'MSGS', 'REVEILS', 'LU', src + '; return etatBranche;');
   const now = Date.now();
-  const vivante = f({ x: 3 }, { x: { maj: now - 3600e3 } }, [], [])('x');
-  const muette = f({ y: 3 }, {}, [], [])('y');
-  const lente = f({ z: 3 }, { z: { maj: now - 20 * 3600e3 } }, [], [{ pont_id: 'z' }])('z');
+  const vivante = f({ x: 3 }, { x: { maj: now - 3600e3 } }, [], [], {})('x');
+  const muette = f({ y: 3 }, {}, [], [], {})('y');
+  const lente = f({ z: 3 }, { z: { maj: now - 20 * 3600e3 } }, [], [{ pont_id: 'z' }], {})('z');
   t(!vivante.morte && !vivante.retard, 'curseur d\'il y a 1 h : vivante et à jour, même sans ligne reveils');
   t(muette.morte, 'aucun signe, aucune session : morte');
+  const litSansCurseur = f({ w: 2 }, { w: { maj: now - 30 * 3600e3 } }, [], [], { w: now - 600e3 })('w');
+  t(!litSansCurseur.morte, 'curseur vieux de 30 h MAIS message marqué lu il y a 10 min (lu_par) : vivante, pas « morte »');
   t(!lente.morte && lente.retard, 'session connue mais rien lu depuis 20 h avec du courrier : en retard');
 }
 console.log('\n' + ok + ' OK / ' + ko + ' échec(s)'); if (ko) process.exit(1);

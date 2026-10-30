@@ -375,13 +375,13 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
   }
   /* ---- RÉVEIL en un clic (25.10) : chaque session a un déclencheur sans horaire (table reveils) ; on le lance = elle se met au travail ---- */
   const REMOTE='Claude Code Remote';
-  let REVEILS=[], CURS={};
+  let REVEILS=[], CURS={}, LU={};
   const tms=v=>{const n=Number(v); if(Number.isFinite(n)&&n>1e11)return n; const d=Date.parse(String(v||'').replace(' ','T')+'Z'); return Number.isFinite(d)?d:0};
   /* 29.10 : l'état d'une branche vient de ses PREUVES (curseur du pont, dernier message), pas seulement de la table reveils — plusieurs lignes de reveils n'ont pas de pont_id et faisaient passer une branche vivante pour « morte » */
   function etatBranche(k){
     const n=NONLUS[k]||0, c=CURS[k], sv=MSGS.find(m=>String(m.de).toLowerCase()===k);
     const rvv=REVEILS.find(x=>String(x.pont_id||'').toLowerCase()===k), ordi=/^(pc-|arbre-pc|moulin-pc|pont-lenovo|detente|reverse)/.test(k);
-    const vu=Math.max(c?c.maj:0, sv?sv.ts:0), frais=!!vu&&Date.now()-vu<6*3600000;
+    const vu=Math.max(c?c.maj:0, sv?sv.ts:0, LU[k]||0), frais=!!vu&&Date.now()-vu<6*3600000;
     const morte=!rvv&&!ordi&&!frais;
     return {n,vu,frais,morte,rvv,ordi,retard:!morte&&n>0&&!frais};
   }
@@ -612,7 +612,8 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
       if(!t.length)throw {code:'vide'};
       const depuis=String(Date.now()-4*86400000);
       try{ MSGS=lignes(await sql('SELECT id,ts,de,a,sujet,substr(corps,1,600) AS corps,lu_par FROM messages WHERE ts>CAST(? AS INTEGER) ORDER BY id DESC LIMIT 400',[depuis]),'ts').map(m=>({...m,ts:Number(m.ts)})) }catch(e){}
-      try{ const nl=lignes(await sql("SELECT a, COUNT(*) AS n FROM messages WHERE id>(SELECT MAX(id)-400 FROM messages) AND a<>'toutes' AND (lu_par IS NULL OR instr(lu_par, a||';')=0) GROUP BY a"),'n'); NONLUS={}; nl.forEach(x=>NONLUS[String(x.a).toLowerCase()]=Number(x.n)) }catch(e){}
+      /* 30.10 : « qui n'a pas lu quoi » se déduit des messages DÉJÀ chargés (0 lecture D1 de plus) : un seul compteur de lecture, lu_par, avec un destinataire par message ou plusieurs séparés par « ; » ; la table curseurs ne dit plus « morte » une branche qui lit */
+      try{ NONLUS={}; LU={}; MSGS.forEach(m=>{ const lus=String(m.lu_par||'').split(';').filter(Boolean); lus.forEach(b=>{b=b.toLowerCase(); LU[b]=Math.max(LU[b]||0,m.ts)}); const dest=String(m.a||'').split(';').map(x=>x.trim().toLowerCase()).filter(Boolean); if(dest.includes('toutes'))return; dest.forEach(d=>{ if(d!==String(m.de).toLowerCase()&&!lus.some(b=>b.toLowerCase()===d))NONLUS[d]=(NONLUS[d]||0)+1 }) }) }catch(e){}
       try{ RELANCES=lignes(await sql("SELECT id,ts,a,sujet,lu_par FROM messages WHERE de='kevin-tableau' ORDER BY id DESC LIMIT 40"),'ts').map(m=>({...m,ts:Number(m.ts)})) }catch(e){}
       try{ CURS={}; lignes(await sql('SELECT branche,dernier_id,maj FROM curseurs'),'branche').forEach(x=>{CURS[String(x.branche).toLowerCase()]={id:Number(x.dernier_id),maj:tms(x.maj)}}) }catch(e){}
       MSGS.forEach(m=>{PONT[m.id]=m}); DERNIER_ID=MSGS.reduce((a,m)=>Math.max(a,Number(m.id)||0),DERNIER_ID);

@@ -3,6 +3,10 @@
 import { chercher, masquer, htmlEnTexte, lirePageFetch, LIMITES } from '../tools/delegue/chercheur.mjs';
 import { faireUnTravail, lirePageNavigateur } from '../tools/delegue/agent.mjs';
 import { api } from '../tools/delegue/jobs.mjs';
+import { lireMedia, estMedia, lireFichier, traiterDossier } from '../tools/delegue/vision.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 let ko = 0; const ok = (n, c, d = '') => { console.log((c ? '  ✓ ' : '  ✗ ') + n + (d ? ' — ' + d : '')); if (!c) ko++; };
 const verifier = process.env.SABOTAGE !== '1';
 const IA = (f) => async (d, c) => ({ ok: true, texte: typeof f === 'function' ? f(c) : f, voie: 'test', modele: 'm' });
@@ -64,5 +68,34 @@ ok('api : sans jeton, message clair', await api('/x', { jeton: '' }).then(() => 
 const repJson = (type, corps) => async () => ({ ok: true, url: 'https://deces.matchid.io/x', status: 200, headers: { get: () => type }, text: async () => corps });
 ok('lecture : une API publique en JSON (fichier INSEE) est lue comme du texte', (await lirePageFetch('https://deces.matchid.io/x', { fetchImpl: repJson('application/json; charset=utf-8', '{"death":{"date":"20010318"}}') })).texte.includes('20010318'));
 ok('lecture : une image ou un PDF reste refusé (type non lu)', await lirePageFetch('https://exemple.org/a.jpg', { fetchImpl: repJson('image/jpeg', 'x') }).then(() => false, (e) => /type non lu/.test(e.message)));
+/* Les yeux gratuits : image / PDF → texte (Gemini palier gratuit), clé hors dépôt */
+const octetsJpg = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+const mediaFetch = (seen) => async (url, o) => {
+  if (/generativelanguage/.test(url)) { seen.push({ url, cle: o.headers['x-goog-api-key'], corps: JSON.parse(o.body) }); return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Acte n° 97. Né le 22 avril 1896.' }] } }] }) }; }
+  return { ok: true, url, status: 200, headers: { get: () => 'image/jpeg' }, arrayBuffer: async () => octetsJpg };
+};
+ok('vision : une adresse d image est reconnue, une page non', estMedia('https://exemple.org/a/p1.jpg?x=1') && estMedia('https://exemple.org/r.pdf') && !estMedia('https://exemple.org/page.html'));
+const vuG = [];
+const lu = await lireMedia('https://exemple.org/p1.jpg', { fetchImpl: mediaFetch(vuG), cle: 'cle-test' });
+ok('vision : l image part en base64 à Gemini avec la clé en en-tête (jamais dans l adresse) et le texte revient', /n° 97/.test(lu.texte) && vuG[0].cle === 'cle-test' && !/key=/.test(vuG[0].url) && vuG[0].corps.contents[0].parts[1].inline_data.mime_type === 'image/jpeg');
+ok('vision : sans clé, refus clair et RIEN n est envoyé', await lireMedia('https://exemple.org/p1.jpg', { fetchImpl: mediaFetch([]), cle: '' }).then(() => false, (e) => /pas de clé/.test(e.message)));
+ok('vision : adresse interdite refusée avant tout envoi', await lireMedia('http://127.0.0.1/a.jpg', { fetchImpl: mediaFetch([]), cle: 'c' }).then(() => false, (e) => /non permise/.test(e.message)));
+s = serveur({ ...JOB, urls: ['https://exemple.org/registre.jpg'], consigne: 'acte de naissance 1896' });
+rr = await faireUnTravail({ pour: 'lenovo', jeton: 'j'.repeat(40), base: 'https://x/delegue/jobs', fetchImpl: s.fetchImpl, lirePage: async () => { throw new Error('la page ne doit pas être appelée pour une image'); }, lireImage: async () => ({ texte: 'Acte n° 97. Né le 22 avril 1896 à Monaco.', liens: [] }), demander: IA('{"trouvailles":[{"extrait":"Né le 22 avril 1896","pourquoi":"naissance"}],"liens":[],"synthese":"né le 22.04.1896"}'), journal: () => {} });
+ok('agent : une adresse d image est lue par les yeux gratuits, pas par la page', rr && rr.statut === 'fait' && s.rendus[0].corps.resultat.stats.trouvailles === 1);
+/* Dossier d'images déposées (captures du navigateur) */
+const dos = fs.mkdtempSync(path.join(os.tmpdir(), 'imgs-'));
+fs.writeFileSync(path.join(dos, 'a-acte.jpg'), octetsJpg); fs.writeFileSync(path.join(dos, 'b-acte.png'), octetsJpg); fs.writeFileSync(path.join(dos, 'note.txt'), 'x');
+const vuD = [];
+const optD = { fetchImpl: async (url, o) => { vuD.push(url); return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Acte n° 5 du 3 mars 1885' }] } }] }) }; }, cle: 'cle-test' };
+const n1 = await traiterDossier(dos, optD);
+ok('dossier : UNE image lue par appel, dans l ordre, transcription marquée premier jet', n1 === 'a-acte.jpg' && /PREMIER JET/.test(fs.readFileSync(path.join(dos, 'a-acte.jpg.transcription.txt'), 'utf8')) && /3 mars 1885/.test(fs.readFileSync(path.join(dos, 'a-acte.jpg.transcription.txt'), 'utf8')) && vuD.length === 1);
+const n2 = await traiterDossier(dos, optD); const n3 = await traiterDossier(dos, optD);
+ok('dossier : la suivante au 2e appel, rien ensuite (déjà lues, .txt ignoré)', n2 === 'b-acte.png' && n3 === null && vuD.length === 2);
+const dosE = fs.mkdtempSync(path.join(os.tmpdir(), 'imgs-')); fs.writeFileSync(path.join(dosE, 'x.jpg'), octetsJpg);
+await traiterDossier(dosE, { fetchImpl: async () => ({ ok: false, status: 429 }), cle: 'c' });
+ok('dossier : une erreur (quota 429) est notée à côté et l image n est pas relue en boucle', /vision HTTP 429/.test(fs.readFileSync(path.join(dosE, 'x.jpg.erreur.txt'), 'utf8')) && (await traiterDossier(dosE, optD)) === null);
+ok('fichier local : un chemin hors du dossier est refusé', await lireFichier(path.join(dos, '..', 'autre.jpg'), dos, optD).then(() => false, (e) => /hors du dossier/.test(e.message)));
+ok('fichier local : un type inconnu est refusé', await lireFichier(path.join(dos, 'note.txt'), dos, optD).then(() => false, (e) => /type non lu/.test(e.message)));
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Chercheur gratuit : extraits vérifiés, données masquées, page piégée sans effet, adresses permises, plafonds, travail rendu'));
 process.exit(ko ? 1 : 0);

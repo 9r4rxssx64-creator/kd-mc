@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.356 (30.10.2026)
+- La télémétrie vers Firebase se tait 24 h après un refus 401/403 (les règles exigent une identité que la page n'a pas) : plus de lignes rouges à chaque ouverture.
+
+---
+
 ## Apex Chat 1.1.355 — le journal du domaine part avec un pass FRAIS : plus aucun 401 (2026-10-30)
 - Mesuré par le Lenovo dans le Chrome de Kevin (pont 1442) après la 1.1.354 : dossiers 0 et tor 0 requête ≥ 400 (tâche 80 tenue), mais sur Apex Chat un `POST admin.kd-mc.com/log` répondait encore 401 UNE fois avant `/__sso/pass` : le pass RANGÉ (`localStorage kdmc_sso_token`) partait en premier et était périmé.
 - Corrigé : `K._accessEnvoi` demande un pass frais au domaine avant le premier envoi de la page, le garde en mémoire (`K._accessPassMemo`) pour les envois suivants, et sur 401 le vide et n'en redemande qu'un. Plus aucune lecture du pass rangé dans ce bloc (`K._accessPassRange` retirée).

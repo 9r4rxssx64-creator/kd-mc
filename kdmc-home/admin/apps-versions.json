@@ -12,7 +12,7 @@
   },
   "cmcteams.kd-mc.com": {
    "page": "index.html",
-   "version": "v9.990"
+   "version": "v9.991"
   },
   "apex-ai.kd-mc.com": {
    "page": "apex-ai-v13/index.html",
@@ -44,11 +44,11 @@
   },
   "departs.kd-mc.com": {
    "page": "tools/departs/index.html",
-   "version": "v1.115"
+   "version": "v1.116"
   },
   "cmcteams-light.kd-mc.com": {
    "page": "tools/departs/index.html",
-   "version": "v1.115"
+   "version": "v1.116"
   },
   "bot.kd-mc.com": {
    "page": "tools/crypto-bot-dashboard/index.html",

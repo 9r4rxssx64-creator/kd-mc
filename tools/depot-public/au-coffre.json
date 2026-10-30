@@ -349,6 +349,7 @@
   "tests/verify-monaco-fonds.mjs",
   "tests/verify-noms-prives.mjs",
   "tests/verify-noms-tolerants.mjs",
+  "tests/verify-novembre-v2.mjs",
   "tests/verify-nr5e.mjs",
   "tests/verify-paquet-pages.mjs",
   "tests/verify-parite-cmcteams-light.mjs",

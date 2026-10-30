@@ -9,6 +9,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.996 + light v1.120 — L'élève en formation reste VISIBLE dans son équipe d'origine, sans départ ; retour automatique à la fin (2026-10-30)
+- Demande de Kevin : « tant qu'ils sont en formation, ils restent dans l'équipe de formation… quand la formation est terminée sur le planning, tu les réintègres automatiquement dans leurs équipes… laisse un visuel de chaque personne en formation dans leur équipe d'origine, mais sans départ attribué… leur départ seulement dans leur équipe de formation (vendredi et samedi). »
+- Dans l'équipe d'origine : bandeau « 🎓 En formation — pas de départ dans cette équipe tant que dure la formation (leurs départs : Formation X, vendredi et samedi) », puis une ligne GRISÉE par élève (codes du planning seulement, aucun numéro) avec « 🎓 Formation CRAPS · GR1 ». Ils restent hors de la rotation et des totaux : les numéros des autres membres ne changent pas (contre-épreuve).
+- Fin de formation = lue sur le planning (PDF) : le récapitulatif du mois suivant n'a plus de groupe pour la personne → elle redevient une ligne normale avec ses départs dans son équipe, tout seul. Limite honnête : le PDF n'a pas de marqueur de fin en cours de mois ; la bascule se fait mois par mois.
+- Garde `test:formations-ecole` : 107 OK ; 8 rouges avec l'ancien code (prouvé discriminant) ; réintégration prouvée sur les données réelles (élèves d'octobre sans groupe en novembre).
 ## CMCteams v9.995 + light v1.119 — Chaque équipe « Formation » dit de QUOI, quels groupes, quelles équipes d'origine, quel mois (2026-10-30)
 - Demande de Kevin : « indique toujours la formation de quoi, en rapport à quoi, quelle équipe, parce que le jour où il y en aura plusieurs, il faudra les distinguer, faire des équipes différentes. »
 - Chaque carte Formation porte maintenant une bande de résumé : « 🎓 Formation CRAPS — école de CRAPS · groupes GR1, GR2, GR3 · 19 élèves venus de 6 équipes (CMC Éq.2, …) · Novembre 2026 » ; sous chaque élève : « GR1 · de CMC Éq.3 ». Même phrase dans CMCteams et la light (une seule source : `_cmcFormResume` / `_cmcFormPerso` dans `tools/shared/formations-ecole.js`, copie identique light). Deux écoles = deux cartes qui ne se confondent pas.

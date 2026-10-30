@@ -1,0 +1,46 @@
+name: Vérif RÉELLE — Liens EXTERNES des pages publiques (0 €, à la main)
+# Audit 1533 (30.10.2026, pont-check) : le robot « liens cliquables partout » ouvre les liens internes ; celui-ci ouvre les liens
+# vers l'EXTÉRIEUR relevés dans les sources des pages publiques (App Store, archives, sites officiels, PayPal…) et classe :
+# OK · porte/anti-robot · privé (dépôt GitHub) · RÉSEAU · MORT (→ rouge). Aucun secret, aucune connexion : des adresses publiques
+# et des nombres seulement. Jamais de cron (règle Kevin) : lancement à la main, après une livraison qui touche des liens.
+#   gh api -X POST repos/9r4rxssx64-creator/kd-mc/actions/workflows/verif-liens-externes.yml/dispatches -f ref=main
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verif-liens-externes
+  cancel-in-progress: false
+jobs:
+  verif:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: "Liens externes : ouvrir chacun, classer (nombres et adresses publiques seulement)"
+        id: robot
+        shell: bash -euo pipefail {0}
+        run: |
+          set +e
+          node tests/verif-liens-externes.mjs 2>&1 | tee /tmp/liens-externes.log
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+      - name: Rapport lisible depuis l'agent (annotations)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/liens-externes.log ] || { echo "::notice title=Liens externes::(pas de journal)"; exit 0; }
+          grep -aE '^===|^==|^[0-9]{1,3}( |$)|✅|❌' /tmp/liens-externes.log | head -90 > /tmp/rap.txt
+          split -l 12 -d /tmp/rap.txt /tmp/bl_
+          n=0
+          for f in /tmp/bl_*; do
+            n=$((n+1))
+            msg=$(sed -e 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::notice title=Liens externes ${n}::${msg}"
+          done
+          echo "::notice title=Liens externes bilan::${n} bloc(s) publiés en annotations"
+      - name: Verdict
+        if: always()
+        run: test "${{ steps.robot.outputs.rc }}" = "0"

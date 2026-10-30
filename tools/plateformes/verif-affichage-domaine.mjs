@@ -72,7 +72,10 @@ export function mesurer(tel) {
       if (lab && (lab.contains(e) || (e.id && lab.htmlFor === e.id))) { /* même champ */ }
       else if (carte) { /* marqueur / tuile de carte */ }
       else if (ephemere) toasts.push(court(e));
-      else caches.push(court(e) + ' ⟵ sous ' + court(dessus));
+      /* 30.10 : dire QUI recouvre (position, z-index, début du texte, parent) — « sous div » ne permettait pas de savoir quel élément du routeur ou de la page cache le bouton */
+      else { let cs = {}; try { cs = getComputedStyle(dessus); } catch (_) { /* style illisible */ }
+        const qui = court(dessus) + '{' + (cs.position || '?') + (cs.zIndex && cs.zIndex !== 'auto' ? ' z' + cs.zIndex : '') + ' "' + String(dessus.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 18) + '" ← ' + court(dessus.parentElement) + '}';
+        caches.push(court(e) + ' ⟵ sous ' + qui); }
     }
     if (tel && (r.width < 44 || r.height < 44) && e.tagName !== 'INPUT' && e.tagName !== 'TEXTAREA' && e.tagName !== 'SELECT') petits.push(court(e));
   }

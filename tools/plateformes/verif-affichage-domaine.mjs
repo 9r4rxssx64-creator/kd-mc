@@ -255,6 +255,8 @@ export function bilan(res) {
     for (const x of [...(r.cacheEx || []).slice(0, 2).map((v) => 'caché ' + v), ...(r.hautEx || []).slice(0, 1).map((v) => 'haut ' + v)]) if (a.ex.size < 4) a.ex.add(x);
     a.cache += r.cache || 0; a.haut += r.haut || 0; a.deborde = Math.max(a.deborde, r.deborde || 0); a.js += r.js || 0;
     if (ECRANS.find((e) => e.nom === r.ecran)?.tel) a.petit = Math.max(a.petit, r.petit || 0);
+    /* 30.10.2026 (audit 1533) : nommer les cibles < 44 px (balise#id.classe seulement) pour pouvoir les corriger, pas seulement les compter */
+    if (r.petitEx && r.petitEx.length && ECRANS.find((e) => e.nom === r.ecran)?.tel && !a.petitEx) a.petitEx = r.petitEx;
     if (r.err || r.cache || r.haut || r.deborde || r.js) a.ecransKO.push(r.ecran);
   }
   return parApp;
@@ -269,7 +271,7 @@ if (process.argv[1] && process.argv[1].endsWith('verif-affichage-domaine.mjs')) 
   for (const [app, a] of Object.entries(B)) {
     const mauvais = a.cache || a.haut || a.deborde || a.js || a.encoche || a.morts || a.sansRetour || a.ecransKO.length;
     if (mauvais) ko++;
-    console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.morts ? ' · ' + a.morts + ' bouton(s) sans réaction' : ''}${a.sansRetour ? ' · ' + a.sansRetour + ' page(s) sans retour' : ''}${a.encoche ? ' · encoche iPhone' : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.jsEx ? ' · js ex : ' + a.jsEx.join(' / ') : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
+    console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.morts ? ' · ' + a.morts + ' bouton(s) sans réaction' : ''}${a.sansRetour ? ' · ' + a.sansRetour + ' page(s) sans retour' : ''}${a.encoche ? ' · encoche iPhone' : ''}${a.petitEx ? ' · petits : ' + a.petitEx.join(' | ') : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.jsEx ? ' · js ex : ' + a.jsEx.join(' / ') : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
   }
   console.log(`\nℹ️ ${Object.keys(B).length} apps × ${ECRANS.length} écrans = ${res.length} pages ; ${ko} app(s) à corriger`);
   if (process.env.SORTIE) writeFileSync(process.env.SORTIE, JSON.stringify(res, null, 1));

@@ -1,6 +1,6 @@
 /* GARDE — le chercheur gratuit et l'agent du Lenovo : extraits vérifiés mot pour mot, e-mails masqués, page piégée sans effet, adresses permises seulement, plafonds, travail rendu.
  * `npm run test:delegue-agent` · SABOTAGE=1 : la vérification des extraits est coupée → doit rougir. */
-import { chercher, masquer, htmlEnTexte, LIMITES } from '../tools/delegue/chercheur.mjs';
+import { chercher, masquer, htmlEnTexte, lirePageFetch, LIMITES } from '../tools/delegue/chercheur.mjs';
 import { faireUnTravail, lirePageNavigateur } from '../tools/delegue/agent.mjs';
 import { api } from '../tools/delegue/jobs.mjs';
 let ko = 0; const ok = (n, c, d = '') => { console.log((c ? '  ✓ ' : '  ✗ ') + n + (d ? ' — ' + d : '')); if (!c) ko++; };
@@ -61,5 +61,8 @@ ok('agent : prend le travail, rend un rapport vérifié avec SON jeton', rr && r
 s = serveur(JOB);
 ok('agent : rien à faire → null, rien rendu', (await faireUnTravail({ pour: 'lenovo', jeton: 'j'.repeat(40), base: 'https://x/delegue/jobs', fetchImpl: serveur(null).fetchImpl, lirePage: async () => ({}), demander: IA('{}') })) === null);
 ok('api : sans jeton, message clair', await api('/x', { jeton: '' }).then(() => false, (e) => /pas de jeton/.test(e.message)));
+const repJson = (type, corps) => async () => ({ ok: true, url: 'https://deces.matchid.io/x', status: 200, headers: { get: () => type }, text: async () => corps });
+ok('lecture : une API publique en JSON (fichier INSEE) est lue comme du texte', (await lirePageFetch('https://deces.matchid.io/x', { fetchImpl: repJson('application/json; charset=utf-8', '{"death":{"date":"20010318"}}') })).texte.includes('20010318'));
+ok('lecture : une image ou un PDF reste refusé (type non lu)', await lirePageFetch('https://exemple.org/a.jpg', { fetchImpl: repJson('image/jpeg', 'x') }).then(() => false, (e) => /type non lu/.test(e.message)));
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Chercheur gratuit : extraits vérifiés, données masquées, page piégée sans effet, adresses permises, plafonds, travail rendu'));
 process.exit(ko ? 1 : 0);

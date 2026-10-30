@@ -3522,7 +3522,7 @@
       "maj": "2026-10-30",
       "attend_kevin": null,
       "attend_session": "apex-cloud : /api/keys/device 403 + Firebase 401 ; cloud-installer : /log 503",
-      "note": "30.10 : Tor v1.10 (lien de retour dans l en-tête, h1 libéré de la pastille du routeur) en PR ; Apex 1.1.355 mesuré 0 × 401 ; tâche 80 close"
+      "note": "30.10 soir : audit 1533 liens/pages publiques (tâche 103) : 33 liens morts corrigés + robot verif-liens-externes en PR ; 5 morts restants signalés aux propriétaires"
     }
   },
   "messages": [

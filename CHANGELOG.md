@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Pages publiques : 33 liens morts vers l'ancien GitHub Pages corrigés + robot gratuit « liens externes » (2026-10-30, audit 1533)
+- Le robot public « liens cliquables partout » (run 41135721733, admin, iPhone) : 30 pages, 0 lien interne mort, 0 ancre sans cible, 30/30 bouton installer. Il n'ouvre pas les liens vers l'extérieur : un nouveau robot le fait (`tests/verif-liens-externes.mjs`, workflow public `verif-liens-externes.yml`, 0 €, à la main). Première mesure : 102 liens externes, 23 morts.
+- Corrigé ici (qui constate corrige) : 30 liens `9r4rxssx64-creator.github.io/CMCteams/…` (hébergeur arrêté le 16.10) dans 8 pages servies sous cmcteams.kd-mc.com/tools/ et iRemoteHub → adresses du domaine ; + l'app Vinegar (Outils gratuits) vers sa fiche App Store actuelle ; + le lien App Social Studio. Après correction : 87 liens, 68 OK, 5 porte/anti-robot, 5 privés (dépôt), 4 réseau, 5 morts restants signalés à leurs propriétaires (CMCteams météo + webcam, Apex AI page RGPD, arbre annuaire, cuisine Nicéa).
+- Garde : `test:verif-liens-externes-outil` (classification + exclusions, sans réseau) dans `test:ci`. Leçon 811.
+
 ## Apex AI 13.4.397 — service worker rétabli (30.10.2026)
 - `sw.js` remis dans le paquet publié (il avait disparu en 13.4.396, hors-ligne et mises à jour coupés ~2 h) ; garde ajoutée.
 

@@ -152,11 +152,11 @@ input[type=range]{width:100%;height:44px;accent-color:var(--a1)}
     </section>
   </div>
 </div>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="voix" data-version="v1.0.0" data-color="#8b5cf6" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="voix" data-version="v1.0.1" data-color="#8b5cf6" defer></script>
 <script>
 (function () {
   'use strict';
-  var VER = '1.0.0';
+  var VER = '1.0.1';
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function entetes() { var h = {}; try { var t = localStorage.getItem('kdmc_admin_token'); var p = localStorage.getItem('kdmc_sso_token'); if (t) h['x-kdmc-admin'] = t; if (p) h.Authorization = 'Bearer ' + p; } catch (e) { /* stockage fermé */ } return h; }
@@ -322,18 +322,22 @@ input[type=range]{width:100%;height:44px;accent-color:var(--a1)}
     if (m === 'qwen') { var ref = String(v.texteRef || '').trim(); return [fichier, ref, texte, ETAT.langues[l] || 'French', !ref, '1.7B']; }
     return [texte, l, fichier, Number($('expr').value), 0.8, 0, 0.5];
   }
+  /* Audit 31.10 : un moteur qui ne rend jamais son flux bloquait la page sans fin ; passé ce délai on prend le suivant. */
+  var DELAI_MOTEUR = window.KDMC_VOIX_DELAI || 120000;
   function appelMoteur(m, blob, texte, v, l) {
     var fd = new FormData(); fd.append('files', blob, 'voix.wav');
-    return fetch(m.base + '/gradio_api/upload', { method: 'POST', body: fd }).then(function (r) { if (!r.ok) throw new Error('envoi ' + r.status); return r.json(); }).then(function (p) {
+    var ctl = new AbortController(), minuteur = setTimeout(function () { ctl.abort(); }, DELAI_MOTEUR);
+    function fin() { clearTimeout(minuteur); }
+    return fetch(m.base + '/gradio_api/upload', { method: 'POST', body: fd, signal: ctl.signal }).then(function (r) { if (!r.ok) throw new Error('envoi ' + r.status); return r.json(); }).then(function (p) {
       var fichier = { path: p[0], meta: { _type: 'gradio.FileData' } };
-      return fetch(m.base + '/gradio_api/call/' + m.fn, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: donnees(m.id, fichier, texte, v, l) }) });
+      return fetch(m.base + '/gradio_api/call/' + m.fn, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: donnees(m.id, fichier, texte, v, l) }), signal: ctl.signal });
     }).then(function (r) { if (!r.ok) throw new Error('demande ' + r.status); return r.json(); }).then(function (j) {
-      return fetch(m.base + '/gradio_api/call/' + m.fn + '/' + j.event_id).then(function (r) { return r.text(); });
+      return fetch(m.base + '/gradio_api/call/' + m.fn + '/' + j.event_id, { signal: ctl.signal }).then(function (r) { return r.text(); });
     }).then(function (flux) {
       var u = /event:\s*complete/.test(flux) && (flux.match(/"url":\s*"(https:\/\/[^"]+\.hf\.space\/gradio_api\/file=[^"]+)"/) || [])[1];
       if (!u) throw new Error(/quota|ZeroGPU|exceeded/i.test(flux) ? 'quota' : 'pas de résultat');
-      return fetch(u).then(function (r) { if (!r.ok) throw new Error('audio ' + r.status); return r.arrayBuffer(); });
-    });
+      return fetch(u, { signal: ctl.signal }).then(function (r) { if (!r.ok) throw new Error('audio ' + r.status); return r.arrayBuffer(); });
+    }).then(function (buf) { fin(); return buf; }, function (e) { fin(); throw e; });
   }
   function ordre() {
     var c = $('moteur').value, l = ETAT.moteurs.slice();

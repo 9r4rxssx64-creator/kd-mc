@@ -404,6 +404,7 @@
   "tests/verify-sw-navigation.mjs",
   "tests/verify-tel-invite-portail.mjs",
   "tests/verify-validation-par-mail-docs.mjs",
+  "tests/verify-visibilite-roles.mjs",
   "tests/verify-visiteur-ne-vide-pas.mjs",
   "tools/approvals/e2e-local.mjs",
   "tools/arbre/actes-verif.mjs",

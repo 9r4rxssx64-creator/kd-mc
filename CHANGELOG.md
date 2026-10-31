@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.125 + CMCteams v10.001 — Chacun ne voit que ce qui le concerne : la Formation seulement pour ceux qui l'ont, l'info cadre seulement pour les cadres (2026-10-31)
+- **Kevin** : « Dans le cadre, et on affiche la formation seulement à ceux qui l'ont. Et seulement l'info cadre pour les cadres. »
+- **Fait (light ET CMCteams, même livraison)** : un élève voit SA Formation seulement ; un professeur (y compris détaché AF) voit la famille des professeurs ; un employé ordinaire ne voit aucune Formation ; un cadre (Pit Boss / Superviseur) ne voit QUE les équipes de cadres ; l'admin voit tout. Light : liste des tableaux, mois, recherche, ouverture forcée (`_depPeutVoir`, repli `_depRepliId`) ; CMCteams : écran « Départs » (`cmcPeutVoirEquipe`).
+- **Limites dites** : c'est de l'affichage (les données restent dans la page, comme pour tout l'écran Départs) ; les autres écrans de CMCteams ne sont pas filtrés.
+- **Garde** : `tests/verify-visibilite-roles.mjs` (`test:visibilite-roles`, dans `test:ci`) — 21 contrôles, vraies données, rouge sous `SABOTAGE=1` (14 ❌).
+
 ## Portail v1.0.88 — le menu « 🛍️ Les boutiques » s'ouvre d'office (2026-10-31, Kevin)
 - Kevin : « laisse-le ouvert d'office » (Rotaplan et Devenir croupier y sont rangés ; il ne les voyait pas). `<details class="grp" open>` sur ce seul menu ; les boutiques en construction restent fermées au fond. Garde : `tests/verify-portail-range.mjs` (rouge sans l'attribut). Portail 1.0.87 → 1.0.88.
 

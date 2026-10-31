@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.128 + CMCteams v10.004 — Les équipes Formation et Professeurs sont de nouveau visibles par tous (2026-10-31)
+- **Kevin** : « Plus d'équipes formation » ; choix donné : « Visible par tous ». La restriction de la v1.125 / v10.001 (la Formation seulement pour ceux qui y figurent) est levée : les équipes « Formation <JEU> » (CRAPS, EUROPE…) et « Professeurs / formateurs » sont vues par tout le monde, élèves, professeurs, employés ordinaires et cadres.
+- **Fait (light ET CMCteams, même livraison)** : light `_depPeutVoir` (les tableaux de la famille « ecole » passent en premier) ; CMCteams `cmcPeutVoirEquipe` + la liste de l'écran « Départs » ajoute les équipes Formation à celles de chacun (avant, un employé rattaché à une équipe ne voyait que la sienne et son miroir).
+- **Inchangé** : le tableau / les équipes de cadres restent réservés aux cadres et à l'admin ; un cadre voit les cadres + les Formations ; l'info « cadres » des séances (v1.127 / v10.003) reste réservée aux cadres.
+- **Garde** : `test:visibilite-roles` réécrit (23 ✅ ; l'ancien code → 14 ❌ prouvés ; `SABOTAGE=1` rouge) — vrai navigateur, vraies données.
+
 ## light v1.127 + CMCteams v10.003 — L'info « cadres » (séance de leur choix, créneaux) n'est vue que par les cadres (2026-10-31)
 - **Kevin** (capture de la light, bloc « FORMATION CMS ») : « Encore l'info des cadres » — la ligne « 👔 Les cadres qui souhaitent approfondir la formation sont les bienvenus à la séance de leur choix » s'affichait encore à Kevin (admin, chef d'équipe, pas cadre).
 - **Fait (light ET CMCteams, même livraison)** : cette ligne et les créneaux « Cadres : 11h-12h ou 14h-15h » ne s'affichent plus qu'à un cadre (Pit Boss / Superviseur). Light : `renderSeances` (`_depEstCadre(ME)`) ; CMCteams : `tools/shared/seances-ui.js` (`cmcIsCadreUnified`) — carte « Formation CMS · mes séances », encart d'infos et en-tête de la page Séances.

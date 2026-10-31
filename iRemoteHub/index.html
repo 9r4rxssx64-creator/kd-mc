@@ -221,7 +221,7 @@ label { display: block; font-size: .8rem; color: var(--fg-dim); margin: 8px 0 4p
 "use strict";
 
 // ========== Constantes ==========
-const APP_VER = "v0.1.1";
+const APP_VER = "v0.1.2";
 const NS = "iremotehub_";
 const APEX_ORIGINS = ["https://apex.local", "https://localhost", window.location.origin];
 
@@ -1119,9 +1119,17 @@ window.callShortcut = callShortcut;
 window.exportData = exportData;
 window.importData = importData;
 window.A = A; window.NS = NS; window.lsRemove = lsRemove; window.ss = ss; window.render = render;
+window.APP_VER = APP_VER; /* lu par la pastille de version partagée (data-version-global) : un seul numéro */
 
 document.addEventListener("DOMContentLoaded", boot);
 if (document.readyState !== "loading") boot();
 </script>
+<!-- 31.10.2026 (tâche 107, Servi : « badge - » sur les 5 écrans) : pastille de version partagée, règle « badge visible partout » -->
+<script src="/CMCteams/tools/shared/version-badge-pwa.js"
+        data-project="iremotehub"
+        data-version="v0.1.2"
+        data-version-global="APP_VER"
+        data-color="#22cc77"
+        defer></script>
 </body>
 </html>

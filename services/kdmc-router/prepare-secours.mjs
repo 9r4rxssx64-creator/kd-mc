@@ -110,7 +110,12 @@ const PARTAGES = [
   /* Un seul fichier posé à la racine de tools/ : Apex y renvoie (« décodeur de
      codes »). Il était servi par github.io ; sans lui ici, le lien meurt le jour
      où le dépôt passe en privé. On copie CE fichier, pas tout le dossier. */
-  { chemin: 'tools', fichiers: ['codes-decoder.html'], quoi: 'décodeur de codes (lien Apex)' },
+  /* 31.10 (audit 1533, pont-check puis pc-config, mesuré dans le Chrome de Kevin) : dix pages d'outils référencées (KEVIN_INVENTORY, liens corrigés en PR 5377)
+     répondaient 404 « absent de la copie embarquée » depuis l'arrêt de GitHub Pages (16.10). Elles sont embarquées, derrière la même porte que le reste de
+     cmcteams.kd-mc.com ; rien de secret (le seul « ghp_ » est un champ de saisie vide). */
+  { chemin: 'tools', fichiers: ['codes-decoder.html', 'calc-conventions.html', 'apex-landing.html', 'gen-bulletin-paie.html', 'planning-weekend.html', 'kevin-todo-iphone.html', 'apex-visual-inspector.html', 'apex-emergency-reset.html', 'apex-ios-bridge-deploy.html'], quoi: 'outils racine (décodeur de codes, calc conventions, landing Apex…)' },
+  { chemin: 'iRemoteHub', quoi: 'iRemoteHub (lien de l\'inventaire)' },
+  { chemin: 'tools/social', quoi: 'réseaux sociaux (lien de l\'inventaire)' },
   { chemin: 'shops/_shared', quoi: 'briques communes des boutiques — 10 pages' },
   /* 11.10.2026 — Kevin : « Finances m'envoie sur CMCteams ». MESURÉ : les tuiles « Finances » et « Messages employés » du portail
      (cmcteams.kd-mc.com/tools/finances/ et /tools/messages/) pointaient vers deux dossiers ABSENTS du paquet. L'hébergeur, ne les trouvant

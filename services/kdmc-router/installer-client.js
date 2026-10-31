@@ -41,9 +41,20 @@ export const INSTALLER_JS = String.raw`(function () {
             var o = autres[k].getBoundingClientRect(), m = b.getBoundingClientRect();
             if (o.width && o.left < m.right && o.right > m.left) bas = Math.max(bas, Math.round(window.innerHeight - o.top + 8));
           }
+          /* 31.10 (audit 1533, apex-cloud, robot d'affichage) : la pastille recouvrait le premier onglet de la barre du bas d'Apex AI (.ax-tabbar). Même règle que le badge :
+             tout élément fixe ou collant qui occupe le bas de l'écran sous la pastille la fait remonter au-dessus de lui (hauteur mesurée, pas devinée). */
+          try {
+            var m2 = b.getBoundingClientRect(), pts = document.elementsFromPoint(m2.left + 12, window.innerHeight - 24);
+            for (var q = 0; q < pts.length; q++) {
+              var e2 = pts[q]; if (e2 === b || e2 === document.body || e2 === document.documentElement) continue;
+              var cs = window.getComputedStyle(e2); if (cs.position !== 'fixed' && cs.position !== 'sticky') continue;
+              var r2 = e2.getBoundingClientRect();
+              if (r2.height > 0 && r2.height <= 140 && r2.top > window.innerHeight * 0.5 && r2.bottom >= window.innerHeight - 2) { bas = Math.max(bas, Math.round(window.innerHeight - r2.top + 8)); break; }
+            }
+          } catch (e3) { /* mesure impossible : la pastille reste en bas à gauche */ }
           b.style.bottom = bas > 8 ? bas + 'px' : 'calc(env(safe-area-inset-bottom,0px) + 8px)';   /* au-dessus d'un voisin : sa hauteur mesurée inclut déjà la zone de sécurité */
         };
-        degager(); setTimeout(degager, 800); setTimeout(degager, 3000); window.addEventListener('resize', degager);
+        degager(); setTimeout(degager, 800); setTimeout(degager, 3000); setTimeout(degager, 8000); setTimeout(degager, 15000); window.addEventListener('resize', degager);
         /* 23.10 soir (Kevin : « Tableau KDMC a disparu… je ne suis pas connecté en admin… il était censé y avoir un bouton admin partout ») :
            le marqueur dure 1 an, la session admin moins. Le bouton affichait « 👑 Vue admin » alors que l'admin avait expiré, puis disparaissait.
            Il demande maintenant l'état VRAI au domaine (1 requête, appareils de Kevin seulement) ; admin expiré → « 🔑 Connexion admin »

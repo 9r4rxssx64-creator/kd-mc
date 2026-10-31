@@ -1359,3 +1359,5 @@ Le warning `Nav 0 onglets (min Infinity)` était un faux positif du test (nav re
 | **v9.63** | Tool use IA custom — 26 outils (21 lecture + 5 admin). IA_TOOLS[] + _iaExecuteTool + guard AID sur les 5 admin. |
 | **v9.62** | Multi-axe : bulles chat transparentes + fix iOS zoom + CSP élargie + upload modéré + PLANS_CMC/CDP + galerie 75 photos salons + 15 tests unitaires. |
 
+
+- 31.10 — apex-ai/privacy.html : lien DPA Anthropic mort (404) remplacé par /legal/data-processing-addendum (vérifié 200). Fichier ancien non servi, aucun impact site.

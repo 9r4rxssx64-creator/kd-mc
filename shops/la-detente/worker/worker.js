@@ -15,7 +15,9 @@ const ALLOW_ORIGINS = [
 ];
 const APP_TAG = 'ld-studio-v1';
 const AI_GEN = '@cf/black-forest-labs/flux-1-schnell';
-const AI_EDIT = '@cf/runwayml/stable-diffusion-v1-5-img2img';
+// Retouche : FLUX.2 klein 4B (l'ancien img2img est refusé au compte : erreur 5018, mesuré le 31.10).
+// Image d'entrée < 512 px (le studio la réduit) ; ~110 neurones par retouche.
+const AI_EDIT = '@cf/black-forest-labs/flux-2-klein-4b';
 const POLLI = 'https://image.pollinations.ai/prompt/';
 const AI_JOUR = 40;
 let _nJour = 0; // images du jour déjà comptées (plafond D1), lu par le choix de la source
@@ -50,10 +52,17 @@ async function genPollinations(texte) {
 async function genWorkersAI(env, texte, image) {
   if (!env.AI) throw new Error('workers-ai:absent');
   if (image) {
-    const out = await env.AI.run(AI_EDIT, { prompt: texte.slice(0, 900), image: Array.from(b64VersOctets(image.data)), strength: 0.6 });
-    const buf = out instanceof ArrayBuffer ? out : await new Response(out).arrayBuffer();
+    const form = new FormData();
+    form.append('prompt', texte.slice(0, 900));
+    form.append('input_image_0', new Blob([b64VersOctets(image.data)], { type: image.mimeType || 'image/jpeg' }), 'image');
+    form.append('width', '1024');
+    form.append('height', '1024');
+    const corps = new Response(form);
+    const out = await env.AI.run(AI_EDIT, { multipart: { body: corps.body, contentType: corps.headers.get('content-type') } });
+    if (out && typeof out.image === 'string' && out.image.length > 1000) return { model: 'workers-ai-flux2-edit', mime: 'image/jpeg', data: out.image };
+    const buf = out instanceof ArrayBuffer ? out : (out && out.image === undefined && out.getReader ? await new Response(out).arrayBuffer() : null);
     if (!buf || buf.byteLength < 2000) throw new Error('workers-ai-edit:vide');
-    return { model: 'workers-ai-img2img', mime: 'image/png', data: b64(buf) };
+    return { model: 'workers-ai-flux2-edit', mime: 'image/png', data: b64(buf) };
   }
   const out = await env.AI.run(AI_GEN, { prompt: texte.slice(0, 2000), steps: 4 });
   if (!out || !out.image) throw new Error('workers-ai:vide');

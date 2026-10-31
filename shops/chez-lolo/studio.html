@@ -761,7 +761,7 @@ function aiEditRun(id){
  if(!_aiCfg||!_aiCfg.worker_url){if(hint)hint.textContent="Service IA non configuré.";return}
  if(btn){btn.disabled=true;btn.textContent="… traitement";}
  if(hint)hint.textContent="L'IA retravaille ta photo (10-25 s)…";
- _rasterize(l.href,1024,function(data){
+ _rasterize(l.href,500,function(data){ /* < 512 px : exigé par le moteur de retouche gratuit (FLUX.2 klein) */
   if(!data){if(hint)hint.textContent="⚠️ Cette image (web) interdit la copie. Importe une photo via 📁/🖼️ pour la modifier.";if(btn){btn.disabled=false;btn.textContent="✨ Modifier";}return}
   fetch(_aiCfg.worker_url,{method:"POST",headers:{"Content-Type":"application/json","x-ld-app":_aiCfg.app_tag||"ld-studio-v1"},body:JSON.stringify({prompt:p,image:data})})
    .then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});})

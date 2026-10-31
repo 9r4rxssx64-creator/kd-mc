@@ -98,7 +98,7 @@ chk(r.status === 429, '12. au-delà de 150/jour au total → 429');
 lignes.clear(); appels.length = 0;
 const appelsAI = [];
 const promptsAI = [];
-const AI = { async run(m, e) { appelsAI.push(m); if (globalThis.__aiKo) throw new Error('quota'); if (m.includes('m2m100')) return { translated_text: 'EN ' + e.text }; promptsAI.push(e.prompt); return m.includes('img2img') ? new Uint8Array(3000).buffer : { image: 'QUJD' }; } };
+const AI = { async run(m, e) { appelsAI.push(m); if (globalThis.__aiKo) throw new Error('quota'); if (m.includes('m2m100')) return { translated_text: 'EN ' + e.text }; if (e && e.multipart) { promptsAI.push('multipart'); return { image: 'Q'.repeat(3000) }; } promptsAI.push(e.prompt); return { image: 'QUJD' }; } };
 const envL = { LD_DB: D1, AI };
 r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '7.7.7.7' }), envL);
 let j = await r.json();
@@ -116,6 +116,17 @@ lignes.set([...lignes.keys()].find(c => c.startsWith('g:')), 40);
 r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'chat' }, ip: '7.7.7.10' }), envL);
 j = await r.json();
 chk(j.model === 'pollinations-flux' && appelsAI.length === 0, '13d. au-delà de 40 images/jour, Workers AI n\'est plus appelé (forfait gratuit des neurones protégé)');
+/* 31.10 : la retouche passait par stable-diffusion img2img, refusé au compte (5018, mesuré en ligne) → FLUX.2 klein 4B. */
+globalThis.__polliKo = true; appelsAI.length = 0; lignes.clear();
+r = await gem.fetch(req(G, { method: 'POST', tag: 'ld-studio-v1', body: { prompt: 'rends le chat blanc', image: 'data:image/jpeg;base64,' + 'QUJD'.repeat(800) }, ip: '7.7.7.11' }), envL);
+j = await r.json();
+chk(r.status === 200 && j.mode === 'edit' && j.model === 'workers-ai-flux2-edit' && appelsAI.includes('@cf/black-forest-labs/flux-2-klein-4b') && !appelsAI.some(m => m.includes('img2img')), '13g. retouche d\'une image : FLUX.2 klein (multipart), plus jamais l\'img2img refusé au compte');
+globalThis.__polliKo = false;
+for (const b of ['la-detente', 'chez-lolo']) {
+  const st = fs.readFileSync(path.join(RACINE, 'shops', b, 'studio.html'), 'utf8');
+  const m = st.match(/_rasterize\(l\.href,(\d+),/);
+  chk(m && Number(m[1]) < 512, `13h. ${b} : l'image envoyée à la retouche fait moins de 512 px (exigé par le moteur)`);
+}
 const toml = fs.readFileSync(path.join(RACINE, 'shops/la-detente/worker/wrangler.toml'), 'utf8');
 chk(/\[ai\]\s*\nbinding = "AI"/.test(toml), '13e. wrangler.toml lie Workers AI (binding AI)');
 chk(/binding = "LD_DB"/.test(toml), '13. wrangler.toml lie la base D1 (LD_DB)');

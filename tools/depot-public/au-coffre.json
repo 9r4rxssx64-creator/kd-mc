@@ -304,6 +304,7 @@
   "tests/verify-equite-departs.mjs",
   "tests/verify-erreurs-cmc.mjs",
   "tests/verify-etat-du-moment.mjs",
+  "tests/verify-favicons-journal.mjs",
   "tests/verify-fb-admin-pages.mjs",
   "tests/verify-fb-domaine-cmc.mjs",
   "tests/verify-fiche-premiere-connexion.mjs",

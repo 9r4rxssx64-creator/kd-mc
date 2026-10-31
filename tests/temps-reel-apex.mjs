@@ -136,6 +136,8 @@ try {
   const dBA = await attendre(A.p, jetonBA, 20000);
   noter(`2. B → A : ${dBA >= 0 ? 'ARRIVÉ chez A en ' + (dBA / 1000).toFixed(1) + ' s, sans recharger' : 'PAS ARRIVÉ chez A après 20 s'}`);
   ok = dApp >= 0 && dAB >= 0 && dBA >= 0;
+  /* 31.10 : chaque compte efface sa ligne Apex Chat lui-même, tout de suite (Kevin : « tu peux créer mais efface tout après ») */
+  for (const x of [A, B]) await x.p.evaluate(async () => { try { const r = await fetch('https://apex-chat-api.9r4rxssx64.workers.dev/api/users/me', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + K.token }, body: JSON.stringify({ confirm: 'SUPPRIMER' }) }); return r.status; } catch (e) { return 'erreur'; } }).then((st) => noter('nettoyage : ligne Apex Chat effacée (HTTP ' + st + ')')).catch(() => noter('nettoyage : ligne Apex Chat NON effacée (page illisible)'));
   await A.ctx.close().catch(() => {}); await B.ctx.close().catch(() => {});
 } catch (e) {
   noter('ERREUR du robot : ' + String(e && e.message).slice(0, 200));

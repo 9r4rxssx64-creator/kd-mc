@@ -1370,3 +1370,5 @@ Le warning `Nav 0 onglets (min Infinity)` était un faux positif du test (nav re
 
 
 - 31.10 — apex-ai/privacy.html : lien DPA Anthropic mort (404) remplacé par /legal/data-processing-addendum (vérifié 200). Fichier ancien non servi, aucun impact site.
+
+- 31.10 — Robots Apex Chat (fonctions-apex, temps-reel-apex) : chaque compte de test efface sa ligne Apex Chat tout de suite (DELETE /api/users/me) au lieu d attendre 03:00 ; 35 lignes de test + 179 connexions effacees a la main (Kevin : « tu peux creer mais efface tout apres »). Garde test:robots-apex-effacent.

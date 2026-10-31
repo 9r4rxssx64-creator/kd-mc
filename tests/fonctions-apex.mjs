@@ -317,6 +317,8 @@ try {
     noter('Service worker installé (hors-ligne + notifications)', sw && sw.actif, JSON.stringify(sw));
   });
 
+  /* 31.10 (Kevin : « tu peux créer mais efface tout après ») : chaque compte efface sa ligne Apex Chat LUI-MÊME, tout de suite (suppression de compte du serveur), au lieu d'attendre le nettoyage de 03:00 */
+  for (const x of [A, B, C]) await x.p.evaluate(async (api) => { try { const r = await fetch(api + '/api/users/me', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + K.token }, body: JSON.stringify({ confirm: 'SUPPRIMER' }) }); return r.status; } catch (e) { return 'erreur'; } }, API).then((st) => noter('Nettoyage : ligne Apex Chat de ' + x.etiquette, st === 200, 'HTTP ' + st)).catch(() => noter('Nettoyage : ligne Apex Chat de ' + x.etiquette, false, 'page illisible'));
   for (const x of [A, B, C]) await x.ctx.close().catch(() => {});
 } catch (e) {
   noter('ROBOT', false, 'ERREUR : ' + String(e && e.message).slice(0, 200));

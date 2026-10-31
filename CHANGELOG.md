@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.126 + CMCteams v10.002 — Le tableau des cadres n'est vu que par les cadres et l'admin (2026-10-31)
+- **Kevin** : « faut-il aussi cacher le tableau des cadres aux employés ordinaires ? » → « oui ».
+- **Fait (light ET CMCteams, même livraison)** : un employé ordinaire (ou élève, professeur) ne voit plus le tableau / les équipes des cadres (Pit Boss, Superviseurs) ; les cadres et l'admin le voient. Light : `_depPeutVoir` ; CMCteams : `cmcPeutVoirEquipe` (équipes `family=cadres`, `pit15`, `sup`).
+- **Limites dites** : c'est de l'affichage (les données restent dans la page) ; les autres écrans de CMCteams ne sont pas filtrés.
+- **Garde** : `test:visibilite-roles` étendu (23 contrôles, rouge sous `SABOTAGE=1`). Correctif de test : `test:departs-compare` (la light est lue comme admin, car un non-admin est maintenant renvoyé vers son tableau — 554 faux écarts sur les Formations, aucun défaut produit) : 0 écart.
+
 ## light v1.125 + CMCteams v10.001 — Chacun ne voit que ce qui le concerne : la Formation seulement pour ceux qui l'ont, l'info cadre seulement pour les cadres (2026-10-31)
 - **Kevin** : « Dans le cadre, et on affiche la formation seulement à ceux qui l'ont. Et seulement l'info cadre pour les cadres. »
 - **Fait (light ET CMCteams, même livraison)** : un élève voit SA Formation seulement ; un professeur (y compris détaché AF) voit la famille des professeurs ; un employé ordinaire ne voit aucune Formation ; un cadre (Pit Boss / Superviseur) ne voit QUE les équipes de cadres ; l'admin voit tout. Light : liste des tableaux, mois, recherche, ouverture forcée (`_depPeutVoir`, repli `_depRepliId`) ; CMCteams : écran « Départs » (`cmcPeutVoirEquipe`).

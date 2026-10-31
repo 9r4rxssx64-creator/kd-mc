@@ -450,6 +450,7 @@
   "tools/arbre/verify-ajout-famille.mjs",
   "tools/arbre/verify-cadrage.mjs",
   "tools/arbre/verify-cadre-noyau.mjs",
+  "tools/arbre/verify-corbeille.mjs",
   "tools/arbre/verify-deplacement.mjs",
   "tools/arbre/verify-domaine.mjs",
   "tools/arbre/verify-doublons-sans-perte.mjs",

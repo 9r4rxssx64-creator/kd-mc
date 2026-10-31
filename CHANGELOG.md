@@ -14,6 +14,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v9.998 — deux liens externes morts remplacés (météo, webcam) (2026-10-31)
+- Signalé par le robot de liens (pont n° 1571) : la météo Météo-France Monaco et la webcam Skyline (Place du Casino) répondaient 404. Remplacés par des adresses mesurées en 200 : météo → Windy sur Monaco, webcam → page Windy Webcams (libellé « Webcams Monaco », plus de promesse d'une caméra précise). Aucune autre donnée touchée.
+
 ## CMCteams v9.997 + light v1.121 — Les départs de Formation changent d'une semaine à l'autre, équilibrés sur le mois pour chacun (2026-10-30)
 - Demande de Kevin (2 captures de « Formation CRAPS ») : « Les départs doivent changer d'une semaine à l'autre pour équilibrer au max sur le mois, le temps de formation, pour chacun. » Avant : l'ordre se reproduisait presque à l'identique chaque vendredi (Abbas : 1, 14, puis encore 1…), mesuré 45 à 60 % de départs quasi identiques d'une semaine à la même journée de la semaine suivante.
 - Nouvel algorithme dans la source unique `tools/shared/formations-ecole.js` (copie identique dans `tools/departs/`) : chaque jour, affectation à coût minimal (méthode hongroise, déterministe) des rangs aux présents ; coût = dérive de la moyenne du mois vers 0,5 (poids qui grossit vers la fin du mois) + pénalité de répétition d'un rang proche de celui du même jour de la semaine d'avant, du dernier jour et de l'avant-dernier. Même interface (`_cmcFormCalc`), donc rien à changer dans les deux apps.

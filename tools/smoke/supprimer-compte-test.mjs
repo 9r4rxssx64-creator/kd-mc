@@ -8,7 +8,8 @@
 const DOMAINE = 'https://kd-mc.com';
 /* Comptes que NOS robots et sessions créent pour mesurer (prénom de test + nom de mesure) — liste FERMÉE de préfixes : jamais une vraie personne. */
 const UID_DE_TEST = /^(testparcours-|testmail-|testvitesse-|testdecoupe-|testsecours-|testrapide-|testlot-|testlecture-|testfinal-|testcache-|testpass-|testsecurite-|testinscription-|parcours-robot)[a-z0-9-]*$/;
-const TOUS = 'TOUS-LES-TESTS';   // un seul appel nettoie tous les comptes de test présents (essai à blanc sans confirmer=oui)
+const TOUS = 'TOUS-LES-TESTS';
+const ATTENTE = 'ATTENTE-DU-26-10';   // 31.10 (Kevin : « Refuser les 6 en attente ») : inscriptions jamais validées, reçues le 26.10.2026 seulement, jamais un admin ni un compte déjà validé   // un seul appel nettoie tous les comptes de test présents (essai à blanc sans confirmer=oui)
 const ADMIN_UIDS = new Set(['kdmc_admin', 'kevin-desarzens', 'U11804']);
 const annot = (n, t, m) => console.log(`::${n} title=${t}::${m}`);
 const args = process.argv.slice(2);
@@ -16,7 +17,7 @@ const uid = String(args.find((a) => !a.startsWith('--')) || '').trim();
 const confirmer = /^--confirmer=(oui|1|true)$/i.test(args.find((a) => a.startsWith('--confirmer=')) || '');
 const hash = String(process.env.KDMC_ADMIN_PIN_SHA256 || '').trim().toLowerCase();
 
-if ((uid !== TOUS && !UID_DE_TEST.test(uid)) || ADMIN_UIDS.has(uid)) { annot('error', 'Supprimer un compte de test', 'refus : ce n\'est pas un compte de test de nos robots'); process.exit(2); }
+if ((uid !== TOUS && uid !== ATTENTE && !UID_DE_TEST.test(uid)) || ADMIN_UIDS.has(uid)) { annot('error', 'Supprimer un compte de test', 'refus : ce n\'est pas un compte de test de nos robots'); process.exit(2); }
 if (!/^[0-9a-f]{64}$/.test(hash)) { annot('error', 'Supprimer un compte de test', 'code admin absent (secret CI)'); process.exit(1); }
 const r0 = await fetch(DOMAINE + '/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: DOMAINE, 'x-kdmc-sonde': 'supprimer-compte-test' }, body: JSON.stringify({ hash }) });
 const d0 = await r0.json().catch(() => ({}));
@@ -24,6 +25,21 @@ if (!r0.ok || !d0.token) { annot('error', 'Supprimer un compte de test', `sessio
 const H = { 'content-type': 'application/json', origin: DOMAINE, 'x-kdmc-sso': d0.token, 'x-kdmc-sonde': 'supprimer-compte-test' };
 const lire = async () => (await (await fetch(`${DOMAINE}/__admin/accounts?limit=500`, { headers: H })).json().catch(() => ({}))).accounts || [];
 const avant = await lire();
+if (uid === ATTENTE) {
+  const jour = (t) => (t ? new Date(t).toISOString().slice(0, 10) : '');
+  const liste = avant.filter((a) => a.attente_admin === true && jour(a.last_seen) === '2026-10-26' && !ADMIN_UIDS.has(a.uid));
+  annot('notice', 'Inscriptions en attente du 26.10', `${liste.length} compte(s) sur ${avant.length} fiches`);
+  if (!confirmer) process.exit(0);
+  let ko = 0;
+  for (const c of liste) {
+    const rr = await fetch(`${DOMAINE}/__admin/compte-supprimer`, { method: 'POST', headers: H, body: JSON.stringify({ uid: c.uid, confirmer: true }) });
+    const jj = await rr.json().catch(() => ({}));
+    if (!rr.ok || !jj.ok) { ko++; annot('error', 'Inscriptions du 26.10', `un compte refusé : HTTP ${rr.status}`); }
+  }
+  const reste = (await lire()).filter((a) => liste.some((c) => c.uid === a.uid));
+  annot(reste.length ? 'error' : 'notice', 'Inscriptions du 26.10', `supprimées : ${liste.length - ko} — restent : ${reste.length}`);
+  process.exit(reste.length ? 1 : 0);
+}
 if (uid === TOUS) {
   const liste = avant.filter((a) => UID_DE_TEST.test(a.uid) && !ADMIN_UIDS.has(a.uid));
   annot('notice', 'Comptes de test', `${liste.length} compte(s) de test sur ${avant.length} fiches : ${liste.map((a) => a.uid).join(', ') || 'aucun'}`);

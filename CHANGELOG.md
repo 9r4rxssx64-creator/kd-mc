@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Portail v1.0.88 — le menu « 🛍️ Les boutiques » s'ouvre d'office (2026-10-31, Kevin)
+- Kevin : « laisse-le ouvert d'office » (Rotaplan et Devenir croupier y sont rangés ; il ne les voyait pas). `<details class="grp" open>` sur ce seul menu ; les boutiques en construction restent fermées au fond. Garde : `tests/verify-portail-range.mjs` (rouge sans l'attribut). Portail 1.0.87 → 1.0.88.
+
 ## CMCteams v10.000 + light v1.123 — Formation : les professeurs détachés ajoutés, et l'élève (cas Schwietzer) garde son départ d'équipe tant qu'il y travaille (2026-10-31)
 - **Kevin** : « J'ai l'impression qu'il manque des professeurs aussi. » puis « Pour le cas Schwietzer, tu le laisses tant qu'il a ses horaires de travail, actifs, dans son équipe, et on lui attribue un départ. Et une fois qu'il est dans la formation, tu le mets gris dans son équipe d'origine, mais sans départ. »
 - **Fait (CMCteams ET light, mêmes chiffres)** : (1) « Professeurs / formateurs » = l'équipe Formation du PDF + toute personne d'une AUTRE équipe détachée à la formation (code AF) au moins un jour du mois, avec « · N j » ; octobre 7 + 1 (‹employé›), novembre 9 + 4 (‹employé› 7 j, FILIPPI F 8 j, GRAUSS A 7 j, ‹employé› 1 j) ; leur équipe et leurs départs ne changent pas. (2) Fin d'équipe détectée TOUTE SEULE sur le planning (`_cmcFormFinEquipe`, `tools/shared/formations-ecole.js` = `tools/departs/`) : tant que le code de travail de l'élève est celui de ses collègues hors formation (au moins 3 jours concordants), il garde un numéro de départ dans son équipe ; ensuite sa ligne est grisée, sans numéro, et ses vendredis/samedis passent à « Formation <JEU> » (`_cmcFormScinder`) — jamais le même jour des deux côtés. Étiquette « 🎓 en équipe jusqu'au N, puis formation ». Report d'un mois à l'autre pris en compte. La light affiche l'élève sur UNE seule ligne.

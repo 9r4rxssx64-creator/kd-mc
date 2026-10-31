@@ -19,7 +19,9 @@ const iHub = h.indexOf('<main id="hub" hidden>'), iTdb = h.indexOf('<nav id="tdb
 t(iTdb > iHub && iTdb < iBarre && h.indexOf('href="/admin/"', iTdb) < iBarre, 'le tableau de bord (/admin/) est la TOUTE PREMIÈRE chose de la page (avant « Bienvenue »)');
 t(/<nav id="tdb-haut"[^>]*hidden/.test(h) && /tdb-haut[\s\S]{0,80}hidden = !isPriv/.test(readFileSync('kdmc-home/kdmc-portal.js', 'utf8')), 'il reste caché aux autres : même règle que « Mon espace »');
 const boutiques = h.slice(h.indexOf('🛍️ Boutiques'), h.indexOf('Famille &amp; loisirs'));
-t(/<details class="grp">[\s\S]*chez-lolo\.kd-mc\.com[\s\S]*la-detente\.kd-mc\.com/.test(boutiques), 'les boutiques sont dans un menu déroulant');
+t(/<details class="grp"[^>]*>[\s\S]*chez-lolo\.kd-mc\.com[\s\S]*la-detente\.kd-mc\.com/.test(boutiques), 'les boutiques sont dans un menu déroulant');
+t(/<details class="grp" open>\s*<summary>[^]*?Les boutiques/.test(boutiques), 'le menu « Les boutiques » est OUVERT d\'office (Kevin 31.10 : Rotaplan et Croupier visibles sans toucher)');
+t(!/<details class="grp sous" open/.test(boutiques), 'les boutiques en construction restent fermées au fond du menu');
 t(/<details class="grp sous">[\s\S]*tech-hub/.test(boutiques), 'les boutiques en construction sont rangées au fond du menu, pas en vitrine');
 for (const id of ['priv-zone', 'javis-zone', 'bot-zone', 'access-zone', 'tor-zone', 'tableau-zone', 'perso-zones']) t(!h.includes('id="' + id + '"'), id + ' n\'est plus une copie dans le portail (29.10 : un seul endroit, le tableau de bord admin)');
 t(/details\.grp>summary\{[^}]*min-height:(4[4-9]|[5-9]\d)px/.test(h), 'les en-têtes des menus font au moins 44 px (doigt)');

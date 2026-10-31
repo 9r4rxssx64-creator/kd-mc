@@ -360,6 +360,7 @@
   "tests/verify-parite-cmcteams-light.mjs",
   "tests/verify-pas-d-infos-inutiles.mjs",
   "tests/verify-passerelle.mjs",
+  "tests/verify-pastille-vue-admin.mjs",
   "tests/verify-patrimoine-prive.mjs",
   "tests/verify-pdf-equipes.mjs",
   "tests/verify-pdf-vs-surfaces.mjs",

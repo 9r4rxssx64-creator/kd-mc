@@ -5386,6 +5386,15 @@ async function handleAdmin(request, url, env) {
     let log = []; try { log = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { /* fail-open */ }
     return J({ ok: true, log });
   }
+  /* 31.10 (Kevin : « oui journal ») : VIDER le journal des alertes (connexions de test). Barrière admin comme tout /__admin/* ; une seule ligne reste, pour dire qui a vidé. */
+  if (path === '/__admin/audit' && request.method === 'POST') {
+    if (!env.ACCOUNTS) return J({ ok: false, reason: 'registre indisponible' }, undefined, 503);
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    if (b.vider !== true) return J({ ok: false, reason: 'vider_requis' }, undefined, 400);
+    let avant = 0; try { avant = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]').length; } catch { /* fail-open */ }
+    try { await env.ACCOUNTS.put('aud:log', JSON.stringify([{ ts: Date.now(), ev: 'journal_vide', detail: avant + ' ligne(s) effacée(s) sur ordre de l\'admin' }])); } catch { return J({ ok: false, reason: 'registre indisponible' }, undefined, 503); }
+    return J({ ok: true, efface: avant });
+  }
   /* « Déconnecter partout » : révoque toutes les sessions ÉMISES d'un compte
      (perte/vol d'appareil). Le compte reste intact : une reconnexion (Face ID ou
      nom+code) émet un token frais (iat > revoked_at) qui marche normalement. */

@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.127 + CMCteams v10.003 — L'info « cadres » (séance de leur choix, créneaux) n'est vue que par les cadres (2026-10-31)
+- **Kevin** (capture de la light, bloc « FORMATION CMS ») : « Encore l'info des cadres » — la ligne « 👔 Les cadres qui souhaitent approfondir la formation sont les bienvenus à la séance de leur choix » s'affichait encore à Kevin (admin, chef d'équipe, pas cadre).
+- **Fait (light ET CMCteams, même livraison)** : cette ligne et les créneaux « Cadres : 11h-12h ou 14h-15h » ne s'affichent plus qu'à un cadre (Pit Boss / Superviseur). Light : `renderSeances` (`_depEstCadre(ME)`) ; CMCteams : `tools/shared/seances-ui.js` (`cmcIsCadreUnified`) — carte « Formation CMS · mes séances », encart d'infos et en-tête de la page Séances.
+- **Limites dites** : affichage seulement (les données des séances sont inchangées) ; pas testé avec un vrai compte de cadre en ligne, seulement dans un vrai navigateur avec un cadre pris dans les données.
+- **Garde** : `test:seances` (55 ✅) vérifie « caché à un non-cadre » ET « montré à un cadre » (CMCteams + light), rouge sans le correctif (3 ❌ prouvés). Correctif de test : `test:seances-individuel` (la light lue comme admin ; lignes de formation d'origine non comparées) : 28 ✅.
+
 ## light v1.126 + CMCteams v10.002 — Le tableau des cadres n'est vu que par les cadres et l'admin (2026-10-31)
 - **Kevin** : « faut-il aussi cacher le tableau des cadres aux employés ordinaires ? » → « oui ».
 - **Fait (light ET CMCteams, même livraison)** : un employé ordinaire (ou élève, professeur) ne voit plus le tableau / les équipes des cadres (Pit Boss, Superviseurs) ; les cadres et l'admin le voient. Light : `_depPeutVoir` ; CMCteams : `cmcPeutVoirEquipe` (équipes `family=cadres`, `pit15`, `sup`).

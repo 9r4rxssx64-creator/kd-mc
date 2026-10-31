@@ -19,8 +19,9 @@ export const EXCL = /node_modules|\/tests?\/|\/archives?\/|_archive|\/audit\/|\/
 export const IGNORE_URL = /kd-mc\.com|localhost|127\.0\.0\.1|example\.|schema\.org|w3\.org\/\d|ogp\.me|googleapis\.com\/css|fonts\.gstatic|fonts\.googleapis\.com$/i;
 export const PRIVE = /^https:\/\/github\.com\/9r4rxssx64-creator\/cmcteams(\/|$)/i;
 /* Sites qui refusent tout robot (boucle de redirections, en-têtes de connexion géants, 405 sur GET) : on constate « porte », on ne crie pas « mort ».
-   Mesuré le 30.10 au dépôt public : apps.apple.com (boucle), console.cloud.google.com / accounts.google.com (UND_ERR_HEADERS_OVERFLOW). */
-export const ANTI_ROBOT = /^https?:\/\/(?:[a-z0-9-]+\.)*(?:apps\.apple\.com|console\.cloud\.google\.com|accounts\.google\.com|instagram\.com|geneanet\.org|facebook\.com)\//i;
+   Mesuré le 30.10 au dépôt public : apps.apple.com (boucle), console.cloud.google.com / accounts.google.com (UND_ERR_HEADERS_OVERFLOW) ;
+   31.10 (run 41157904317) : studio.youtube.com, même en-têtes Google trop gros → rangé « porte », plus « réseau ». */
+export const ANTI_ROBOT = /^https?:\/\/(?:[a-z0-9-]+\.)*(?:apps\.apple\.com|console\.cloud\.google\.com|accounts\.google\.com|youtube\.com|instagram\.com|geneanet\.org|facebook\.com)\//i;
 const TAG = /<(a|link|area)\b[^>]*>/gi;
 
 /* Les liens d'un document : {url, rel} — on saute les balises de préchargement. */
@@ -59,6 +60,7 @@ if (process.argv.includes('--selftest')) {
   ok(classer('https://x.test/', { s: 404 }) === 'mort' && classer('https://x.test/', { s: 500 }) === 'mort', '404 et 500 = mort');
   ok(classer('https://apps.apple.com/fr/app/x/id1', { s: 0 }) === 'porte' && classer('https://accounts.google.com/x', { s: 0 }) === 'porte', 'App Store / Google connexion injoignables par un robot = porte, pas réseau');
   ok(classer('https://x.test/', { s: 405 }) === 'porte', '405 (méthode refusée au robot) = porte');
+  ok(classer('https://studio.youtube.com/', { s: 0 }) === 'porte' && classer('https://www.youtube.com/watch?v=x', { s: 200 }) === 'ok', 'YouTube injoignable par le robot = porte ; qui répond 200 = ok');
   ok(classer('https://x.test/', { s: 403 }) === 'porte' && classer('https://x.test/', { s: 0 }) === 'reseau' && classer('https://x.test/', { s: 301 }) === 'ok', '403 porte, 0 réseau, 3xx ok');
   ok(EXCL.test(['arbre','research','x.html'].join('/')) && EXCL.test(['_archive_v12','a.html'].join('/')) && !EXCL.test('tools/tor/index.html') && !EXCL.test('kdmc-home/outils/index.html'), 'exclusions : recherche de l\'arbre et archives dehors, Tor et Outils dedans');
   console.log(`\n${ko ? '❌' : '✅'} selftest liens externes : ${ko} KO`); process.exit(ko ? 1 : 0);

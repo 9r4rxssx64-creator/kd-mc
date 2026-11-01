@@ -171,7 +171,8 @@ try {
       const id = await ev(A.p, (x) => { const m = (K.messages[K.viewData.id] || []).find((q) => q.from === K.user.id && JSON.stringify(q).includes(x)); return m && m.id; }, j);
       await ev(A.p, (i) => K._openEditMsg(i), id); await A.p.locator('#edit-msg-input').fill(j2).catch(() => {}); await ev(A.p, (i) => K._saveEditMsg(i), id);
       const d = await attendre(B.p, (x) => Object.values(K.messages || {}).flat().some((m) => JSON.stringify(m).includes(x)), j2, 20000);
-      noter('Modifier un message : B voit le nouveau texte', d >= 0, d >= 0 ? sec(d) : 'la modification n\'arrive pas chez B');
+      const diagEd = d >= 0 ? '' : ' · A:' + JSON.stringify(await ev(A.p, (x) => { const m = (Object.values(K.messages || {}).flat()).find((q) => q.id === x) || {}; return { texte: String(m.text || '').slice(0, 12), edite: !!m.edited_at, attente: !!m.pending_encrypt, ws: K.ws && K.ws.readyState, log: (window.__wsLog || []).slice(-8).join(' ') }; }, id).catch((e) => 'illisible ' + String(e.message).slice(0, 40))).slice(0, 380) + ' · B:' + JSON.stringify(await ev(B.p, (x) => { const l = Object.values(K.messages || {}).flat().filter((q) => JSON.stringify(q).includes(x[0]) || JSON.stringify(q).includes(x[1])); return { n: l.length, textes: l.map((q) => String(q.text || '').slice(0, 12) + (q.edited_at ? '(édité)' : '')), ws: K.ws && K.ws.readyState, log: (window.__wsLog || []).slice(-8).join(' ') }; }, [j, j2]).catch((e) => 'illisible ' + String(e.message).slice(0, 40))).slice(0, 380);
+      noter('Modifier un message : B voit le nouveau texte', d >= 0, d >= 0 ? sec(d) : 'la modification n\'arrive pas chez B' + diagEd);
     });
 
     await essayer('Suppression pour tous', async () => {

@@ -49,11 +49,14 @@ jobs:
       - name: Vérifier ce que Kevin doit avoir fourni
         id: prereq
         env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID || secrets.APPSTORE_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID || secrets.APPSTORE_API_ISSUER }}
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
         shell: bash -eo pipefail {0}
         run: |
+          # 1.11.2026 : les secrets RÉELS posés par Kevin (29.10) sont APPSTORE_API_KEY_ID / _ISSUER / _KEY_BASE64 ; les anciens noms ASC_* restent acceptés.
+          [ -z "${ASC_PRIVATE_KEY:-}" ] && [ -n "${APPSTORE_API_KEY_BASE64:-}" ] && ASC_PRIVATE_KEY=$(printf '%s' "$APPSTORE_API_KEY_BASE64" | base64 -d)
           manque=""
           [ -z "${ASC_KEY_ID:-}" ]      && manque="$manque ASC_KEY_ID"
           [ -z "${ASC_ISSUER_ID:-}" ]   && manque="$manque ASC_ISSUER_ID"
@@ -93,6 +96,7 @@ jobs:
           npx cap sync ios
 
       - name: Compiler (archive Xcode, sans signature)
+        if: ${{ !(inputs.envoyer && steps.prereq.outputs.pret == 'oui') }}
         working-directory: mobile/build/${{ inputs.app }}/ios/App
         shell: bash -eo pipefail {0}
         run: |
@@ -104,6 +108,32 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             archive | tail -25
 
+      # 1.11.2026 : version SIGNÉE (clé API Apple → signature automatique : certificat et profil créés par Apple, rien à faire à la main).
+      - name: Compiler et signer (archive + IPA, signature automatique par la clé API)
+        if: inputs.envoyer && steps.prereq.outputs.pret == 'oui'
+        working-directory: mobile/build/${{ inputs.app }}/ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID || secrets.APPSTORE_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID || secrets.APPSTORE_API_ISSUER }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
+          EQUIPE: ${{ secrets.APPLE_TEAM_ID || 'Y45767LAGC' }}
+        shell: bash -eo pipefail {0}
+        run: |
+          umask 077
+          [ -z "${ASC_PRIVATE_KEY:-}" ] && printf '%s' "$APPSTORE_API_KEY_BASE64" | base64 -d > "$RUNNER_TEMP/asc.p8" || printf '%s' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/asc.p8"
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $RUNNER_TEMP/asc.p8 -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" DEVELOPMENT_TEAM="$EQUIPE" CODE_SIGN_STYLE=Automatic $AUTH archive | tail -25
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict><key>method</key><string>app-store-connect</string><key>teamID</key><string>$EQUIPE</string><key>signingStyle</key><string>automatic</string><key>destination</key><string>export</string></dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" -exportPath "$RUNNER_TEMP/export" -exportOptionsPlist "$RUNNER_TEMP/export.plist" $AUTH | tail -15
+          cp "$RUNNER_TEMP"/export/*.ipa "$RUNNER_TEMP/App.ipa"
+          rm -f "$RUNNER_TEMP/asc.p8"
+
       # ── 4. Envoi TestFlight (uniquement si demandé ET si la clé est là) ────────────
       - name: Installer le CLI asc
         if: inputs.envoyer && steps.prereq.outputs.pret == 'oui'
@@ -113,11 +143,13 @@ jobs:
       - name: Envoyer sur TestFlight
         if: inputs.envoyer && steps.prereq.outputs.pret == 'oui'
         env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID || secrets.APPSTORE_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID || secrets.APPSTORE_API_ISSUER }}
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
         shell: bash -eo pipefail {0}
         run: |
+          [ -z "${ASC_PRIVATE_KEY:-}" ] && ASC_PRIVATE_KEY=$(printf '%s' "$APPSTORE_API_KEY_BASE64" | base64 -d)
           # La clé .p8 n'existe QUE en mémoire du runner, jamais journalisée.
           umask 077; printf '%s' "$ASC_PRIVATE_KEY" > "$RUNNER_TEMP/asc.p8"
           asc auth login --key-id "$ASC_KEY_ID" --issuer-id "$ASC_ISSUER_ID" --private-key "$RUNNER_TEMP/asc.p8"

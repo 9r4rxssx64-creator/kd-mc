@@ -1,0 +1,32 @@
+name: Apple prêt ? (vérifie la clé App Store Connect, ne modifie rien)
+
+# 1.11.2026 — Kevin : « prépare tout pour qu'on soit opérationnel quand ce sera le moment ». Un clic, sans macOS (donc sans le coût 10×) :
+# la clé posée en secret marche-t-elle vraiment ? Quelles apps / identifiants / certificats Apple connaît-il déjà ?
+# Lecture seule chez Apple. Sur le Lenovo si l'interrupteur est mis (garde test:runner-interrupteur), sinon GitHub.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Vérifier la clé Apple (verdicts seulement)
+        env:
+          APPSTORE_API_KEY_BASE64: ${{ secrets.APPSTORE_API_KEY_BASE64 }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER: ${{ secrets.APPSTORE_API_ISSUER }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        shell: bash -eo pipefail {0}
+        run: node tools/apple/verifier-apple.mjs

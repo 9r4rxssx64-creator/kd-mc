@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-10-30",
+  "maj": "2026-11-02",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -290,10 +290,10 @@
       "sujet": "fidelite-pdf",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-10-17",
+      "maj": "2026-11-02",
       "attend_kevin": null,
       "attend_session": "javis-bee : test:fiches-privees ROUGE 8 fois sur 12 sur main (mesuré 27.09) : « ce qu'un vieux téléphone republie est rangé au privé par l'appareil de l'admin » — il rend test:ci rouge pour tout le monde",
-      "note": "17.10 : carte des connectés en direct + historique (CMCteams v9.979, light v1.105), règles Firebase cmcteams_lieux_hist à publier"
+      "note": "light v1.129 + CMCteams v10.005 : le bouton marche pas (inscription/fiche/code), PR en cours"
     },
     "secrets-guard": {
       "titre": "Garde anti-fuite de secrets (branche annexe de domaine-audit)",

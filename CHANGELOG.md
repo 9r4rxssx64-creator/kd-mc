@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.129 + CMCteams v10.005 — « Le bouton marche pas » : inscription, fiche et code (2026-11-02)
+- **Kevin** : « Revois l'inscription, fiches code etc. Les gens ont du mal. J'ai l'impression que le bouton marche pas. » **Mesuré en vrai Chromium iPhone** avant correctif : light = formulaire de 1 067 px, bouton sous 231 px de texte légal, erreur en bas, pas de touche Entrée, aucun retour pendant l'envoi ; CMCteams = écran MUET jusqu'à 10 s après « Continuer » (vérification du matricule), 2e toucher = 2e demande, e-mail à retaper, erreurs tombant en bas d'un formulaire de 1 100 px.
+- **Fait (light ET CMCteams, même livraison)** : light — bouton + message collés en bas de l'écran (visibles dès l'ouverture), conditions raccourcies avec « Lire le détail », claviers iPhone (Suivant / OK), message précis par champ avec curseur + contour rouge, bouton ⏳ bloqué pendant l'envoi, délai de 15 s puis message clair ; CMCteams — « ⏳ Je vérifie ton matricule… » en moins d'une demi-seconde + bouton bloqué (plus de double demande), e-mail repris de l'étape 1, chaque erreur d'inscription amène l'écran et le curseur sur le champ fautif.
+- **Inchangé** : aucune règle d'accès (prénom + nom, matricule SBM au planning, code obligatoire, conditions une seule fois pour tout le domaine, validation par e-mail).
+- **Garde** : `test:inscription-bouton` (12 ✅ ; contre le code d'avant, 8 ❌ prouvés), câblé dans `test:ci`.
+
 ## light v1.128 + CMCteams v10.004 — Les équipes Formation et Professeurs sont de nouveau visibles par tous (2026-10-31)
 - **Kevin** : « Plus d'équipes formation » ; choix donné : « Visible par tous ». La restriction de la v1.125 / v10.001 (la Formation seulement pour ceux qui y figurent) est levée : les équipes « Formation <JEU> » (CRAPS, EUROPE…) et « Professeurs / formateurs » sont vues par tout le monde, élèves, professeurs, employés ordinaires et cadres.
 - **Fait (light ET CMCteams, même livraison)** : light `_depPeutVoir` (les tableaux de la famille « ecole » passent en premier) ; CMCteams `cmcPeutVoirEquipe` + la liste de l'écran « Départs » ajoute les équipes Formation à celles de chacun (avant, un employé rattaché à une équipe ne voyait que la sienne et son miroir).

@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.130 — Changer le chef d'équipe : un changement refusé ne revient plus tout seul en arrière (2026-11-02)
+- **Kevin** : « Je n'arrive pas à changer de chef d'équipe après une demande d'employé. » **Mesuré en vrai Chromium** (light, admin) : quand le domaine refuse l'écriture (code admin expiré), le chef changeait à l'écran puis REVENAIT tout seul à l'ancien à la relecture suivante ; seul signe, une bulle de 3 secondes. L'admin peut bien changer 29 équipes sur 30 ; la seule qu'il ne peut pas changer est la sienne (règle « dans ma mienne c'est toujours moi », 14.10).
+- **Fait (light)** : un changement refusé ou non parti reste EN ATTENTE (`cmc_chef_eq_attente`), la relecture du serveur ne l'écrase plus, un encadré orange dit « PAS encore enregistré » avec un bouton « ↻ Réessayer » (44 px) qui renvoie dès que le code est retapé ; il disparaît quand le domaine accepte ; jamais visible pour un employé.
+- **CMCteams** : inchangé (v10.005) — il écrit par sa file hors-ligne persistante (`_syncQueue`, pastille de synchro) : une écriture refusée y reste en file et visible.
+- **Garde** : `test:chef-attente` (9 ✅ ; contre le code d'avant, 3 ❌ prouvés), câblé dans `test:ci`.
+
 ## light v1.129 + CMCteams v10.005 — « Le bouton marche pas » : inscription, fiche et code (2026-11-02)
 - **Kevin** : « Revois l'inscription, fiches code etc. Les gens ont du mal. J'ai l'impression que le bouton marche pas. » **Mesuré en vrai Chromium iPhone** avant correctif : light = formulaire de 1 067 px, bouton sous 231 px de texte légal, erreur en bas, pas de touche Entrée, aucun retour pendant l'envoi ; CMCteams = écran MUET jusqu'à 10 s après « Continuer » (vérification du matricule), 2e toucher = 2e demande, e-mail à retaper, erreurs tombant en bas d'un formulaire de 1 100 px.
 - **Fait (light ET CMCteams, même livraison)** : light — bouton + message collés en bas de l'écran (visibles dès l'ouverture), conditions raccourcies avec « Lire le détail », claviers iPhone (Suivant / OK), message précis par champ avec curseur + contour rouge, bouton ⏳ bloqué pendant l'envoi, délai de 15 s puis message clair ; CMCteams — « ⏳ Je vérifie ton matricule… » en moins d'une demi-seconde + bouton bloqué (plus de double demande), e-mail repris de l'étape 1, chaque erreur d'inscription amène l'écran et le curseur sur le champ fautif.

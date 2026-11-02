@@ -44,11 +44,11 @@
   },
   "departs.kd-mc.com": {
    "page": "tools/departs/index.html",
-   "version": "v1.129"
+   "version": "v1.130"
   },
   "cmcteams-light.kd-mc.com": {
    "page": "tools/departs/index.html",
-   "version": "v1.129"
+   "version": "v1.130"
   },
   "bot.kd-mc.com": {
    "page": "tools/crypto-bot-dashboard/index.html",

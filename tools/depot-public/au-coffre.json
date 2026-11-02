@@ -270,6 +270,7 @@
   "tests/verify-cf-portes.mjs",
   "tests/verify-cgu-un-clic.mjs",
   "tests/verify-chaine-privee.mjs",
+  "tests/verify-chef-attente.mjs",
   "tests/verify-chefs-equipe.mjs",
   "tests/verify-chemins-domaine.mjs",
   "tests/verify-chevauchements-iphone.mjs",

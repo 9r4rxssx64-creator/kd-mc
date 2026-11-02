@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.131 + CMCteams v10.006 — L'admin peut changer le chef de SA propre équipe (2026-11-02)
+- **Kevin** : « Oui » à « veux-tu pouvoir changer le chef de ta propre équipe ? » (l'ancienne règle du 14.10 « dans la mienne c'est toujours moi » le verrouillait : la seule équipe sur 30 qu'il ne pouvait pas changer).
+- **Fait (light ET CMCteams, même livraison)** : plus de verrou. PAR DÉFAUT l'admin reste chef de son équipe ; un nom qu'il choisit lui-même (bilan ⭐ › liste, ou touche d'un nom) l'emporte, n'est jamais réécrit ni remis à son nom ; il peut se redonner la main. Les collègues voient le chef réellement choisi. Le bilan dit « Par défaut l'admin est le chef de son équipe — tu peux en choisir un autre » et offre la liste. Module commun `chefs-equipe.js` (copie light identique) + `chefs-cmc.js`.
+- **Garde** : `test:chefs-equipe` 76 ✅ (contre l'ancien module : 9 ❌ — A17, A20–A24, C9d, D14b, D14c). Test rendu robuste : le « collègue » des essais n'est plus jamais l'admin (D11b échouait déjà sur `main` : l'équipe tirée au sort plaçait l'admin en premier).
+
 ## light v1.130 — Changer le chef d'équipe : un changement refusé ne revient plus tout seul en arrière (2026-11-02)
 - **Kevin** : « Je n'arrive pas à changer de chef d'équipe après une demande d'employé. » **Mesuré en vrai Chromium** (light, admin) : quand le domaine refuse l'écriture (code admin expiré), le chef changeait à l'écran puis REVENAIT tout seul à l'ancien à la relecture suivante ; seul signe, une bulle de 3 secondes. L'admin peut bien changer 29 équipes sur 30 ; la seule qu'il ne peut pas changer est la sienne (règle « dans ma mienne c'est toujours moi », 14.10).
 - **Fait (light)** : un changement refusé ou non parti reste EN ATTENTE (`cmc_chef_eq_attente`), la relecture du serveur ne l'écrase plus, un encadré orange dit « PAS encore enregistré » avec un bouton « ↻ Réessayer » (44 px) qui renvoie dès que le code est retapé ; il disparaît quand le domaine accepte ; jamais visible pour un employé.

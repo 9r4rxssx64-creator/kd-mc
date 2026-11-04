@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Robot Apex Chat — mesure de l'intérieur connecté (2026-11-04)
+- Audit domaine (tâches 97/98) : le robot « toutes les fonctions » mesure maintenant, chez deux comptes connectés, les boutons sous 44 px, les identifiants en double, les liens vides et relève la pastille de version (`tests/fonctions-apex.mjs`, bloc « Mesure connectée »). Avant : seul l'écran de connexion était mesuré (0 / 0 / 0 sur Apex Chat et Apex AI, 4 mesures sur le vrai domaine). Aucun changement de l'app ; les comptes de test restent effacés à la fin.
+
 ## Javis / Bee v1.30 — la 3D n'est plus téléchargée sans WebGL2 ; le robot « Servi » ne confond plus un message défilé avec un texte sous la pastille (2026-11-04)
 - Demande : deux messages du pont — 1561 (lingua-cloud : `typeof WebGLRenderingContext` existe aussi sans WebGL2, donc perso3d.js / three.js était téléchargé et lancé pour rien sur un vieil Android ou un iOS < 15) et 1639 (pont-check, Servi run 41203042281 : `javis.kd-mc.com` « 1er texte div.javis-bub y=-187 sous la pastille OUI »).
 - 1561 : marionnette 2.3 — `prefere3D()` exige un VRAI contexte WebGL2 (`webgl2Reel()`, un canvas jeté aussitôt). Copies identiques à l'octet : `tools/javis/marionnette.js`, `lingua/marionnette.js`, widget Bee ×3. Garde `test:marionnette` bloc I (témoin : avec WebGL2 le 3D est demandé ; WebGL1 seul : perso3d.js n'est PAS demandé, la marionnette tourne) — rouge sans le correctif. Lingua doit recopier `lingua/marionnette.js` et monter sa version (message à lingua-cloud).

@@ -318,6 +318,26 @@ try {
     noter('Service worker installé (hors-ligne + notifications)', sw && sw.actif, JSON.stringify(sw));
   });
 
+  /* ===== audit connecté (tâches 97/98, 4.11) : l'intérieur d'Apex Chat, que le robot anonyme ne voit pas ===== */
+  await essayer('Mesure connectée', async () => {
+    for (const x of [A, B]) {
+      const m = await ev(x.p, () => {
+        const vis = (e) => { const s = getComputedStyle(e), r = e.getBoundingClientRect(); return s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0 && r.height > 0; };
+        const petits = [...document.querySelectorAll('button,a[href],[role=button],input[type=button],input[type=submit],select,[onclick]')].filter(vis).filter((e) => { const r = e.getBoundingClientRect(); return r.width < 44 || r.height < 44; })
+          .map((e) => (e.id ? '#' + e.id : e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.split(' ')[0] : '')) + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' + Math.round(e.getBoundingClientRect().height));
+        const ids = {}; document.querySelectorAll('[id]').forEach((e) => { ids[e.id] = (ids[e.id] || 0) + 1; });
+        const doubles = Object.keys(ids).filter((k) => ids[k] > 1);
+        const vides = [...document.querySelectorAll('a')].filter(vis).filter((a) => { const h = a.getAttribute('href'); return !h || h === '#' || /^javascript:/i.test(h); }).length;
+        const b = document.getElementById('kdmc-version-badge'); const br = b && b.getBoundingClientRect();
+        return { petits: petits.slice(0, 12), nbPetits: petits.length, doubles: doubles.slice(0, 8), vides, badge: b ? { texte: (b.innerText || '').trim().slice(0, 20), visible: vis(b), h: Math.round(br.height) } : null };
+      });
+      noter(`Mesure connectée : boutons sous 44 px chez ${x.etiquette}`, m && m.nbPetits === 0, m ? `${m.nbPetits} · ${m.petits.join(' ; ')}` : 'illisible');
+      noter(`Mesure connectée : identifiants en double chez ${x.etiquette}`, m && m.doubles.length === 0, m ? `${m.doubles.length} · ${m.doubles.join(', ')}` : 'illisible');
+      noter(`Mesure connectée : liens vides chez ${x.etiquette}`, m && m.vides === 0, m ? String(m.vides) : 'illisible');
+      noter(`Mesure connectée : pastille de version chez ${x.etiquette}`, null, m ? 'badge ' + JSON.stringify(m.badge) + ' (relevé, pas un verdict : voir index.html lignes 152–154)' : 'illisible');
+    }
+  });
+
   /* 31.10 (Kevin : « tu peux créer mais efface tout après ») : chaque compte efface sa ligne Apex Chat LUI-MÊME, tout de suite (suppression de compte du serveur), au lieu d'attendre le nettoyage de 03:00 */
   for (const x of [A, B, C]) await x.p.evaluate(async (api) => { try { const r = await fetch(api + '/api/users/me', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + K.token }, body: JSON.stringify({ confirm: 'SUPPRIMER' }) }); return r.status; } catch (e) { return 'erreur'; } }, API).then((st) => noter('Nettoyage : ligne Apex Chat de ' + x.etiquette, st === 200, 'HTTP ' + st)).catch(() => noter('Nettoyage : ligne Apex Chat de ' + x.etiquette, false, 'page illisible'));
   for (const x of [A, B, C]) await x.ctx.close().catch(() => {});

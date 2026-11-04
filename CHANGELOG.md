@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Javis / Bee v1.30 — la 3D n'est plus téléchargée sans WebGL2 ; le robot « Servi » ne confond plus un message défilé avec un texte sous la pastille (2026-11-04)
+- Demande : deux messages du pont — 1561 (lingua-cloud : `typeof WebGLRenderingContext` existe aussi sans WebGL2, donc perso3d.js / three.js était téléchargé et lancé pour rien sur un vieil Android ou un iOS < 15) et 1639 (pont-check, Servi run 41203042281 : `javis.kd-mc.com` « 1er texte div.javis-bub y=-187 sous la pastille OUI »).
+- 1561 : marionnette 2.3 — `prefere3D()` exige un VRAI contexte WebGL2 (`webgl2Reel()`, un canvas jeté aussitôt). Copies identiques à l'octet : `tools/javis/marionnette.js`, `lingua/marionnette.js`, widget Bee ×3. Garde `test:marionnette` bloc I (témoin : avec WebGL2 le 3D est demandé ; WebGL1 seul : perso3d.js n'est PAS demandé, la marionnette tourne) — rouge sans le correctif. Lingua doit recopier `lingua/marionnette.js` et monter sa version (message à lingua-cloud).
+- 1639 : faux positif du robot, pas un chevauchement — le message de chat avait défilé vers le haut DANS `#javis-msgs` (overflow-y:auto). `mesurerServi` mesure maintenant le rectangle VISIBLE (texte ∩ parents qui coupent). Garde `verify-verifier-servi.mjs` 2f/2g (message défilé = pas sous la pastille ; liste vraiment sous la pastille = toujours signalée), rouge sans le correctif (y=-180).
+
 ## light v1.131 + CMCteams v10.006 — L'admin peut changer le chef de SA propre équipe (2026-11-02)
 - **Kevin** : « Oui » à « veux-tu pouvoir changer le chef de ta propre équipe ? » (l'ancienne règle du 14.10 « dans la mienne c'est toujours moi » le verrouillait : la seule équipe sur 30 qu'il ne pouvait pas changer).
 - **Fait (light ET CMCteams, même livraison)** : plus de verrou. PAR DÉFAUT l'admin reste chef de son équipe ; un nom qu'il choisit lui-même (bilan ⭐ › liste, ou touche d'un nom) l'emporte, n'est jamais réécrit ni remis à son nom ; il peut se redonner la main. Les collègues voient le chef réellement choisi. Le bilan dit « Par défaut l'admin est le chef de son équipe — tu peux en choisir un autre » et offre la liste. Module commun `chefs-equipe.js` (copie light identique) + `chefs-cmc.js`.

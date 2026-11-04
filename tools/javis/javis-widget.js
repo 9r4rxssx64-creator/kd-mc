@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.29';
+  var JAVIS_VER = 'v1.30';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -2696,7 +2696,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.2';
+  var VERSION = '2.3';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -3345,6 +3345,15 @@
      ------------------------------------------------------------------------- */
   var P3D = { etat: 0, attente: [] };            /* 0 pas demandé · 1 en route · 2 prêt · -1 impossible */
   var VEUT3D = null;
+  /* 4.11 (lingua-cloud 1561) : `typeof WebGLRenderingContext` existe aussi sur un appareil SANS WebGL2 (vieux Android, iOS < 15, pilote refusé) :
+     perso3d.js (three.js) était alors téléchargé et lancé pour rien. On demande donc un VRAI contexte WebGL2 (un seul, jeté aussitôt). */
+  function webgl2Reel() {
+    try {
+      var c = document.createElement('canvas'), g = c.getContext('webgl2');
+      if (g) { var x = g.getExtension && g.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); }
+      return !!g;
+    } catch (_) { return false; }
+  }
   function prefere3D() {
     if (VEUT3D !== null) return VEUT3D;
     var ok = true;
@@ -3355,7 +3364,7 @@
       if (nav.deviceMemory && nav.deviceMemory < 2) ok = false;
       if (nav.hardwareConcurrency && nav.hardwareConcurrency < 2) ok = false;
     } catch (_) {}
-    return (VEUT3D = ok && !REDUIT && !perdu && !!SRC_ICI && typeof WebGLRenderingContext !== 'undefined');
+    return (VEUT3D = ok && !REDUIT && !perdu && !!SRC_ICI && typeof WebGLRenderingContext !== 'undefined' && webgl2Reel());
   }
   function charger3D(fin) {
     if (P3D.etat === 2) return fin();

@@ -33,6 +33,20 @@ export function adresseSure(a) {
 export function mesurerServi() {
   const sel = (e) => (e.tagName || '').toLowerCase() + (e.id ? '#' + e.id : '') + (typeof e.className === 'string' && e.className.trim() ? '.' + e.className.trim().split(/\s+/)[0] : '');
   const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0.05; };
+  /* 4.11 (pont 1639, javis.kd-mc.com : « 1er texte div.javis-bub y=-187 sous la pastille OUI ») : un texte qui a défilé HORS de sa zone (liste de chat dans un
+     parent à overflow auto/hidden) est coupé par cette zone : on ne voit que la part restée dans la zone. On mesure donc le rectangle VISIBLE
+     (rectangle du texte ∩ rectangle de chaque parent qui coupe) ; rien de visible (null) = le texte n'est pas à l'écran, il ne peut pas être sous la pastille. */
+  const visibleRect = (e) => {
+    const r = e.getBoundingClientRect(); let h = r.top, b = r.bottom, g = r.left, d = r.right;
+    for (let a = e.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) {
+      const st = getComputedStyle(a), cx = st.overflowX !== 'visible', cy = st.overflowY !== 'visible';
+      if (!cx && !cy) continue;
+      const ar = a.getBoundingClientRect();
+      if (cy) { h = Math.max(h, ar.top); b = Math.min(b, ar.bottom); }
+      if (cx) { g = Math.max(g, ar.left); d = Math.min(d, ar.right); }
+    }
+    return b - h > 1 && d - g > 1 ? { top: h, bottom: b, left: g, right: d } : null;
+  };
   /* la pastille « ← Portail » du routeur (ou de la page) : fixe, en haut à gauche, lien vers le portail */
   const pastille = [...document.querySelectorAll('a[data-kdmc-pastille], a[href="https://kd-mc.com/"], a[href="https://kd-mc.com"]')].find((e) => vis(e) && getComputedStyle(e).position === 'fixed');
   const pb = pastille ? pastille.getBoundingClientRect() : null;
@@ -41,7 +55,7 @@ export function mesurerServi() {
     if (e === pastille || (pastille && pastille.contains(e)) || e.children.length || !(e.textContent || '').trim() || !vis(e)) continue;
     if (/^(script|style|noscript)$/i.test(e.tagName)) continue;
     const st = getComputedStyle(e); if (st.position === 'fixed' || (e.closest && e.closest('[data-kdmc-pastille]'))) continue;
-    const r = e.getBoundingClientRect(); if (r.bottom <= 0) continue;
+    const r = visibleRect(e); if (!r || r.bottom <= 0) continue;
     if (!premier || r.top < premier.top) premier = { top: Math.round(r.top), gauche: Math.round(r.left), droite: Math.round(r.right), s: sel(e) };
   }
   /* versions : jamais un texte libre, seulement ce qui ressemble à « v1.2.3 » */

@@ -38,6 +38,14 @@ const contenu = await (async () => { const b3 = await chromium.launch(exe ? { ex
   const r = { seul: await lit('zone.html', zone), avec: await lit('zone-coupable.html', zone + '<div id="coupable" style="width:442px;height:10px"></div>') }; await b3.close(); return r; })();
 ok('2e. une grille contenue dans une zone qui défile n’est pas le responsable ; le vrai l’est', contenu.seul.debordeur === null && contenu.avec.debordeur && contenu.avec.debordeur.s === 'div#coupable' && contenu.avec.debordeur.droite === 442,
   JSON.stringify({ seul: contenu.seul.debordeur, avec: contenu.avec.debordeur }));
+/* 2f (4.11, pont 1639 : javis.kd-mc.com « 1er texte div.javis-bub y=-187 sous la pastille OUI ») : un message de chat qui a défilé vers le haut DANS sa liste
+   (zone à overflow auto) est coupé par la liste : il n'est pas sous la pastille. Le robot mesure la part VISIBLE ; et une liste qui monte vraiment sous la pastille reste signalée. */
+const liste = (haut) => `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><html data-app-ver="v9.9.9"><body style="margin:0">${PASTILLE}<div id="msgs" style="position:absolute;left:0;right:0;top:${haut}px;height:300px;overflow-y:auto"><div class="javis-bub" style="height:600px;padding:0 12px">Message du chat</div></div></body>`;
+const chat = await (async () => { const b4 = await chromium.launch(exe ? { executablePath: exe } : {}); const p4 = await b4.newPage({ viewport: { width: 390, height: 844 } });
+  const lit = async (nom, haut) => { await p4.goto(f(nom, liste(haut))); await p4.evaluate(() => { document.getElementById('msgs').scrollTop = 250; }); return p4.evaluate(mesurerServi); };
+  const r = { rogne: await lit('chat-rogne.html', 70), dessous: await lit('chat-dessous.html', 0) }; await b4.close(); return r; })();
+ok('2f. un message défilé hors de sa liste n’est PAS « sous la pastille » (part visible mesurée)', chat.rogne.sousPastille === false && chat.rogne.premier && chat.rogne.premier.top >= chat.rogne.pastilleBas, JSON.stringify(chat.rogne.premier));
+ok('2g. une liste qui monte vraiment sous la pastille est toujours signalée', chat.dessous.sousPastille === true && chat.dessous.premier.top < chat.dessous.pastilleBas, JSON.stringify(chat.dessous.premier));
 const sortie = JSON.stringify(propre) + JSON.stringify(piege);
 ok('3. aucun texte de page dans la mesure', !/secret|Dupont|Léa/.test(sortie), sortie.slice(0, 120));
 const wf = readFileSync(new URL('../.github/workflows/verifier-servi.yml', import.meta.url), 'utf8');

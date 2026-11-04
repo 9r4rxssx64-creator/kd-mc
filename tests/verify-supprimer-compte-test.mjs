@@ -11,7 +11,7 @@ const wf = readFileSync(new URL('../.github/workflows/supprimer-compte-test-publ
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}`); };
 const dossier = mkdtempSync(join(tmpdir(), 'sct-'));
 const lancer = (src, uid) => { const f = join(dossier, 'outil.mjs'); writeFileSync(f, src); return spawnSync(process.execPath, [f, uid], { encoding: 'utf8', env: { ...process.env, KDMC_ADMIN_PIN_SHA256: '' } }); };
-const code = sab ? script.replace(/if \(\(uid !== TOUS && !UID_DE_TEST\.test\(uid\)\) \|\| ADMIN_UIDS\.has\(uid\)\)/, 'if (false)') : script;
+const code = sab ? script.replace(/if \(\(uid !== TOUS && [^\n]*?!UID_DE_TEST\.test\(uid\)\) \|\| ADMIN_UIDS\.has\(uid\)\)/, 'if (false)') : script;
 for (const mauvais of ['laurence_sp', 'kevin-desarzens', 'kdmc_admin', 'ludovic-morter', 'testparcours-x;rm', '', 'Parcours-Robot', 'testard-jean', 'test-user', 'testvitesse', 'tous-les-tests']) ok(lancer(code, mauvais).status === 2, `refuse « ${mauvais || '(vide)'} » (code 2)`);
 for (const bon of ['testparcours-verification', 'parcours-robotabcdef', 'testvitesse-deux', 'testmail-confirmation', 'testsecours-mesure', 'TOUS-LES-TESTS']) ok(lancer(code, bon).status === 1, `accepte « ${bon} » jusqu'au code admin absent (code 1)`);
 ok(!/^\s*(schedule:|- cron)/m.test(wf), 'workflow sans cron');

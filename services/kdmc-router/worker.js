@@ -5452,7 +5452,7 @@ async function handleAdmin(request, url, env) {
       if (idx.indexOf(uid) >= 0) await env.ACCOUNTS.put('idx:uids', JSON.stringify(idx.filter((x) => x !== uid)));
       ficheOubliee(env, uid);
     } catch { return J({ ok: false, reason: 'registre indisponible' }, undefined, 503); }
-    try { if (env.CERCLE_DB) { for (const t of ['inscription_admin', 'code_attente', 'presence_domaine', 'activite']) {   /* 29.10 (Kevin : « plus d'historique de plus personne ») : le fil d'activité du compte part AVEC le compte (avant : 210 identifiants de test effacés restaient dans « qui se connecte ») */ try { await env.CERCLE_DB.prepare('DELETE FROM ' + t + ' WHERE uid = ?').bind(uid).run(); } catch { /* table absente */ } } } } catch { /* rien à vider */ }
+    try { if (env.CERCLE_DB) { for (const t of ['inscription_admin', 'code_attente', 'presence_domaine', 'activite', 'connexions', 'profils', 'apps_installees', 'push_domaine', 'quetes']) {   /* 29.10 (Kevin : « plus d'historique de plus personne ») : le fil d'activité du compte part AVEC le compte (avant : 210 identifiants de test effacés restaient dans « qui se connecte ») ; 4.11 (Kevin : « des connexions de test dans beaucoup d'applications ») : connexions, profils, apps installées, notifications et quêtes partent AUSSI avec le compte (12 profils + 12 connexions de test restaient) */ try { await env.CERCLE_DB.prepare('DELETE FROM ' + t + ' WHERE uid = ?').bind(uid).run(); } catch { /* table absente */ } } } } catch { /* rien à vider */ }
     let banni = false;
     if (b.bannir === true) {
       try {

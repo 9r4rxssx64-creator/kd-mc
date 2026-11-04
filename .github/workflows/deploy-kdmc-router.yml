@@ -630,3 +630,13 @@ jobs:
             echo "::warning::/__admin = 403 mais reason ≠ need_admin_code → hash PIN PAS déployé (gate fail-closed = admin_only). Vérifier APEX_ADMIN_PIN_SHA256."; \
           else echo "::warning::/__admin a répondu $AC (gate peut-être pas encore propagé)"; fi
           echo "✅ Smoke terminé (best-effort, non bloquant)."
+
+      # 4.11.2026 (Kevin : « il y en a plein qui oublient d'effacer ») : ce déploiement crée le compte « ci_smoke » à chaque fois ; on balaie ici, sans cron
+      # (règle « aucune exécution programmée ») : à CHAQUE déploiement, tout compte de test oublié par un robot ou une session est effacé (liste fermée).
+      - name: Balayer les comptes de test (ci_smoke et oubliés, verdicts seulement)
+        if: always()
+        continue-on-error: true
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        shell: bash -eo pipefail {0}
+        run: node tools/smoke/supprimer-compte-test.mjs TOUS-LES-TESTS --confirmer=oui

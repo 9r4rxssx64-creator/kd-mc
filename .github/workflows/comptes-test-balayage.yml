@@ -1,0 +1,28 @@
+name: Balayage des comptes de test (à la demande ; aussi à chaque déploiement du routeur) (efface ce que les robots et les sessions ont oublié)
+
+# (sans cron : règle « aucune exécution programmée » ; le balayage tourne aussi à chaque déploiement du routeur, voir deploy-kdmc-router.yml)
+# 4.11.2026 — Kevin : « il y en a plein qui oublient d'effacer leurs comptes de test ; tu dis à toutes les branches qu'elles les effacent automatiquement ».
+# Filet de sécurité, à la demande : tous les comptes dont l'identifiant porte un préfixe de test CONNU (liste fermée UID_DE_TEST de
+# tools/smoke/supprimer-compte-test.mjs) sont supprimés, avec leurs connexions, profils et notifications (le routeur les efface avec le compte).
+# Dépôt public = gratuit. Verdicts seulement dans le journal. Jamais une vraie personne : le script refuse tout identifiant hors liste.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  balayer:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Balayer les comptes de test (verdicts seulement)
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        shell: bash -eo pipefail {0}
+        run: node tools/smoke/supprimer-compte-test.mjs TOUS-LES-TESTS --confirmer=oui

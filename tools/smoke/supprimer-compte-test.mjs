@@ -7,7 +7,7 @@
  * Usage : KDMC_ADMIN_PIN_SHA256=… node tools/smoke/supprimer-compte-test.mjs <uid> [--confirmer=oui] */
 const DOMAINE = 'https://kd-mc.com';
 /* Comptes que NOS robots et sessions créent pour mesurer (prénom de test + nom de mesure) — liste FERMÉE de préfixes : jamais une vraie personne. */
-const UID_DE_TEST = /^(testparcours-|testmail-|testvitesse-|testdecoupe-|testsecours-|testrapide-|testlot-|testlecture-|testfinal-|testcache-|testpass-|testsecurite-|testinscription-|parcours-robot)[a-z0-9-]*$/;
+const UID_DE_TEST = /^(?:(?:testparcours-|testmail-|testvitesse-|testdecoupe-|testsecours-|testrapide-|testlot-|testlecture-|testfinal-|testcache-|testpass-|testsecurite-|testinscription-|parcours-robot)[a-z0-9-]*|ci_smoke|marie-curie)$/;   // + 4.11 : « CI Smoke » (robot de CI) et « Marie Curie » (essai) : identifiants exacts, jamais une vraie personne
 const TOUS = 'TOUS-LES-TESTS';
 const VIDER = 'VIDER-JOURNAL';   // 31.10 (Kevin : « oui journal ») : vide le journal des alertes
 const ATTENTE = 'ATTENTE-DU-26-10';   // 31.10 (Kevin : « Refuser les 6 en attente ») : inscriptions jamais validées, reçues le 26.10.2026 seulement, jamais un admin ni un compte déjà validé   // un seul appel nettoie tous les comptes de test présents (essai à blanc sans confirmer=oui)

@@ -321,7 +321,11 @@ try {
 
   /* ===== audit connecté (tâches 97/98, 4.11) : l'intérieur d'Apex Chat, que le robot anonyme ne voit pas ===== */
   await essayer('Mesure connectée', async () => {
+    /* 05.11 (« Continue », tâche 97) : la conversation ouverte, puis chaque écran non administrateur que les autres étapes n'ouvrent pas. Le robot reste sur le dernier : aucune étape ne vient après, sauf l'effacement des comptes (fait par des appels réseau, pas par l'écran). */
+    for (const vue of ['conversation', 'chats', 'contacts', 'calls', 'settings']) {
+    const sfx = vue === 'conversation' ? '' : ` [${vue}]`;
     for (const x of [A, B]) {
+      if (vue !== 'conversation') { await ev(x.p, (v) => K.sv(v), vue).catch(() => {}); await x.p.waitForTimeout(800); }
       const m = await ev(x.p, () => {
         const vis = (e) => { const s = getComputedStyle(e), r = e.getBoundingClientRect(); return s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0 && r.height > 0; };
         /* hors mesure : le lien d'évitement (caché hors écran, il n'apparaît qu'au clavier) et les bulles de message (du contenu, pas une commande) */
@@ -331,12 +335,16 @@ try {
         const doubles = Object.keys(ids).filter((k) => ids[k] > 1);
         const vides = [...document.querySelectorAll('a')].filter(vis).filter((a) => !a.closest('.skip-link')).filter((a) => { const h = a.getAttribute('href'); return !h || h === '#' || /^javascript:/i.test(h); }).map((a) => '« ' + (a.innerText || '').trim().slice(0, 28) + ' »');
         const b = document.getElementById('kdmc-version-badge'); const br = b && b.getBoundingClientRect();
-        return { petits: petits.slice(0, 12), nbPetits: petits.length, doubles: doubles.slice(0, 8), vides, badge: b ? { texte: (b.innerText || '').trim().slice(0, 20), visible: vis(b), h: Math.round(br.height) } : null };
+        const tv = document.getElementById('topbar-version'); const verBarre = tv && vis(tv) ? (tv.innerText || '').trim().slice(0, 12) : null;
+        return { vue: K.view, verBarre, petits: petits.slice(0, 12), nbPetits: petits.length, doubles: doubles.slice(0, 8), vides, badge: b ? { texte: (b.innerText || '').trim().slice(0, 20), visible: vis(b), h: Math.round(br.height) } : null };
       });
-      noter(`Mesure connectée : boutons sous 44 px chez ${x.etiquette}`, m && m.nbPetits === 0, m ? `${m.nbPetits} · ${m.petits.join(' ; ')}` : 'illisible');
-      noter(`Mesure connectée : identifiants en double chez ${x.etiquette}`, m && m.doubles.length === 0, m ? `${m.doubles.length} · ${m.doubles.join(', ')}` : 'illisible');
-      noter(`Mesure connectée : liens vides chez ${x.etiquette}`, m && m.vides.length === 0, m ? m.vides.length + ' · ' + m.vides.join(' ; ') : 'illisible');
-      noter(`Mesure connectée : pastille de version chez ${x.etiquette}`, null, m ? 'badge ' + JSON.stringify(m.badge) + ' (relevé, pas un verdict : voir index.html lignes 152–154)' : 'illisible');
+      noter(`Mesure connectée${sfx} : boutons sous 44 px chez ${x.etiquette}`, m && m.nbPetits === 0, m ? `${m.nbPetits} · ${m.petits.join(' ; ')}` : 'illisible');
+      noter(`Mesure connectée${sfx} : identifiants en double chez ${x.etiquette}`, m && m.doubles.length === 0, m ? `${m.doubles.length} · ${m.doubles.join(', ')}` : 'illisible');
+      noter(`Mesure connectée${sfx} : liens vides chez ${x.etiquette}`, m && m.vides.length === 0, m ? m.vides.length + ' · ' + m.vides.join(' ; ') : 'illisible');
+      noter(`Mesure connectée${sfx} : pastille de version chez ${x.etiquette}`, null, m ? 'badge ' + JSON.stringify(m.badge) + ' (relevé, pas un verdict : voir index.html lignes 152–154)' : 'illisible');
+      if (vue === 'chats') noter(`Mesure connectée${sfx} : la version se lit dans la barre du haut chez ${x.etiquette}`, !!(m && m.verBarre && /^v\d+\.\d+\.\d+/.test(m.verBarre)), m ? 'barre : ' + JSON.stringify(m.verBarre) + ' · écran : ' + m.vue : 'illisible');
+      if (m && m.vue !== (vue === 'conversation' ? 'chat' : vue)) noter(`Mesure connectée${sfx} : l'écran demandé est bien affiché chez ${x.etiquette}`, false, 'demandé ' + vue + ', affiché ' + m.vue);
+    }
     }
   });
 

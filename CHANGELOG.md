@@ -4,6 +4,14 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Arbre v3.190 — la loupe s'aimante sur la carte visée, les noms de famille se lisent en vue d'ensemble (2026-11-05)
+- Demande (Kevin, 5.11) : « quand on fait la vue d'ensemble, qu'on voie vraiment les noms de famille ; une loupe qui suit la souris ; si on clique, on ouvre la branche ». Constat sur ses vraies données : en vue d'ensemble la loupe (×15) montrait un disque VIDE entre deux familles, et les noms de famille faisaient 8 px.
+- Fait : agrandissement doux de la loupe (×0,5 à ×1,1, plusieurs cartes lisibles) ; aimant sur la carte la plus proche (≤ 38 px), la croix dit laquelle s'ouvre, un clic à côté ouvre SA branche ; noms de famille à 14-17 px à l'écran (avant 8 px) et réduits à l'espace libre pour ne pas se chevaucher. Garde `verify-loupe-ponts.mjs` 14/14 sur les vraies données, rouge sur v3.189 (8 px, pas d'aimant).
+
+## Arbre v3.189 — loupe sous la souris, noms de famille cliquables, ponts aux croisements, « Voir dans l'arbre » = toute la branche (2026-11-05)
+- Demande (Kevin, option A) : voir toute la branche, une loupe pour choisir où atterrir, noms de famille cliquables, aucun fil superposé, croisements indiqués.
+- Fait : cadrage de la branche entière (47 ancêtres à l'écran) ; loupe `arbre_loupe` ; bandes cliquables ; couloirs de barres (33 superposées → 0) ; 836 ponts pour 836 croisements. Gardes `verify-loupe-ponts.mjs` (rouge sur v3.188) et `verify-cadre-noyau.mjs` 76/76.
+
 ## Routeur du domaine — « conditions » devient un vrai bouton (2026-11-05)
 - Suite de #5444. Après le déploiement, le robot Apex Chat connecté donne 43 OK · 2 KO (avant : 41 OK · 4 KO) : plus aucun bouton sous 44 px chez les deux comptes ; il reste « liens vides : 1 · conditions » car le lien de la porte avait `href="#"` alors qu'il ne mène nulle part, il déplie un texte. C'est maintenant un `<button type="button">` d'apparence de lien (44 px de haut, `aria-expanded` qui suit l'état). Garde `test:porte-conditions-44` : 17 ✅ ; `SABOTAGE=1` (ancien style) 4 ❌ ; `SABOTAGE=2` (ancien `<a href="#">`) 2 ❌.
 

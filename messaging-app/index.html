@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.357",
+  "softwareVersion": "v1.1.358",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -491,7 +491,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.357';
+const __APEX_CHAT_VERSION__ = 'v1.1.358';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -838,7 +838,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.357" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
+  <div id="splash-version" data-ver="v1.1.358" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -852,7 +852,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.357</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.358</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -6105,10 +6105,34 @@ K._votePoll = function(msgId, optIdx){
   ls('messages_' + conv.id, msgs);
   K.render();
   // WS broadcast vote
-  if(K.ws && K.ws.readyState === 1){
-    // Lot B (A6-13) : sondage anonyme → le serveur relaie le vote sous un pseudonyme, jamais l'identité du votant.
-    try { K.ws.send(JSON.stringify({ type: 'poll_vote', poll_id: msgId, votes: m.poll.votes[uid] || [], ...(m.poll.anon ? { anon: true } : { voter: uid }) })); } catch(_e){_safeCatch('silent',_e)}
+  // Lot B (A6-13) : sondage anonyme → le serveur relaie le vote sous un pseudonyme, jamais l'identité du votant.
+  K._envoyerVote(conv.id, { type: 'poll_vote', poll_id: msgId, votes: m.poll.votes[uid] || [], ...(m.poll.anon ? { anon: true } : { voter: uid }) });
+};
+
+// 05.11 (robot « toutes les fonctions », rouge intermittent « Sondage : A voit le vote de B ») : un vote émis pendant que la socket
+// n'était pas ouverte (reconnexion en cours : K.ws vaut null le temps du ticket) était jeté SANS bruit — le serveur ne l'avait jamais
+// reçu, l'autre personne ne le voyait jamais. Il attend maintenant dans une file gardée sur l'appareil (UN seul vote par sondage : le
+// dernier) et part dès que la socket de CETTE conversation s'ouvre. Jamais envoyé sur la socket d'une autre conversation.
+K._envoyerVote = function(convId, trame){
+  if(K.ws && K.ws.readyState === 1 && K._wsConvId === convId){
+    try { K.ws.send(JSON.stringify(trame)); return true; } catch(_e){_safeCatch('silent',_e)}
   }
+  const att = lg('votes_attente', {});
+  att[trame.poll_id] = { convId, trame };
+  ls('votes_attente', att);
+  return false;
+};
+
+K._flushVotesFor = function(convId){
+  if(!(K.ws && K.ws.readyState === 1 && K._wsConvId === convId)) return 0;
+  const att = lg('votes_attente', {});
+  let n = 0;
+  for(const id of Object.keys(att)){
+    if(att[id].convId !== convId) continue;
+    try { K.ws.send(JSON.stringify(att[id].trame)); delete att[id]; n++; } catch(e){ _safeCatch('votes-flush', e); break; }
+  }
+  if(n > 0) ls('votes_attente', att);
+  return n;
 };
 
 K._renderPoll = function(m){
@@ -10694,6 +10718,8 @@ K._openWs = async function(convId){
       // v1.1.173 FIX P0 (audit crew) : rejouer les messages écrits hors-ligne
       // pour cette conversation dès que le WS est (re)connecté.
       try{ K._flushOutboxFor(convId); }catch(_e){_safeCatch('silent',_e)}
+      // 05.11 : les votes de sondage émis pendant que la socket n'était pas ouverte partent maintenant.
+      try{ K._flushVotesFor(convId); }catch(_e){_safeCatch('silent',_e)}
       // v1.1.262 — retente d'envoyer chiffrés les messages « en attente de clé ».
       try{ K._flushPendingEncrypt && K._flushPendingEncrypt(convId); }catch(_e){_safeCatch('silent',_e)}
       // Lot A (A2-03) : rattrape TOUT ce qui a été écrit depuis le dernier passage (plus de limite à 50).
@@ -19603,6 +19629,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.357", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.358", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

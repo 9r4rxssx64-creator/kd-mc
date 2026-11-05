@@ -139,9 +139,10 @@ describe('Lot B — A6-13 : sondage anonyme (client)', () => {
   it('vote sur un sondage anonyme → la trame ne porte PAS l\'identité du votant', () => {
     for (const anon of [true, false]) {
       const sent = [];
-      const K = { viewData: { id: 'c1' }, user: { id: 'u1' }, render() {}, ws: { readyState: 1, send: (d) => sent.push(JSON.parse(d)) },
+      // 05.11 : l'envoi passe par K._envoyerVote (file si la socket n'est pas ouverte) ; la vraie page lie toujours la socket à sa conversation (_wsConvId).
+      const K = { viewData: { id: 'c1' }, user: { id: 'u1' }, render() {}, ws: { readyState: 1, send: (d) => sent.push(JSON.parse(d)) }, _wsConvId: 'c1',
         messages: { c1: [{ id: 'p1', poll: { options: ['a', 'b'], multi: false, anon, votes: {} } }] } };
-      loadDefs(['K._votePoll = function'], { K, ls: () => {}, _safeCatch: () => {} });
+      loadDefs(['K._votePoll = function', 'K._envoyerVote = function'], { K, ls: () => {}, lg: (_k, d) => d, _safeCatch: () => {} });
       K._votePoll('p1', 1);
       if (anon) { expect(sent[0]).toEqual({ type: 'poll_vote', poll_id: 'p1', votes: [1], anon: true }); }
       else { expect(sent[0]).toMatchObject({ voter: 'u1', votes: [1] }); expect(sent[0].anon).toBeUndefined(); }

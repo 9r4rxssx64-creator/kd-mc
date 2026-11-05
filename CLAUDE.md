@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 246 règles — le texte de Kevin, une par une
+## 📜 Les 247 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1072,6 +1072,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🎓 RÈGLE MÉTIER ABSOLUE — FORMATION <JEU> : UNE ÉQUIPE À PART, DÉPARTS ÉQUITABLES LE VENDREDI ET LE SAMEDI SEULEMENT (Kevin 2026-10-30, ABSOLUE, REMPLACE LA RÈGLE DU 05.10 ET L'EXCEPTION SCHWIETZER)
 **« On va modifier dans les équipes CMC Team, c'est Light. Tu vas intégrer toutes les personnes d'école de CRAPS dans une seule équipe. Tu vas créer une équipe formation CRAPS. Et quand il y a […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-formation-jeu-une-équipe-à-part-départs-équitables-le-vendredi-et-le-samedi-seulement-kevin-2026-10-30-absolue-remplace-la-règle-du-0510-et-lexception-schwietzer)
+
+### 💬 RÈGLE ABSOLUE — MINI-CHAT DIRECT : KEVIN ÉCRIT À N'IMPORTE QUI DANS CMCTEAMS ET LA LIGHT, LA PERSONNE LE LIT À L'OUVERTURE ET LUI RÉPOND, SEULS EUX DEUX LE VOIENT (Kevin 2026-11-05, ABSOLUE, GRATUIT)
+**« Dans CMC Teams, je veux la possibilité d'envoyer un message à une personne qui s'affichera sur son application CMC Teams quand elle l'ouvre à la prochaine connexion et qu'elle ait la […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-mini-chat-direct-kevin-écrit-à-nimporte-qui-dans-cmcteams-et-la-light-la-personne-le-lit-à-louverture-et-lui-répond-seuls-eux-deux-le-voient-kevin-2026-11-05-absolue-gratuit)
 
 ---
 

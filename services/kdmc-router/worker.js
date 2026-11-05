@@ -10,6 +10,7 @@
 
 import { makeChallenge, parseRegistration, verifyAssertion, b64uEnc, b64uDec } from './webauthn.js';
 import { mintShopsAdminIdToken, mintShopsIdToken, mintCmcIdToken } from './fb-token.js';
+import { handleDm, cleDe as dmCleDe } from './mini-chat.js';
 import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattre, INSCR_ADMIN_SCHEMA, FB_URL } from './boite.js';
 import { lotKV } from './lot-kv.js';
 import { envAvecSecours } from './kv-secours.js';   // KV ACCOUNTS au plafond / en panne → les écritures texte partent dans D1 (gratuit, 100 000/jour) — voir kv-secours.js   // création de compte : chaque clé KV écrite UNE fois (1 écriture/s/clé au KV) — voir lot-kv.js
@@ -740,6 +741,8 @@ const ROUTEUR = {
     if (url.pathname.startsWith('/__cercle/')) return handleCercle(request, url, env, outilsCercle(env));
     /* LA BOÎTE UNIQUE DE L'ADMIN (Kevin 3.10) : tous les messages de toutes les apps, réponse directe — D1, jamais le KV en écriture. */
     if (url.pathname.startsWith('/__boite/')) return handleBoite(request, url, env, outilsBoite(env));
+    /* 💬 LE MINI-CHAT DIRECT KEVIN ⇄ CHAQUE PERSONNE (Kevin 5.11.2026, CMCteams + light) : un fil par personne, jamais entre deux employés — D1, jamais le KV. */
+    if (url.pathname.startsWith('/__dm/')) return handleDm(request, url, env, outilsDm(env));
     /* 📲 L'INSTALLATION ET LES NOTIFICATIONS DE TOUTES LES APPS (Kevin 22.10.2026) : ressources publiques (la page de connexion aussi doit pouvoir proposer l'installation) + API des abonnements (compte requis). */
     if (url.pathname.startsWith('/__installer/')) return handleInstaller(request, url);
     if (url.pathname.startsWith('/__push/')) return handlePush(request, url, env, outilsCercle(env));
@@ -5061,6 +5064,42 @@ function outilsBoite(env) {
     },
   });
 }
+/* Outils du mini-chat : comme le cercle, plus (a) `prouve` = le CODE (ou Face ID) de la personne est prouvé — un nom simplement déclaré n'ouvre aucun fil —
+   (b) `connu(nom)` = ce nom complet a-t-il déjà un compte au domaine ? (indice pour Kevin ; lecture seule du registre des noms, tous les ordres des mots). */
+function outilsDm(env) {
+  const base = outilsCercle(env);
+  return Object.assign({}, base, {
+    qui: async (request) => {
+      const q = await base.qui(request);
+      if (!q || q.admin) return q;
+      const secret = env && env.KDMC_SSO_SECRET;
+      const s = secret ? await ssoVerify(secret, ssoTokenSansAdresse(request), request) : null;
+      /* un compte en attente de validation (jeton `attente` ou fiche `attente_admin`) n'ouvre aucun fil : revue sécurité 5.11 */
+      let acc = null; try { acc = await accGet(env, q.uid); } catch { acc = null; }
+      return Object.assign({}, q, { prouve: !!(s && (s.code || s.verified)), attente: !!((s && s.attente) || (acc && acc.attente_admin)) });
+    },
+    /* l'uid canonique du compte qui porte ce nom complet (tous les ordres des mots), '' s'il n'y en a pas : sert à LIER le fil à son vrai compte */
+    uidDe: async (nom) => {
+      if (!env || !env.ACCOUNTS) return '';
+      const mots = normName(nom).split(' ').filter(Boolean);
+      if (mots.length < 2 || mots.length > 4) return '';
+      const ordres = (l) => (l.length <= 1 ? [l] : l.flatMap((x, i) => ordres([...l.slice(0, i), ...l.slice(i + 1)]).map((r) => [x, ...r])));
+      for (const o of ordres(mots)) {
+        const u = await env.ACCOUNTS.get('nm:' + o.join(' '));
+        if (u) { try { return (await canonFor(env, u, nom, { sansCreer: true })) || u; } catch { return u; } }
+      }
+      return '';
+    },
+    connu: async (nom) => {
+      if (!env || !env.ACCOUNTS) return null;
+      const mots = normName(nom).split(' ').filter(Boolean);
+      if (mots.length < 2 || mots.length > 4) return null;
+      const ordres = (l) => (l.length <= 1 ? [l] : l.flatMap((x, i) => ordres([...l.slice(0, i), ...l.slice(i + 1)]).map((r) => [x, ...r])));
+      for (const o of ordres(mots)) { if (await env.ACCOUNTS.get('nm:' + o.join(' '))) return true; }
+      return false;
+    },
+  });
+}
 function outilsCercle(env) {
   return {
     qui: async (request) => {
@@ -5452,6 +5491,8 @@ async function handleAdmin(request, url, env) {
       if (idx.indexOf(uid) >= 0) await env.ACCOUNTS.put('idx:uids', JSON.stringify(idx.filter((x) => x !== uid)));
       ficheOubliee(env, uid);
     } catch { return J({ ok: false, reason: 'registre indisponible' }, undefined, 503); }
+    /* mini-chat direct (5.11, revue sécurité) : le fil de la personne part avec son compte ; sinon le nom redevenu libre hériterait de l'historique */
+    try { const dmc = dmCleDe(acc.name || ''); if (dmc && env.CERCLE_DB) { await env.CERCLE_DB.prepare('DELETE FROM dm WHERE cle = ?').bind(dmc).run(); await env.CERCLE_DB.prepare('DELETE FROM dm_fil WHERE cle = ?').bind(dmc).run(); } } catch { /* table absente : jamais de fil */ }
     try { if (env.CERCLE_DB) { for (const t of ['inscription_admin', 'code_attente', 'presence_domaine', 'activite', 'connexions', 'profils', 'apps_installees', 'push_domaine', 'quetes']) {   /* 29.10 (Kevin : « plus d'historique de plus personne ») : le fil d'activité du compte part AVEC le compte (avant : 210 identifiants de test effacés restaient dans « qui se connecte ») ; 4.11 (Kevin : « des connexions de test dans beaucoup d'applications ») : connexions, profils, apps installées, notifications et quêtes partent AUSSI avec le compte (12 profils + 12 connexions de test restaient) */ try { await env.CERCLE_DB.prepare('DELETE FROM ' + t + ' WHERE uid = ?').bind(uid).run(); } catch { /* table absente */ } } } } catch { /* rien à vider */ }
     let banni = false;
     if (b.bannir === true) {

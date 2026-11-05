@@ -525,6 +525,23 @@ jobs:
 
           echo "::notice title=Boîte unique::EN LIGNE et fermée aux inconnus — /__boite/admin sans session = 401 admin_requis ; dépôt depuis un site hors domaine = 403 origine_refusee"
 
+      # Le mini-chat direct Kevin ↔ chaque personne (5.11.2026) : servi par le routeur, fermé aux inconnus. Sans session : la liste des fils de Kevin = 401 admin_requis,
+      # le badge d'une personne = 401 code_requis ; un dépôt venu d'un site hors domaine = 403 origine. (Si c'était 200, les messages seraient ouverts à tous.)
+      - name: Le mini-chat direct est servi et fermé aux inconnus (bloquant)
+        shell: bash -eo pipefail {0}
+        run: |
+          trap 'echo "::error title=Mini-chat::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR
+          ok=0
+          for i in 1 2 3 4; do
+            L=$(curl -sS -m 20 -o /tmp/dm-l.json -w '%{http_code}' "https://kd-mc.com/__dm/admin/liste" || echo 000)
+            B=$(curl -sS -m 20 -o /tmp/dm-b.json -w '%{http_code}' "https://kd-mc.com/__dm/badge" || echo 000)
+            D=$(curl -sS -m 20 -o /tmp/dm-d.json -w '%{http_code}' -X POST -H 'content-type: application/json' -H 'origin: https://site-pirate.example' -d '{"texte":"sonde"}' "https://kd-mc.com/__dm/envoyer" || echo 000)
+            if [ "$L" = "401" ] && grep -q admin_requis /tmp/dm-l.json && [ "$B" = "401" ] && grep -q code_requis /tmp/dm-b.json && [ "$D" = "403" ] && grep -q origine /tmp/dm-d.json; then ok=1; break; fi
+            sleep 20
+          done
+          [ "$ok" = "1" ] || { echo "::error title=Mini-chat::liste des fils sans session = HTTP $L (401 attendu), badge = HTTP $B (401 attendu), dépôt hors domaine = HTTP $D (403 attendu)"; exit 1; }
+          echo "::notice title=Mini-chat::EN LIGNE et fermé aux inconnus — liste des fils = 401 admin_requis ; badge sans session = 401 code_requis ; dépôt hors domaine = 403 origine"
+
       # ── D'OÙ VIENNENT VRAIMENT LES PAGES ? (preuve par repère) ───────────
       # « 31 adresses répondent 200 » ne dit PAS d'où elles viennent.
       # PREMIÈRE TENTATIVE, RATÉE (18.09) : comparer un fichier présent chez un

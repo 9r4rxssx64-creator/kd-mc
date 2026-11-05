@@ -4,6 +4,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.133 + CMCteams v10.008 — Mini-chat direct Kevin ↔ chaque personne (2026-11-05)
+- **Kevin** : « Dans CMC Teams, je veux la possibilité d'envoyer un message à une personne qui s'affichera sur son application quand elle l'ouvre, et qu'elle puisse me répondre… un mini chat direct avec moi et seulement avec moi… un petit historique qu'on peut vider… toutes les fonctionnalités d'un chat… Toujours gratuit. »
+- **Fait (CMCteams ET light)** : module partagé `tools/shared/mini-chat.js` (copie `tools/departs/mini-chat.js`) ; côté serveur `services/kdmc-router/mini-chat.js` (routes `/__dm/…`, D1 `dm` + `dm_fil`). Kevin : « 💬 Écrire » sur la fiche d'une personne (CMCteams), carte « Messages directs » à l'accueil, bouton « 💬 Messages » (light). La personne : fenêtre ouverte toute seule à l'ouverture de l'app, réponse dans le même écran. Bulles par jour, Envoyé ✓ / Lu ✓✓, 5 réactions, retirer un message, vider son historique, 500 caractères, 40 messages/jour.
+- **Sécurité** : le fil d'une personne = son nom de session prouvé (code ou Face ID), jamais le matricule ; un nom déclaré n'ouvre rien (401) ; POST seulement depuis `*.kd-mc.com` ; le déploiement du routeur vérifie `/__dm/` fermé aux inconnus. Gratuit : lecture toutes les 5 min, page visible seulement, aucun cron.
+- **Gardes** : `test:mini-chat` (46, sabotages cle|prouve|admin) et `test:mini-chat-ecran` (28, Chromium 375 px, `SABOTAGE=1` rouge).
+- **Aussi** : robot public « vérifier en réel » — étape « coffre » ajoutée avant les scripts (le 1er run public était rouge : script privé absent), garde 5e.
+
 ## light v1.132 + CMCteams v10.007 — Départs : une nouvelle série ne reprend plus le numéro de la série d'avant (2026-11-05)
 - **Kevin** : « Il faut que ça décale. Dans l'équipe pour Mortar, il n'y a pas de décalage. L'algorithme n'est pas bon. Vérifie de partout. »
 - **Mesuré** (vraie light, juillet → novembre) : 105 débuts de série sur 2 870 reprenaient le numéro du début de la série d'avant (CMC Éq.10 novembre, ‹employé› : 4 puis 4). Cause : l'effectif change entre deux séries (congé, retour, personne du haut du roster) et le +1 retombe sur le même numéro.

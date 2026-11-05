@@ -355,6 +355,7 @@
   "tests/verify-membres-ajoutes.mjs",
   "tests/verify-menage-branches.mjs",
   "tests/verify-messages-kevin.mjs",
+  "tests/verify-mini-chat.mjs",
   "tests/verify-mois-ouverture.mjs",
   "tests/verify-mois-passes.mjs",
   "tests/verify-monaco-fonds.mjs",

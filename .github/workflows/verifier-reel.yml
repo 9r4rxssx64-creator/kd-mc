@@ -29,6 +29,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Fichiers privés du coffre (lecture seule) — les scripts de départs lisent CMCteams et la light
+        # Mesuré le 5.11 (run public 42020604585) : sans cette étape tests/verif-live-equipes.mjs n'existe pas au dépôt public (il nomme des chemins privés).
+        uses: ./.github/actions/coffre
+        with:
+          cle: ${{ secrets.COFFRE_CLE_LECTURE }}
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"

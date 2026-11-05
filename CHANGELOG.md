@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Routeur du domaine — « conditions » devient un vrai bouton (2026-11-05)
+- Suite de #5444. Après le déploiement, le robot Apex Chat connecté donne 43 OK · 2 KO (avant : 41 OK · 4 KO) : plus aucun bouton sous 44 px chez les deux comptes ; il reste « liens vides : 1 · conditions » car le lien de la porte avait `href="#"` alors qu'il ne mène nulle part, il déplie un texte. C'est maintenant un `<button type="button">` d'apparence de lien (44 px de haut, `aria-expanded` qui suit l'état). Garde `test:porte-conditions-44` : 17 ✅ ; `SABOTAGE=1` (ancien style) 4 ❌ ; `SABOTAGE=2` (ancien `<a href="#">`) 2 ❌.
+
 ## Routeur du domaine — le lien « conditions » de la porte fait 44 px (2026-11-05)
 - Mesure du robot Apex Chat connecté (comptes neufs A et B) : `a 72x17 « conditions »` dans la porte des conditions du routeur (`services/kdmc-router/boite-bouton.js`), vue une fois par compte neuf dans TOUTES les apps. Le lien fait maintenant 44 px de haut (`inline-block`, `minHeight`/`lineHeight` 44 px) et la case à cocher se recentre sur cette ligne ; le clic déplie toujours le texte. Branche cloud-installer sans session depuis ~30.10 : le routeur revient à apex-cloud (règle `relance-reelle.md`), prise posée au pont. Garde `test:porte-conditions-44` (vrai navigateur, 375 et 1250 px, la porte rendue par le vrai code) : 13 ✅, 4 ❌ sous `SABOTAGE=1` (17 px, comme mesuré en ligne). À déployer : `deploy-kdmc-router.yml` au dépôt public.
 

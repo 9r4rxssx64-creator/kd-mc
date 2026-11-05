@@ -65,7 +65,7 @@ input[type=range]{width:100%;height:44px;accent-color:var(--a1)}
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="retour" href="/admin/">← Tableau de bord</a></div>
+  <div class="top"><a class="retour" href="/admin/">← Tableau de bord</a> <a class="retour" href="https://kd-mc.com/">← Portail</a></div>
   <h1>🎙️ <span>Studio Voix</span></h1>
   <p class="sub">Clone une voix à partir de quelques secondes, puis fais-lui dire ce que tu veux — en français et 9 autres langues. Gratuit, sur tous tes appareils.</p>
 
@@ -177,7 +177,7 @@ input[type=range]{width:100%;height:44px;accent-color:var(--a1)}
   function charger() {
     return api('/__voix/moi').then(function (r) { return r.json().then(function (j) { return { r: r, j: j }; }); }).then(function (x) {
       if (!x.j || !x.j.ok) {
-        $('porte').innerHTML = '<div style="font-size:44px">🔒</div><h2>' + esc(MSG[x.j && x.j.reason] || 'Accès impossible pour le moment.') + '</h2><p class="k">Studio Voix s\'ouvrira ici dès que l\'administrateur l\'aura rendu disponible.</p><a class="btn go" href="/">Aller au portail</a>';
+        $('porte').innerHTML = '<div style="font-size:44px">🔒</div><h2>' + esc(MSG[x.j && x.j.reason] || 'Accès impossible pour le moment.') + '</h2><p class="k">Studio Voix s\'ouvrira ici dès que l\'administrateur l\'aura rendu disponible.</p><a class="btn go" href="https://kd-mc.com/">Aller au portail</a>';
         $('porte').classList.remove('cache'); return;
       }
       ETAT.voix = x.j.voix || []; ETAT.moteurs = x.j.moteurs || []; ETAT.langues = x.j.langues || {};

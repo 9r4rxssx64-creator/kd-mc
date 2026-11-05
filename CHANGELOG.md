@@ -18,6 +18,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - **Mesuré après** : 1 sur 3 208 (cas sans issue : 3 présents, suite 1-3-2) ; 0 jour de suite identique sur 16 324 ; équité : pire personne 5,3 points (≤ 8), alternance 72,9 % (≥ 70 %).
 - **Gardes** : `test:departs-serie-decalage` (nouveau, `SABOTAGE=1` rouge), oracle indépendant de `test:departs-algo` mis à jour (12 ✅), `test:departs-cycle` 3b (helpers identiques dans les deux pages), ancres de sabotage d'équité et du robot en ligne remises à jour.
 
+## Arbre v3.191 — tous les ancêtres à l'écran même sur un petit cadre, noms de groupe lisibles, points d'entrée de test de la loupe (2026-11-05)
+- Mesure réelle d'arbre-pc dans le Chrome de Kevin (cadre 648×458) : 21 ancêtres de Kevin sur 47 hors écran à ×0,06 ; noms de groupe (.lodlab) ~10 px ; loupe non mesurable sans vraie souris.
+- Fait : « Voir dans l'arbre » descend jusqu'à ×0,02 (tous les ancêtres tiennent) ; noms de groupe à ~14 px ; `window.__loupeTest(x,y)` et `window.__loupeTouchTest(x,y)` (taille, agrandissement, carte visée). Gardes : cadre-noyau 97/97 réel (échantillon avec Kevin + les 2 plus gros lignages + cadre 648×458), loupe-ponts 17/17 réel ; rouges sur v3.190 (71 ancêtres hors écran).
+
 ## Arbre v3.190 — la loupe s'aimante sur la carte visée, les noms de famille se lisent en vue d'ensemble (2026-11-05)
 - Demande (Kevin, 5.11) : « quand on fait la vue d'ensemble, qu'on voie vraiment les noms de famille ; une loupe qui suit la souris ; si on clique, on ouvre la branche ». Constat sur ses vraies données : en vue d'ensemble la loupe (×15) montrait un disque VIDE entre deux familles, et les noms de famille faisaient 8 px.
 - Fait : agrandissement doux de la loupe (×0,5 à ×1,1, plusieurs cartes lisibles) ; aimant sur la carte la plus proche (≤ 38 px), la croix dit laquelle s'ouvre, un clic à côté ouvre SA branche ; noms de famille à 14-17 px à l'écran (avant 8 px) et réduits à l'espace libre pour ne pas se chevaucher. Garde `verify-loupe-ponts.mjs` 14/14 sur les vraies données, rouge sur v3.189 (8 px, pas d'aimant).

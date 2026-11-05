@@ -42,7 +42,10 @@ export const CF_RAPIDES = [
    Together n'est PAS déclaré gratuit : kdmc-apis le range depuis toujours parmi les moteurs payants (MOTEURS_PAYANTS,
    compte à crédits) — on l'appelle avec son modèle « -Free », mais seulement après les gratuits, et jamais sans la clé
    que Kevin seul détient (règle : un palier à crédits n'est jamais déclaré gratuit sans Kevin). */
-export const FREE_PROVIDERS = ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'cerebras', 'sambanova', 'nvidia', 'huggingface', 'glm', 'cohere'];
+/* 5.11.2026 (Kevin « trouve un moyen de faire du gratuit », factures Google Cloud ~209 € depuis août) : depuis le 26.09 Google AI Studio a
+   passé la clé Gemini en palier PAYANT 1 — un appel Gemini peut donc être facturé. Gemini passe en DERNIER des gratuits : il ne répond
+   plus que si les 10 autres sont tombés. L'ordre des autres ne bouge pas. */
+export const FREE_PROVIDERS = ['qwen', 'groq', 'mistral', 'openrouter', 'cerebras', 'sambanova', 'nvidia', 'huggingface', 'glm', 'cohere', 'gemini'];
 
 /* NIVEAU de qualité (Kevin 2.10.2026 : « quand ça s'épuise, anticipe du gratuit en relais, toujours même qualité, même
    niveau ») : 'A' = classe Llama 3.3 70B / Qwen3 30B+ / Gemini Flash ; 'B' = petits modèles (mistral-small, glm-4-flash,

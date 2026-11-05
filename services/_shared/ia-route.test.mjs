@@ -193,7 +193,8 @@ test('secrets : noms EXACTS de Kevin (PERPLEXITI, OPEN_AI)', () => {
 
 /* ---- PALIERS GRATUITS EMPILÉS (Kevin 2026-10-02 « Go freellm ») ---- */
 test('Go freellm : 5 paliers gratuits de plus, APRÈS les gratuits d\'avant (l\'ordre d\'avant ne bouge pas) ; Together câblé mais PAS déclaré gratuit', () => {
-  assert.deepEqual(FREE_PROVIDERS.slice(0, 6), ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'cerebras']);
+  assert.deepEqual(FREE_PROVIDERS.slice(0, 6), ['qwen', 'groq', 'mistral', 'openrouter', 'cerebras', 'sambanova']); // 5.11 : Gemini passé en dernier (clé AI Studio en palier payant depuis le 26.09)
+  assert.equal(FREE_PROVIDERS[FREE_PROVIDERS.length - 1], 'gemini', 'Gemini = dernier des gratuits (peut être facturé)');
   for (const p of ['sambanova', 'nvidia', 'huggingface', 'glm', 'cohere']) {
     assert.ok(FREE_PROVIDERS.includes(p), p + ' est un palier gratuit');
     assert.ok(SECRET_NAMES[p], p + ' a un nom de secret');

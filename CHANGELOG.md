@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.357 — le titre de l'en-tête d'une conversation fait 44 px (2026-11-05)
+- Mesure du robot « toutes les fonctions » (run 41968885178, deux comptes connectés) : le titre touchable de l'en-tête (« Groupe … · N membres »), qui ouvre la gestion du groupe ou la vérification de sécurité, faisait 39 px de haut ; les boutons voisins en font 44. Il fait maintenant au moins 44 px (`min-height:44px`, texte centré, nom toujours sur une ligne avec points de suspension). Garde `test:entete-chat-44` (vrai navigateur, 390 et 1250 px) : 10 ✅ avec le correctif, 4 ❌ sous `SABOTAGE=1`.
+- Le lien « conditions » (17 px) que la même mesure a relevé n'est pas d'Apex Chat : c'est la porte des conditions du domaine (`services/kdmc-router/boite-bouton.js`), vue une fois par compte neuf ; donné à cloud-installer par le pont.
+
 ## Robot Apex Chat — la mesure connectée dit QUEL élément est trop petit (2026-11-05)
 - 1er passage de la mesure connectée (run 41832859052) : 41 OK · 4 KO. Le relevé ne nommait pas les éléments : il donne maintenant le texte et le parent de chaque bouton sous 44 px et le texte de chaque lien vide. Sont écartés de la mesure, car ce ne sont pas des cibles tactiles : le lien d'évitement `.skip-link` (caché hors écran, visible au clavier seulement) et les bulles de message `.msg`. Aucun changement de l'app.
 

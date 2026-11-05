@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 248 règles — le texte de Kevin, une par une
+## 📜 Les 249 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1080,6 +1080,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🕘 RÈGLE MÉTIER ABSOLUE — HORAIRES AMÉNAGÉS : HORS DES DÉPARTS DE L'ÉQUIPE, UN ALGORITHME À PART QUAND ILS SONT PLUSIEURS (Kevin 2026-11-05, ABSOLUE)
 **« Retire Salomé Panidji des départs de l'algorithme, des départs de son équipe. Tu la mets sans départ tant qu'elle a des horaires aménagés… Quand des personnes ont des horaires aménagés dans […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-horaires-aménagés-hors-des-départs-de-léquipe-un-algorithme-à-part-quand-ils-sont-plusieurs-kevin-2026-11-05-absolue)
+
+### 🔎 RÈGLE ABSOLUE — ARBRE : LES ROBOTS CHERCHENT POUR TOUT LE MONDE (DÉFUNTS, VIVANTS, MINEURS), TOUT CE QUI ENRICHIT L'ARBRE ; LE MINEUR RESTE PRIVÉ, SES DATE ET LIEU DE NAISSANCE RESTENT DANS LA FICHE (Kevin 2026-11-05, ABSOLUE, TOUTES LES BRANCHES)
+**« Je t'ai déjà dit que tu devais faire toutes les recherches pour les vivants comme pour les morts, comme pour les mineurs. Photos, documents, parutions, etc. Toutes les infos que tu trouves, […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-arbre-les-robots-cherchent-pour-tout-le-monde-défunts-vivants-mineurs-tout-ce-qui-enrichit-larbre-le-mineur-reste-privé-ses-date-et-lieu-de-naissance-restent-dans-la-fiche-kevin-2026-11-05-absolue-toutes-les-branches)
 
 ---
 

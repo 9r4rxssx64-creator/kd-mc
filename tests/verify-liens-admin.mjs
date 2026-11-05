@@ -56,11 +56,12 @@ try { J = JSON.parse(readFileSync('tools/pont/annuaire-branches.json', 'utf8'));
 const DONNES = {
   'cloud-installer': 'session_01HGawPYgJFGpAHzNH7oDnou', 'javis-bee': 'session_01DZmfQmJnTJYthtRvSBBn5P', 'apex-cloud': 'session_01AYqnsKgbPf6FYBEonVFwtx',
   'arbre-cloud': 'session_01FsMqxbm4xoe2neziok5k6K', 'cloud-poste-recherche': 'session_017GoCrf8h8KxG2VZBbzkxXC', 'cmcteams-pdf': 'session_012J818cpkmcrt23Tfera1bg',
-  'studio-crea': 'session_01StKmUgVQDaNKxJJCWca3pz', 'robots-ia': 'session_01QWRpftGLY726bWqxNS5n1b', 'pc-config': 'session_01Xncr1t3EoT4hLpf7a35ajY',
-  'arbre-pc': 'session_01WC73ptv3SHnNNfDTPnycPf', 'pc-connecteurs': 'session_01LNvWeCyWxQqfNoTPLahTJJ', 'meta': 'session_01LoK7J3LQkTKFkwE2fasGyt',
-  'detente': 'session_01Jmp9cPUNiNrRHN4Cui3anM', 'poolpilot': 'session_01X3SAC5TiWFbkS3riw3Tq7N', 'free-apis': 'session_01DxPyb3aRBmVwAR2Dpzu1zy', 'divers': 'session_018eY7LuofoZ6AfjCQwbwJqk'
+  'studio-crea': 'session_01StKmUgVQDaNKxJJCWca3pz', 'robots-ia': 'session_01QWRpftGLY726bWqxNS5n1b', 'pc-config': 'session_018h8NZU2FhDTbtxKErS1U6W',
+  'arbre-pc': 'session_018h8NZTzsLjhMHk3E3NMB5m', 'pc-connecteurs': 'session_018h8NZU9yXwMdpfCwwEUj8c', 'meta': 'session_01LoK7J3LQkTKFkwE2fasGyt',
+  'detente': 'session_01Jmp9cPUNiNrRHN4Cui3anM', 'poolpilot': 'session_01X3SAC5TiWFbkS3riw3Tq7N', 'free-apis': 'session_01DxPyb3aRBmVwAR2Dpzu1zy', 'divers': 'session_018eY7LuofoZ6AfjCQwbwJqk',
+  'pc-voix': 'session_018h8NZSdGnyecPP8TjT3Q2e', 'pont-check': 'session_01KYuwpjHWSBYAQUyLJP6SFX'   /* 5.11 : sessions Lenovo VIVANTES (les anciennes sont archivées) + liste lue sur l\'app */
 };
-const SANS_ID = ['pc-voix', 'lingua-cloud', 'commerce-cloud', 'table-pilot', 'pont-check', 'pont-point', 'moulin-mobile', 'sdb-mezzanine', 'clayscore-cloud'];
+const SANS_ID = ['lingua-cloud', 'commerce-cloud', 'table-pilot', 'pont-point', 'moulin-mobile', 'sdb-mezzanine', 'clayscore-cloud'];
 if (J) {
   const B = J.branches || [];
   const noms = B.map((b) => b.branche);
@@ -68,9 +69,9 @@ if (J) {
   const mal = B.filter((b) => b.session_id != null && !/^session_[A-Za-z0-9]{24}$/.test(b.session_id)).map((b) => b.branche + '=' + b.session_id);
   chk(mal.length === 0, mal.length ? 'identifiant(s) de session mal formé(s) (attendu session_ + 24 caractères) : ' + mal.join(', ') : 'chaque identifiant de session = session_ + 24 caractères alphanumériques');
   const faux = Object.entries(DONNES).filter(([k, v]) => (B.find((b) => b.branche === k) || {}).session_id !== v).map(([k]) => k);
-  chk(faux.length === 0, faux.length ? 'identifiant(s) différent(s) de la liste du chef d\'orchestre : ' + faux.join(', ') : 'les 16 identifiants de session sont exactement ceux de la base du pont');
+  chk(faux.length === 0, faux.length ? 'identifiant(s) différent(s) de la liste du chef d\'orchestre : ' + faux.join(', ') : 'les 18 identifiants de session sont exactement ceux de la table routage du pont (sessions Lenovo vivantes)');
   const vusSans = SANS_ID.filter((k) => { const b = B.find((x) => x.branche === k); return !b || b.session_id !== null; });
-  chk(vusSans.length === 0, vusSans.length ? 'devraient être sans identifiant : ' + vusSans.join(', ') : 'les 9 branches sans identifiant n\'ont aucun lien d\'ouverture inventé');
+  chk(vusSans.length === 0, vusSans.length ? 'devraient être sans identifiant : ' + vusSans.join(', ') : 'les branches sans identifiant n\'ont aucun lien d\'ouverture inventé');
   const lieux = B.filter((b) => b.groupe !== (b.lieu === 'lenovo' ? 'lenovo' : (b.session_id ? 'cloud' : 'sans-session')) || (b.url_session || null) !== (b.session_id ? 'https://claude.ai/code/' + b.session_id : null));
   chk(lieux.length === 0, lieux.length ? 'groupe / url_session incohérents : ' + lieux.map((b) => b.branche).join(', ') : 'groupes ☁️ Cloud / 🖥️ Lenovo / sans session et liens d\'ouverture cohérents');
   chk(B.every((b) => b.nom_clair && b.role && b.role.length < 220), 'chaque branche a un nom clair et un rôle en une phrase');

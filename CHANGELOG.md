@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Routeur du domaine — le lien « conditions » de la porte fait 44 px (2026-11-05)
+- Mesure du robot Apex Chat connecté (comptes neufs A et B) : `a 72x17 « conditions »` dans la porte des conditions du routeur (`services/kdmc-router/boite-bouton.js`), vue une fois par compte neuf dans TOUTES les apps. Le lien fait maintenant 44 px de haut (`inline-block`, `minHeight`/`lineHeight` 44 px) et la case à cocher se recentre sur cette ligne ; le clic déplie toujours le texte. Branche cloud-installer sans session depuis ~30.10 : le routeur revient à apex-cloud (règle `relance-reelle.md`), prise posée au pont. Garde `test:porte-conditions-44` (vrai navigateur, 375 et 1250 px, la porte rendue par le vrai code) : 13 ✅, 4 ❌ sous `SABOTAGE=1` (17 px, comme mesuré en ligne). À déployer : `deploy-kdmc-router.yml` au dépôt public.
+
 ## Apex Chat 1.1.357 — le titre de l'en-tête d'une conversation fait 44 px (2026-11-05)
 - Mesure du robot « toutes les fonctions » (run 41968885178, deux comptes connectés) : le titre touchable de l'en-tête (« Groupe … · N membres »), qui ouvre la gestion du groupe ou la vérification de sécurité, faisait 39 px de haut ; les boutons voisins en font 44. Il fait maintenant au moins 44 px (`min-height:44px`, texte centré, nom toujours sur une ligne avec points de suspension). Garde `test:entete-chat-44` (vrai navigateur, 390 et 1250 px) : 10 ✅ avec le correctif, 4 ❌ sous `SABOTAGE=1`.
 - Le lien « conditions » (17 px) que la même mesure a relevé n'est pas d'Apex Chat : c'est la porte des conditions du domaine (`services/kdmc-router/boite-bouton.js`), vue une fois par compte neuf ; donné à cloud-installer par le pont.

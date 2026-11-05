@@ -126,8 +126,9 @@ export function bouton() {
       (c.points || []).forEach(function (t) { ul.appendChild(E('li', t, { marginBottom: '6px' })); });
       detail.appendChild(ul);
       var lab = E('label', null, { display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '16px', minHeight: '44px', cursor: 'pointer', marginBottom: '10px' });
-      var cb = document.createElement('input'); cb.type = 'checkbox'; S(cb, { width: '24px', height: '24px', flexShrink: '0', marginTop: '2px' });
-      var lien = E('a', 'conditions', { color: OR, textDecoration: 'underline' }); lien.href = '#'; lien.setAttribute('data-kdmc-cgu-lien', '1');
+      /* 5.11 (mesure du robot Apex Chat connecté : « a 72x17 conditions ») : le lien est une cible tactile de 44 px de haut ; la case se centre sur cette ligne */
+      var cb = document.createElement('input'); cb.type = 'checkbox'; S(cb, { width: '24px', height: '24px', flexShrink: '0', marginTop: '10px' });
+      var lien = E('a', 'conditions', { color: OR, textDecoration: 'underline', display: 'inline-block', minHeight: '44px', lineHeight: '44px' }); lien.href = '#'; lien.setAttribute('data-kdmc-cgu-lien', '1');
       lien.onclick = function (ev) { ev.preventDefault(); ev.stopPropagation(); detail.style.display = detail.style.display === 'none' ? 'block' : 'none'; };
       var phrase = E('span', "J'accepte les ");
       phrase.appendChild(lien); phrase.appendChild(document.createTextNode('.'));

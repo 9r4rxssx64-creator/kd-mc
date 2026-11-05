@@ -176,6 +176,7 @@
     enregistrement: null, sortie: null, occupe: false, miroir: true
   };
   var DIM = { '9:16': [540, 960], '1:1': [720, 720], '16:9': [960, 540] };
+  var perf = { rendu: 0, renduFps: 0, t: 0 };   /* compteurs de fluidité (Avatar.etat().perf, ou ?fps=1 pour les voir à l'écran) */
   var out = null, octx = null, rendu = null, repos = C.fabriquerRepos(11), t0 = 0, raf = 0, dernier = 0, derniersP = C.paramsNeutres();
   var manuelEtat = null;     /* collecte des 3 touches (œil G, œil D, bouche) */
 
@@ -213,7 +214,12 @@
   }
 
   function paramsActuels(t) {
-    if (S.camera && S.camera.params) return S.camera.params;
+    var cam = S.camera;
+    if (cam && cam.cible) {      /* lissage à CHAQUE image dessinée (5.11) : le suivi répond ~10 fois/s, l'écran se redessine 30 à 60 fois/s */
+      var now = performance.now(), dt = Math.min(0.1, (now - (cam.tLisse || now)) / 1000); cam.tLisse = now;
+      C.lisserTemps(cam.lisse, cam.cible, dt, cam.periode / 1000); cam.params = C.assainir(cam.lisse);
+    }
+    if (cam && cam.params) return cam.params;
     var cible = (C.HUMEURS[S.humeur] || C.HUMEURS.neutre).p, cur = S.humeurP, e = 0.18;
     C.NOMS_PARAMS.forEach(function (n) { cur[n] += ((cible[n] || 0) - cur[n]) * e; });
     var voix = null;
@@ -230,10 +236,23 @@
       A.dessiner(g, S.persoId, P, d.width, d.height, { accessoire: S.accessoire, teinte: S.teinte, t: t, echelle: 0.96 });
     } else if (S.source === 'photo' && rendu) rendu.dessiner(P);
   }
+  function perfEtat() {
+    var c = S.camera;
+    return { renduFps: perf.renduFps, suiviFps: c && c.suiviFps ? +c.suiviFps.toFixed(1) : 0, detectionMs: c ? Math.round(c.duree) : 0, periodeMs: c ? Math.round(c.periode) : 0,
+      gains: c && c.calib ? c.calib.gains() : null, ecran: out ? [out.width, out.height, Math.round(out.clientWidth), Math.round(out.clientHeight)] : null };
+  }
+  /* Compteur de fluidité (adresse du Studio + « ?fps=1 ») : pour mesurer sur l'iPhone sans outil. */
+  function montrerFps() {
+    var vue = false; try { vue = /[?&]fps=1/.test(location.search); } catch (e) { /* ok */ } if (!vue) return;
+    var e = $('avFps'), w = $('avWrap'); if (!w) return;
+    if (!e) { e = document.createElement('div'); e.id = 'avFps'; w.appendChild(e); }
+    var P = perfEtat(); e.textContent = 'rendu ' + P.renduFps + '/s · suivi ' + P.suiviFps + '/s · détection ' + P.detectionMs + ' ms · écran ' + (P.ecran ? P.ecran[2] + '×' + P.ecran[3] : '?') + ' · ' + (Vision.delegue() || '?');
+  }
   function boucle(ts) {
     raf = requestAnimationFrame(boucle);
     if (!actif() || document.hidden) return;
-    if (ts - dernier < 30) return; dernier = ts;
+    if (ts - dernier < (S.camera ? 14 : 30)) return; dernier = ts;      /* caméra allumée : ~60 images/s à l'écran (le dessin est sur la carte graphique) */
+    perf.rendu++; if (!perf.t) perf.t = ts; if (ts - perf.t >= 1000) { perf.renduFps = Math.round(perf.rendu * 1000 / (ts - perf.t)); perf.rendu = 0; perf.t = ts; montrerFps(); }
     if (S.source) dessiner((performance.now() - t0) / 1000);
   }
   function demarrerBoucle() { if (!raf) { t0 = performance.now(); raf = requestAnimationFrame(boucle); } }
@@ -528,28 +547,37 @@
       await Vision.charger();
       var stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: true });
       var v = document.createElement('video'); v.muted = true; v.playsInline = true; v.setAttribute('playsinline', ''); v.srcObject = stream; await v.play();
-      S.camera = { stream: stream, video: v, params: C.paramsNeutres(), actif: true, dernierTs: -1, lisse: C.paramsNeutres() };
-      boucleCamera(); aide('📷 Bouge, souris, cligne des yeux : ton avatar te copie. Touche ⏺ pour enregistrer.');
-    } catch (e) { racine.aiHide && racine.aiHide(); throw new Error(/Permission|NotAllowed|denied/i.test(String(e && (e.name || e.message))) ? 'Autorise la caméra dans les réglages de ton navigateur pour que l\'avatar te copie.' : ((e && e.message) || 'Caméra impossible')); }
+      S.camera = { stream: stream, video: v, params: C.paramsNeutres(), actif: true, dernierTs: -1, lisse: C.paramsNeutres(), cible: null, calib: C.creerCalibrage(),
+        enCours: false, prochain: 0, duree: 60, periode: 100, dernierRetour: 0, suiviFps: 0, tLisse: 0 };
+      boucleCamera(); aide('📷 Regarde la caméra un instant (je me cale sur toi), puis bouge, souris, cligne des yeux : ton avatar te copie. Touche ⏺ pour enregistrer.');
+    } catch (e) { racine.aiHide && racine.aiHide(); throw new Error(/Permission|NotAllowed|denied/i.test(String(e && (e.name || e.message))) ? 'Autorise la caméra dans les réglages de ton navigateur, puis touche encore « Allumer la caméra ».' : ((e && e.message) || 'Caméra impossible')); }
     racine.aiHide && racine.aiHide();
   }
+  /* Le suivi (détection) bloque la page pendant qu'il travaille : on le fait respirer (pause = la moitié de sa durée) pour que l'écran se redessine entre deux
+     réponses, et on lisse le mouvement à chaque image (paramsActuels). Un suivi lent donne un mouvement doux, pas saccadé. */
   function boucleCamera() {
     var cam = S.camera; if (!cam || !cam.actif) return;
-    var v = cam.video;
-    if (v.readyState >= 2 && v.currentTime !== cam.dernierTs) {
-      cam.dernierTs = v.currentTime;
-      Vision.video(v, performance.now()).then(function (det) {
-        if (!S.camera || S.camera !== cam || !det) return;
-        var p = C.depuisBlendshapes(det.blend, S.miroir), pose = C.poseDepuisMatrice(det.matrice, S.miroir), l = cam.lisse;
-        C.NOMS_PARAMS.forEach(function (n) {
-          var cible = (n === 'yaw' || n === 'pitch' || n === 'roll') ? pose[n] : p[n], k = /blink|jaw/.test(n) ? 0.75 : 0.45;   /* les paupières et la bouche réagissent vite, la tête plus doucement */
-          l[n] += (cible - l[n]) * k;
-        });
-        cam.params = C.assainir(l);
-      }).catch(function () { /* image ratée : on garde la précédente */ });
+    var v = cam.video, now = performance.now();
+    if (!cam.enCours && now >= cam.prochain && v.readyState >= 2 && v.currentTime !== cam.dernierTs) {
+      cam.dernierTs = v.currentTime; cam.enCours = true; var debut = performance.now();
+      Vision.video(v, debut).then(function (det) {
+        var fin = performance.now(); if (!S.camera || S.camera !== cam) return;
+        cam.duree += ((fin - debut) - cam.duree) * 0.2;
+        if (det) {
+          var p = C.depuisBlendshapes(det.blend, S.miroir), pose = C.poseDepuisMatrice(det.matrice, S.miroir), brut = {};
+          C.NOMS_PARAMS.forEach(function (n) { brut[n] = (n === 'yaw' || n === 'pitch' || n === 'roll') ? pose[n] : p[n]; });
+          var ecart = cam.dernierRetour ? fin - cam.dernierRetour : cam.periode;
+          cam.periode += (Math.min(ecart, 400) - cam.periode) * 0.2; cam.suiviFps = 1000 / cam.periode;
+          cam.cible = cam.calib.appliquer(brut, Math.min(ecart, 400) / 1000); cam.dernierRetour = fin;
+        }
+        cam.prochain = fin + C.pauseDetection(cam.duree);
+      }).catch(function () { cam.prochain = performance.now() + 100; /* image ratée : on garde la précédente */ })
+        .then(function () { cam.enCours = false; });
     }
     cam.timer = requestAnimationFrame(boucleCamera);
   }
+  /* « Recentrer » : on oublie la position de repos et les gains appris (on change de place, de lumière ou de personne). */
+  function recentrer() { var cam = S.camera; if (!cam) { dire('Allume d\'abord la caméra 📷'); return; } cam.calib = C.creerCalibrage(); cam.dernierRetour = 0; dire('🎯 Je me recale sur toi : regarde la caméra.', 1800); }
   function arreterCamera() {
     var cam = S.camera; if (!cam) return; cam.actif = false; S.camera = null;
     try { cancelAnimationFrame(cam.timer); } catch (e) { /* ok */ }
@@ -688,6 +716,7 @@
     q('avJouer', function (e) { e.onclick = function () { jouer(false); }; });
     q('avEnreg', function (e) { e.onclick = function () { if (S.mode === 'camera') { enregistrerCamera(); } else if (S.enregistrement) { try { S.enregistrement.stop(); } catch (x) { /* ok */ } } else jouer(true); }; });
     q('avMicroBtn', function (e) { e.onclick = enregistrerMicro; });
+    q('avRecentrer', function (e) { e.onclick = recentrer; });
     q('avReplacer', function (e) { e.onclick = replacer; });
     q('avLunettes', function (e) { e.onclick = function () { S.lunettesManuel = !S.lunettes; majLunettes(); aide(S.lunettes ? '😎 Lunettes : les sourcils bougent moins pour ne pas tordre la monture.' : '👀 Sans lunettes : les sourcils bougent normalement.'); }; });
     q('avVoixVideo', function (e) { e.onclick = voixDeLaVideo; });
@@ -712,7 +741,7 @@
     version: '1.0.0', Vision: Vision, Voix: Voix, Core: C,
     pause: pause, activer: activer, choisirPerso: choisirPerso, depuisPhoto: depuisPhoto, depuisVideo: depuisVideo, appliquerLook: appliquerLook,
     jouer: jouer, garder: garder, charger: charger, exporter: exporterPaquet, partager: partager, definirHumeur: function (h) { if (C.HUMEURS[h]) { S.humeur = h; chipOn('avHumeurs', '.chip', h); } },
-    etat: function () { return { source: S.source, vues: S.vues.length, yaws: S.vues.map(function (v) { return +v.yaw.toFixed(3); }), manuel: S.vues.map(function (v) { return !!v.manuel; }), rendu: rendu ? rendu.mode() : (S.source === 'perso' ? '2d-perso' : null), look: S.look, lunettes: !!S.lunettes, looksRetrouves: S.vues.filter(function (v) { return !!v.ptsLook; }).length, texturesLook: S.vues.filter(function (v) { return !!v.texture; }).length, mode: S.mode, perso: S.persoId, params: derniersP, son: S.son ? { duree: S.son.duree, frames: S.son.frames.length } : null, camera: !!S.camera, enregistre: !!S.sortie, occupe: S.occupe, delegue: Vision.delegue() , sortieInfo: S.infoSortie || null, erreurLook: S.erreurLook || '', panneVision: S.panneVision || '', erreurVision: Vision.erreur()}; },
+    etat: function () { return { source: S.source, vues: S.vues.length, yaws: S.vues.map(function (v) { return +v.yaw.toFixed(3); }), manuel: S.vues.map(function (v) { return !!v.manuel; }), rendu: rendu ? rendu.mode() : (S.source === 'perso' ? '2d-perso' : null), look: S.look, lunettes: !!S.lunettes, looksRetrouves: S.vues.filter(function (v) { return !!v.ptsLook; }).length, texturesLook: S.vues.filter(function (v) { return !!v.texture; }).length, mode: S.mode, perso: S.persoId, params: derniersP, son: S.son ? { duree: S.son.duree, frames: S.son.frames.length } : null, camera: !!S.camera, perf: perfEtat(), enregistre: !!S.sortie, occupe: S.occupe, delegue: Vision.delegue() , sortieInfo: S.infoSortie || null, erreurLook: S.erreurLook || '', panneVision: S.panneVision || '', erreurVision: Vision.erreur()}; },
     rendre: function (P) { var t = (performance.now() - t0) / 1000; if (P) { var sauv = S.camera; S.camera = { params: C.assainir(P) }; dessiner(t); S.camera = sauv; } else dessiner(t); },
     vue0: function () { return S.vues[0] ? S.vues[0].original : null; }, cadre: function () { return rendu ? rendu.cadre() : null; }, son: function () { return S.son; },
     /* Où est l'ouverture de la bouche à l'écran (pixels de la sortie) pour un réglage donné — sert aux mesures. */

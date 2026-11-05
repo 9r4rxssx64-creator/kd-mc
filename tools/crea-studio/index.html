@@ -273,6 +273,13 @@
   #avCanvas{touch-action:manipulation;background:#111}
   #s-avatar .toolrow{flex-wrap:wrap;justify-content:center;overflow-x:visible}
   #s-avatar .textedit textarea{font-size:16px}
+  /* Qualité (5.11, mesure du Lenovo : l'avatar n'avait que 113×201 px d'écran, le panneau mangeait 46 % de la hauteur) : l'avatar a TOUJOURS au moins 42 % de la hauteur,
+     le panneau rend la place (il défile) — le dessin est le sujet, pas les boutons. */
+  #s-avatar .canvas-wrap{min-height:42dvh}
+  #s-avatar .panel{max-height:36dvh}
+  @media (max-height:560px){#s-avatar .canvas-wrap{min-height:52dvh}#s-avatar .panel{max-height:30dvh}}
+  #avCanvas{image-rendering:auto}
+  #avFps{position:absolute;left:6px;bottom:6px;z-index:5;max-width:calc(100% - 12px);padding:4px 8px;border-radius:8px;background:rgba(0,0,0,.65);color:#9f9;font:12px/1.3 ui-monospace,Menlo,monospace;pointer-events:none}
   #avZoomRow{padding:2px 18px;display:flex;align-items:center;gap:10px}
   #avZoom{flex:1;min-height:44px}
   .mini-perso{position:relative;flex:0 0 auto}
@@ -1059,7 +1066,8 @@
           <button class="bigbtn ghost" id="avBtnSon">📂 Choisir un son (ou une vidéo)</button>
           <button class="bigbtn ghost hidden" id="avVoixVideo">🔊 Prendre la voix de la vidéo</button>
         </div>
-        <div id="avCameraBloc" class="hidden"><div class="hint">📷 La caméra avant copie ton visage en direct (bouche, yeux, sourcils, tête). Ton micro enregistre ta voix. Rien ne quitte ton téléphone.</div></div>
+        <div id="avCameraBloc" class="hidden"><div class="hint">📷 La caméra avant copie ton visage en direct (bouche, yeux, sourcils, tête). Ton micro enregistre ta voix. Rien ne quitte ton téléphone.</div>
+          <div style="padding:2px 14px"><button class="bigbtn ghost" id="avRecentrer">🎯 Me recaler (je regarde la caméra)</button></div></div>
         <div class="hint">🎚️ La hauteur de la voix :</div>
         <div class="toolrow" id="avHauteurs">
           <button class="chip on" data-v="perso"><span class="ic">🎭</span>Celle du personnage</button>
@@ -1216,7 +1224,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.22.10';
+var APP_VER='v9.22.11';
 document.getElementById('vbadge').textContent=APP_VER;
 /* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
 function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}
@@ -7418,6 +7426,6 @@ catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)
 <script src="avatar-persos.js" defer></script>
 <script src="avatar-studio.js" defer></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.10" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.11" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
 </body>
 </html>

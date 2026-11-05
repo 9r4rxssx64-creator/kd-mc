@@ -136,6 +136,57 @@
   }
 
   /* ---------------------------------------------------------------------------
+     2b. LA CAMÉRA, FLUIDE ET JUSTE (5.11, Kevin : « le rendu de la vidéo est vraiment moyen… tout bof »)
+         Mesuré sur le Lenovo : suivi ~11 images/s, amplitudes minuscules (bouche max 0,08, tête −0,07…+0,02).
+         → (a) la CALIBRATION ajuste toute seule le gain de chaque réglage à ce que TON visage fait vraiment,
+           (b) la tête et le regard se recentrent sur ta position de départ (webcam posée plus bas que les yeux),
+           (c) le LISSAGE se fait à chaque image dessinée (pas seulement quand le suivi répond), (d) le suivi lève le pied
+           s'il est lent pour laisser de la place au dessin. Tout est pur : testé dans Node.
+  --------------------------------------------------------------------------- */
+  /* [amplitude « pleine » visée, gain maximal] — sous ref/max c'est du bruit, jamais amplifié plus que max */
+  var CALIB = {
+    jaw: [0.5, 4.5], smile: [0.55, 3.5], frown: [0.5, 3], wide: [0.5, 2.5], blinkL: [0.85, 3], blinkR: [0.85, 3], eyeWide: [0.5, 2.5],
+    browL: [0.5, 3], browR: [0.5, 3], browIn: [0.45, 3], gazeX: [0.5, 2.5], gazeY: [0.4, 2.5], yaw: [0.5, 3.5], pitch: [0.28, 3.5], roll: [0.3, 3]
+  };
+  var GROUPE_CALIB = { blinkR: 'blinkL', browR: 'browL' };       /* les deux yeux / sourcils partagent leur gain : pas de clin d'œil par accident */
+  var DERIVE_CALIB = { yaw: 1, pitch: 1, roll: 1, gazeX: 1, gazeY: 1 };    /* position de repos suivie lentement */
+  var ZONE_MORTE = { yaw: 0.012, pitch: 0.012, roll: 0.012, jaw: 0.02, smile: 0.03, frown: 0.03, eyeWide: 0.04, browL: 0.03, browR: 0.03, browIn: 0.03, blinkL: 0.05, blinkR: 0.05 };    /* le reste : 0,015 — sous ces seuils, c'est le bruit du suivi (visage au repos) */
+  var TAU_LISSAGE = { jaw: 0.035, blinkL: 0.03, blinkR: 0.03, eyeWide: 0.06, smile: 0.07, frown: 0.08, wide: 0.07, browL: 0.08, browR: 0.08, browIn: 0.08, gazeX: 0.06, gazeY: 0.06, yaw: 0.09, pitch: 0.09, roll: 0.09 };
+
+  function creerCalibrage() {
+    var pic = {}, base = {}, init = false;
+    NOMS_PARAMS.forEach(function (n) { pic[n] = CALIB[n][0] / 1.4; base[n] = 0; });       /* départ : gain ×1,4 */
+    function gain(n) { var c = CALIB[n], p = pic[GROUPE_CALIB[n] || n]; return Math.min(c[1], Math.max(1, c[0] / p)); }
+    return {
+      pic: pic, base: base,
+      appliquer: function (p, dt) {
+        dt = clamp(+dt || 0, 0, 0.5);
+        var dec = Math.pow(0.5, dt / 10), derive = 1 - Math.pow(0.5, dt / 10), sortie = {};
+        if (!init) { init = true; NOMS_PARAMS.forEach(function (n) { if (DERIVE_CALIB[n]) base[n] = p[n] || 0; }); }     /* on suppose que tu regardes la caméra au départ */
+        NOMS_PARAMS.forEach(function (n) {
+          var c = CALIB[n], v = p[n] || 0, k = GROUPE_CALIB[n] || n;
+          if (DERIVE_CALIB[n]) { base[n] += (v - base[n]) * derive; v -= base[n]; }
+          var a = Math.abs(v), zm = ZONE_MORTE[n] || 0.015;
+          pic[k] = Math.max(c[0] / c[1], a, k === n ? pic[k] * dec : pic[k]);          /* le chef du groupe fait décroître, l'autre ne fait que pousser */
+          v = a < zm ? 0 : (v > 0 ? v - zm : v + zm);
+          sortie[n] = v * gain(n);
+        });
+        return assainir(sortie);
+      },
+      gains: function () { var g = {}; NOMS_PARAMS.forEach(function (n) { g[n] = +gain(n).toFixed(2); }); return g; }
+    };
+  }
+  /* Lissage exponentiel à chaque image dessinée. `periode` = durée (s) entre deux réponses du suivi : on ne lisse jamais moins que ~40 % de
+     cette durée, sinon la bouche et les paupières sauteraient d'une réponse à l'autre. Modifie et renvoie `l`. */
+  function lisserTemps(l, cible, dt, periode) {
+    dt = clamp(+dt || 0, 0, 0.1); var plancher = clamp((+periode || 0) * 0.4, 0, 0.12);
+    NOMS_PARAMS.forEach(function (n) { var tau = Math.max(TAU_LISSAGE[n] || 0.07, plancher); l[n] += ((cible[n] || 0) - l[n]) * (1 - Math.exp(-dt / tau)); });
+    return l;
+  }
+  /* Pause (ms) que le suivi s'impose entre deux détections : la détection bloque la page (elle est synchrone) ; pendant la pause les images sont dessinées. */
+  function pauseDetection(dureeMs) { return clamp(Math.round((+dureeMs || 0) * 0.5), 14, 60); }
+
+  /* ---------------------------------------------------------------------------
      3. LA VOIX : le son → bouche (synchro des lèvres), calculé une fois sur tout le fichier
         jaw   : énergie (on ouvre plus quand c'est fort)  — plus la voyelle est « ouverte » (a), plus ça s'ouvre
         wide  : voyelle claire (i, é) = bouche étirée ; sombre (ou, o) = bouche en cœur
@@ -585,6 +636,7 @@
     VERSION: VERSION, MP: MP, PARAMS_NEUTRES: PARAMS_NEUTRES, NOMS_PARAMS: NOMS_PARAMS, LIMITES: LIMITES, HUMEURS: HUMEURS, HAUTEURS: HAUTEURS,
     paramsNeutres: paramsNeutres, assainir: assainir, fusionner: fusionner, fabriquerRepos: fabriquerRepos,
     depuisBlendshapes: depuisBlendshapes, poseDepuisMatrice: poseDepuisMatrice,
+    creerCalibrage: creerCalibrage, lisserTemps: lisserTemps, pauseDetection: pauseDetection,
     analyserVoix: analyserVoix, lisser: lisser, boucheALInstant: boucheALInstant,
     etirerWSOLA: etirerWSOLA, reechantillonner: reechantillonner, changerHauteur: changerHauteur,
     delaunay: delaunay, dansPolygone: dansPolygone, fabriquerRig: fabriquerRig, rigDepuisMediaPipe: rigDepuisMediaPipe, rigManuel: rigManuel, rigDepuisVue: rigDepuisVue,

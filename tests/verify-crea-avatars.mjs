@@ -8,7 +8,7 @@
  *  C. le tour de tête (choix des vues), le paquet d'avatar (formats refusés : SVG, nombres fous, trop de vues…) ;
  *  D. les 8 personnages × accessoires × teintes dessinés sur un faux contexte : aucun appel avec NaN, tout tient dans le cadre ;
  *  E. le câblage : bouton, section, scripts dans l'ordre, service worker, worker IA (looks d'avatar), pas de réseau inattendu.
- * Sabotage (--sabotage) : 7 mutations du code, chacune DOIT faire rougir au moins un contrôle. */
+ * Sabotage (--sabotage) : 14 mutations du code, chacune DOIT faire rougir au moins un contrôle. */
 import fs from 'node:fs'; import path from 'node:path'; import os from 'node:os'; import { fileURLToPath } from 'node:url'; import { createRequire } from 'node:module'; import { spawnSync } from 'node:child_process'; import vm from 'node:vm';
 const R = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = path.join(R, 'tools/crea-studio');
@@ -22,7 +22,14 @@ const MUTATIONS = [
   ['la voix ne change plus de hauteur', 'avatar-core.js', 'return reechantillonner(etirerWSOLA(x, ratio), ratio);', 'return x;'],
   ['le paquet accepte une image SVG', 'avatar-core.js', "!/^data:image\\/(jpeg|png|webp);base64,/.test(v.img)", "false"],
   ['le signe de la tête est inversé', 'avatar-core.js', 'var yaw = Math.asin(clamp(d[8], -1, 1))', 'var yaw = -Math.asin(clamp(d[8], -1, 1))'],
-  ['les coins des yeux ne sont plus épinglés', 'avatar-core.js', "(g.eyeCoinL || []).concat(g.eyeCoinR || []).forEach(function (i) { poignee(i, 0, 0, 1); });", "void 0;"]
+  ['les coins des yeux ne sont plus épinglés', 'avatar-core.js', "(g.eyeCoinL || []).concat(g.eyeCoinR || []).forEach(function (i) { poignee(i, 0, 0, 1); });", "void 0;"],
+  ['la caméra n\'amplifie plus les petits mouvements', 'avatar-core.js', 'return Math.min(c[1], Math.max(1, c[0] / p));', 'return 1;'],
+  ['le bruit de la caméra passe dans l\'avatar', 'avatar-core.js', 'v = a < zm ? 0 : (v > 0 ? v - zm : v + zm);', 'v = v;'],
+  ['le lissage saute à la valeur du suivi', 'avatar-core.js', 'l[n] += ((cible[n] || 0) - l[n]) * (1 - Math.exp(-dt / tau));', 'l[n] = cible[n] || 0;'],
+  ['la tête ne se recentre plus sur la position de départ', 'avatar-core.js', 'if (DERIVE_CALIB[n]) { base[n] += (v - base[n]) * derive; v -= base[n]; }', 'void 0;'],
+  ['l\'écran ne lisse plus à chaque image', 'avatar-studio.js', 'C.lisserTemps(cam.lisse, cam.cible, dt, cam.periode / 1000);', 'void 0;'],
+  ['le suivi ne laisse plus de pause à l\'écran', 'avatar-studio.js', 'cam.prochain = fin + C.pauseDetection(cam.duree);', 'cam.prochain = 0;'],
+  ['l\'écran reste à 30 images/s avec la caméra', 'avatar-studio.js', '(S.camera ? 14 : 30)', '30']
 ];
 
 if (process.argv.includes('--sabotage')) {
@@ -162,6 +169,29 @@ function frequence(x, sr) { const N = 8192, re = new Float64Array(N), im = new F
   t(blinks >= 8 && blinks <= 25 && borne && diff > 5, `B6 repos : ${blinks} clignements en 60 s, bornés [0,1], deux graines = deux rythmes`);
 }
 
+/* ===== B7. la caméra juste et fluide (5.11, Kevin : « tout bof » — mesuré : suivi ~11/s, amplitudes minuscules) ===== */
+{
+  const run = (frames, dt) => { const c = C.creerCalibrage(); let o = null; frames.forEach((f) => { o = c.appliquer(f, dt); }); return { c, o }; };
+  const petit = Array.from({ length: 200 }, (_, i) => ({ jaw: i % 20 < 10 ? 0.076 : 0.004 }));
+  const a = run(petit, 0.1); a.o = a.c.appliquer({ jaw: 0.076 }, 0.1); const fort = run(Array.from({ length: 100 }, (_, i) => ({ jaw: i % 20 < 10 ? 0.9 : 0 })), 0.1);
+  t(a.o.jaw > 0.2 && a.c.gains().jaw > 2.5 && a.c.gains().jaw <= 4.5, `B7 un petit mouvement est amplifié (bouche de 0,076 → ${a.o.jaw.toFixed(2)}, gain ×${a.c.gains().jaw}, jamais plus de ×4,5)`);
+  const f1 = fort.c.appliquer({ jaw: 0.9 }, 0.1);
+  t(fort.c.gains().jaw === 1 && f1.jaw > 0.8 && f1.jaw <= 1, `B7 un grand mouvement n'est pas déformé (gain ×${fort.c.gains().jaw}, bouche ${f1.jaw.toFixed(2)})`);
+  const bruit = run(Array.from({ length: 60 }, () => ({ jaw: 0.01, smile: 0.01, blinkL: 0.01, yaw: 0.008 })), 0.05).o;
+  t(bruit.jaw === 0 && bruit.smile === 0 && bruit.blinkL === 0 && bruit.yaw === 0, 'B7 le bruit du suivi (visage immobile) ne fait pas bouger l\'avatar');
+  const haut = run(Array.from({ length: 300 }, () => ({ pitch: 0.3, yaw: -0.07 })), 0.1), pas = haut.c.appliquer({ pitch: 0.45, yaw: -0.07 }, 0.1);
+  t(Math.abs(haut.o.pitch) < 0.02 && Math.abs(haut.o.yaw) < 0.02 && pas.pitch > 0.2, `B7 la tête se recentre : webcam posée plus bas (tangage de repos 0,3 → ${haut.o.pitch.toFixed(2)}), un vrai mouvement passe quand même (${pas.pitch.toFixed(2)})`);
+  const cl = run(Array.from({ length: 60 }, (_, i) => ({ blinkL: i % 6 === 0 ? 0.8 : 0.02, blinkR: 0.02 })), 0.1), g = cl.c.gains(); cl.o = cl.c.appliquer({ blinkL: 0.8, blinkR: 0.02 }, 0.1);
+  t(g.blinkL === g.blinkR && cl.o.blinkR === 0 && cl.o.blinkL > 0.6, `B7 les deux yeux ont le même gain (×${g.blinkL}) : un clin d'œil reste un clin d'œil, jamais un clignement double par accident`);
+  const vide = C.creerCalibrage().appliquer({}, undefined);
+  t(C.NOMS_PARAMS.every((k) => Number.isFinite(vide[k])), 'B7 une image sans mesure ni durée ne donne ni NaN ni explosion');
+  const l = C.paramsNeutres(); C.lisserTemps(l, { jaw: 1 }, 1 / 60, 0.1); const un = l.jaw; for (let i = 0; i < 40; i++) C.lisserTemps(l, { jaw: 1 }, 1 / 60, 0.1);
+  t(un > 0.05 && un < 0.6 && l.jaw > 0.9, `B7 le lissage est doux : après UNE image ${un.toFixed(2)} (pas de saut), après 40 images ${l.jaw.toFixed(2)}`);
+  const lent = C.paramsNeutres(), vif = C.paramsNeutres(); C.lisserTemps(lent, { jaw: 1 }, 1 / 60, 0.4); C.lisserTemps(vif, { jaw: 1 }, 1 / 60, 0);
+  t(lent.jaw < vif.jaw, `B7 un suivi lent (400 ms entre deux réponses) est lissé plus fort (${lent.jaw.toFixed(2)} < ${vif.jaw.toFixed(2)}) : pas de bouche qui saute`);
+  t(C.pauseDetection(0) === 14 && C.pauseDetection(80) === 40 && C.pauseDetection(1000) === 60 && C.pauseDetection(NaN) === 14, 'B7 le suivi se laisse une pause de la moitié de sa durée (14 à 60 ms) pour que l\'écran se redessine');
+}
+
 /* ===== C. le tour de tête, le paquet ===== */
 {
   const cands = [-0.7, -0.55, -0.3, -0.25, 0, 0.02, 0.3, 0.26, 0.56, 0.7].map((yaw, i) => ({ yaw, pitch: 0.02, nette: i % 2 ? 2 : 1, neutre: 0.9 })); cands.push({ yaw: 0.0, pitch: 0.6, nette: 5, neutre: 1 });
@@ -224,6 +254,9 @@ function frequence(x, sr) { const N = 8192, re = new Float64Array(N), im = new F
   t(hotes.every((h) => ['cdn.jsdelivr.net', 'storage.googleapis.com'].includes(h)), `E4 seuls réseaux nommés : ${hotes.join(', ')} (module + modèle de suivi de visage)`);
   const innerHTML = [...fichiers.matchAll(/\.innerHTML\s*=\s*([^;]+);/g)].map((m) => m[1].trim()); const sures = innerHTML.every((v) => /^(''|'[^'+]*'|"[^"+]*")$/.test(v));
   t(sures && !/\beval\(|new Function\(|document\.write\(/.test(fichiers), `E4 aucune donnée dans innerHTML (${innerHTML.length} affectation(s), toutes des textes fixes) ; ni eval ni document.write`);
+  const stu = fs.readFileSync(path.join(DIR, 'avatar-studio.js'), 'utf8');
+  t(/C\.lisserTemps\(cam\.lisse, cam\.cible, dt, cam\.periode \/ 1000\)/.test(stu) && /cam\.calib\.appliquer\(brut/.test(stu) && /C\.pauseDetection\(cam\.duree\)/.test(stu) && /\(S\.camera \? 14 : 30\)/.test(stu) && /perf: perfEtat\(\)/.test(stu), 'E6 la caméra : calibrage à chaque réponse du suivi, lissage à chaque image, pause du suivi, 60 images/s, compteurs dans Avatar.etat().perf');
+  t(/#s-avatar \.canvas-wrap\{min-height:42dvh\}/.test(html) && /@media \(max-height:560px\)\{#s-avatar \.canvas-wrap\{min-height:52dvh\}/.test(html) && /id="avRecentrer"/.test(html) && /#avFps\{/.test(html) && /q\('avRecentrer'/.test(stu), 'E6 l\'avatar garde au moins 42 % (52 % sur écran bas) de la hauteur ; bouton « Me recaler » ; compteur ?fps=1');
   const pk = lire('package.json'); t(/"test:crea-avatars"/.test(pk) && /npm run test:crea-avatars/.test(pk.match(/"test:ci":\s*"([^"]*)"/)[1]), 'E5 le garde est câblé dans test:ci');
 }
 

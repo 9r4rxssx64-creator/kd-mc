@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Créa Studio v9.22.11 — Avatars caméra : fluide, net, qui copie vraiment les mouvements (2026-11-05)
+- **Kevin** (via pont 1817–1822) : « le rendu de la vidéo est vraiment moyen, voire bof… tout bof » (fluidité, netteté, ressemblance, mouvements). Mesuré par le Lenovo (i3-N305) : suivi ~10,9/s, avatar dessiné à ce même rythme, mouvements très faibles (bouche 0,076 max, tête −0,07…+0,02), image affichée 113×201 px sur écran bas.
+- **Corrigé** : (1) le dessin est découplé du suivi : lissage par image affichée (≈ 60/s avec la caméra), le suivi n'est plus un « diaporama » ; (2) gains calibrés qui s'adaptent à la personne (pic glissant, demi-vie 10 s, plafonds par mouvement) + zones mortes + recentrage lent de la tête et du regard ; (3) pause de détection (½ temps de détection) pour que l'écran respire ; (4) écran de l'avatar plus grand (42 dvh, 52 dvh sur écran ≤ 560 px de haut) ; (5) bouton « Recentrer » ; (6) compteur `?fps=1` (rendu / suivi / détection / taille) et `Avatar.etat().perf`.
+- **Gardes** : `tests/verify-crea-avatars.mjs` 88 ✅, 14 sabotages tous rouges (7 nouveaux) ; `verif-crea-avatars-navigateur.mjs` 28/28 (Chromium réel, caméra factice) ; matrice Studio 39/39.
+- **Non mesuré ici** : le suivi réel sur le Lenovo / l'iPhone après mise en ligne (le robot n'a pas de WebGL) — confié au Lenovo (`pc-config`) avec le lien `?fps=1`.
+
 ## CMCteams v10.009 + light v1.134 — les horaires aménagés sortent des départs (2026-11-05)
 - **Kevin** : « Retire Salomé Panidji des départs… Tu la mets sans départ tant qu'elle a des horaires aménagés… Quand des personnes ont des horaires aménagés dans les équipes, tu les sors des départs. Et s'il y a plusieurs personnes avec des horaires aménagés dans une équipe, tu leur donnes un algorithme à eux indépendant des autres. »
 - **Comment on sait** : le PDF n'écrit pas « horaires aménagés » personne par personne ; c'est LU dans les codes du mois (jamais deviné) : une personne est aménagée si ≥ 40 % de ses jours à horaire (« 10/18 »…) diffèrent de l'horaire que fait la majorité de l'équipe ce jour-là, sur au moins 6 jours. Mesuré sur les 198 tableaux livrés : seuls ‹employé› (CMC Éq.4, novembre, 75 %) et ‹employé› (juillet, 71 %) sont dans ce cas ; tous les autres sont à 19 % ou moins.

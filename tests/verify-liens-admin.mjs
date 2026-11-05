@@ -297,6 +297,16 @@ async function adresses() {
   }
 }
 
+/* 5. SERVI : chaque page « cmcteams.kd-mc.com/tools/<dossier>/ » citée par l'admin doit être dans un paquet embarqué du routeur
+      (prepare-secours.mjs) — sinon l'adresse répond « Cette page n'existe pas ici » (annuaire, 5.11 : le fichier existait, pas le paquet). */
+function servi() {
+  const secours = lire('services/kdmc-router/prepare-secours.mjs');
+  const sources = ['kdmc-home/admin/admin.js', 'kdmc-home/admin/commerce.js', 'kdmc-home/admin/tableau.js', 'kdmc-home/kdmc-boite.js'].filter(existsSync).map(lire).join('\n');
+  const dossiers = [...new Set([...sources.matchAll(/https:\/\/cmcteams\.kd-mc\.com\/(tools\/[a-z0-9-]+)\//g)].map((m) => m[1]))];
+  const manquants = dossiers.filter((d) => !secours.includes("chemin: '" + d + "'"));
+  chk(manquants.length === 0, manquants.length ? 'dossier(s) cité(s) par l\'admin mais absents des paquets servis : ' + manquants.join(', ') : dossiers.length + ' dossier(s) tools/ cités par l\'admin : tous dans un paquet servi');
+}
+try { servi(); } catch (e) { chk(false, 'servi : ' + (e && e.stack || e)); }
 try { await navigateur(); } catch (e) { chk(false, 'navigateur : ' + (e && e.stack || e)); }
 try { await adresses(); } catch (e) { chk(false, 'adresses : ' + (e && e.stack || e)); }
 

@@ -116,6 +116,9 @@ const PARTAGES = [
   { chemin: 'tools', fichiers: ['codes-decoder.html', 'calc-conventions.html', 'apex-landing.html', 'gen-bulletin-paie.html', 'planning-weekend.html', 'kevin-todo-iphone.html', 'apex-visual-inspector.html', 'apex-emergency-reset.html', 'apex-ios-bridge-deploy.html'], quoi: 'outils racine (décodeur de codes, calc conventions, landing Apex…)' },
   { chemin: 'iRemoteHub', quoi: 'iRemoteHub (lien de l\'inventaire)' },
   { chemin: 'tools/social', quoi: 'réseaux sociaux (lien de l\'inventaire)' },
+  /* 5.11 (Kevin « où est l'annuaire ? » : cmcteams.kd-mc.com/tools/pont/annuaire-branches.html répondait « Cette page n'existe pas ici ») :
+     les 3 pages du pont n'étaient dans AUCUN paquet servi. Seuls les fichiers de pages, pas les scripts ni le .sql du dossier. */
+  { chemin: 'tools/pont', fichiers: ['annuaire-branches.html', 'annuaire-branches.json', 'tableau-kdmc.html', 'secrets-a-poser.html'], quoi: 'pont : annuaire des branches, tableau KDMC, secrets à poser' },
   { chemin: 'shops/_shared', quoi: 'briques communes des boutiques — 10 pages' },
   /* 11.10.2026 — Kevin : « Finances m'envoie sur CMCteams ». MESURÉ : les tuiles « Finances » et « Messages employés » du portail
      (cmcteams.kd-mc.com/tools/finances/ et /tools/messages/) pointaient vers deux dossiers ABSENTS du paquet. L'hébergeur, ne les trouvant

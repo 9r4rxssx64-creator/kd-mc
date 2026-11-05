@@ -17,9 +17,14 @@ export async function lirePageNavigateur(contexteNeuf) {   // contexteNeuf() →
     if (!urlSure(url)) throw new Error('adresse non permise');
     const { page, fermer } = await contexteNeuf();
     try {
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const rep = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(1500);
       if (!urlSure(page.url())) throw new Error('redirigée hors des adresses permises');
+      /* 5.11 (mesure de pc-config sur le Lenovo : Geneanet « Just a moment… » et Gallica « Attention Required! » = mur Cloudflare, HTTP 403, rendus « lus, 0 trouvaille ») :
+         une page refusée n'est JAMAIS une page lue. Le mur n'est pas contourné (règle) ; la page est comptée « refusée », pas « lue ». */
+      const etat = rep && typeof rep.status === 'function' ? rep.status() : 0;
+      const titre = typeof page.title === 'function' ? String(await page.title().catch(() => '') || '') : '';
+      if (etat >= 400 || /just a moment|attention required|access denied|un instant|vérification de sécurité/i.test(titre)) throw new Error('page refusée HTTP ' + (etat || '?'));
       const html = await page.content();
       return htmlEnTexte(html.slice(0, 1500000), page.url());
     } finally { await fermer(); }

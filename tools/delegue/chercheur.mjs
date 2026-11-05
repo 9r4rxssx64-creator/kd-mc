@@ -82,7 +82,7 @@ export async function chercher({ consigne, urls, maxPages = 6, domaine = 'resume
     const r = await demander('resume', `CONSIGNE : ${consigne}\n\nTROUVAILLES VÉRIFIÉES (extraits copiés de pages réelles) :\n${trouvailles.slice(0, 30).map((t, i) => `${i + 1}. [${t.url}] ${t.extrait}`).join('\n')}\n\nFais une synthèse de 8 lignes au plus, fidèle, qui ne dit rien de plus que ces extraits. Cite les numéros.`, { maxTokens: 700 });
     synthese = r.ok ? r.texte.slice(0, 1500) : '';
   }
-  return { version: 1, consigne: consigne.slice(0, 300), pages, synthese, stats: { pages: pages.length, lues: pages.filter((p) => p.ok).length, trouvailles: trouvailles.length, rejetees: pages.reduce((s, p) => s + p.rejetees, 0), adresses_refusees: refuses, moteurs } };
+  return { version: 1, consigne: consigne.slice(0, 300), pages, synthese, stats: { pages: pages.length, lues: pages.filter((p) => p.ok).length, trouvailles: trouvailles.length, rejetees: pages.reduce((s, p) => s + p.rejetees, 0), adresses_refusees: refuses, pages_refusees: pages.filter((p) => /refusée/.test(p.erreur || '')).length, moteurs } };
 }
 
 /* En ligne de commande, sans file : le rapport JSON d'une recherche faite ici, tout de suite (ex. depuis une session du cloud).

@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 247 règles — le texte de Kevin, une par une
+## 📜 Les 248 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1076,6 +1076,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 💬 RÈGLE ABSOLUE — MINI-CHAT DIRECT : KEVIN ÉCRIT À N'IMPORTE QUI DANS CMCTEAMS ET LA LIGHT, LA PERSONNE LE LIT À L'OUVERTURE ET LUI RÉPOND, SEULS EUX DEUX LE VOIENT (Kevin 2026-11-05, ABSOLUE, GRATUIT)
 **« Dans CMC Teams, je veux la possibilité d'envoyer un message à une personne qui s'affichera sur son application CMC Teams quand elle l'ouvre à la prochaine connexion et qu'elle ait la […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-mini-chat-direct-kevin-écrit-à-nimporte-qui-dans-cmcteams-et-la-light-la-personne-le-lit-à-louverture-et-lui-répond-seuls-eux-deux-le-voient-kevin-2026-11-05-absolue-gratuit)
+
+### 🕘 RÈGLE MÉTIER ABSOLUE — HORAIRES AMÉNAGÉS : HORS DES DÉPARTS DE L'ÉQUIPE, UN ALGORITHME À PART QUAND ILS SONT PLUSIEURS (Kevin 2026-11-05, ABSOLUE)
+**« Retire Salomé Panidji des départs de l'algorithme, des départs de son équipe. Tu la mets sans départ tant qu'elle a des horaires aménagés… Quand des personnes ont des horaires aménagés dans […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-métier-absolue-horaires-aménagés-hors-des-départs-de-léquipe-un-algorithme-à-part-quand-ils-sont-plusieurs-kevin-2026-11-05-absolue)
 
 ---
 

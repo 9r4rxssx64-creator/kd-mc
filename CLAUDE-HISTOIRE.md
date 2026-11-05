@@ -12565,3 +12565,8 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 
 - **Revue sécurité du 5.11 (mini-chat)** : l'agent `revue-securite` a trouvé un point bloquant — la clé du fil (mots du nom triés) ne distinguait pas deux comptes dont le nom est dans un ordre différent ; un homonyme aurait lu le fil. Corrigé le même jour : le fil est lié à l'uid du compte (voir `.claude/rules/mini-chat-direct.md`), compte en attente refusé, fil effacé avec le compte, corps plafonné à 4 Ko. Test rouge sans le correctif (`SABOTAGE=lien`).
 
+
+## 🕘 RÈGLE MÉTIER ABSOLUE — HORAIRES AMÉNAGÉS : HORS DES DÉPARTS DE L'ÉQUIPE, UN ALGORITHME À PART QUAND ILS SONT PLUSIEURS (Kevin 2026-11-05, ABSOLUE)
+**« Retire Salomé Panidji des départs de l'algorithme, des départs de son équipe. Tu la mets sans départ tant qu'elle a des horaires aménagés… Quand des personnes ont des horaires aménagés dans les équipes, tu les sors des départs. Et s'il y a plusieurs personnes avec des horaires aménagés dans une équipe, tu leur donnes un algorithme à eux indépendant des autres de leur équipe pour ne pas perturber le service de l'équipe entière. »** — Kevin 2026-11-05
+- Détection LUE dans les codes du mois : ≥ 40 % des jours à horaire différents de l'horaire majoritaire de l'équipe, ≥ 6 jours, au plus la moitié de l'équipe. Mesuré sur 198 tableaux : ‹employé› (nov. c4) et ‹employé› (juillet) seulement.
+- Une personne = aucun départ, horaires affichés ; plusieurs aux mêmes horaires = groupe à part (mêmes règles). Source unique `tools/shared/horaires-amenages.js` (copie `tools/departs/`). Règle courte : `.claude/rules/horaires-amenages.md`. Garde : `npm run test:horaires-amenages` + robot réel `departs-equipes` contrôle I. CMCteams v10.009 + light v1.134.

@@ -19,7 +19,7 @@
 
 export const COMPETENCES = [
   { id: 'departs-equipes', titre: 'Toutes les équipes, chaque personne, chaque jour : départs affichés (light + CMCteams), décalages, collègue non-admin',
-    demande: 'Kevin 7.10 « connecte-toi en admin comme moi, vérifie toutes les équipes, chaque personne » · 5.11 « il faut que ça décale… l\'algorithme n\'est pas bon »',
+    demande: 'Kevin 7.10 « connecte-toi en admin comme moi, vérifie toutes les équipes, chaque personne » · 5.11 « il faut que ça décale… l\'algorithme n\'est pas bon » · 5.11 « retire Salomé Panidji des départs… horaires aménagés »',
     workflow: 'verif-live-equipes', script: 'tests/verif-live-equipes.mjs', lieu: 'public', essaiLocal: true, noms: true, minutes: 25 },
   { id: 'cadres', titre: 'Plannings des cadres (Pit Boss, Superviseurs) identiques au PDF, octobre et novembre',
     demande: 'Kevin 12.10 « intègre les plannings cadres… vérifie tout réellement ensuite »',

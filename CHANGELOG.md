@@ -4,6 +4,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.009 + light v1.134 — les horaires aménagés sortent des départs (2026-11-05)
+- **Kevin** : « Retire Salomé Panidji des départs… Tu la mets sans départ tant qu'elle a des horaires aménagés… Quand des personnes ont des horaires aménagés dans les équipes, tu les sors des départs. Et s'il y a plusieurs personnes avec des horaires aménagés dans une équipe, tu leur donnes un algorithme à eux indépendant des autres. »
+- **Comment on sait** : le PDF n'écrit pas « horaires aménagés » personne par personne ; c'est LU dans les codes du mois (jamais deviné) : une personne est aménagée si ≥ 40 % de ses jours à horaire (« 10/18 »…) diffèrent de l'horaire que fait la majorité de l'équipe ce jour-là, sur au moins 6 jours. Mesuré sur les 198 tableaux livrés : seuls ‹employé› (CMC Éq.4, novembre, 75 %) et ‹employé› (juillet, 71 %) sont dans ce cas ; tous les autres sont à 19 % ou moins.
+- **Effet** : une seule personne aménagée = aucun départ (ses horaires restent affichés, « 🕘 Horaires aménagés · sans départ »), l'équipe tourne comme si elle n'existait pas ; plusieurs aux mêmes horaires (≥ 80 % de jours pareils) = un petit groupe avec SON algorithme (même suite 4235-2351-3514, mêmes règles d'absence), indépendant du reste. Tout le mois d'un coup ; rien n'est écrit dans les données, donc un mois sans écart revient seul à la normale.
+- **Une seule source** `tools/shared/horaires-amenages.js` (copie identique `tools/departs/`), utilisée par CMCteams et la light : `test:departs-compare` 0 écart.
+- **Gardes** : `npm run test:horaires-amenages` (35 ✅ ; `SABOTAGE=1` → 14 ❌) ; robot réel `departs-equipes` contrôle I (‹employé›, novembre c4, aucun départ) + `SABOTAGE=amenage` rouge. `test:entetes-light`, qui était déjà rouge sur main (52 anomalies : élèves en formation et septembre mal compris par le test), est réparé : 0 anomalie.
+
 ## Apex Chat 1.1.359 — le bouton « ⋯ » de chaque ligne de la liste des chats fait 44×44 px (2026-11-05)
 - Mesuré par le robot connecté (run 42081611982, écran Chats, comptes A et B) : `button 27x35 « ⋯ » dans div.conv-item` ×2, sous les 44 px de la règle frontend. Le bouton d'actions d'une conversation (épingler, sourdine…) est maintenant la classe `.conv-more` (44×44 px, centré) au lieu d'un style en ligne.
 - Mesure avant/après et garde : `tests/verify-entete-chat-44.mjs` (vrai Chromium, CSS réel, 390 et 1250 px) : 16 ✅ ; `SABOTAGE=1` (retire la taille minimale) : 9 ❌. Contacts, Appels et la conversation : 0 bouton sous 44 px ; 0 identifiant en double ; 0 lien vide.

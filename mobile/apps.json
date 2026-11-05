@@ -48,6 +48,7 @@
         "tools/shared/ecritures-cmc.js",
         "tools/shared/retraite-cmc.js",
         "tools/shared/formations-ecole.js",
+        "tools/shared/horaires-amenages.js",
         "tools/shared/departs-groupes.js",
         "tools/shared/tests-import-vue.js",
         "tools/shared/lz-string.js",

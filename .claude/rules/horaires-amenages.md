@@ -1,0 +1,5 @@
+# Horaires aménagés : hors des départs de l'équipe (Kevin 5.11.2026, absolue, CMCteams ET light)
+- « Retire Salomé Panidji des départs… sans départ tant qu'elle a des horaires aménagés… plusieurs personnes avec des horaires aménagés dans une équipe = un algorithme à eux, indépendant du reste de l'équipe. »
+- Le PDF n'écrit pas « aménagé » par personne : on le LIT dans les codes du mois (≥ 40 % des jours à horaire différents de l'horaire majoritaire de l'équipe ce jour-là, ≥ 6 jours, au plus la moitié de l'équipe, ≥ 4 personnes qui travaillent). Jamais une liste de noms écrite à la main, rien écrit dans les données.
+- Une seule personne : aucun départ, horaires affichés. Plusieurs aux mêmes horaires (≥ 80 % de jours pareils sur ≥ 6 jours communs) : un groupe à part, mêmes règles de série (4235-2351-3514) et d'absence. Le mois entier, pas de bascule en cours de mois.
+- Une seule source : `tools/shared/horaires-amenages.js`, copie identique dans `tools/departs/` (CMCteams = light). Toute évolution des seuils se fait là, avec `npm run test:horaires-amenages` (rouge sous `SABOTAGE=1`) et le contrôle I du robot réel `departs-equipes` (rouge sous `SABOTAGE=amenage`).

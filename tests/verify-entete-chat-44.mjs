@@ -47,5 +47,22 @@ for (const largeur of [390, 1250]) {
   t(m.every((x) => !x.debordeNom), `${largeur} px : le nom long reste sur une ligne avec des points de suspension`);
   await p.close();
 }
+
+/* 2e mesure (run 42081611982, Chats chez A et B) : `button 27x35 « ⋯ » dans div.conv-item` — le bouton d'actions de chaque ligne de la liste */
+const liste = src.match(/\/\* =+ Conv list =+ \*\/[\s\S]*?(?=\n\/\* =+ )/);
+t(!!liste, 'le bloc CSS « Conv list » est trouvé');
+const bouton = /<button class="conv-more"[^>]*aria-label="Actions">⋯<\/button>/.test(src);
+t(bouton, 'le bouton « ⋯ » de la liste porte la classe conv-more dans le vrai rendu');
+let stylesListe = liste ? liste[0] : '';
+if (process.env.SABOTAGE) stylesListe = stylesListe.replace(/min-width:44px;min-height:44px;/, '');
+const ligne = '<div class="conv-item"><div class="avatar">A</div><div style="flex:1;min-width:0"><div class="conv-name">Un nom</div><div class="conv-last">dernier message</div></div><div style="text-align:right"><div class="conv-time">12:00</div></div><button class="conv-more" aria-label="Actions">⋯</button></div>';
+const pageListe = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{--ax-bg-2:#111;--ax-bg-3:#222;--ax-border:#333;--ax-text-3:#999;--ax-radius-sm:6px}body{margin:0;font-family:sans-serif;font-size:16px}.avatar{width:40px;height:40px;border-radius:50%;background:#555}${stylesListe}</style><div class="conv-list">${ligne}${ligne}</div>`;
+for (const largeur of [390, 1250]) {
+  const p = await nav.newPage({ viewport: { width: largeur, height: 700 } });
+  await p.setContent(pageListe);
+  const m = await p.evaluate(() => [...document.querySelectorAll('.conv-more')].map((e) => { const r = e.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height) }; }));
+  m.forEach((x, i) => t(x.w >= 44 && x.h >= 44, `${largeur} px, ligne ${i + 1} : « ⋯ » fait ${x.w}×${x.h} px (≥ 44×44)`));
+  await p.close();
+}
 await nav.close();
 console.log(`\n${ok} ✅ · ${ko} ❌`); process.exit(ko ? 1 : 0);

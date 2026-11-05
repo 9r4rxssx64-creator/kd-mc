@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.359 — le bouton « ⋯ » de chaque ligne de la liste des chats fait 44×44 px (2026-11-05)
+- Mesuré par le robot connecté (run 42081611982, écran Chats, comptes A et B) : `button 27x35 « ⋯ » dans div.conv-item` ×2, sous les 44 px de la règle frontend. Le bouton d'actions d'une conversation (épingler, sourdine…) est maintenant la classe `.conv-more` (44×44 px, centré) au lieu d'un style en ligne.
+- Mesure avant/après et garde : `tests/verify-entete-chat-44.mjs` (vrai Chromium, CSS réel, 390 et 1250 px) : 16 ✅ ; `SABOTAGE=1` (retire la taille minimale) : 9 ❌. Contacts, Appels et la conversation : 0 bouton sous 44 px ; 0 identifiant en double ; 0 lien vide.
+- Non mesuré à ce passage : l'écran Réglages (son relevé n'est pas ressorti dans les annotations lues) — repris au prochain run.
+
 ## Robot Apex Chat — la mesure connectée couvre aussi Chats, Contacts, Appels et Réglages (2026-11-05)
 - Audit domaine (tâche 97, « Continue ») : jusqu'ici la mesure de l'intérieur d'Apex Chat connecté ne regardait que la conversation ouverte. Elle passe maintenant par les 4 écrans non administrateur que les autres étapes du robot n'ouvrent pas (`K.sv('chats' | 'contacts' | 'calls' | 'settings')`) et relève, pour chacun et chez les deux comptes : boutons sous 44 px (nommés), identifiants en double, liens vides. Elle vérifie aussi que l'écran demandé est bien celui affiché et que la **version se lit dans la barre du haut** de l'écran Chats (le choix voulu pour la pastille partagée, index.html l.145-153). Aucun changement de l'app. Les écrans d'administration ne sont pas mesurés (les comptes de test ne sont pas administrateurs).
 

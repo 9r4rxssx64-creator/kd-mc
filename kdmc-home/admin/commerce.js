@@ -92,6 +92,12 @@
   function chip(e) { return '<span class="chip ' + e.cls + '">' + esc(e.label) + '</span>'; }
   function tuileKpi(k) { return '<div class="kdmc-card kdmc-in kpi ' + k.cls + '"' + (k.va ? ' data-va="' + esc(k.va) + '"' : '') + '><div class="l">' + esc(k.l) + '</div><div><div class="v">' + esc(k.v) + '</div><div class="s">' + esc(k.s) + '</div></div></div>'; }
 
+  /* 05.11 : un e-mail de client ouvre le message (mailto), un produit ouvre sa page de vente (commerce-data.json) ; sans lien connu, du texte */
+  function lienMail(e) { return e && /^[^\s@<>"']+@[^\s@<>"']+$/.test(e) ? '<a href="mailto:' + esc(e) + '">' + esc(e) + '</a>' : esc(e || '—'); }
+  function lienProduit(p) {
+    var l = ((DATA && DATA.produits) || []).filter(function (x) { return x.id === p || x.court === p || x.nom === p; })[0];
+    return l && /^https:\/\//.test(l.page || '') ? '<a href="' + esc(l.page) + '" target="_blank" rel="noopener">' + esc(p) + '</a>' : esc(p);
+  }
   function sectionVentes(live) {
     if (!live) return '<div class="note err">Caisse injoignable : les ventes ne peuvent pas être lues pour l\'instant.</div>';
     var v = live.ventes, b = moisBarres(v.parMois, 6), max = Math.max.apply(null, b.map(function (x) { return x.ca; })) || 1;
@@ -100,7 +106,7 @@
       + '</div><div class="meta">' + (v.n ? euro(v.ca) + ' au total · ' + v.n + ' vente(s)' : 'Aucune vente enregistrée par la caisse pour l\'instant — c\'est le chiffre réel, pas une estimation.') + '</div></div>';
     h += '<div class="kdmc-card tile"><h3>🧾 Dernières ventes</h3>';
     if (!v.dernieres.length) h += '<div class="meta">Rien encore. La première apparaîtra ici dès qu\'un paiement est vérifié.</div>';
-    else h += '<ul class="list">' + v.dernieres.map(function (d) { return '<li><div class="g"><b>' + esc(d.produit) + ' · ' + esc(d.email || '—') + '</b><span>' + esc(dt(d.ts_iso)) + ' · ' + esc(d.source || '?') + '</span></div></li>'; }).join('') + '</ul>';
+    else h += '<ul class="list">' + v.dernieres.map(function (d) { return '<li><div class="g"><b>' + lienProduit(d.produit) + ' · ' + lienMail(d.email) + '</b><span>' + esc(dt(d.ts_iso)) + ' · ' + esc(d.source || '?') + '</span></div></li>'; }).join('') + '</ul>';
     h += '</div>';
     return h;
   }
@@ -111,7 +117,7 @@
     var h = '<div class="kdmc-card tile"><h3>⏳ File à valider <span class="chip ' + (f.n ? 'warn' : 'ok') + '">' + f.n + '</span></h3>';
     if (!f.n) h += '<div class="meta">Aucune demande en attente.</div>';
     else h += '<ul class="list">' + f.demandes.map(function (d) {
-      return '<li data-demande="' + esc(d.id) + '"><div class="g"><b>' + esc(d.produit || '(montant sans produit)') + ' · ' + esc(d.email || '—') + '</b><span>' + esc(d.methode || '?') + ' · ' + esc(d.etat || '') + ' · ' + esc(dt(d.ts_iso)) + (d.reference ? ' · réf ' + esc(d.reference) : '') + (d.montant ? ' · ' + esc(d.montant + ' ' + (d.devise || '')) : '') + '</span></div>'
+      return '<li data-demande="' + esc(d.id) + '"><div class="g"><b>' + (d.produit ? lienProduit(d.produit) : '(montant sans produit)') + ' · ' + lienMail(d.email) + '</b><span>' + esc(d.methode || '?') + ' · ' + esc(d.etat || '') + ' · ' + esc(dt(d.ts_iso)) + (d.reference ? ' · réf ' + esc(d.reference) : '') + (d.montant ? ' · ' + esc(d.montant + ' ' + (d.devise || '')) : '') + '</span></div>'
         + (d.produit ? '<button class="btn p" data-valider="' + esc(d.id) + '">Livrer</button>' : '') + '<button class="btn d" data-refuser="' + esc(d.id) + '">Refuser</button></li>';
     }).join('') + '</ul>';
     return h + '</div>';
@@ -130,7 +136,7 @@
       h += '<ul class="list">' + it.liste.map(function (c) {
         var paye = c.etat === 'dit_paye';
         var moyen = { paypal: 'PayPal', revolut: 'Revolut', virement: 'virement' }[c.moyen] || c.moyen || 'PayPal';
-        return '<li><div class="g"><b>' + esc(c.ref) + ' · ' + esc(c.produit) + ' · ' + esc(c.email || '—') + '</b><span>'
+        return '<li><div class="g"><b>' + esc(c.ref) + ' · ' + lienProduit(c.produit) + ' · ' + lienMail(c.email) + '</b><span>'
           + esc(euro(c.montant) + ' · ' + moyen + ' · ' + (paye ? 'dit avoir payé' : 'en attente') + ' · il y a ' + c.heures + ' h'
             + (c.relance_iso ? ' · relancé' : '') + ' · ' + dt(c.ts_iso))
           + '</span></div>' + (paye ? '<span class="chip warn">à livrer</span>' : '')
@@ -278,8 +284,8 @@
       + '<div id="inv-res" hidden style="margin-top:12px">'
       + '<p class="note" id="inv-lien" style="word-break:break-all"></p>'
       + '<div style="display:flex;flex-wrap:wrap;gap:8px">'
-      + '<a class="refresh" id="inv-wa" target="_blank" rel="noopener" style="flex:1 1 140px;min-height:44px;display:flex;align-items:center;justify-content:center">WhatsApp</a>'
-      + '<a class="refresh" id="inv-sms" style="flex:1 1 140px;min-height:44px;display:flex;align-items:center;justify-content:center">SMS</a>'
+      + '<a class="refresh" id="inv-wa" href="https://wa.me/" target="_blank" rel="noopener" style="flex:1 1 140px;min-height:44px;display:flex;align-items:center;justify-content:center">WhatsApp</a>'
+      + '<a class="refresh" id="inv-sms" href="sms:" style="flex:1 1 140px;min-height:44px;display:flex;align-items:center;justify-content:center">SMS</a>'
       + '<button class="refresh" id="inv-copier" type="button" style="flex:1 1 140px;min-height:44px">Copier</button>'
       + '</div></div></div>';
   }

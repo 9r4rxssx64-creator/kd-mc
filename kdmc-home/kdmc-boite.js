@@ -240,7 +240,7 @@
     r.textContent = ''; r.setAttribute('data-conv', m.cle); dessine = empreinte(D);
     var tete = el('div', 'bf-tete');
     var ret = el('button', 'bf-ret', '←'); ret.type = 'button'; ret.setAttribute('aria-label', 'Retour à tous les messages'); ret.onclick = retourListe;
-    var tt = el('div', 'bf-ct'); tt.appendChild(el('h2', null, m.de)); tt.appendChild(el('div', 'bf-cs', srcIcone(m.source) + ' ' + String(m.app || '').replace('.kd-mc.com', '') + (m.ts ? ' · ' + quand(m.ts) : '')));
+    var tt = el('div', 'bf-ct'); var h2 = el('h2'); var uidC = /^perso:u:(.+)$/.exec(m.cle); h2.appendChild(uidC ? lienFiche(uidC[1], m.de) : document.createTextNode(m.de)); tt.appendChild(h2); tt.appendChild(el('div', 'bf-cs', srcIcone(m.source) + ' ' + String(m.app || '').replace('.kd-mc.com', '') + (m.ts ? ' · ' + quand(m.ts) : '')));
     var act = el('button', 'bf-r', '↻'); act.type = 'button'; act.setAttribute('aria-label', 'Actualiser'); act.onclick = function () { rafraichir(true); };
     var fer = el('button', 'bf-x', '✕'); fer.type = 'button'; fer.setAttribute('aria-label', 'Fermer'); fer.onclick = fermer;
     tete.appendChild(ret); tete.appendChild(tt); tete.appendChild(act); tete.appendChild(fer); r.appendChild(tete);
@@ -386,7 +386,7 @@
     z.appendChild(aide('Un compte sans code ne s\'ouvre plus sur son nom. Si c\'est bien la personne (son appareil, sa ville, son opérateur), accepte : ce code devient le sien. Sinon refuse.'));
     L.forEach(function (c) {
       var k = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
-      h.appendChild(el('div', 'bf-de', c.nom + ' (' + c.uid + ')'));
+      var dn = el('div', 'bf-de'); dn.appendChild(lienFiche(c.uid, c.nom + ' (' + c.uid + ')')); h.appendChild(dn);
       var info = el('div', 'bf-ap', [c.appareil, c.lieu, c.reseau].filter(Boolean).join(' · ') + ' · ' + quand(c.ts) + (c.app ? ' · depuis ' + c.app : ''));
       h.appendChild(info); k.appendChild(h);
       var bas = el('div', 'bf-bas');
@@ -417,7 +417,7 @@
     z.appendChild(aide('Ces personnes ont reçu un mail de confirmation : dès qu\'elles le touchent, leur compte s\'ouvre tout seul et elles disparaissent d\'ici. Tu n\'as rien à faire. Si tu reconnais quelqu\'un (appareil, ville, opérateur), tu peux l\'ouvrir tout de suite ; si c\'est louche, refuse.'));
     L.forEach(function (c) {
       var k = el('div', 'bf-c nv'), h = el('div', 'bf-ch');
-      h.appendChild(el('div', 'bf-de', (c.nom || '?') + ' (' + (c.uid || '?') + ')'));
+      var dn2 = el('div', 'bf-de'); dn2.appendChild(lienFiche(c.uid, (c.nom || '?') + ' (' + (c.uid || '?') + ')')); h.appendChild(dn2);
       var info = el('div', 'bf-ap', [c.appareil, c.lieu, c.reseau].filter(Boolean).join(' · ') + ' · ' + quand(c.ts) + (c.app ? ' · depuis ' + c.app : ''));
       h.appendChild(info); k.appendChild(h);
       var bas = el('div', 'bf-bas');
@@ -460,6 +460,13 @@
       c.appendChild(b); z.appendChild(c);
     });
     return z;
+  }
+  /* 05.11 (Kevin : « tous les liens, partout où j'ai des infos ») : un nom de compte ouvre SA fiche admin (/admin/#fiche-<uid>) ; la fenêtre se ferme si on est déjà dans l'admin */
+  function lienFiche(uid, texte) {
+    if (!uid) return el('span', null, texte);
+    var a = el('a', 'bf-fiche', texte); a.href = '/admin/#fiche-' + encodeURIComponent(uid); a.title = 'Ouvrir sa fiche admin';
+    a.onclick = function () { if (/\/admin\/?$/.test(location.pathname)) { fermer(); } };
+    return a;
   }
   function srcIcone(id) { var s = ((D && D.sources) || []).filter(function (x) { return x.id === id; })[0]; return s ? s.icone : '📨'; }
   function raison(r) {

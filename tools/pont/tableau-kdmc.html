@@ -199,6 +199,14 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
 .branche-carte.choisie{outline:3px solid var(--accent);outline-offset:2px}
 .filtre-actif{display:none;align-items:center;gap:8px;font-size:14px}
 .filtre-actif.on{display:flex}
+/* 05.11 : un lien d'annuaire se touche du pouce (>= 44 px), jamais un texte mort */
+.annuaire-lien{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 16px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-b);box-shadow:var(--ombre);color:var(--fg);text-decoration:none;font-weight:700;font-size:16px}
+.annuaire-lien:hover{border-color:var(--accent)}
+a.etat{text-decoration:none;min-height:44px;box-sizing:border-box}
+a.lien-branche{display:inline-flex;align-items:center;min-height:44px;color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+a.lien-branche:hover{text-decoration-color:var(--accent)}
+a.lien-session{display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:700;color:var(--accent);text-decoration:none}
+.lieu li a{display:inline-flex;align-items:center;min-height:44px;color:var(--fg);font-weight:700}
 </style>
 <div class="wrap">
   <div class="barre" id="barre" role="status"><span class="direct" id="direct">En direct</span><span class="fraicheur" id="fraicheur">lecture…</span><button class="btn rond" id="b-actu2" type="button" aria-label="Actualiser maintenant">🔄</button></div>
@@ -207,6 +215,8 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
     <p class="maj" id="maj">Lecture de la liste des tâches…</p>
     <div class="actu"><button class="btn go" id="b-actu" type="button">🔄 Actualiser maintenant</button><button class="btn" id="b-aut" type="button">🔐 Autoriser la lecture</button><span class="etat-actu" id="t-actu" role="status" aria-live="polite"></span></div>
   </header>
+
+  <a class="annuaire-lien" id="annuaire-lien" href="https://cmcteams.kd-mc.com/tools/pont/annuaire-branches.html" target="_blank" rel="noopener">🧭 Annuaire des branches <span aria-hidden="true">›</span></a>
 
   <div class="compteurs" aria-label="Résumé">
     <a class="compteur toi" href="#t-toi" data-cible="t-toi"><b id="n-toi">…</b><small>À toi</small></a>
@@ -220,6 +230,7 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
   <div class="filtre"><input id="filtre" type="search" placeholder="🔎 Chercher une tâche, un projet, une branche…" aria-label="Chercher dans le tableau" autocomplete="off"><span class="vide" id="filtre-vide">Rien ne correspond.</span></div>
   <div class="filtre-actif" id="filtre-actif"><span id="filtre-actif-t"></span><button class="btn" type="button" id="filtre-tout">✕ Tout montrer</button></div>
   <nav class="rapide" aria-label="Accès rapides">
+    <a href="https://cmcteams.kd-mc.com/tools/pont/annuaire-branches.html" target="_blank" rel="noopener">🧭 Annuaire des branches</a>
     <a href="#t-relances">🕑 Relances</a>
     <a href="#t-demande">✍️ Écrire à une branche</a>
     <a href="https://kd-mc.com/admin/" target="_blank" rel="noopener">🛠 Admin</a>
@@ -318,17 +329,17 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
       <div class="lieu">
         <h3>L'ordinateur</h3>
         <ul>
-          <li><b>pc-config</b> : réglages, Cloudflare, comptes, tout ce qui se fait dans ton navigateur</li>
-          <li><b>arbre-pc</b> : recherches dans les archives</li>
-          <li><b>moulin-pc</b> : moulin mobile</li>
+          <li><a href="https://claude.ai/code/session_01Xncr1t3EoT4hLpf7a35ajY" target="_blank" rel="noopener"><b>pc-config</b></a> : réglages, Cloudflare, comptes, tout ce qui se fait dans ton navigateur</li>
+          <li><a href="https://claude.ai/code/session_01WC73ptv3SHnNNfDTPnycPf" target="_blank" rel="noopener"><b>arbre-pc</b></a> : recherches dans les archives</li>
+          <li><a href="https://cmcteams.kd-mc.com/tools/pont/annuaire-branches.html#b-moulin-mobile" target="_blank" rel="noopener"><b>moulin-pc</b></a> : moulin mobile</li>
         </ul>
       </div>
       <div class="lieu">
         <h3>Le cloud</h3>
         <ul>
-          <li><b>Arbre</b> : seule à écrire dans l'arbre</li>
-          <li><b>Apex</b> : Apex Chat et Apex AI</li>
-          <li><b>Domaine</b>, <b>CMCteams</b>, <b>Javis</b>, <b>Commerce</b></li>
+          <li><a href="https://claude.ai/code/session_01FsMqxbm4xoe2neziok5k6K" target="_blank" rel="noopener"><b>Arbre</b></a> : seule à écrire dans l'arbre</li>
+          <li><a href="https://claude.ai/code/session_01AYqnsKgbPf6FYBEonVFwtx" target="_blank" rel="noopener"><b>Apex</b></a> : Apex Chat et Apex AI</li>
+          <li><a href="https://kd-mc.com/admin/" target="_blank" rel="noopener"><b>Domaine</b></a>, <a href="https://claude.ai/code/session_012J818cpkmcrt23Tfera1bg" target="_blank" rel="noopener"><b>CMCteams</b></a>, <a href="https://claude.ai/code/session_01DZmfQmJnTJYthtRvSBBn5P" target="_blank" rel="noopener"><b>Javis</b></a>, <a href="https://cmcteams.kd-mc.com/tools/pont/annuaire-branches.html#b-commerce-cloud" target="_blank" rel="noopener"><b>Commerce</b></a></li>
         </ul>
       </div>
       <div class="lieu">
@@ -359,6 +370,12 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
   const $=(s,r=document)=>r.querySelector(s);
   const NOMS={'pc-config':"l'ordinateur (réglages)",'arbre-pc':"l'ordinateur (archives)",'arbre-cloud':'le cloud (arbre)','apex-cloud':'le cloud (Apex)','commerce-cloud':'le cloud (boutique)','cmcteams-cloud':"le cloud (CMCteams, admin)",'toutes':'toutes les branches','pont-point':'le cloud (Apex AI, routeur, robots)','cloud-installer':'le cloud (installer, admin du domaine)','lingua-cloud':'le cloud (Lingua)','cmcteams-pdf':'le cloud (audit CMCteams)','javis-bee':'le cloud (Javis / Bee)','moulin-pc':"l'ordinateur (Moulin mobile)",'moulin-mobile':'Moulin mobile (business plan)','moulin-video':'Moulin mobile (vidéo)','sdb':'Salle de bain','staging':'Staging','design-system':'Design System','cloud-arbre-migration':'le cloud (migration de l arbre)','comptes-cloud':'le cloud (comptes du domaine)','kevin':'toi'};
   const nom=k=>NOMS[String(k||'').toLowerCase()]||k||'?';
+  /* 05.11 : annuaire des branches (tools/pont/annuaire-branches.json) : branche -> identifiant de session (null = pas de session connue). Gardé identique au JSON par tests/verify-liens-admin.mjs. */
+  const ANNUAIRE='https://cmcteams.kd-mc.com/tools/pont/annuaire-branches.html';
+  const ANNU={"cloud-installer":"session_01HGawPYgJFGpAHzNH7oDnou","apex-cloud":"session_01AYqnsKgbPf6FYBEonVFwtx","arbre-cloud":"session_01FsMqxbm4xoe2neziok5k6K","cloud-poste-recherche":"session_017GoCrf8h8KxG2VZBbzkxXC","cmcteams-pdf":"session_012J818cpkmcrt23Tfera1bg","studio-crea":"session_01StKmUgVQDaNKxJJCWca3pz","javis-bee":"session_01DZmfQmJnTJYthtRvSBBn5P","detente":"session_01Jmp9cPUNiNrRHN4Cui3anM","robots-ia":"session_01QWRpftGLY726bWqxNS5n1b","divers":"session_018eY7LuofoZ6AfjCQwbwJqk","free-apis":"session_01DxPyb3aRBmVwAR2Dpzu1zy","meta":"session_01LoK7J3LQkTKFkwE2fasGyt","poolpilot":"session_01X3SAC5TiWFbkS3riw3Tq7N","pc-config":"session_01Xncr1t3EoT4hLpf7a35ajY","arbre-pc":"session_01WC73ptv3SHnNNfDTPnycPf","pc-connecteurs":"session_01LNvWeCyWxQqfNoTPLahTJJ","pc-voix":null,"moulin-mobile":null,"reverse-engineering":null,"pont-lenovo":null,"lingua-cloud":null,"commerce-cloud":null,"table-pilot":null,"pont-check":null,"pont-point":null,"clayscore-cloud":null,"sdb-mezzanine":null};
+  /* une branche s'ouvre en un clic : sa session si on la connaît, sinon sa fiche dans l'annuaire, sinon l'annuaire */
+  function urlBranche(k){k=String(k||'').toLowerCase(); if(!k||k==='kevin')return ''; if(ANNU[k])return 'https://claude.ai/code/'+ANNU[k]; return ANNUAIRE+(k in ANNU?'#b-'+k:'')}
+  function lienBranche(k,txt,cls){const u=urlBranche(k); if(!u)return cls==='lien-session'?document.createDocumentFragment():el('span',cls&&cls.indexOf('etat')>=0?cls:null,txt); const a=el('a',cls||'lien-branche',txt); a.href=u; a.target='_blank'; a.rel='noopener'; a.title=ANNU[String(k).toLowerCase()]?'Ouvrir sa session':'Ouvrir l\'annuaire'; a.addEventListener('click',ev=>ev.stopPropagation()); return a}
   const estKevin=q=>String(q||'').toLowerCase()==='kevin';
   const SERVEUR='Cloudflare Developer Platform', BASE='ad7b5970-cbed-426b-a1b3-dea57116f6c8';
   const PERIODE=300000, FAIT_JOURS=3; let PAUSE_JUSQUA=0; const QUOTA=/7500|free tier|row read limit/i;
@@ -400,8 +417,10 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
     const mortes=cles.filter(k=>E[k].morte), vivantes=cles.filter(k=>!E[k].morte), retard=vivantes.filter(k=>E[k].retard);
     S.className='sante '+(retard.length?'orange':(mortes.length?'gris':'vert'));
     S.appendChild(el('div','titre','🩺 '+vivantes.length+' branche'+(vivantes.length>1?'s':'')+' vivante'+(vivantes.length>1?'s':'')+(retard.length?' · '+retard.length+' en retard':' · toutes à jour')+(mortes.length?' · '+mortes.length+' sans session':'')));
-    if(retard.length)S.appendChild(el('p','note','⏳ En retard (courrier non lu, aucun signe depuis 6 h) : '+retard.map(k=>nom(k)+' ('+E[k].n+')').join(', ')+'. Dis « pont » dans la session « Domain Kdmc » : je programme leur relance.'));
-    if(mortes.length)S.appendChild(el('p','note','🪦 Aucune session ne les lit : '+mortes.map(k=>nom(k)+(E[k].n?' ('+E[k].n+')':'')).join(', ')+'. Leurs messages sont à reprendre par la branche propriétaire.'));
+    /* 05.11 : chaque nom de branche ouvre sa session (ou sa fiche d'annuaire), la session « Domain Kdmc » aussi */
+    const liste=(p,cles,suffixe)=>{cles.forEach((k,i)=>{if(i)p.append(', '); p.appendChild(lienBranche(k,nom(k))); const x=suffixe(k); if(x)p.append(x)})};
+    if(retard.length){const p=el('p','note'); p.append('⏳ En retard (courrier non lu, aucun signe depuis 6 h) : '); liste(p,retard,k=>' ('+E[k].n+')'); p.append('. Dis « pont » dans la session « '); p.appendChild(lienBranche('cloud-installer','Domain Kdmc')); p.append(' » : je programme leur relance.'); S.appendChild(p)}
+    if(mortes.length){const p=el('p','note'); p.append('🪦 Aucune session ne les lit : '); liste(p,mortes,k=>E[k].n?' ('+E[k].n+')':''); p.append('. Leurs messages sont à reprendre par la branche propriétaire (voir l\'annuaire).'); S.appendChild(p)}
     if(!retard.length&&!mortes.length)S.appendChild(el('p','note','Toutes les branches ont lu leur courrier récemment.'));
   }
   async function lireReveils(){ try{ REVEILS=lignes(await sql('SELECT session_id,titre,pont_id,trigger_id,actif,dernier_reveil FROM reveils ORDER BY titre'),'titre') }catch(e){} return REVEILS }
@@ -422,15 +441,17 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
     dessinerReveils({ok,ko,sans,quand});
     return {ok:ok.length,ko:ko.length,sans:sans.length,quand};
   }
+  /* un réveil porte l'identifiant de sa session : le toucher l'ouvre ; sans identifiant correct, il reste une simple étiquette */
+  function lienSession(r,cls,txt){const id=String(r&&r.session_id||''); if(!/^session_[A-Za-z0-9]{24}$/.test(id))return el('span',cls,txt); const a=el('a',cls,txt); a.href='https://claude.ai/code/'+id; a.target='_blank'; a.rel='noopener'; return a}
   function dessinerReveils(d){
     const L=$('#l-reveils'); if(!L)return; L.innerHTML='';
     const c=el('article','carte envoi'+(d.ko.length||d.sans.length?'':' fini'));
     const haut=el('div','haut'); haut.append(el('span','puce '+(d.ko.length?'bloque':'cours'),'⏰ '+d.ok.length+' relance'+(d.ok.length>1?'s':'')+' programmée'+(d.ok.length>1?'s':'')), el('span','heure','prévue à '+hm(d.quand)+' (mesuré : 5 à 7 min de délai)'));
     c.appendChild(haut);
     const g=el('div','boutons');
-    d.ok.forEach(o=>g.appendChild(el('span','etat verif','⏳ '+o.r.titre+' : se réveille vers '+hm(d.quand)+' + quelques minutes')));
-    d.ko.forEach(o=>g.appendChild(el('span','etat revoir','⚠️ '+o.r.titre+' : relance NON programmée ('+((o.e&&o.e.code)||'refus')+')')));
-    d.sans.forEach(r=>g.appendChild(el('span','etat revoir','💻 '+r.titre+' : se relance seule (ordinateur) ou en tapant « pont »')));
+    d.ok.forEach(o=>g.appendChild(lienSession(o.r,'etat verif','⏳ '+o.r.titre+' : se réveille vers '+hm(d.quand)+' + quelques minutes')));
+    d.ko.forEach(o=>g.appendChild(lienSession(o.r,'etat revoir','⚠️ '+o.r.titre+' : relance NON programmée ('+((o.e&&o.e.code)||'refus')+')')));
+    d.sans.forEach(r=>g.appendChild(lienSession(r,'etat revoir','💻 '+r.titre+' : se relance seule (ordinateur) ou en tapant « pont »')));
     c.appendChild(g);
     c.appendChild(el('p','detail','Ce n\'est « lu » qu\'une fois la branche passée : regarde « Relances envoyées » (✅ a lu / ⏳ pas encore).'));
     if(d.ko.some(o=>o.e&&/blocked_by_policy/.test(o.e.code||'')))c.appendChild(el('p','detail','🚫 La plateforme interdit à une page de créer une relance (mesuré 29.10 : « blocked_by_policy », aucune fenêtre d\'autorisation possible). Seule une session Claude peut la programmer : écris « pont » dans la session « Domain Kdmc » ; elle programme les relances de tout le monde, avec preuve.'));
@@ -471,12 +492,12 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
     c.appendChild(haut);
     c.appendChild(el('div','titre',r.titre));
     if(r.note)c.appendChild(el('div','note',r.note));
-    if(!estKevin(r.qui)&&r.qui){const q=el('div','qui');q.append('Qui : ');q.appendChild(el('strong',null,nom(r.qui)));c.appendChild(q)}
+    if(!estKevin(r.qui)&&r.qui){const q=el('div','qui');q.append('Qui : ');const st=el('strong'); st.appendChild(lienBranche(r.qui,nom(r.qui))); q.appendChild(st);c.appendChild(q)}
     c.appendChild(el('span','ouvrir','Touche pour tout voir ›'));
     const plus=el('div','plus');
     if(maj)plus.appendChild(el('div','quand','Dernière note de la branche : '+jour(maj)+' à '+hm(maj)));
     const recents=MSGS.filter(m=>lienTache(m,r.id)).slice(0,5);
-    if(recents.length){plus.appendChild(el('div','qui','Messages du pont sur cette tâche :'));const ul=el('ul','msgs');recents.forEach(m=>{const li=el('li');li.appendChild(el('b',null,'n° '+m.id+' · '+jour(m.ts)+' à '+hm(m.ts)+' · '+nom(m.de)+' → '+nom(m.a)));li.appendChild(el('span',null,(m.sujet||'')));ul.appendChild(li)});plus.appendChild(ul)}
+    if(recents.length){plus.appendChild(el('div','qui','Messages du pont sur cette tâche :'));const ul=el('ul','msgs');recents.forEach(m=>{const li=el('li');const bb=el('b',null,'n° '+m.id+' · '+jour(m.ts)+' à '+hm(m.ts)+' · ');bb.appendChild(lienBranche(m.de,nom(m.de)));bb.append(' → ');bb.appendChild(lienBranche(m.a,nom(m.a)));li.appendChild(bb);li.appendChild(el('span',null,(m.sujet||'')));ul.appendChild(li)});plus.appendChild(ul)}
     if(r.lien&&/^https:\/\//.test(r.lien)){const a=el('a','bouton','Ouvrir ›');a.href=r.lien;a.target='_blank';a.rel='noopener';plus.appendChild(a)}
     c.appendChild(plus);
     const act=el('div','actions'); c.appendChild(act); actions(r,groupe,act);
@@ -565,7 +586,7 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
       const haut=el('div','haut'); haut.append(el('span','puce '+(pas.length?(ont.length?'cours':'bloque'):'fait'),pas.length?ont.length+' / '+cible.length+' ont lu':'Tout le monde a lu'), el('span','heure',jour(m.ts)+' '+hm(m.ts)+' · '+ilya(m.ts)+' · n° '+m.id));
       c.appendChild(haut);
       c.appendChild(el('div','titre',(m.sujet||'').replace(/^Kevin \(tableau\) : /,'').split('\n')[0]+' → '+nom(m.a)));
-      const g=el('div','boutons'); cible.forEach(b=>{const lu=lus.includes(b); g.appendChild(el('span','etat '+(lu?'bon':'revoir'),(lu?'✅ ':'⏳ ')+nom(b)))}); c.appendChild(g);
+      const g=el('div','boutons'); cible.forEach(b=>{const lu=lus.includes(b); g.appendChild(lienBranche(b,(lu?'✅ ':'⏳ ')+nom(b),'etat '+(lu?'bon':'revoir')))}); c.appendChild(g);
       L.appendChild(c);
     });
   }
@@ -581,6 +602,7 @@ details.groupe>summary{font-family:var(--display);font-size:17px}
       const o=g[k], n=NONLUS[k]||0;
       const c=el('article','carte branche-carte'+(n>0||o.b>0||o.retard>0?' toi':'')+(FILTRE_BRANCHE===k?' choisie':'')); c.tabIndex=0; c.setAttribute('role','button');
       c.appendChild(el('div','titre',nom(k)));
+      c.appendChild(lienBranche(k,'Ouvrir sa session ›','lien-session'));
       c.appendChild(el('div','note',o.c+' en cours · '+o.a+' à faire · '+o.b+' bloquée(s) · '+n+' message(s) non lu(s)'));
       const dr=RELANCES.find(m=>String(m.a).toLowerCase()===k||String(m.a).toLowerCase()==='toutes');
       c.appendChild(el('div','quand',dr?'Ta dernière relance : '+jour(dr.ts)+' à '+hm(dr.ts)+' · '+(luPar(dr).includes(k)?'✅ lue':'⏳ pas encore lue'):'Aucune relance envoyée'));

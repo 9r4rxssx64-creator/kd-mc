@@ -79,6 +79,7 @@
       /* Kevin 23.10.2026 : « que j'ai toutes les tuiles, qu'il ne m'en manque pas ». Mesuré : 7 pages créées (6 ajoutées ici ; « Changer mon code admin » est déjà dans Réglages, tableau.js) par les branches étaient sur le portail
          (cartes admin) ou dans Claude, mais PAS dans l'admin. Garde : tests/admin-tuiles.test.mjs (toute carte admin du portail a sa tuile ici). */
       + card('📋', 'Tableau KDMC', 'Toutes les tâches des branches, qui attend quoi, envoyer du travail', 'https://claude.ai/artifact/TainhAk9Vrd9k2ZZ2VuVP6')
+      + card('🧭', 'Annuaire des branches', 'Qui fait quoi : cloud, Lenovo, sans session — ouvrir leur session', 'https://cmcteams.kd-mc.com/tools/pont/annuaire-branches.html')
       + card('🧪', 'Staging KDMC — le tableau', 'Le site d\'essai : état, données de test, remise à zéro', 'https://claude.ai/artifact/5akE9yY4MBoRxFUrYAvXJJ')
       + card('🗃️', 'Toutes mes pages Claude', 'Tableaux, dossiers, études créés pour toi', 'https://claude.ai/code/artifacts')
       + card('💰', 'Finances', 'Coffre finances chiffré : relevés, factures, budget', 'https://cmcteams.kd-mc.com/tools/finances/')
@@ -196,6 +197,12 @@
       Object.keys(a).forEach(function (h) { APP_NAMES[h] = (a[h].icon ? a[h].icon + ' ' : '') + (a[h].name || h); });
     }).catch(function () { /* repli intégré */ });
   } catch (e) { /* repli intégré */ }
+  /* 05.11 : une app citée dans une ligne (journal, historique) s'ouvre d'un toucher ; un nom qui n'est pas une adresse du domaine reste du texte */
+  function lienApp(host, libelle) {
+    var h = String(host || '');
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)*\.kd-mc\.com$|^kd-mc\.com$/.test(h)
+      ? '<a href="https://' + esc(h) + '/" target="_blank" rel="noopener">' + esc(libelle) + '</a>' : esc(libelle);
+  }
   function appName(host) { return APP_NAMES[host] || ('🌐 ' + (host || '?')); }
   function appsSummary(apps) {
     if (!apps) return '—';
@@ -207,7 +214,7 @@
     var hist = a.history || [];
     var tl = hist.length
       ? hist.slice(0, 40).map(function (e) {
-        return '<div class="tlrow"' + (a.uid ? ' data-va="fiche:' + esc(a.uid) + '"' : '') + '>' + esc(dt(e.ts)) + ' · <b>' + esc(appName(e.app)) + '</b>'
+        return '<div class="tlrow"' + (a.uid ? ' data-va="fiche:' + esc(a.uid) + '"' : '') + '>' + esc(dt(e.ts)) + ' · <b>' + lienApp(e.app, appName(e.app)) + '</b>'
           + ' · <span class="tdur">⏱ ' + esc(dur((e.end || e.ts) - e.ts)) + '</span>'
           + (e.device ? ' · ' + esc(e.device) : '') + (e.place ? ' · ' + esc(e.place) : '') + '</div>';
       }).join('')
@@ -613,7 +620,7 @@
   function audRow(e) {
     return '<div class="tlrow"' + (e.uid ? ' data-uid="' + esc(e.uid) + '" data-va="fiche:' + esc(e.uid) + '"' : '') + '>' + esc(dt(e.ts)) + ' · <b>' + esc(AUD_EV[e.ev] || e.ev) + '</b>'
       + (e.uid ? ' · ' + esc(e.uid) : '') + (e.detail ? ' · ' + esc(e.detail) : '') + (e.text ? ' · ' + esc(e.text) : '')
-      + (e.app ? ' · depuis ' + esc(e.app) : '') + (e.pays ? ' · ' + esc(e.pays) : '')
+      + (e.app ? ' · depuis ' + lienApp(e.app, e.app) : '') + (e.pays ? ' · ' + esc(e.pays) : '')
       + (e.ip ? ' · <span style="color:var(--subtle)">ip ' + esc(e.ip) + '</span>' : '') + '</div>';
   }
   function loadAudit() {
@@ -670,7 +677,7 @@
     if (!L.length) return '<div class="note" id="bloques">✅ Personne n\'est bloqué : tous les comptes sont ouverts.</div>';
     return '<div class="note" id="bloques" style="border-color:#c9a227"><b>⏳ ' + L.length + ' compte' + (L.length > 1 ? 's' : '') + ' fermé' + (L.length > 1 ? 's' : '') + ' — ils attendent ton accord</b>'
       + L.map(function (x) {
-        return '<div style="display:flex;gap:8px;align-items:center;margin:8px 0"><span style="flex:1">' + esc(x.nom) + (x.refuse ? ' <span class="d">· refusé</span>' : '') + '</span>'
+        return '<div style="display:flex;gap:8px;align-items:center;margin:8px 0"><a href="#fiche-' + esc(x.uid) + '" style="flex:1;display:flex;align-items:center;min-height:44px;color:inherit">' + esc(x.nom) + (x.refuse ? ' <span class="d">&nbsp;· refusé</span>' : '') + '</a>'
           + '<button class="savacc ouvrir-bloque" data-uid="' + esc(x.uid) + '" type="button">✅ Ouvrir</button></div>';
       }).join('') + '</div>';
   }

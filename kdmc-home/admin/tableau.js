@@ -38,6 +38,7 @@
     '/liens/': 'reglages', 'https://autorisations.kd-mc.com/': 'reglages', 'https://coffre.kd-mc.com/': 'reglages',
     /* 23.10 : les 7 tuiles ajoutées (« qu'il ne m'en manque pas ») */
     'https://claude.ai/artifact/TainhAk9Vrd9k2ZZ2VuVP6': 'ia', 'https://claude.ai/artifact/5akE9yY4MBoRxFUrYAvXJJ': 'ia', 'https://claude.ai/code/artifacts': 'ia',
+    'https://cmcteams.kd-mc.com/tools/pont/annuaire-branches.html': 'ia',   /* 05.11 : Annuaire des branches */
     'https://cmcteams.kd-mc.com/tools/messages/': 'messages', 'https://cmcteams.kd-mc.com/tools/finances/': 'reglages'
   };
   function ranger(href) { return RANGEMENT[href] || 'apps'; }
@@ -206,7 +207,7 @@
       /* 16.10 soir (Kevin : « Affiche ici un visuel des connectés live ») : qui est sur le domaine EN CE MOMENT, sous « À traiter ».
          Données : la boîte (présence D1, robots exclus), relue toutes les 15 s quand la page est visible. Toucher une personne → sa fiche. */
       + '<section class="live" id="tb-live" aria-label="En ligne maintenant" aria-live="polite"><h2><span class="pt" aria-hidden="true"></span>En ligne maintenant <b id="tb-live-n">…</b></h2><div class="live-l" id="tb-live-l"><p class="live-vide">Lecture…</p></div></section>'
-      + '<nav class="tbnav" id="tb-nav" aria-label="Sections"><a class="retour-tb" href="#" id="tb-retour">← Tableau de bord</a>' + SECTIONS.map(function (s) { return '<a href="#' + s.id + '" data-nav="' + s.id + '">' + s.ic + ' ' + esc(s.t.split(' ')[0]) + '</a>'; }).join('') + '</nav>'
+      + '<nav class="tbnav" id="tb-nav" aria-label="Sections"><a class="retour-tb" href="#accueil" id="tb-retour">← Tableau de bord</a>' + SECTIONS.map(function (s) { return '<a href="#' + s.id + '" data-nav="' + s.id + '">' + s.ic + ' ' + esc(s.t.split(' ')[0]) + '</a>'; }).join('') + '</nav>'
       + '<div class="cherche"><input id="tb-q" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" placeholder="🔎 Que veux-tu faire ?" aria-label="Que veux-tu faire ?"><div class="res" id="tb-res" hidden></div></div>'
       /* 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien ») : un ACCUEIL de 7 grandes tuiles, puis une seule
          rubrique à la fois, découpée en onglets (sous-catégories). Plus de longue page à descendre. */

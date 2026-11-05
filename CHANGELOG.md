@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Robot Apex Chat — la mesure connectée dit QUEL élément est trop petit (2026-11-05)
+- 1er passage de la mesure connectée (run 41832859052) : 41 OK · 4 KO. Le relevé ne nommait pas les éléments : il donne maintenant le texte et le parent de chaque bouton sous 44 px et le texte de chaque lien vide. Sont écartés de la mesure, car ce ne sont pas des cibles tactiles : le lien d'évitement `.skip-link` (caché hors écran, visible au clavier seulement) et les bulles de message `.msg`. Aucun changement de l'app.
+
 ## Robot Apex Chat — mesure de l'intérieur connecté (2026-11-04)
 - Audit domaine (tâches 97/98) : le robot « toutes les fonctions » mesure maintenant, chez deux comptes connectés, les boutons sous 44 px, les identifiants en double, les liens vides et relève la pastille de version (`tests/fonctions-apex.mjs`, bloc « Mesure connectée »). Avant : seul l'écran de connexion était mesuré (0 / 0 / 0 sur Apex Chat et Apex AI, 4 mesures sur le vrai domaine). Aucun changement de l'app ; les comptes de test restent effacés à la fin.
 

@@ -395,6 +395,7 @@
     "test:finances-telechargements": "node tests/verify-finances-telechargements.mjs",
     "test:invite-externe": "node services/kdmc-router/invite-externe.test.mjs",
     "test:verifier-servi": "node tests/verify-verifier-servi.mjs",
+    "reel:robot": "node tools/plateformes/verifier-reel.mjs",
     "test:pont-secours": "node tests/pont-secours.test.mjs",
     "test:delegue": "node tests/delegue.test.mjs",
     "test:mesure-quotas": "node tests/verify-mesure-quotas.mjs",

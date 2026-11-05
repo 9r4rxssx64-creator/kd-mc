@@ -6,6 +6,7 @@
  * Ici, les deux sabotages sont rejoués en local (domaine simulé) et DOIVENT rougir sur les bons contrôles :
  *   SABOTAGE=1        → D (séries) rouge
  *   SABOTAGE=collegue → F1 (le collègue n'est pas admin) rouge
+ *   SABOTAGE=decalage → G, G3 et G2 (Kevin 5.11 : « il faut que ça décale ») rouges
  * Sans sabotage, le robot doit rester vert (c'est test:verif-live-robot, lancé à part).
  *
  * npm run test:verif-live-robot-sabotage
@@ -29,6 +30,13 @@ dis(!/ancre introuvable/.test(a.out), 'SABOTAGE=1 → l\'ancre existe encore dan
 const b = robot({ SABOTAGE: 'collegue' });
 dis(b.code === 1, `SABOTAGE=collegue (admin pour tous) → le robot sort en échec (code ${b.code})`);
 dis(/❌ F1\. /.test(b.out), 'SABOTAGE=collegue → le contrôle F1 (le collègue n\'est PAS admin) rougit');
+
+const c = robot({ SABOTAGE: 'decalage' });
+dis(c.code === 1, `SABOTAGE=decalage (la light perd la règle des décalages) → le robot sort en échec (code ${c.code})`);
+dis(/❌ G\. /.test(c.out) && /❌ G3\. /.test(c.out) && /❌ G2\. /.test(c.out), 'SABOTAGE=decalage → G (débuts de série repris), G3 (même numéro de suite) et G2 (le cas de Kevin) rougissent');
+dis(!/ancre introuvable/.test(c.out), 'SABOTAGE=decalage → l\'ancre existe encore dans la light');
+const propre = robot({});
+dis(/✅ G\. /.test(propre.out) && /✅ G3\. /.test(propre.out) && /✅ G2\. /.test(propre.out), 'sans sabotage → G, G3 et G2 restent verts (le contrôle ne crie pas à tort)');
 
 console.log(`\n${ok} ✅ / ${ko} ❌\n`);
 process.exit(ko ? 1 : 0);

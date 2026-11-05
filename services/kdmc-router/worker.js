@@ -5862,6 +5862,7 @@ function egalTempsConstant(a, b) {
   return d === 0;
 }
 /* Stats de flotte (même calcul que /__bot/fleet, factorisé pour l'IA). */
+/* 5.11 : Railway ne nous montre que les 8 derniers déploiements ; 8 fusions sans rapport (SKIPPED) de suite suffisent à cacher le vrai robot (D1 : « moins de deux robots mesurés »). Le filtre status notIn est donc demandé À RAILWAY, en plus du tri côté code (deploiementActif). */
 /* 2 requêtes Railway pour TOUTE la flotte (alias GraphQL) au lieu de 2 par robot : le réveil de 10h00 le
    3.10 a dépassé la limite de sous-requêtes d'un Worker gratuit (« Too many subrequests », journal D1). */
 async function botFleetStats(env, ctx, names) {
@@ -5869,7 +5870,7 @@ async function botFleetStats(env, ctx, names) {
   const avec = svcs.filter((x) => x.svc);
   const out = new Map(svcs.filter((x) => !x.svc).map((x) => [x.name, { name: x.name, status: 'absent' }]));
   if (avec.length) {
-    const q1 = avec.map((x, i) => `d${i}: deployments(first: 8, input: { projectId: "${ctx.projectId}", serviceId: "${x.svc.id}", environmentId: "${ctx.environmentId}" }) { edges { node { id status createdAt } } }`).join(' ');
+    const q1 = avec.map((x, i) => `d${i}: deployments(first: 8, input: { projectId: "${ctx.projectId}", serviceId: "${x.svc.id}", environmentId: "${ctx.environmentId}", status: { notIn: [SKIPPED, REMOVED, REMOVING] } }) { edges { node { id status createdAt } } }`).join(' ');
     const dp = await railGql(env, `query { ${q1} }`);
     const data = (dp.j || {}).data || {};
     const nodes = avec.map((x, i) => ({ x, node: IA.deploiementActif((data['d' + i] || { edges: [] }).edges) }));
@@ -6668,7 +6669,7 @@ async function handleBot(request, url, env) {
   }
 
   if (path === '/__bot/status' && request.method === 'GET') {
-    const dp = await railGql(env, `query { deployments(first: 1, input: { projectId: "${ctx.projectId}", serviceId: "${ctx.serviceId}", environmentId: "${ctx.environmentId}" }) { edges { node { id status createdAt } } } }`);
+    const dp = await railGql(env, `query { deployments(first: 1, input: { projectId: "${ctx.projectId}", serviceId: "${ctx.serviceId}", environmentId: "${ctx.environmentId}", status: { notIn: [SKIPPED, REMOVED, REMOVING] } }) { edges { node { id status createdAt } } } }`);
     const node = ((((dp.j || {}).data || {}).deployments || { edges: [] }).edges[0] || {}).node;
     if (!node) return J({ ok: false, reason: 'aucun_deploiement', detail: JSON.stringify(dp.j || dp.http).slice(0, 300) });
     const rl = await railGql(env, `query { deploymentLogs(deploymentId: "${node.id}", limit: 80) { timestamp message } }`);

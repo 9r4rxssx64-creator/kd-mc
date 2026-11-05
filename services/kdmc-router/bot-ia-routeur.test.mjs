@@ -302,11 +302,14 @@ globalThis.fetch = async (input, init) => {
   if (String(typeof input === 'string' ? input : input.url).includes('backboard.railway.com')) {
     if (/deployments\(/.test(q) && !/deploymentLogs/.test(q)) {
       const out = parAlias(q, 'deployments', (args) => { const sv = (args.match(/serviceId: "([A-Z0-9]+)"/) || [])[1];
-        return { edges: [{ node: { id: 'D-' + sv + '-SKIP', status: 'SKIPPED', createdAt: '2026-10-24T10:00:00Z' } }, { node: { id: 'D-' + sv, status: 'SUCCESS', createdAt: '2026-10-08T18:12:00Z' } }] }; });
+        /* Railway ne rend que 8 déploiements : 8 SKIPPED de suite cachent le vrai robot, sauf si le filtre status notIn SKIPPED est demandé (5.11, D1 « moins de deux robots mesurés »). */
+        const vrai = { node: { id: 'D-' + sv, status: 'SUCCESS', createdAt: '2026-10-08T18:12:00Z' } };
+        if (/status: \{ notIn: \[[^\]]*SKIPPED/.test(args)) return { edges: [vrai] };
+        return { edges: Array.from({ length: 8 }, (_, k) => ({ node: { id: 'D-' + sv + '-SKIP' + k, status: 'SKIPPED', createdAt: '2026-10-24T10:00:0' + k + 'Z' } })) }; });
       return j({ data: out });
     }
     if (/deploymentLogs/.test(q)) {
-      const out = parAlias(q, 'deploymentLogs', (args) => { const id = (args.match(/deploymentId: "([^"]+)"/) || [])[1] || ''; if (/-SKIP$/.test(id)) return [];
+      const out = parAlias(q, 'deploymentLogs', (args) => { const id = (args.match(/deploymentId: "([^"]+)"/) || [])[1] || ''; if (/-SKIP\d*$/.test(id)) return [];
         const sv = id.replace(/^D-/, ''); return [{ message: 'BTC/USDT HOLD | prix=60000.00 | equity=' + (EQUITE[sv] || 10000) + '.00 | rien' }]; });
       return j({ data: out });
     }

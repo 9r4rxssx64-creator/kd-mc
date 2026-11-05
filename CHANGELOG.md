@@ -40,6 +40,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Agent de recherche gratuit — une page refusée (403) n'est plus « lue » ; Geneanet et Gallica retirés des consignes (2026-11-05)
 - Mesure de pc-config sur le Lenovo (même Chromium que l'agent) : Geneanet « Just a moment... » et Gallica « Attention Required! » = mur Cloudflare HTTP 403, rendus « lus, 0 trouvaille ». Étalonnage 1250 : Wikipédia 1 trouvaille correcte, Geneanet 0, Gallica 0.
 - Fait : `lirePageNavigateur` lit le statut HTTP et le titre : 403 ou mur = « page refusée HTTP N » (compté `pages_refusees`, pas `lues`) ; `robots-recherche.mjs` ne donne plus Geneanet ni Gallica à l'agent (`sansMur`). Mur non contourné. Tests : `tests/delegue-agent.test.mjs` et `tests/robots-recherche.test.mjs`, rouges sans le correctif.
+## Arbre v3.192 — les vignettes de documents peuvent vivre dans R2, l'export les remet dedans (2026-11-05)
+- **Kevin** : « Oui tout » (alléger Firebase : 475 vignettes en texte = 4,5 Mo des 7 Mo chargés à chaque ouverture). L'appli savait déjà AFFICHER une vignette `m:<empreinte>` ; il manquait l'EXPORT, qui ne remettait pas `docs[].thumb` dans le fichier (« rien ne se perd »). Corrigé.
+- `tools/arbre/migrer-r2.cjs` migre aussi `docs[].thumb` (envoi, relecture identique, écriture conditionnelle du seul champ, jamais d'effacement, rejouable) ; test `test:arbre-migrer-r2` étendu.
+- Garde réelle `npm run arbre:verif-vignettes-r2` (Chromium, faux domaine) : affichage depuis `/__arbre/media`, chargement réel, export autonome. Rouge sur la v3.191.
+
 ## Arbre v3.191 — tous les ancêtres à l'écran même sur un petit cadre, noms de groupe lisibles, points d'entrée de test de la loupe (2026-11-05)
 - Mesure réelle d'arbre-pc dans le Chrome de Kevin (cadre 648×458) : 21 ancêtres de Kevin sur 47 hors écran à ×0,06 ; noms de groupe (.lodlab) ~10 px ; loupe non mesurable sans vraie souris.
 - Fait : « Voir dans l'arbre » descend jusqu'à ×0,02 (tous les ancêtres tiennent) ; noms de groupe à ~14 px ; `window.__loupeTest(x,y)` et `window.__loupeTouchTest(x,y)` (taille, agrandissement, carte visée). Gardes : cadre-noyau 97/97 réel (échantillon avec Kevin + les 2 plus gros lignages + cadre 648×458), loupe-ponts 17/17 réel ; rouges sur v3.190 (71 ancêtres hors écran).

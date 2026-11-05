@@ -501,6 +501,7 @@
   "tools/arbre/verify-synchro-appareils.mjs",
   "tools/arbre/verify-textes-coherents.mjs",
   "tools/arbre/verify-valider.mjs",
+  "tools/arbre/verify-vignettes-r2.mjs",
   "tools/arbre/verify-visuel-appareils.mjs",
   "tools/arbre/visionneuse-image.mjs",
   "tools/arbre/visite-honnete.mjs",

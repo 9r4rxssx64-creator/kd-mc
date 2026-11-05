@@ -12145,6 +12145,12 @@ Un échec du contrôle se dit tel quel, on ne l'écarte pas ; ce qu'on n'a pas p
 - Gardes : **`test:departs-cycle`** (l'exemple de Kevin mot pour mot, vraie page), `test:departs-render` et `test:verif-live-robot` (oracle indépendant `tests/lib/series-departs.mjs`), `test:departs-compare` (app = light).
 - Avant de toucher à cette règle : reproduire la ligne réelle de Kevin en chiffres et la lui faire valider (LESSONS #441, #446).
 
+### 4. Complément du 5.11.2026 — « Il faut que ça décale » (équipe de ‹employé› : pas de décalage)
+- Kevin 5.11 : « Dans l'équipe pour Mortar, il n'y a pas de décalage. L'algorithme n'est pas bon. Vérifie de partout. » MESURÉ ce jour sur la vraie light, tous les tableaux de juillet à novembre : **105 débuts de série sur 2 870 reprenaient le MÊME numéro que le début de la série d'avant** (CMC Éq.10 novembre, ‹employé› : 4 puis 4). Cause : l'effectif (ou la personne du haut du roster) change entre deux séries — la suite change de taille, le +1 retombe sur le même numéro.
+- Règle ajoutée (CMCteams v10.007 + light v1.132, écrite à l'identique dans les DEUX pages, `_cmcDepDecalages`) : jour par jour, si une personne présente aux deux jours comparés (début de la série d'avant pour le 1er jour d'une série valide ≥ 3 jours ; la veille à l'intérieur d'une série) aurait le même numéro, on ajoute des crans (le moins possible, celui qui répète le moins) ; ces crans en plus restent pour la suite. Une équipe stable n'est pas touchée (aucun cran en plus quand rien ne se répète).
+- Mesuré après : 1 début sur 3 208 reprend encore le numéro d'avant (‹employé›, 2026-07-r7 : 3 présents, suite 1-3-2, aucune rotation ne change le numéro de chacun — sans issue) ; ‹employé› novembre : 4 → 2 → 3 → 5 → 1 ; 0 jour de suite identique dans une série sur 16 324 jours ; équité inchangée (pire personne 5,3 points, alternance 72,9 %).
+- Garde : `test:departs-serie-decalage` (vraie page, numéros affichés, jamais le code ; `SABOTAGE=1` = 111 répétitions, 3 ❌). Les oracles `runtime-audit-departs-algo` (réimplémentation indépendante avec les crans en plus) et `verify-departs-cycle` (3b : helpers identiques dans les deux pages) suivent.
+
 ## 👶 RÈGLE MÉTIER ABSOLUE — PRT = CONGÉ PARENTAL, PAS « PRÊT » (Kevin 2026-10-11, ABSOLUE)
 
 **« PRT congé parental. Note le. Tout est écrit dans tes documents »** — Kevin 2026-10-11, après que j'eus écrit que PRT était « Prêt, la personne est prêtée à un autre service »

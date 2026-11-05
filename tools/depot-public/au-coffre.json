@@ -294,6 +294,7 @@
   "tests/verify-departs-cycle.mjs",
   "tests/verify-departs-groupes.mjs",
   "tests/verify-departs-integrity.mjs",
+  "tests/verify-departs-serie-decalage.mjs",
   "tests/verify-docs-a-la-demande.mjs",
   "tests/verify-documents-travail-parite.mjs",
   "tests/verify-donnees-a-jour.mjs",

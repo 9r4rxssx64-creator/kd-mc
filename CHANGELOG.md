@@ -4,6 +4,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.132 + CMCteams v10.007 — Départs : une nouvelle série ne reprend plus le numéro de la série d'avant (2026-11-05)
+- **Kevin** : « Il faut que ça décale. Dans l'équipe pour Mortar, il n'y a pas de décalage. L'algorithme n'est pas bon. Vérifie de partout. »
+- **Mesuré** (vraie light, juillet → novembre) : 105 débuts de série sur 2 870 reprenaient le numéro du début de la série d'avant (CMC Éq.10 novembre, ‹employé› : 4 puis 4). Cause : l'effectif change entre deux séries (congé, retour, personne du haut du roster) et le +1 retombe sur le même numéro.
+- **Fait (CMCteams ET light, même livraison)** : règle des crans en plus (`_cmcDepDecalages`, identique dans les deux pages) : si le +1 ferait répéter un numéro (par rapport au début de la série d'avant, ou à la veille dans une série dont l'effectif change), on ajoute le moins de crans possible. Les équipes stables ne bougent pas. ‹employé› novembre : 4 → 2 → 3 → 5 → 1.
+- **Mesuré après** : 1 sur 3 208 (cas sans issue : 3 présents, suite 1-3-2) ; 0 jour de suite identique sur 16 324 ; équité : pire personne 5,3 points (≤ 8), alternance 72,9 % (≥ 70 %).
+- **Gardes** : `test:departs-serie-decalage` (nouveau, `SABOTAGE=1` rouge), oracle indépendant de `test:departs-algo` mis à jour (12 ✅), `test:departs-cycle` 3b (helpers identiques dans les deux pages), ancres de sabotage d'équité et du robot en ligne remises à jour.
+
 ## Arbre v3.190 — la loupe s'aimante sur la carte visée, les noms de famille se lisent en vue d'ensemble (2026-11-05)
 - Demande (Kevin, 5.11) : « quand on fait la vue d'ensemble, qu'on voie vraiment les noms de famille ; une loupe qui suit la souris ; si on clique, on ouvre la branche ». Constat sur ses vraies données : en vue d'ensemble la loupe (×15) montrait un disque VIDE entre deux familles, et les noms de famille faisaient 8 px.
 - Fait : agrandissement doux de la loupe (×0,5 à ×1,1, plusieurs cartes lisibles) ; aimant sur la carte la plus proche (≤ 38 px), la croix dit laquelle s'ouvre, un clic à côté ouvre SA branche ; noms de famille à 14-17 px à l'écran (avant 8 px) et réduits à l'espace libre pour ne pas se chevaucher. Garde `verify-loupe-ponts.mjs` 14/14 sur les vraies données, rouge sur v3.189 (8 px, pas d'aimant).

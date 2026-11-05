@@ -7,6 +7,7 @@
  *   SABOTAGE=1        → D (séries) rouge
  *   SABOTAGE=collegue → F1 (le collègue n'est pas admin) rouge
  *   SABOTAGE=decalage → G, G3 et G2 (Kevin 5.11 : « il faut que ça décale ») rouges
+ *   SABOTAGE=formation → H (formation : départs seulement vendredi/samedi) rouge
  * Sans sabotage, le robot doit rester vert (c'est test:verif-live-robot, lancé à part).
  *
  * npm run test:verif-live-robot-sabotage
@@ -35,6 +36,10 @@ const c = robot({ SABOTAGE: 'decalage' });
 dis(c.code === 1, `SABOTAGE=decalage (la light perd la règle des décalages) → le robot sort en échec (code ${c.code})`);
 dis(/❌ G\. /.test(c.out) && /❌ G3\. /.test(c.out) && /❌ G2\. /.test(c.out), 'SABOTAGE=decalage → G (débuts de série repris), G3 (même numéro de suite) et G2 (le cas de Kevin) rougissent');
 dis(!/ancre introuvable/.test(c.out), 'SABOTAGE=decalage → l\'ancre existe encore dans la light');
+const f = robot({ SABOTAGE: 'formation' });
+dis(f.code === 1, `SABOTAGE=formation (départs de formation tous les jours) → le robot sort en échec (code ${f.code})`);
+dis(/❌ H\. /.test(f.out) || /vendredi\/samedi/.test(f.out.split('\n').filter((l) => l.startsWith('❌ B.')).join('')), 'SABOTAGE=formation → le contrôle H / B (vendredi-samedi seulement) rougit');
+dis(!/ancre introuvable/.test(f.out), 'SABOTAGE=formation → l\'ancre existe encore dans formations-ecole.js');
 const propre = robot({});
 dis(/✅ G\. /.test(propre.out) && /✅ G3\. /.test(propre.out) && /✅ G2\. /.test(propre.out), 'sans sabotage → G, G3 et G2 restent verts (le contrôle ne crie pas à tort)');
 

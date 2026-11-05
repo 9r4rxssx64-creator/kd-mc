@@ -7,6 +7,21 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 05/11/2026 12:17 UTC
+
+- **Branche** : `main` · **Commit** : `6d9139f6` · **Run** : `42024704664`
+- **Ce qui a lâché** : deploy › Le mini-chat direct est servi et fermé aux inconnus (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/42024704664
+- **Ce que la machine a dit** :
+
+```
+deploy	Le mini-chat direct est servi et fermé aux inconnus (bloquant)	﻿2026-11-05T12:15:29.4517810Z ##[group]Run trap 'echo "::error title=Mini-chat::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR
+^[[36;1mtrap 'echo "::error title=Mini-chat::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR^[[0m
+^[[36;1m[ "$ok" = "1" ] || { echo "::error title=Mini-chat::liste des fils sans session = HTTP $L (401 attendu), badge = HTTP $B (401 attendu), dépôt hors domaine = HTTP $D (403 attendu)"; exit 1; }^[[0m
+##[error]liste des fils sans session = HTTP 401 (401 attendu), badge = HTTP 401 (401 attendu), dépôt hors domaine = HTTP 403 (403 attendu)
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 05/11/2026 12:13 UTC
 
 - **Branche** : `main` · **Commit** : `6d9139f6` · **Run** : `42024700197`
@@ -533,17 +548,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

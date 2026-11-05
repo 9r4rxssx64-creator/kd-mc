@@ -31,6 +31,35 @@ export async function lirePageNavigateur(contexteNeuf) {   // contexteNeuf() →
   };
 }
 
+/** 5.11 (mesure des 80 derniers travaux : Google Livres refuse 54 % des lectures par « trop de demandes », 429) : UNE pause minimale entre deux lectures d'un même site, et UNE nouvelle tentative après un 429 / 5xx.
+ *  Les API JSON publiques (Europeana, archive.org, Wikipédia / Wikidata / Wikisource / Commons, matchID) se lisent par simple requête : plus rapide, aucun mur, pas de Chromium. */
+export const API_JSON = /^https:\/\/(api\.europeana\.eu\/|archive\.org\/(services|advancedsearch)|[a-z]+\.(wikipedia|wikisource|wikimedia)\.org\/w\/api\.php|www\.wikidata\.org\/w\/api\.php|deces\.matchid\.io\/)/i;
+/** Europeana et la recherche plein texte d'archive.org rendent un JSON énorme (50 Ko) dont l'IA n'en lit que 12 000 caractères : on le ramène à UNE ligne par résultat (titre, année, fonds, extrait, adresse). */
+export function compacterApi(url, texte) {
+  try {
+    const j = JSON.parse(texte), t = (x, n = 200) => [].concat(x || []).join(' / ').replace(/\s+/g, ' ').slice(0, n);
+    if (/api\.europeana\.eu/.test(url)) return (j.items || []).map((i, n) => `${n + 1}. ${t(i.title)} | ${t(i.year, 20)} | ${t(i.dataProvider, 60)} | ${t(i.dcDescription, 300)} | ${String(i.guid || '').split('?')[0]}`).join('\n') || 'aucun résultat';
+    const hits = j.response && j.response.body && j.response.body.hits && j.response.body.hits.hits;
+    if (/archive\.org\/services\/search/.test(url) && Array.isArray(hits)) return hits.map((h, n) => { const f = h.fields || {}; return `${n + 1}. ${t(f.title)} | ${t(f.creator, 80)} | https://archive.org/details/${f.identifier} | ${t(((h.highlight || {}).text || []).join(' … ').replace(/\{\{\{|\}\}\}/g, ''), 500)}`; }).join('\n') || 'aucun résultat';
+  } catch (_) { /* pas du JSON attendu : on rend le texte tel quel */ }
+  return texte;
+}
+export async function lireApi(url, opts) { const r = await lirePageFetch(url, opts); return { texte: compacterApi(url, r.texte), liens: [] }; }
+export function avecPolitesse(lirePageNavigateurOuFetch, { pauseMs = 1500, attenteMs = 8000, fetchLire = lireApi, dormir = (ms) => new Promise((ok) => setTimeout(ok, ms)) } = {}) {
+  const dernier = new Map();
+  return async (url) => {
+    const h = new URL(url).hostname, lire = API_JSON.test(url) ? fetchLire : lirePageNavigateurOuFetch;
+    const attendre = async () => { const d = (dernier.get(h) || 0) + pauseMs - Date.now(); if (d > 0) await dormir(d); dernier.set(h, Date.now()); };
+    await attendre();
+    try { return await lire(url); }
+    catch (e) {
+      if (!/\b(429|50[0-9])\b/.test(String(e && e.message))) throw e;
+      await dormir(attenteMs); await attendre();
+      return await lire(url);
+    }
+  };
+}
+
 export async function faireUnTravail({ pour, lirePage, fetchImpl, demander, base = BASE(), jeton, journal = () => {}, lireImage = lireMedia }) {
   const o = { fetchImpl, base, jeton };
   const { job } = await api('/next?pour=' + encodeURIComponent(pour), o);
@@ -55,14 +84,19 @@ if (process.argv[1] && /(^|[\\/])agent\.mjs$/.test(process.argv[1])) {
     lirePage = await lirePageNavigateur(async () => { const c = await browser.newContext({ acceptDownloads: false, serviceWorkers: 'block' }); const page = await c.newPage(); page.on('dialog', (d) => d.dismiss().catch(() => {})); return { page, fermer: () => c.close() }; });
   }
   journal(`agent « ${pour} » prêt (${args.includes('--navigateur') ? 'navigateur neuf, sans cookie' : 'lecture réseau'}) — file : ${BASE()}`);
-  let pause = 60000, derniereImage = 0;
-  do {
-    /* v30.10 : dossier d'images déposées (DELEGUE_DOSSIER_IMAGES), une toutes les 2 min au plus : captures de Chrome (Monaco…), lues par les yeux gratuits */
+  /* 5.11 (Kevin : « qu'ils travaillent à fond, sans limite ») : N recherches EN PARALLÈLE (--parallele N, défaut 3 en boucle ; la file donne un travail différent à chacun, la prise est atomique), 3 s de repos entre deux travaux quand la file n'est pas vide
+     (avant : 15 s), 30 s quand elle est vide (avant : 60 à 120 s). Un seul Chromium, un contexte neuf par page. Toujours : lecture seule, sans cookie. */
+  const iPar = args.indexOf('--parallele'), nPar = Math.max(1, Math.min(6, iPar >= 0 ? Number(args[iPar + 1]) || 3 : (args.includes('--boucle') ? 3 : 1)));
+  const lirePoli = avecPolitesse(lirePage);
+  let derniereImage = 0;
+  const unTour = async (num) => {
+    let pause = 30000;
     try { if (process.env.DELEGUE_DOSSIER_IMAGES && Date.now() - derniereImage > Number(process.env.DELEGUE_PAUSE_IMAGE_MS || 120000)) { if (await traiterDossier(process.env.DELEGUE_DOSSIER_IMAGES, { journal })) derniereImage = Date.now(); } } catch (e) { journal('⚠️ dossier d\'images : ' + e.message); }
-    try { const r = await faireUnTravail({ pour, lirePage, journal }); if (r) { journal(`travail ${r.id} rendu (${r.statut}) ${JSON.stringify(r.stats || {})}`); pause = 15000; } else pause = Math.min(120000, Math.max(60000, pause)); }
-    catch (e) { journal('⚠️ ' + e.message); pause = 120000; }
-    if (!args.includes('--boucle')) break;
-    await new Promise((ok) => setTimeout(ok, pause));
-  } while (true);
+    try { const r = await faireUnTravail({ pour, lirePage: lirePoli, journal: (m) => journal(`[${num}] ${m}`) }); if (r) { journal(`[${num}] travail ${r.id} rendu (${r.statut}) ${JSON.stringify(r.stats || {})}`); pause = 3000; } else pause = 30000; }
+    catch (e) { journal(`[${num}] ⚠️ ` + e.message); pause = 120000; }
+    return pause;
+  };
+  const boucle = async (num) => { do { const pause = await unTour(num); if (!args.includes('--boucle')) break; await new Promise((ok) => setTimeout(ok, pause + num * 700)); } while (true); };
+  await Promise.all(Array.from({ length: nPar }, (_, i) => boucle(i + 1)));
   if (browser) await browser.close();
 }

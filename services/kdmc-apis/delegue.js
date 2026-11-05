@@ -66,7 +66,7 @@ export async function handleDelegue(request, env, deps) {
    autonomie, et faire remonter les résultats à tes branches »). Une branche DÉPOSE un travail (`pour` = « lenovo », « nuage »…), l'agent gratuit du Lenovo
    (tools/delegue/agent.mjs : navigateur ISOLÉ, IA gratuite, aucune session de Kevin) le PREND, l'exécute et RENDS le résultat ; n'importe quelle branche le relit.
    Aucune IA ne choisit une action : l'agent ne fait que LIRE des adresses fournies (liste d'adresses publiques, lecture seule) et RAPPORTER. */
-export const JOBS_MAX_ATTENTE = 40, JOBS_MAX_URLS = 20, JOBS_MAX_PAGES = 15;
+export const JOBS_MAX_ATTENTE = 150, JOBS_MAX_URLS = 20, JOBS_MAX_PAGES = 15;
 const POUR = /^[a-z0-9._-]{2,40}$/i;
 export { urlSure };
 const jsonJob = (j) => ({ id: j.id, de: j.de, pour: j.pour, domaine: j.domaine, consigne: j.consigne, urls: safeJson(j.urls, []), max_pages: j.max_pages, statut: j.statut, prise_par: j.prise_par, cree: j.cree, fini_le: j.fini_le, resultat: j.resultat ? safeJson(j.resultat, null) : null });

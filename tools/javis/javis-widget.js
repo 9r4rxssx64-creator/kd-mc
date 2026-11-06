@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.31';
+  var JAVIS_VER = 'v1.32';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -380,7 +380,7 @@
       /* étincelles + bulle (portées de Lingua) */
       '.javis-spark{position:fixed;z-index:2147483002;pointer-events:none;font-size:16px;animation:javis-sparkFly .9s ease-out forwards}' +
       '@keyframes javis-sparkFly{0%{transform:translate(0,0) scale(.6);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1.25);opacity:0}}' +
-      '.javis-bubble{position:fixed;right:14px;bottom:calc(env(safe-area-inset-bottom) + 172px);z-index:2147483002;max-width:240px;' +
+      '.javis-bubble{position:fixed;right:var(--jv-rb,14px);left:var(--jv-lb,auto);bottom:calc(env(safe-area-inset-bottom) + var(--jv-b,96px) + 76px);z-index:2147483002;max-width:240px;' +
       'background:#241905;border:1px solid rgba(246,183,60,.6);border-radius:16px 16px 4px 16px;padding:10px 13px;' +
       'font:14px/1.45 -apple-system,BlinkMacSystemFont,sans-serif;color:#f0e2bd;box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer;' +
       'animation:javis-bubblePop .35s cubic-bezier(.34,1.56,.64,1)}' +
@@ -395,7 +395,7 @@
       'html.javis-calme :is(#javis-launcher,body.javis-app #javis-launcher,.bee-rig[class*="mv-"],#javis-panel.javis-open,.disc-mouth,#javis-root.javis-ecoute #javis-launcher){animation:none!important}' +
       'html.javis-calme body.javis-app #javis-launcher{transition:none}' +
       /* ---- habillage du widget ---- */
-      '#javis-launcher{position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom) + 96px);' +
+      '#javis-launcher{position:fixed;right:var(--jv-r,16px);left:var(--jv-l,auto);bottom:calc(env(safe-area-inset-bottom) + var(--jv-b,96px));scale:var(--jv-sc,1);opacity:var(--jv-op,1);transform-origin:var(--jv-or,bottom right);transition:transform .15s ease,scale .2s ease,opacity .2s ease;' +
       'z-index:2147483000;width:68px;height:68px;border:0;border-radius:50%;padding:0;cursor:pointer;' +
       'background:#fdf7e7;box-shadow:0 0 0 3px rgba(246,183,60,.55),0 10px 26px rgba(0,0,0,.4);' +
       'overflow:hidden;transition:transform .15s ease;-webkit-tap-highlight-color:transparent;' +
@@ -2023,6 +2023,63 @@
     })();
   }
 
+  /* NE JAMAIS RIEN CACHER (Kevin 6.11 : « vérifie réel dans les apps que la pastille Javis Bee Lingua ne cache jamais rien, aucune fonction ;
+     dans l'arbre déjà il y a un problème »). Mesuré dans l'arbre (Chromium, 4 écrans) : le rond fixe (right 16, bottom 96) recouvrait des boutons
+     de la fiche et des réglages. Le widget posé DIRECTEMENT (arbre, Lingua, page Javis hors mode app) n'avait aucun évitement. Au repos, si le rond
+     recouvre un contrôle visible de la page, il cherche une place libre (bord droit puis gauche, du bas vers le haut) ; sans place libre il se fait
+     petit et transparent. Pendant un défilement il s'efface (comme sur le domaine), puis se replace. Jamais quand le chat est ouvert. */
+  function eviterControles() {
+    var L = document.getElementById('javis-launcher'); if (!L) return;
+    var R = document.documentElement.style, T = 72, place = { cote: 'right', bas: 96 }, minut = 0;
+    function ouvert() { var p = document.getElementById('javis-panel'); return !!(p && p.classList.contains('javis-open')); }
+    function controles() {
+      var out = [], els = document.querySelectorAll('button,a[href],input,textarea,select,summary,label,[role="button"],[onclick],[tabindex]:not([tabindex="-1"])');
+      for (var i = 0; i < els.length && out.length < 400; i++) {
+        var e = els[i]; if (e.closest('#javis-root')) continue;
+        var r = e.getBoundingClientRect();
+        if (r.width < 6 || r.height < 6 || r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) continue;
+        var cs = getComputedStyle(e); if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0 || cs.pointerEvents === 'none') continue;
+        r.poids = fixeOuCollant(e) ? 100 : 1;                         /* un bouton FIXE de l'app (barre, bouton flottant) ne se recouvre jamais */
+        out.push(r);
+      }
+      return out;
+    }
+    function fixeOuCollant(e) { for (var x = e, k = 0; x && x.nodeType === 1 && k < 14; x = x.parentElement, k++) { var p = getComputedStyle(x).position; if (p === 'fixed' || p === 'sticky') return true; } return false; }
+    /* languette : sans aucune place libre, le rond se range à moitié hors de l'écran (24 px visibles) ; un toucher l'ouvre comme avant */
+    function boite(p) { var W = window.innerWidth, H = window.innerHeight, vis = p.range ? 24 : T, l = p.cote === 'right' ? W - (p.range ? 0 : 16) - vis : (p.range ? 0 : 16); return { l: l, r: l + vis, t: H - p.bas - T, b: H - p.bas }; }
+    /* un contrôle est CACHÉ si le doigt ne peut plus l'atteindre : son centre est sous le rond, ou plus de la moitié de sa surface (une ligne qui fait toute la largeur reste utilisable) */
+    function recouvre(b, rs) { var n = 0; for (var i = 0; i < rs.length; i++) { var r = rs[i], w = Math.min(b.r, r.right) - Math.max(b.l, r.left), h = Math.min(b.b, r.bottom) - Math.max(b.t, r.top);
+      if (w <= 2 || h <= 2) continue; var cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2, centre = cx > b.l && cx < b.r && cy > b.t && cy < b.b;
+      if (centre || w * h > 0.5 * (r.right - r.left) * (r.bottom - r.top)) n += r.poids || 1; } return n; }
+    function appliquer(p, petit) {
+      place = p;
+      var bord = p.range ? (24 - 68) + 'px' : '16px';
+      R.setProperty('--jv-b', p.bas + 'px');
+      R.setProperty('--jv-r', p.cote === 'right' ? bord : 'auto'); R.setProperty('--jv-l', p.cote === 'right' ? 'auto' : bord);
+      R.setProperty('--jv-rb', p.cote === 'right' ? '14px' : 'auto'); R.setProperty('--jv-lb', p.cote === 'right' ? 'auto' : '14px');
+      R.setProperty('--jv-or', p.cote === 'right' ? 'bottom right' : 'bottom left');
+      discret(petit);
+    }
+    function discret(oui) { R.setProperty('--jv-sc', oui ? '0.65' : '1'); R.setProperty('--jv-op', oui ? '0.4' : '1'); }
+    function choisir() {
+      if (ouvert()) { discret(false); return; }
+      var rs = controles(); if (!recouvre(boite(place), rs)) { discret(false); return; }
+      var H = window.innerHeight, max = Math.max(96, Math.round(H * 0.8) - T), meilleure = null, note = 1e9, cotes = ['right', 'left'];
+      for (var m = 0; m < 2 && note; m++) for (var c = 0; c < 2 && note; c++) for (var b = 16; b <= max; b += 12) {
+        var p = { cote: cotes[c], bas: b, range: m === 1 }, n = recouvre(boite(p), rs);
+        if (n < note) { note = n; meilleure = p; } if (!n) break;
+      }
+      if (meilleure) appliquer(meilleure, note > 0 && !meilleure.range);
+    }
+    window.__javisEviter = choisir;                                   /* pour les gardes automatiques */
+    choisir(); setTimeout(choisir, 600); setTimeout(choisir, 1800); setTimeout(choisir, 4000);
+    setInterval(function () { if (!document.hidden) choisir(); }, 2500);
+    window.addEventListener('resize', function () { clearTimeout(minut); minut = setTimeout(choisir, 250); });
+    window.addEventListener('scroll', function () { if (!ouvert()) discret(true); clearTimeout(minut); minut = setTimeout(choisir, 450); }, true);
+    document.addEventListener('click', function () { setTimeout(choisir, 350); }, true);
+    try { if (window.MutationObserver) new MutationObserver(function () { clearTimeout(minut); minut = setTimeout(choisir, 300); }).observe(document.body, { childList: true, subtree: true }); } catch (_) {}
+  }
+
   /* ============================================================
      6. Montage
      ============================================================ */
@@ -2635,6 +2692,7 @@
       window.__beeKevin = 1;           /* le domaine vient de le prouver : le fil de la conversation peut se synchroniser */
       armerAudio();
       mount();
+      if (!APP_MODE && !CADRE) eviterControles();
       if (CADRE) {
         /* le parent redimensionne le cadre selon l'état du panneau (fermé = la pastille, ouvert = le chat) */
         try {

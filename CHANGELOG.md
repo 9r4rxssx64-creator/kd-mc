@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Bee v1.32 + Lingua v2.142.12 — la pastille Bee ne cache plus jamais rien (2026-11-06)
+- **Kevin** : « vérifie réel dans les apps que la pastille Javis Bee Lingua ne cache jamais rien, aucune fonction ; dans l'arbre déjà il y a un problème ».
+- **Mesuré** (Chromium, arbre local, Kevin simulé) : le rond fixe du widget (droite 16, bas 96) cachait « Ouvrir la fiche » (iPhone paysage, iPad) ; le widget posé directement (arbre, Lingua, app Javis) n'avait aucun évitement, et Bee posée par le domaine n'évitait que les contrôles FIXES.
+- **Corrigé** : widget v1.32 (`eviterControles`) et compagne de Lingua (`bcChoisir`) : au repos, place libre cherchée (bord droit puis gauche, du bas vers le haut) ; un contrôle fixe ne se recouvre jamais ; sans place libre, languette au bord (24 px visibles, un toucher ouvre Bee) ; s'efface pendant le défilement. `bee-partout.js` (domaine) : tout contrôle visible compte (fixe ×100), même languette.
+- **Robots** : `verif-affichage-domaine` ferme la feuille « 📲 Installer » (ouverte d'office pour son compte neuf : des centaines de faux « cachés ») et dit QUI recouvre (bee · portail · vue-admin · installeur · autre) ; Servi la referme juste avant la mesure.
+- **Gardes** : `tools/arbre/verify-bee-ne-cache-rien.mjs` (36 situations, 4 écrans ; ancien widget rouge 2/36, dans `verif:arbre-navigateur`), `test:lingua-bee-place` (56 écrans ; ancienne Lingua rouge 8/56), `test:bee-partout-navigateur` 53/53 (nouveau cas « bouton du contenu », rouge sans le correctif ; le contrôle « 3D d'office » attendait l'ancien modèle 3D depuis le choix « 3D animé » du 30.10 → corrigé), `test:affichage-detecteur` (attribution « bee »).
 ## Pastille de version partagée — plus jamais écrite deux fois sur une page qui garde la sienne (2026-11-06)
 - **Constat** (photo de Kevin, Studio sur le Lenovo) : « v9.22.11 » affiché deux fois, superposé. **Cause** : `version-badge-pwa.js` jugeait la pastille propre (`#vbadge`, `pointer-events:none`) « cachée » via `elementFromPoint` (aveugle aux éléments sans événements) et posait la sienne dessus. **Corrigé** : la mesure rend la pastille propre interrogeable une fraction de temps (synchrone, sans repeinte). Fichier partagé : toutes les apps qui gardent leur pastille propre en `pointer-events:none` sont concernées.
 - **Garde** : `tests/verify-bulles-partout.mjs` bloc B6 (18 ✅ ; sans le correctif B6 ❌). LESSONS 860.

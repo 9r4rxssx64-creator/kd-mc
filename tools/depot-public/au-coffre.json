@@ -460,6 +460,7 @@
   "tools/arbre/test-synchro-reelle.mjs",
   "tools/arbre/verif-profonde-arbre.mjs",
   "tools/arbre/verify-ajout-famille.mjs",
+  "tools/arbre/verify-bee-ne-cache-rien.mjs",
   "tools/arbre/verify-cadrage.mjs",
   "tools/arbre/verify-cadre-noyau.mjs",
   "tools/arbre/verify-coherence-auto.mjs",

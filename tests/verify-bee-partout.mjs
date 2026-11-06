@@ -104,7 +104,9 @@ console.log('A. Kevin : Bee le suit dans une app à la CSP la plus stricte');
   await fr.waitForSelector('#javis-launcher', { timeout: 10000 }).catch(() => {});
   chk(await fr.evaluate(() => !!document.querySelector('#javis-launcher .mrn-canvas, #javis-launcher canvas') || !!document.querySelector('#javis-launcher .bee-rig')), 'Bee est dessinée dans le cadre');
   await fr.waitForFunction(() => window.KdmcMarionnette && KdmcMarionnette.etat().some((e) => e.p3d), null, { timeout: 30000 }).catch(() => {});
-  chk(await fr.evaluate(() => KdmcMarionnette.etat().some((e) => e.p3d)), 'et elle y est en 3D d\'office (la marionnette, le moteur 3D et les dessins viennent de javis.kd-mc.com)');
+  /* 6.11 : depuis le 30.10, le style choisi par Kevin est le « 3D animé » du Studio (planches bee/v3 animées par la marionnette, marionnette.js l. ~746) :
+     le modèle 3D maison n'est plus chargé exprès. On vérifie le style choisi (planches présentes) OU le modèle 3D, jamais un rond vide. */
+  chk(await fr.evaluate(() => KdmcMarionnette.etat().some((e) => e.p3d || (/\/v3(:|$)/.test(e.nom) && e.images > 0))), 'et elle y est en « 3D animé » d\'office (planches du Studio animées par la marionnette, venues de javis.kd-mc.com)');
   if (process.env.BEE_SHOT) await page.screenshot({ path: process.env.BEE_SHOT + '/ferme.png' });
   /* ouvrir / fermer : le cadre grandit puis rétrécit */
   await fr.locator('#javis-launcher').click();
@@ -315,6 +317,15 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
   await dors(6500);
   const ap = await n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), r = document.getElementById('tard').getBoundingClientRect(); return { rec: Math.min(f.right, r.right) - Math.max(f.left, r.left) > 2 && Math.min(f.bottom, r.bottom) - Math.max(f.top, r.top) > 2, f: [Math.round(f.left), Math.round(f.top)] }; });
   chk(ap.rec === false, `un bouton fixe apparu 9 s après la pose, juste sous le rond : Bee s'écarte seule en moins de 7 s (rond en ${ap.f.join(',')})`);
+  /* 6.11 (Kevin : « la pastille ne cache jamais rien, aucune fonction ») : un bouton du CONTENU (pas fixe) pile sous le rond, page au repos → Bee s'écarte aussi.
+     Avant, seuls les contrôles fixes comptaient : ce bouton restait caché. */
+  const cc = await cadreVisible(n.page);
+  await n.page.evaluate(() => { const t = document.getElementById('tard'); if (t) t.style.display = 'none'; });
+  await n.page.evaluate((b) => { const e = document.createElement('button'); e.id = 'contenu'; e.textContent = 'Valider'; e.style.cssText = 'position:absolute;right:20px;top:' + (window.scrollY + innerHeight - b - 70) + 'px;width:70px;height:48px'; document.body.appendChild(e); }, cc.bottom);
+  await dors(6500);
+  const ac = await n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), r = document.getElementById('contenu').getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2; return { centre: cx > f.left && cx < f.right && cy > f.top && cy < f.bottom, f: [Math.round(f.left), Math.round(f.top)] }; });
+  chk(ac.centre === false, `un bouton du contenu (pas fixe) sous le rond : Bee s'écarte, le bouton reste touchable (rond en ${ac.f.join(',')})`);
+  await n.page.evaluate(() => { document.getElementById('contenu').remove(); document.getElementById('tard').style.display = ''; }); await dors(4500);
   /* LA BARRE DE SECOURS D'APEX AI (Kevin 24.10, mesure du Lenovo : « Dashboard personnel » et « Ouvrir Admin » sous le rond) : cinq boutons de 44 px en colonne à droite, INVISIBLES et intouchables par défaut
      (visibility:hidden !important, comme rescue.css) ; ils n'apparaissent que si Kevin les montre (data-apex-rescue-show). Cachés : Bee ne bouge pas pour rien. Montrés : Bee s'écarte seule. */
   /* la page de test a une CSP stricte (pas de <style> en ligne) : on pose les styles un par un, comme le fait l'app (propriété CSS d'un élément) */

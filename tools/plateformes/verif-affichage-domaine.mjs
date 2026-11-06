@@ -58,7 +58,7 @@ export function mesurer(tel) {
   };
   const cliquables = [...document.querySelectorAll('a[href], button, [role="button"], input:not([type="hidden"]), select, textarea, [onclick], summary')]
     .filter(visible);
-  const caches = [], petits = [], toasts = [];
+  const caches = [], petits = [], toasts = [], parFlottant = {};
   for (const e of cliquables) {
     const r = e.getBoundingClientRect();
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -75,7 +75,12 @@ export function mesurer(tel) {
       /* 30.10 : dire QUI recouvre (position, z-index, début du texte, parent) — « sous div » ne permettait pas de savoir quel élément du routeur ou de la page cache le bouton */
       else { let cs = {}; try { cs = getComputedStyle(dessus); } catch (_) { /* style illisible */ }
         const qui = court(dessus) + '{' + (cs.position || '?') + (cs.zIndex && cs.zIndex !== 'auto' ? ' z' + cs.zIndex : '') + ' "' + String(dessus.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 18) + '" ← ' + court(dessus.parentElement) + '}';
-        caches.push(court(e) + ' ⟵ sous ' + qui); }
+        caches.push(court(e) + ' ⟵ sous ' + qui);
+        /* 6.11 (Kevin : « la pastille Javis Bee Lingua ne cache jamais rien ») : QUI, parmi les éléments flottants du domaine, recouvre le contrôle */
+        const fl = (dessus.tagName === 'IFRAME' && /\/__javis\/cadre/.test(dessus.getAttribute('src') || '')) || (dessus.closest && dessus.closest('#javis-root,.bee-companion')) ? 'bee'
+          : dessus.closest && dessus.closest('[data-kdmc-pastille]') ? 'portail' : dessus.closest && dessus.closest('[data-kdmc-vue]') ? 'vue-admin'
+            : dessus.closest && dessus.closest('button[aria-label*="Installer l\'application"],button[aria-label="Activer les notifications"]') ? 'installeur' : 'autre';
+        parFlottant[fl] = (parFlottant[fl] || 0) + 1; }
     }
     if (tel && (r.width < 44 || r.height < 44) && e.tagName !== 'INPUT' && e.tagName !== 'TEXTAREA' && e.tagName !== 'SELECT') petits.push(court(e));
   }
@@ -102,7 +107,7 @@ export function mesurer(tel) {
   const largeur = Math.max(document.documentElement.scrollWidth, document.body ? document.body.scrollWidth : 0);
   return {
     titre: !!document.title,
-    cache: caches.length, cacheEx: caches.slice(0, 4), toast: toasts.length,
+    cache: caches.length, cacheEx: caches.slice(0, 4), parFlottant, toast: toasts.length,
     haut: haut.length, hautEx: haut.slice(0, 3),
     /* sur téléphone, Chrome/Safari ÉLARGISSENT la page pour faire tenir un contenu trop large (innerWidth grossit, la page se dézoome) :
        on compare donc à la largeur de l'ÉCRAN, pas à innerWidth. */
@@ -200,6 +205,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
           st = rep ? rep.status() : 0;
           await page.waitForTimeout(4500);                               // laisser les apps dessiner ET Bee se ranger (il se replace à 1,2 s puis 3,5 s)
           await page.evaluate(() => window.scrollTo(0, 0));
+          await page.evaluate(fermerFeuilleInstalleur).catch(() => false); await page.waitForTimeout(300);
           m = await page.evaluate(mesurer, tel);
         } catch (e) { err = String(e && e.message).split('\n')[0].slice(0, 90); }
         page.off('pageerror', onErr); page.off('requestfailed', onFail); page.off('response', onRep);
@@ -219,6 +225,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               explo.touches++;
               const apres = await page.evaluate(() => location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length);
               if (apres === avant) { explo.morts++; if (explo.ex.length < 4) explo.ex.push('sans réaction : n°' + k); }
+              await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
               const m2 = await page.evaluate(mesurer, tel);
               const changePage = apres.split('|')[0] !== avant.split('|')[0];
               if (changePage && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après n°' + k); }
@@ -244,6 +251,16 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
   return res;
 }
 
+/** Exécuté DANS la page (6.11) : la feuille « 📲 Installer » du domaine s'ouvre d'elle-même une fois par compte et par appareil ; le robot ouvre un
+ *  navigateur neuf connecté à chaque passage et la voyait TOUJOURS, couvrant la page (des centaines de faux « cachés »). On la ferme par ✕, comme un visiteur. */
+export function fermerFeuilleInstalleur() {
+  const f = document.querySelector('[data-kdmc-installer="feuille"]');
+  if (!f) return false;
+  const x = f.querySelector('button[aria-label="Fermer"]');
+  if (x) x.click(); else f.remove();
+  return true;
+}
+
 export function bilan(res) {
   const parApp = {};
   for (const r of res) {
@@ -253,6 +270,7 @@ export function bilan(res) {
     if (r.err && !a.err) a.err = r.err;
     if (r.jsEx && r.jsEx.length && !a.jsEx) a.jsEx = r.jsEx;
     for (const x of [...(r.cacheEx || []).slice(0, 2).map((v) => 'caché ' + v), ...(r.hautEx || []).slice(0, 1).map((v) => 'haut ' + v)]) if (a.ex.size < 4) a.ex.add(x);
+    for (const [k, v] of Object.entries(r.parFlottant || {})) { a.flottants = a.flottants || {}; a.flottants[k] = (a.flottants[k] || 0) + v; }
     a.cache += r.cache || 0; a.haut += r.haut || 0; a.deborde = Math.max(a.deborde, r.deborde || 0); a.js += r.js || 0;
     if (ECRANS.find((e) => e.nom === r.ecran)?.tel) a.petit = Math.max(a.petit, r.petit || 0);
     /* 30.10.2026 (audit 1533) : nommer les cibles < 44 px (balise#id.classe seulement) pour pouvoir les corriger, pas seulement les compter */
@@ -271,7 +289,7 @@ if (process.argv[1] && process.argv[1].endsWith('verif-affichage-domaine.mjs')) 
   for (const [app, a] of Object.entries(B)) {
     const mauvais = a.cache || a.haut || a.deborde || a.js || a.encoche || a.morts || a.sansRetour || a.ecransKO.length;
     if (mauvais) ko++;
-    console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.morts ? ' · ' + a.morts + ' bouton(s) sans réaction' : ''}${a.sansRetour ? ' · ' + a.sansRetour + ' page(s) sans retour' : ''}${a.encoche ? ' · encoche iPhone' : ''}${a.petitEx ? ' · petits : ' + a.petitEx.join(' | ') : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.jsEx ? ' · js ex : ' + a.jsEx.join(' / ') : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
+    console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache}${a.flottants ? ' [' + Object.entries(a.flottants).map(([k, v]) => k + ' ' + v).join(' · ') + ']' : ''} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.morts ? ' · ' + a.morts + ' bouton(s) sans réaction' : ''}${a.sansRetour ? ' · ' + a.sansRetour + ' page(s) sans retour' : ''}${a.encoche ? ' · encoche iPhone' : ''}${a.petitEx ? ' · petits : ' + a.petitEx.join(' | ') : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.jsEx ? ' · js ex : ' + a.jsEx.join(' / ') : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
   }
   console.log(`\nℹ️ ${Object.keys(B).length} apps × ${ECRANS.length} écrans = ${res.length} pages ; ${ko} app(s) à corriger`);
   if (process.env.SORTIE) writeFileSync(process.env.SORTIE, JSON.stringify(res, null, 1));

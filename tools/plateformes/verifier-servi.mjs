@@ -11,20 +11,11 @@
  * Seules les adresses *.kd-mc.com sont ouvertes (le cookie admin ne sort jamais du domaine).
  */
 import { chromium, webkit, devices } from 'playwright';
-import { ECRANS, mesurer, connecterAdmin, lectureSeule } from './verif-affichage-domaine.mjs';
+import { ECRANS, mesurer, connecterAdmin, lectureSeule, fermerFeuilleInstalleur } from './verif-affichage-domaine.mjs';
+export { fermerFeuilleInstalleur };
 /** Retire tout texte de page (entre guillemets) d'un exemple de recouvrement : il ne reste que sélecteurs, position et z-index. */
 export const sansTexte = (ex) => (Array.isArray(ex) ? ex : []).map((x) => String(x).replace(/"[^"]*"/g, '…').slice(0, 160));
 /** Une page à corriger : erreur, titre sous la pastille, OU un bouton dont le centre est recouvert par un autre élément. */
-/** Exécuté DANS la page. La feuille « 📲 Installer » du domaine s'ouvre d'elle-même une fois par compte et par appareil ; le robot ouvre
- *  un navigateur NEUF connecté à chaque passage, il la verrait donc toujours, couvrant les boutons de la page (6.11 : « cache 4 » sur kit).
- *  On la ferme par son bouton ✕ (comme un visiteur) avant de mesurer, et on le dit. */
-export function fermerFeuilleInstalleur() {
-  const f = document.querySelector('[data-kdmc-installer="feuille"]');
-  if (!f) return false;
-  const x = f.querySelector('button[aria-label="Fermer"]');
-  if (x) x.click(); else f.remove();
-  return true;
-}
 export const aCorriger = (r) => !!(r.err || r.sousPastille || (process.env.SABOTAGE !== 'cache' && r.cache > 0) || (process.env.SABOTAGE !== 'double' && r.badgesVisibles > 1));
 
 /* Écrans supplémentaires PROPRES À CE ROBOT (Kevin 29.10 : « portrait ET paysage sur tous les appareils, toujours » —
@@ -163,6 +154,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           r.beePage = await page.evaluate(() => String(window.JAVIS_VER || '')).catch(() => '');
           const cadre = page.frames().find((f) => /\/__javis\/cadre/.test(f.url()));
           r.beeCadre = cadre ? await cadre.evaluate(() => String(window.JAVIS_VER || '')).catch(() => '?') : '';
+          if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; await page.waitForTimeout(300); }   /* la feuille peut s'ouvrir APRÈS la 1re fermeture (iPhone paysage, 6.11) */
           const m = await page.evaluate(mesurer, tel).catch(() => null);
           /* 6.11 (Kevin : « creuse toujours pour savoir ») : Servi comptait « cache 4 » sur kit.kd-mc.com sans dire QUI cache QUOI, et ne le comptait pas
              « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré

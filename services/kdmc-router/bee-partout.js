@@ -50,7 +50,8 @@ export function partout() {
     function taille() {
       if (!cadre) return;
       var s = cadre.style;
-      if (ouvert || place.cote === 'right') { s.right = '8px'; s.left = 'auto'; } else { s.left = '8px'; s.right = 'auto'; }
+      var bord = (!ouvert && place.range) ? (30 - 92) + 'px' : '8px';
+      if (ouvert || place.cote === 'right') { s.right = ouvert ? '8px' : bord; s.left = 'auto'; } else { s.left = bord; s.right = 'auto'; }
       s.bottom = bas();
       if (ouvert) { s.width = Math.max(280, Math.min(window.innerWidth - 16, 436)) + 'px'; s.height = Math.max(320, Math.min(Math.round(window.innerHeight * 0.8), 660)) + 'px'; }
       else { s.width = '92px'; s.height = '92px'; }
@@ -67,7 +68,9 @@ export function partout() {
         var cs = getComputedStyle(e);
         if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
         if (e.disabled || e.getAttribute('aria-disabled') === 'true') continue;       // un bouton grisé n'attend aucun doigt
-        if (permanent(e)) out.push(r);
+        /* 6.11 (Kevin : « la pastille ne cache jamais rien, aucune fonction ») : TOUT contrôle visible compte, plus seulement les barres fixes ;
+           un contrôle fixe ou collant pèse 100 (jamais recouvert s'il existe une autre place), un contrôle du contenu pèse 1 */
+        out.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, poids: permanent(e) ? 100 : 1 });
       }
       return out;
     }
@@ -75,7 +78,10 @@ export function partout() {
       var n = 0;
       for (var i = 0; i < rs.length; i++) {
         var r = rs[i], w = Math.min(boite.r, r.right) - Math.max(boite.l, r.left), h = Math.min(boite.b, r.bottom) - Math.max(boite.t, r.top);
-        if (w > 2 && h > 2) n++;                                   // même un coin de bouton recouvert compte : un doigt tombe dessus
+        if (w <= 2 || h <= 2) continue;
+        if (r.poids >= 100) { n += 100; continue; }                // un coin d'un bouton FIXE suffit : un doigt tombe dessus
+        var cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;  // un contrôle du contenu est caché si son centre ou plus de la moitié est dessous
+        if ((cx > boite.l && cx < boite.r && cy > boite.t && cy < boite.b) || w * h > 0.5 * (r.right - r.left) * (r.bottom - r.top)) n += 1;
       }
       return n;
     }
@@ -84,19 +90,20 @@ export function partout() {
       var rs = controles(), W = window.innerWidth, H = window.innerHeight, meilleure = null, note = 1e9;
       var maxBas = Math.max(88, Math.round(H * 0.7) - 92);
       var cotes = ['right', 'left'];
-      for (var c = 0; c < cotes.length; c++) {
+      /* m = 1 : LANGUETTE — aucune place libre, le rond se range à moitié hors de l'écran (30 px visibles) ; un toucher l'ouvre comme avant */
+      for (var m = 0; m < 2 && note; m++) for (var c = 0; c < cotes.length && note; c++) {
         for (var b = 88; b <= maxBas; b += 16) {
-          var l = cotes[c] === 'right' ? W - 8 - 92 : 8, bas0 = H - b;
-          var n = recouvre({ l: l, r: l + 92, t: bas0 - 92, b: bas0 }, rs);
-          if (n < note) { note = n; meilleure = { cote: cotes[c], bas: b }; }
+          var vis = m ? 30 : 92, l = cotes[c] === 'right' ? W - (m ? 0 : 8) - vis : (m ? 0 : 8), bas0 = H - b;
+          var n = recouvre({ l: l, r: l + vis, t: bas0 - 92, b: bas0 }, rs);
+          if (n < note) { note = n; meilleure = { cote: cotes[c], bas: b, range: !!m }; }
           if (n === 0) break;
         }
-        if (note === 0) break;
       }
       if (!meilleure) return;
-      var actuelle = recouvre({ l: place.cote === 'right' ? W - 100 : 8, r: place.cote === 'right' ? W - 8 : 100, t: H - place.bas - 92, b: H - place.bas }, rs);
+      var visA = place.range ? 30 : 92, lA = place.cote === 'right' ? W - (place.range ? 0 : 8) - visA : (place.range ? 0 : 8);
+      var actuelle = recouvre({ l: lA, r: lA + visA, t: H - place.bas - 92, b: H - place.bas }, rs);
       if (actuelle === 0) return;                                  // déjà libre : on ne bouge pas (pas de saut inutile)
-      if (meilleure.cote !== place.cote || meilleure.bas !== place.bas) { place = meilleure; taille(); }
+      if (meilleure.cote !== place.cote || meilleure.bas !== place.bas || !!meilleure.range !== !!place.range) { place = meilleure; taille(); }
     }
     function replacer() { choisirPlace(); setTimeout(choisirPlace, 1200); setTimeout(choisirPlace, 3500); setTimeout(choisirPlace, 8000); veiller(); }
     /* LES CONTRÔLES QUI ARRIVENT TARD (Kevin 24.10, Chrome du Lenovo sur Apex AI : « Aller en bas » et « Installer l'application » apparaissent après la pose et passent sous le rond) : on revérifie toutes les 4 s tant que la page est visible

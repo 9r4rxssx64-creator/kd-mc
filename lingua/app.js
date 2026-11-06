@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.11";
+var APP_VER="v2.142.12";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -1081,7 +1081,7 @@ function _renderEcran(){
   else if(VIEW==="coach") app.appendChild(vCoach());
   else if(VIEW==="profile") app.appendChild(vProfile());
   app.appendChild(vTabbar());
-  if(VIEW!=="coach"&&S.course) app.appendChild(beeCompanion());  // Bee gère tout : présente sur chaque écran (le Coach l'a déjà en grand)
+  if(VIEW!=="coach"&&S.course){ app.appendChild(beeCompanion()); bcVeiller(); setTimeout(bcChoisir,60); setTimeout(bcChoisir,900); }  // Bee gère tout : présente sur chaque écran (le Coach l'a déjà en grand)
 }
 function go(v){ if(v!=="blitz")blitzAbort(); if(v!=="pairs")pairsAbort(); if(v!=="pron")pronAbort(); VIEW=v; window.scrollTo(0,0); render(); }
 /* ============ Garde retour-arrière (Kevin 2026-08-08 : « pas de retour arrière possible
@@ -2526,6 +2526,34 @@ function beeAsk(text,yes,fn,ms){ try{ var old=document.querySelector(".bee-bubbl
   document.body.appendChild(b);
   if(!coursSignes()) speakLang(String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}·]/gu," "),"fr-FR",BEE_VOICE,true);
   setTimeout(function(){ try{ b.classList.add("bye"); setTimeout(function(){b.remove();},400); }catch(_){} }, ms||14000); }catch(_){} }
+/* BEE NE CACHE JAMAIS RIEN (Kevin 6.11 : « vérifie réel dans les apps que la pastille Javis Bee Lingua ne cache jamais rien, aucune fonction ») :
+   la compagne était fixe (droite 12, bas 96) et recouvrait les boutons de l'écran sous elle. Au repos, si elle recouvre un contrôle visible (son centre ou
+   plus de la moitié), elle cherche une place libre (bord droit puis gauche, du bas vers le haut) ; un contrôle FIXE (barre, onglets) ne se recouvre jamais ;
+   sans place libre, elle se range en languette au bord (un toucher marche toujours). Pendant un défilement elle s'efface, puis se replace. */
+var _bcPlace={cote:"right",bas:96,range:false}, _bcMinut=0, _bcVeille=0;
+function bcFixe(e){ for(var x=e,k=0;x&&x.nodeType===1&&k<14;x=x.parentElement,k++){ var p=getComputedStyle(x).position; if(p==="fixed"||p==="sticky") return true; } return false; }
+function bcControles(){ var out=[], els=document.querySelectorAll('button,a[href],input,textarea,select,summary,label,[role="button"],[onclick]');
+  for(var i=0;i<els.length&&out.length<400;i++){ var e=els[i]; if(e.closest(".bee-companion,.bee-bubble")) continue; var r=e.getBoundingClientRect();
+    if(r.width<6||r.height<6||r.bottom<0||r.top>innerHeight||r.right<0||r.left>innerWidth) continue; var cs=getComputedStyle(e);
+    if(cs.visibility==="hidden"||cs.display==="none"||+cs.opacity===0||cs.pointerEvents==="none") continue;
+    out.push({l:r.left,r:r.right,t:r.top,b:r.bottom,poids:bcFixe(e)?100:1}); } return out; }
+function bcBoite(p){ var T=64, vis=p.range?24:T, l=p.cote==="right"?innerWidth-(p.range?0:12)-vis:(p.range?0:12); return {l:l,r:l+vis,t:innerHeight-p.bas-T,b:innerHeight-p.bas}; }
+function bcRecouvre(b,rs){ var n=0; for(var i=0;i<rs.length;i++){ var r=rs[i], w=Math.min(b.r,r.r)-Math.max(b.l,r.l), h=Math.min(b.b,r.b)-Math.max(b.t,r.t); if(w<=2||h<=2) continue;
+  if(r.poids>=100){ n+=100; continue; } var cx=(r.l+r.r)/2, cy=(r.t+r.b)/2; if((cx>b.l&&cx<b.r&&cy>b.t&&cy<b.b)||w*h>0.5*(r.r-r.l)*(r.b-r.t)) n+=1; } return n; }
+function bcAppliquer(p,petit){ _bcPlace=p; var R=document.documentElement.style, bord=p.range?(24-64)+"px":"12px";
+  R.setProperty("--bc-b",p.bas+"px"); R.setProperty("--bc-r",p.cote==="right"?bord:"auto"); R.setProperty("--bc-l",p.cote==="right"?"auto":bord);
+  R.setProperty("--bc-rb",p.cote==="right"?"14px":"auto"); R.setProperty("--bc-lb",p.cote==="right"?"auto":"14px"); R.setProperty("--bc-or",p.cote==="right"?"bottom right":"bottom left"); bcDiscret(petit); }
+function bcDiscret(oui){ var R=document.documentElement.style; R.setProperty("--bc-sc",oui?"0.7":"1"); R.setProperty("--bc-op",oui?"0.45":"1"); }
+function bcChoisir(){ try{ if(!document.querySelector(".bee-companion")) return; var rs=bcControles(); if(!bcRecouvre(bcBoite(_bcPlace),rs)){ bcDiscret(false); return; }
+  var max=Math.max(96,Math.round(innerHeight*0.8)-64), best=null, note=1e9, cotes=["right","left"];
+  for(var m=0;m<2&&note;m++) for(var c=0;c<2&&note;c++) for(var b=16;b<=max;b+=12){ var p={cote:cotes[c],bas:b,range:m===1}, n=bcRecouvre(bcBoite(p),rs); if(n<note){note=n;best=p;} if(!n) break; }
+  if(best) bcAppliquer(best, note>0&&!best.range); }catch(_){} }
+window.__linguaBeeEviter=bcChoisir;
+function bcVeiller(){ if(_bcVeille) return; _bcVeille=1;
+  setInterval(function(){ if(!document.hidden) bcChoisir(); },2500);
+  addEventListener("resize",function(){ clearTimeout(_bcMinut); _bcMinut=setTimeout(bcChoisir,250); });
+  addEventListener("scroll",function(){ if(document.querySelector(".bee-companion")) bcDiscret(true); clearTimeout(_bcMinut); _bcMinut=setTimeout(bcChoisir,450); },true);
+  try{ new MutationObserver(function(){ clearTimeout(_bcMinut); _bcMinut=setTimeout(bcChoisir,300); }).observe(document.body,{childList:true,subtree:true}); }catch(_){} }
 function beeCompanion(){ var w=el("div","bee-companion");
   var rig=el("div","bee-live bee-rig"); rig.setAttribute("data-mascot",mascotCfg().id); rig.setAttribute("data-art",MART()); rig.innerHTML=beeRigHTML(); w.appendChild(rig);
   setTimeout(function(){ beeLifeStart(rig); }, 900+Math.random()*600);

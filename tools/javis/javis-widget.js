@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.32';
+  var JAVIS_VER = 'v1.33';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -2504,6 +2504,8 @@
         box.appendChild(b);
       });
     list.appendChild(box);
+    /* 6.11 : les suggestions arrivaient sous le bas visible de la liste (app Javis, iPhone : « 🩺 Tester Bee » sous le champ) : la liste défile pour les montrer */
+    try { setTimeout(function () { list.scrollTop = list.scrollHeight; }, 60); } catch (_) {}
   }
 
   /* ============================================================

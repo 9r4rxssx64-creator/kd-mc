@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Bee v1.33 (2026-11-06, nuit) — après la mesure réelle du domaine
+- Mesuré en ligne (robot affichage, 33 apps × 7 écrans, run 42291889726) après v1.32 : Bee n'était plus en cause que sur 2 apps. (1) App Javis : « 🩺 Tester Bee » coupé par le bas de la liste du chat → la liste défile pour montrer les suggestions ; et le robot ne compte plus « caché » un bouton à faire défiler dans sa zone (test 7 du détecteur, rouge sans). (2) Apex AI tablette : bouton apparu entre deux veilles de 4 s → `bee-partout.js` se replace 0,3 s après tout changement de la page (observateur ; cas « bouton du contenu » de `test:bee-partout-navigateur` rouge sans, à 1,5 s).
+
 ## Bee v1.32 + Lingua v2.142.12 — la pastille Bee ne cache plus jamais rien (2026-11-06)
 - **Kevin** : « vérifie réel dans les apps que la pastille Javis Bee Lingua ne cache jamais rien, aucune fonction ; dans l'arbre déjà il y a un problème ».
 - **Mesuré** (Chromium, arbre local, Kevin simulé) : le rond fixe du widget (droite 16, bas 96) cachait « Ouvrir la fiche » (iPhone paysage, iPad) ; le widget posé directement (arbre, Lingua, app Javis) n'avait aucun évitement, et Bee posée par le domaine n'évitait que les contrôles FIXES.
@@ -63,6 +66,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Agent de recherche gratuit — une page refusée (403) n'est plus « lue » ; Geneanet et Gallica retirés des consignes (2026-11-05)
 - Mesure de pc-config sur le Lenovo (même Chromium que l'agent) : Geneanet « Just a moment... » et Gallica « Attention Required! » = mur Cloudflare HTTP 403, rendus « lus, 0 trouvaille ». Étalonnage 1250 : Wikipédia 1 trouvaille correcte, Geneanet 0, Gallica 0.
 - Fait : `lirePageNavigateur` lit le statut HTTP et le titre : 403 ou mur = « page refusée HTTP N » (compté `pages_refusees`, pas `lues`) ; `robots-recherche.mjs` ne donne plus Geneanet ni Gallica à l'agent (`sansMur`). Mur non contourné. Tests : `tests/delegue-agent.test.mjs` et `tests/robots-recherche.test.mjs`, rouges sans le correctif.
+## Arbre — outils : les copies de sauvegarde passent aussi en références R2 (2026-11-06)
+- **Kevin / pont 1859** : « migrer-r2 FAIT mais le stockage RTDB n'a PAS baissé (417 Mo) : vérifie l'effet réel ». Mesure (`coffre-poids-arbre`, détail par tiroir ajouté) : les fiches vivantes ne pèsent plus que 4,6 Mo (0,2 Mo d'images en texte), MAIS le tiroir « sauvegardes » = 46 copies complètes de l'arbre faites avant la migration = 385,7 Mo (plus grosse 45,8 Mo) ; essai à blanc : 19 708 images en texte (224,6 Mo décodés) dedans. La migration ne visait que les fiches vivantes et les originaux, jamais ces copies.
+- `migrer-r2.cjs` compacte aussi les copies : envoi à R2, relecture identique, écriture conditionnelle du seul champ, jamais d'effacement (la copie reste restaurable : l'appli lit « m:<empreinte> »), même image relue une seule fois. Test `test:arbre-migrer-r2` (16 ✅ : à blanc, réel, rejouable, R2 corrompu → intact).
+
 ## Arbre v3.197 — une année de naissance inconnue n'est plus « mineur » (2026-11-06)
 - **Kevin** : « personne n'est mineur ; arrête de me demander ou dire des choses dont tu as les réponses ». Le robot (`robots-recherche.mjs`) et l'appli (`estMineurPrive`) ne tiennent plus pour mineur une personne dont la naissance est inconnue : seul compte un vivant de naissance CONNUE de moins de 18 ans (personne aujourd'hui). Lily et les autres fiches sans date sont des adultes : pas de choix de confidentialité, trouvailles publiques.
 

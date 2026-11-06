@@ -113,6 +113,8 @@ export function partout() {
       if (veille) return;
       veille = setInterval(function () { if (!document.hidden) choisirPlace(); }, 4000);
       window.addEventListener('scroll', function () { discret(true); clearTimeout(defile); defile = setTimeout(function () { discret(false); choisirPlace(); }, 700); }, true);
+      /* 6.11 (Kevin : « ne cache jamais rien ») : un contrôle qui ARRIVE (Apex AI sur tablette : bouton principal sous le rond entre deux veilles de 4 s) → replacement 0,3 s après le changement de la page */
+      try { if (window.MutationObserver) { var mo = 0; new MutationObserver(function () { clearTimeout(mo); mo = setTimeout(choisirPlace, 300); }).observe(document.body, { childList: true, subtree: true }); } } catch (e) { /* page sans observateur */ }
     }
     /* PENDANT LE DÉFILEMENT, BEE S'EFFACE (Kevin 25.10, iPhone sur kd-mc.com : en faisant défiler le portail, la bulle passe sur les flèches › et le texte des cartes — du contenu qui n'est pas un bouton fixe, donc impossible à éviter par la place) :
        elle rétrécit (×0,75 ≈ 51 px, toujours ≥ 44 px) et devient à moitié transparente tant que la page bouge, puis revient pleine 0,7 s après l'arrêt. transform + opacity seulement (GPU), jamais quand le chat est ouvert. */

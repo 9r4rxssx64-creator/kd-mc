@@ -63,6 +63,14 @@ export function mesurer(tel) {
     const r = e.getBoundingClientRect();
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
     if (cx < 0 || cy < 0 || cx >= W || cy >= H) continue;          // hors de l'écran : pas jugé (défilement)
+    /* 6.11 : un contrôle sorti de la partie visible d'une ZONE QUI DÉFILE (liste de messages, panneau à ascenseur) n'est pas recouvert : il est à faire défiler
+       (cas mesuré : « 🩺 Tester Bee » sous le bas de la liste du chat de Javis, compté « caché sous le champ »). */
+    let coupe = false;
+    for (let a = e.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) {
+      const o = getComputedStyle(a); if (!/(auto|scroll|hidden|clip)/.test(o.overflowY + ' ' + o.overflowX)) continue;
+      const ra = a.getBoundingClientRect(); if (cx < ra.left || cx > ra.right || cy < ra.top || cy > ra.bottom) { coupe = true; break; }
+    }
+    if (coupe) continue;
     const dessus = document.elementFromPoint(cx, cy);
     if (dessus && dessus !== e && !e.contains(dessus) && !dessus.contains(e)) {
       /* pas un recouvrement : un libellé du même champ, un marqueur de carte sous les contrôles de la carte (normal) */

@@ -322,7 +322,7 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
   const cc = await cadreVisible(n.page);
   await n.page.evaluate(() => { const t = document.getElementById('tard'); if (t) t.style.display = 'none'; });
   await n.page.evaluate((b) => { const e = document.createElement('button'); e.id = 'contenu'; e.textContent = 'Valider'; e.style.cssText = 'position:absolute;right:20px;top:' + (window.scrollY + innerHeight - b - 70) + 'px;width:70px;height:48px'; document.body.appendChild(e); }, cc.bottom);
-  await dors(6500);
+  await dors(1500);   /* 6.11 : la page a changé → Bee se replace en moins de 1,5 s (observateur), plus besoin d'attendre la veille de 4 s */
   const ac = await n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), r = document.getElementById('contenu').getBoundingClientRect(), cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2; return { centre: cx > f.left && cx < f.right && cy > f.top && cy < f.bottom, f: [Math.round(f.left), Math.round(f.top)] }; });
   chk(ac.centre === false, `un bouton du contenu (pas fixe) sous le rond : Bee s'écarte, le bouton reste touchable (rond en ${ac.f.join(',')})`);
   await n.page.evaluate(() => { document.getElementById('contenu').remove(); document.getElementById('tard').style.display = ''; }); await dors(4500);

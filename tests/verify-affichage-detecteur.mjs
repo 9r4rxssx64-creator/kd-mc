@@ -48,6 +48,9 @@ ok('flèche retour présente → vue', (await p.evaluate(aUnRetour)) === true);
 /* 6.11 (Kevin : « la pastille Javis Bee Lingua ne cache jamais rien ») : le détecteur dit QUI recouvre — ici le cadre de Bee */
 await p.setContent(`<!doctype html><title>t</title><button id="ok" style="position:absolute;top:500px;left:300px;width:60px;height:50px">Ok</button><iframe src="/__javis/cadre" style="position:fixed;top:480px;left:290px;width:92px;height:92px;border:0;z-index:2147483000"></iframe>`);
 const m6 = await p.evaluate(mesurer, true);
+await p.setContent(`<!doctype html><title>t</title><div id="liste" style="position:absolute;top:0;left:0;width:300px;height:200px;overflow-y:auto"><div style="height:400px"></div><button id="loin" style="display:block;height:44px">Tester</button></div><form style="position:absolute;top:380px;left:0;width:300px;height:120px"><textarea style="width:280px;height:100px"></textarea></form>`);
+const m7 = await p.evaluate(mesurer, true);
+ok('un bouton à faire défiler dans sa liste n\'est pas « caché » (6.11, chat de Javis)', m7.cache === 0, JSON.stringify(m7.cacheEx));
 ok('un bouton sous le cadre de Bee est attribué à « bee »', m6.cache === 1 && m6.parFlottant && m6.parFlottant.bee === 1, JSON.stringify(m6.parFlottant));
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));

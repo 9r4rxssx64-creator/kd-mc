@@ -57,12 +57,17 @@ async function main(fetchFn = fetch) {
     } else {
       // tiroir « originaux » (clé = empreinte du code famille + « :originaux ») : un enregistrement par original, champ `data`
       tiroirs++;
+      const T = { n: 0, octets: 0, avecData: 0, octetsAvecData: 0, sansData: 0, octetsSansData: 0, champs: {}, plusGros: 0 };   // v3.198 : de quoi est fait CHAQUE tiroir (nombres et noms de champs seulement)
       for (const ref of Object.keys(enfants)) {
         const o = await lire(fetchFn, token, '/arbre/' + h + '/' + encodeURIComponent(ref), false).catch(() => null);
         if (!o) continue;
-        octetsTiroirs += Buffer.byteLength(JSON.stringify(o), 'utf8');
-        if (o && o.data) compter(A.originaux, o.data); else A.originaux.autres++;
+        const oct = Buffer.byteLength(JSON.stringify(o), 'utf8');
+        octetsTiroirs += oct; T.n++; T.octets += oct; T.plusGros = Math.max(T.plusGros, oct);
+        if (o && typeof o === 'object') { for (const c of Object.keys(o)) { const t = typeof o[c] === 'string' ? 's' : (o[c] && typeof o[c] === 'object' ? 'o' : 'n'); const k = c.replace(/\d+/g, '#') + ':' + t; T.champs[k] = (T.champs[k] || 0) + Buffer.byteLength(JSON.stringify(o[c]) || '', 'utf8'); } }
+        if (o && o.data) { T.avecData++; T.octetsAvecData += oct; compter(A.originaux, o.data); } else { T.sansData++; T.octetsSansData += oct; A.originaux.autres++; }
       }
+      const top = Object.entries(T.champs).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => k + ' ' + mo(v)).join(', ');
+      lignes.push(`tiroir ${tiroirs} : ${T.n} enregistrement(s) = ${mo(T.octets)} (le plus gros ${mo(T.plusGros)}) · avec data ${T.avecData} = ${mo(T.octetsAvecData)} · sans data ${T.sansData} = ${mo(T.octetsSansData)} · champs les plus lourds : ${top}`);
     }
     const autres = Object.keys(enfants).filter((k) => k !== 'persons');
     if (!ids && !autres.length) autreOctets += 0;

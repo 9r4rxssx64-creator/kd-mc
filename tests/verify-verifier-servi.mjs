@@ -54,6 +54,13 @@ const couvert = await (async () => { const b5 = await chromium.launch(exe ? { ex
   const m = await p5.evaluate(mesurer, false); await b5.close(); return m; })();
 const ex = sansTexte(couvert.cacheEx);
 ok('2h. un bouton recouvert est compté, nommé (lui ET ce qui le recouvre) et rend la page « à corriger »', couvert.cache === 1 && /a#acheter/.test(ex[0] || '') && /div#abeille/.test(ex[0] || '') && aCorriger({ cache: couvert.cache }), JSON.stringify(ex));
+/* 2v (6.11, Studio : « v9.22.11 » DEUX FOIS l'une sur l'autre) : deux pastilles de version VISIBLES = défaut ; une visible + une cachée (display:none) = normal. */
+const doubles = await (async () => { const bv = await chromium.launch(exe ? { executablePath: exe } : {}); const pv = await bv.newPage({ viewport: { width: 390, height: 844 } });
+  const mes = async (h, nom) => { await pv.goto(f(nom, h)); return pv.evaluate(mesurerServi); };
+  const deux = await mes('<!doctype html><body><span id="vbadge" style="position:fixed;left:8px;bottom:60px">v9.9.9</span><button id="kdmc-version-badge" style="position:fixed;left:8px;bottom:60px"><span>v9.9.9</span></button></body>', 'deux.html');
+  const une = await mes('<!doctype html><body><span id="vbadge" style="position:fixed;left:8px;bottom:60px">v9.9.9</span><button id="kdmc-version-badge" style="position:fixed;left:8px;bottom:60px;display:none"><span>v9.9.9</span></button></body>', 'une.html');
+  await bv.close(); return { deux, une }; })();
+ok('2v. deux pastilles de version visibles = « à corriger », nommées ; une visible + une cachée = rien', doubles.deux.badgesVisibles === 2 && aCorriger({ badgesVisibles: doubles.deux.badgesVisibles }) && doubles.deux.badgesVisiblesQui.includes('module') && doubles.une.badgesVisibles === 1 && !aCorriger({ badgesVisibles: doubles.une.badgesVisibles }), JSON.stringify([doubles.deux.badgesVisibles, doubles.deux.badgesVisiblesQui, doubles.une.badgesVisibles]));
 ok('2i. l’exemple ne garde aucun texte de page', ex.length > 0 && !/secret|Dupont|Léa|Acheter/.test(JSON.stringify(ex)), JSON.stringify(ex));
 /* 2j (6.11) : la feuille « Installer » du domaine (ouverte d'office pour un compte neuf) n'est pas un défaut de la page : le robot la ferme par ✕ et mesure ensuite. */
 const feuille = await (async () => { const b6 = await chromium.launch(exe ? { executablePath: exe } : {}); const p6 = await b6.newPage({ viewport: { width: 390, height: 844 } });

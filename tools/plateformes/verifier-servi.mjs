@@ -25,7 +25,7 @@ export function fermerFeuilleInstalleur() {
   if (x) x.click(); else f.remove();
   return true;
 }
-export const aCorriger = (r) => !!(r.err || r.sousPastille || (process.env.SABOTAGE !== 'cache' && r.cache > 0));
+export const aCorriger = (r) => !!(r.err || r.sousPastille || (process.env.SABOTAGE !== 'cache' && r.cache > 0) || (process.env.SABOTAGE !== 'double' && r.badgesVisibles > 1));
 
 /* Écrans supplémentaires PROPRES À CE ROBOT (Kevin 29.10 : « portrait ET paysage sur tous les appareils, toujours » —
  * minimum iPhone 390x844 et 844x390, iPad 820x1180 et 1180x820). Définis ICI, pas ajoutés à ECRANS (partagé par
@@ -75,6 +75,12 @@ export function mesurerServi() {
   /* versions : jamais un texte libre, seulement ce qui ressemble à « v1.2.3 » */
   const motV = /^v\d+(?:\.\d+)+$/i;
   const badges = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim())).map((e) => (e.textContent || '').trim()).slice(0, 3);
+  /* 6.11 (Studio : « v9.22.11 » DEUX FOIS l'une sur l'autre) : `badges` compte aussi une pastille cachée (display:none) ; ce qui fait le défaut,
+     c'est le nombre de pastilles réellement VISIBLES. On le mesure (nombre seulement) et on note l'id de celles qui se voient. */
+  const versionVisible = (e) => { for (let a = e; a && a !== document.documentElement; a = a.parentElement) { const st = getComputedStyle(a); if (st.display === 'none' || st.visibility === 'hidden' || parseFloat(st.opacity) === 0) return false; } const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const pastillesVisibles = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim()) && versionVisible(e));
+  const badgesVisibles = pastillesVisibles.length;
+  const badgesVisiblesQui = pastillesVisibles.slice(0, 3).map((e) => (e.closest('#kdmc-version-badge') ? 'module' : (e.id ? '#' + e.id : e.tagName.toLowerCase())));
   /* le plus large élément qui dépasse l'écran (débordement horizontal) : sélecteur + nombres, jamais de texte.
      29.10 : un élément contenu par un parent qui coupe ou fait défiler (grille dans .scroll) ne fait pas déborder la page : ignoré. */
   const L = document.documentElement.clientWidth; let deb = null;
@@ -87,7 +93,7 @@ export function mesurerServi() {
   return {
     debordeur: deb,
     appVer: document.documentElement.getAttribute('data-app-ver') || '',
-    badges,
+    badges, badgesVisibles, badgesVisiblesQui,
     pastilleBas: pb ? Math.round(pb.bottom) : null,
     premier,
     sousPastille: !!(pb && premier && premier.top < pb.bottom && premier.gauche < pb.right && premier.droite > pb.left),
@@ -158,7 +164,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), haut: m.haut, deborde: m.deborde, petit: m.petit, js: m.js });
         } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90); }
         sortie.push(r);
-        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.err ? ' · ' + r.err : ''}`);
+        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ']' : ''} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.err ? ' · ' + r.err : ''}`);
       }
       await ctx.close();
     }

@@ -84,6 +84,7 @@ if (J) {
   let annu = null; try { annu = JSON.parse(mt[1]); } catch (e) { /* */ }
   const attendu = Object.fromEntries(B.map((b) => [b.branche, b.session_id]));
   chk(annu && JSON.stringify(annu) === JSON.stringify(attendu), 'le tableau KDMC porte la même table branche → session que l\'annuaire' + (annu ? '' : ' (table introuvable)'));
+  chk(!/Domain Kdmc|Pc config|01Xncr1t3EoT4hLpf7a35ajY|01WC73ptv3SHnNNfDTPnycPf|01LNvWeCyWxQqfNoTPLahTJJ/.test(t), 'tableau KDMC : aucun ancien nom de session (« Domain Kdmc », « Pc config ») ni session Lenovo archivée — les noms sont ceux de l\'app (titre_telephone)');
   chk(t.includes('id="annuaire-lien" href="' + ANN_URL + '"') && !SABOTAGE || (SABOTAGE && t.includes(ANN_URL)), 'tableau KDMC : raccourci « Annuaire des branches » vers ' + ANN_URL);
   const a = SRC['kdmc-home/admin/admin.js'];
   chk(a.includes("card('🧭', 'Annuaire des branches', ") && a.includes(ANN_URL), 'admin : tuile « Annuaire des branches » vers ' + ANN_URL);

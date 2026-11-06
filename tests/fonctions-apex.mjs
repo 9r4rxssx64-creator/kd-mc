@@ -359,7 +359,14 @@ try {
   const ko = RES.filter((r) => r.ok === false), ok = RES.filter((r) => r.ok === true), nt = RES.filter((r) => r.ok === null);
   const lignes = RES.map((r) => `${r.ok === true ? '✅' : r.ok === false ? '❌' : '➖'} ${r.nom} — ${r.detail}`);
   for (const r of ko) annot('error', 'KO : ' + r.nom.slice(0, 70), String(r.detail).slice(0, 3500));
-  for (let i = 0; i < lignes.length; i += 7) annot('notice', `Fonctions Apex (${Math.floor(i / 7) + 1}/${Math.ceil(lignes.length / 7)})`, lignes.slice(i, i + 7).join('\n'));
+  /* Limites de GitHub (mesurées 05.11, run 42084079235) : 10 annotations « notice » par étape, 900 caractères gardés par annotation — les 2 derniers blocs (écran Réglages) et la ligne « bilan » disparaissaient. Donc : bilan d'abord, blocs remplis jusqu'à 880 caractères, 8 blocs au plus, et le détail COMPLET dans le résumé du job (GITHUB_STEP_SUMMARY, sans limite). */
   annot(ko.length ? 'error' : 'notice', 'Fonctions Apex — bilan', `${ok.length} OK · ${ko.length} KO · ${nt.length} non testées` + (ko.length ? ' · KO : ' + ko.map((r) => r.nom).join(' | ').slice(0, 500) : ''));
+  const courtes = RES.map((r) => `${r.ok === true ? '✅' : r.ok === false ? '❌' : '➖'} ${r.nom.slice(0, 80)} — ${String(r.detail).slice(0, r.ok === true ? 45 : 110)}`);
+  const blocs = []; let cur = '';
+  for (const l of courtes) { if (cur && (cur + '\n' + l).length > 860) { blocs.push(cur); cur = l; } else cur = cur ? cur + '\n' + l : l; }
+  if (cur) blocs.push(cur);
+  const garde = blocs.slice(0, 8); if (blocs.length > 8) garde[7] += '\n… (suite : voir le résumé du job)';
+  garde.forEach((b, i) => annot('notice', `Fonctions Apex (${i + 1}/${garde.length})`, b));
+  try { if (process.env.GITHUB_STEP_SUMMARY) (await import('node:fs')).appendFileSync(process.env.GITHUB_STEP_SUMMARY, '## Fonctions Apex — détail complet\n\n' + lignes.map((l) => '- ' + l).join('\n') + '\n'); } catch { /* le résumé est un plus */ }
   process.exitCode = ko.length ? 1 : 0;
 }

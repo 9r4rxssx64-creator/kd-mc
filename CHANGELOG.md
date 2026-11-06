@@ -40,6 +40,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - **Une seule source** `tools/shared/horaires-amenages.js` (copie identique `tools/departs/`), utilisée par CMCteams et la light : `test:departs-compare` 0 écart.
 - **Gardes** : `npm run test:horaires-amenages` (35 ✅ ; `SABOTAGE=1` → 14 ❌) ; robot réel `departs-equipes` contrôle I (‹employé›, novembre c4, aucun départ) + `SABOTAGE=amenage` rouge. `test:entetes-light`, qui était déjà rouge sur main (52 anomalies : élèves en formation et septembre mal compris par le test), est réparé : 0 anomalie.
 
+## Robot Apex Chat — le rapport tient dans les limites de GitHub, l'écran Réglages redevient lisible (2026-11-06)
+- Constat : sur 13 annotations émises, GitHub n'en montre que 10 (900 caractères chacune) : la ligne « bilan » et les 2 derniers blocs (Réglages) manquaient depuis le 5.11. Le robot met maintenant le bilan en premier, remplit au plus 8 blocs de 860 caractères et écrit le détail complet dans le résumé du job.
+- Garde `tests/verify-annotations-robot-apex.mjs` : 5 ✅ ; `SABOTAGE=1` (ancien découpage) : 2 ❌.
+
 ## Apex Chat 1.1.359 — le bouton « ⋯ » de chaque ligne de la liste des chats fait 44×44 px (2026-11-05)
 - Mesuré par le robot connecté (run 42081611982, écran Chats, comptes A et B) : `button 27x35 « ⋯ » dans div.conv-item` ×2, sous les 44 px de la règle frontend. Le bouton d'actions d'une conversation (épingler, sourdine…) est maintenant la classe `.conv-more` (44×44 px, centré) au lieu d'un style en ligne.
 - Mesure avant/après et garde : `tests/verify-entete-chat-44.mjs` (vrai Chromium, CSS réel, 390 et 1250 px) : 16 ✅ ; `SABOTAGE=1` (retire la taille minimale) : 9 ❌. Contacts, Appels et la conversation : 0 bouton sous 44 px ; 0 identifiant en double ; 0 lien vide.

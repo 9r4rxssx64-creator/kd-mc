@@ -24,8 +24,9 @@
  * SOBRE (règles « gratuit », « iPhone », « performe ») :
  *  - UN SEUL contexte WebGL pour toute la page (iOS en limite le nombre) ; chaque
  *    personnage a un simple canvas 2D qui reçoit sa copie ;
- *  - rien ne tourne si la page est cachée, si le personnage est hors écran, si l'app
- *    l'a mis en pause (body.javis-repos) ou s'il joue une vidéo (.vid) ;
+ *  - rien ne tourne si la page est cachée, si le personnage est hors écran ou s'il joue
+ *    une vidéo (.vid) ; au repos (body.javis-repos) il ralentit à 10 images/s sans jamais
+ *    s'arrêter ; « ?fps=1 » affiche la cadence réelle ;
  *  - 30 images/s pour un petit personnage (bouton flottant), 60 au-delà ;
  *  - « réduire les animations » (réglage iPhone) : on respecte, il reste immobile ;
  *  - pas de WebGL, image qui ne charge pas, contexte perdu : on retire le canvas, le
@@ -34,7 +35,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.3';
+  var VERSION = '2.4';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -1126,6 +1127,9 @@
       e.regard = (isFinite(lx) || isFinite(ly)) ? { x: (lx || 0) / 3.2, y: (ly || 0) / 2.2, actif: true } : null;
     } catch (_) { e.regard = null; }
     var out = poser(e, h, t, dt, niveau, !!e.p3d), M = e.M;
+    /* empreinte de la POSE (somme des matrices des os) : change quand le corps bouge, lisible sans lire les pixels
+       d'un canvas WebGL (qui se lisent vides hors de l'image en cours) — témoin pour les robots de mesure */
+    try { var ps = 0; for (var pi = 0; pi < M.length; pi++) { var mm = M[pi]; ps += mm[0] + mm[1] + mm[2] + mm[3] + mm[4] * 7 + mm[5] * 13; } e.pose = Math.round(ps * 1000) / 1000; } catch (_) {}
     if (e.p3d) {
       /* LA 3D : même humeur, même bouche (lip-sync), même regard, dans le même canvas */
       var ok3 = false;
@@ -1171,6 +1175,23 @@
     e.vue = (e.vue || 0) + 1;
   }
 
+  /* « ?fps=1 » dans l'adresse (ou kdmc_fps=1 mémorisé) : un petit compteur lisible par Kevin, en bas à gauche, ex. « Bee 28 img/s ».
+     Sert à mesurer la fluidité sur SON appareil au lieu de la deviner. Rien d'affiché sans ce réglage. */
+  var fpsVeut = null, fpsNoeud = null;
+  function afficherFps() {
+    if (fpsVeut === null) {
+      fpsVeut = false;
+      try { fpsVeut = /[?&]fps=1(&|$)/.test(location.search) || localStorage.getItem('kdmc_fps') === '1'; } catch (_) {}
+    }
+    if (!fpsVeut || !document.body) return;
+    if (!fpsNoeud) {
+      fpsNoeud = document.createElement('div');
+      fpsNoeud.id = 'mrn-fps';
+      fpsNoeud.setAttribute('style', 'position:fixed;left:6px;bottom:6px;z-index:2147483646;background:rgba(0,0,0,.72);color:#fff;font:600 13px/1.3 system-ui,sans-serif;padding:4px 8px;border-radius:8px;pointer-events:none');
+      document.body.appendChild(fpsNoeud);
+    }
+    fpsNoeud.textContent = suivis.map(function (e) { return e.nom + ' ' + Math.round(e.ips || 0) + ' img/s'; }).slice(0, 4).join(' · ');
+  }
   function demarrer() { if (!boucle && suivis.length) boucle = requestAnimationFrame(tour); }
   function tour(ms) {
     boucle = 0;
@@ -1181,12 +1202,17 @@
       for (var i = suivis.length - 1; i >= 0; i--) {
         var e = suivis[i];
         if (!document.contains(e.img)) { detacher(e, false); continue; }   /* l'app a redessiné : on oublie */
-        if (pause && e.rig.closest && e.rig.closest('#javis-root')) continue;
+        /* au repos (20 s sans geste) le corps ne s'arrête JAMAIS (Kevin : « tout le corps bouge, partout, toujours ») :
+           il ralentit à 10 images/s, assez pour respirer, battre des ailes et cligner, sans vider la batterie */
+        if (pause && e.rig.closest && e.rig.closest('#javis-root') && e.dern && now - e.dern < 1 / 10) { actif = true; continue; }
         if (!e.vu || (!e.p3d && /(^|\s)vid(\s|$)/.test(e.rig.className))) continue;
         /* petit personnage (bouton flottant) : 30 images/s suffisent */
         if (((e.taille && e.taille < 140) || !gl) && e.dern && now - e.dern < 1 / 31) { actif = true; continue; }
         try { dessiner(e, now, e.dern ? Math.min(0.1, now - e.dern) : dt); e.dern = now; actif = true; }
         catch (err) { detacher(e, true); }
+        /* cadence réellement obtenue (images/s, relue chaque seconde) : lue par etat() et par l'affichage ?fps=1 */
+        if (!e.ipsT) { e.ipsT = now; e.ipsN = e.vue || 0; }
+        else if (now - e.ipsT >= 1) { e.ips = ((e.vue || 0) - e.ipsN) / (now - e.ipsT); e.ipsT = now; e.ipsN = e.vue || 0; afficherFps(); }
       }
     }
     dernier = now;
@@ -1221,7 +1247,7 @@
     humeur: humeur,
     balayer: balayer,
     /* pour les tests : combien de personnages bougent, et combien d'images chacun */
-    etat: function () { return suivis.map(function (e) { return { nom: e.nom, oeil: e.expr ? +e.expr.sy.toFixed(2) : null, images: e.vue || 0, humeur: humeurDe(e), taille: e.taille, image: !!e.image, p3d: !!(e.p3d && e.p3d.ok), ctx3D: e.p3d ? e.ctx3D : null }; }); },
+    etat: function () { return suivis.map(function (e) { return { nom: e.nom, oeil: e.expr ? +e.expr.sy.toFixed(2) : null, images: e.vue || 0, ips: e.ips ? +e.ips.toFixed(1) : 0, pose: e.pose || 0, humeur: humeurDe(e), taille: e.taille, image: !!e.image, p3d: !!(e.p3d && e.p3d.ok), ctx3D: e.p3d ? e.ctx3D : null }; }); },
     actif: function () { return (!!gl || peutDeux()) && !perdu && !REDUIT; },
     mode: function () { return gl ? 'webgl' : 'canvas2d'; },
     /* la 3D d'office : veut-on la lancer (sinon l'appelant garde ses vidéos / dessins) ? où en est le moteur ? */

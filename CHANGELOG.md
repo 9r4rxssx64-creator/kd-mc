@@ -4,6 +4,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Bee v1.31 (marionnette 2.4) — le corps ne s'arrête plus au repos + compteur d'images « ?fps=1 » (2026-11-06)
+- **Constat** (pont 1820/1822, Lenovo i3-N305, Chrome de Kevin) : version v1.30 bien servie sur 5 pages, mais « mouvement du corps NON constaté », cadence 1,2 img/s au repos, 5 img/s après un clic.
+- **Cause trouvée dans mon code** : après 20 s sans geste, le widget pose `body.javis-repos` et la marionnette **sautait entièrement** le dessin du bouton flottant (`continue`) : au repos, le corps était figé — contraire à la règle « tout le corps bouge, partout, toujours » (Kevin 03.10).
+- **Corrigé** : au repos le corps ralentit à **10 images/s** (respire, bat des ailes, cligne) au lieu de s'arrêter ; `etat()` donne la cadence réelle (`ips`) et une empreinte de la pose (`pose`, lisible sans lire les pixels d'un canvas WebGL) ; **`?fps=1`** (ou `kdmc_fps=1`) affiche « Bee 28 img/s » en bas à gauche pour que Kevin lise la fluidité de SON appareil.
+- **Gardes** : `tests/verify-marionnette.mjs` 101 contrôles (nouveaux : vivant au repos ≥ 4 images/s, ralenti, pose qui change, compteur) ; sabotage (retour de l'arrêt complet) → 2 rouges prouvés ; `javis-bee` 97, `bee-corps` 27, `bee-maj-auto` 9, `3d` 73, `perso3d` 61, `bee-plateformes` 58, `lingua-bee` 13, `lingua-maj` 18 verts.
+- **Non mesuré ici** : le rendu sur le Lenovo / l'iPhone après mise en ligne (confié au Lenovo `pc-config` et à Kevin avec `?fps=1`) ; `lingua/marionnette.js` recopié, la version de Lingua est à passer par lingua-cloud.
+
 ## Créa Studio v9.22.11 — Avatars caméra : fluide, net, qui copie vraiment les mouvements (2026-11-05)
 - **Kevin** (via pont 1817–1822) : « le rendu de la vidéo est vraiment moyen, voire bof… tout bof » (fluidité, netteté, ressemblance, mouvements). Mesuré par le Lenovo (i3-N305) : suivi ~10,9/s, avatar dessiné à ce même rythme, mouvements très faibles (bouche 0,076 max, tête −0,07…+0,02), image affichée 113×201 px sur écran bas.
 - **Corrigé** : (1) le dessin est découplé du suivi : lissage par image affichée (≈ 60/s avec la caméra), le suivi n'est plus un « diaporama » ; (2) gains calibrés qui s'adaptent à la personne (pic glissant, demi-vie 10 s, plafonds par mouvement) + zones mortes + recentrage lent de la tête et du regard ; (3) pause de détection (½ temps de détection) pour que l'écran respire ; (4) écran de l'avatar plus grand (42 dvh, 52 dvh sur écran ≤ 560 px de haut) ; (5) bouton « Recentrer » ; (6) compteur `?fps=1` (rendu / suivi / détection / taille) et `Avatar.etat().perf`.

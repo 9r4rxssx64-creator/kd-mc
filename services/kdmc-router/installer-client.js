@@ -57,6 +57,15 @@ export const INSTALLER_JS = String.raw`(function () {
              « fixed » ni « sticky » (mise en page en grille) échappait à la règle ci-dessus et la pastille la recouvrait. Règle générale, comme la pastille « Installer » :
              si, sous la pastille, un élément CLIQUABLE est caché, on essaie d'autres endroits et on garde le premier qui ne cache rien. */
           try {
+            var texte = function (n) {   /* vrai texte sous la pastille : on compare avec les lignes réellement écrites, pas avec la boîte entière de l'élément */
+              var r = b.getBoundingClientRect();
+              for (var c = n.firstChild; c; c = c.nextSibling) {
+                if (c.nodeType !== 3 || !/\S/.test(c.nodeValue)) continue;
+                var rg = document.createRange(); rg.selectNodeContents(c); var rs = rg.getClientRects();
+                for (var k2 = 0; k2 < rs.length; k2++) { var q = rs[k2]; if (r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top) return true; }
+              }
+              return false;
+            };
             var sous = function () {
               var r = b.getBoundingClientRect(), pts = [[.15, .5], [.5, .5], [.85, .5], [.15, .85], [.85, .85]];
               for (var i2 = 0; i2 < pts.length; i2++) {
@@ -64,7 +73,7 @@ export const INSTALLER_JS = String.raw`(function () {
                 for (var j = 0; j < l.length; j++) {
                   var n = l[j]; if (n === b || n === document.body || n === document.documentElement) continue;
                   if (n.getAttribute && n.getAttribute('data-kdmc-installer')) continue;
-                  if (cliquable(n)) return true; break;
+                  if (cliquable(n) || texte(n)) return true; break;   /* 6.11 soir (capture de Kevin : « Vue admin » cachait le titre « Inscriptions à valider ») : un TEXTE caché compte autant qu'un bouton */
                 }
               }
               return false;
@@ -81,6 +90,7 @@ export const INSTALLER_JS = String.raw`(function () {
             }
           } catch (e4) { /* mesure impossible : la pastille reste où elle est */ }
         };
+        var tScroll = 0; window.addEventListener('scroll', function () { clearTimeout(tScroll); tScroll = setTimeout(degager, 500); }, true);   /* le contenu défile sous la pastille : on la remet au bon endroit quand le défilement s'arrête */
         degager(); setTimeout(degager, 800); setTimeout(degager, 3000); setTimeout(degager, 8000); setTimeout(degager, 15000); window.addEventListener('resize', degager);
         /* 23.10 soir (Kevin : « Tableau KDMC a disparu… je ne suis pas connecté en admin… il était censé y avoir un bouton admin partout ») :
            le marqueur dure 1 an, la session admin moins. Le bouton affichait « 👑 Vue admin » alors que l'admin avait expiré, puis disparaissait.

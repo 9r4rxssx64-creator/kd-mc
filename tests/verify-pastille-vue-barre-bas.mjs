@@ -43,6 +43,29 @@ for (const [w, h] of [[1280, 720], [390, 844]]) {
   ok(!R.absent && R.dedans, w + '×' + h + ' : la pastille reste entièrement dans l\'écran', R);
   await ctx.close();
 }
+
+/* B. (capture de Kevin, 6.11 soir) : pas de bouton dessous, mais un TITRE de panneau en bas à gauche : la pastille ne doit pas le cacher non plus */
+const PAGE_TEXTE = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#0a1a0c;color:#fff;font:16px sans-serif}h2{position:absolute;left:12px;bottom:12px;margin:0;padding:14px 8px;font-size:20px}</style>
+<main>Panneau de messages</main><h2 id="titre">Inscriptions à valider</h2>`;
+for (const [w, h] of [[390, 844], [1280, 720]]) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  await p.route('**/__admin/vue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, mode: 'admin' }) }));
+  await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_TEXTE }));
+  await p.goto('https://kdmc.test/');
+  await p.evaluate(() => { document.cookie = 'kdmc_k=1; path=/'; });
+  await p.addScriptTag({ content: SRC });
+  await p.waitForSelector('[data-kdmc-vue]', { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(1500);
+  const R = await p.evaluate(() => {
+    const b = document.querySelector('[data-kdmc-vue]'); if (!b) return { absent: true };
+    const r = b.getBoundingClientRect(), q = document.getElementById('titre').getBoundingClientRect();
+    return { absent: false, recouvre: r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top, rect: [Math.round(r.left), Math.round(r.top)] };
+  });
+  ok(!R.absent && !R.recouvre, w + '×' + h + ' : la pastille ne cache pas le titre « Inscriptions à valider »', R);
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

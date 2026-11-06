@@ -108,6 +108,21 @@ for (const [w, h] of [[390, 844], [1280, 720]]) {
   ok(!R.absent && R.recouvre.length === 0, w + '×' + h + ' : la pastille 📲 ne recouvre aucun bouton (six coins pris)', R);
   await ctx.close();
 }
+
+/* E. (pont 1879) la pastille « ← Portail » du domaine (fixe, en haut à gauche, 8 px + ~104 px de large) ne recouvre plus la marque de Sourcing */
+for (const f of ['shops/sourcing/index.html', 'shops/sourcing/supplier.html']) {
+  const html = readFileSync(f, 'utf8');
+  for (const [w, h] of [[390, 844], [1280, 720]]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+    const p = await ctx.newPage();
+    await p.route('https://kdmc.test/**', (r) => r.request().url().endsWith('/x') ? r.fulfill({ status: 200, contentType: 'text/html', body: html }) : r.abort());
+    await p.goto('https://kdmc.test/x', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await p.evaluate(() => { const a = document.createElement('a'); a.href = 'https://kd-mc.com/'; a.id = 'portail-pilule'; a.textContent = '← Portail'; a.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 14px;box-sizing:border-box;border-radius:22px;font:700 15px/1 sans-serif;z-index:2147483000'; document.body.appendChild(a); });
+    const R = await p.evaluate(() => { const a = document.getElementById('portail-pilule').getBoundingClientRect(), b = document.querySelector('a.brand'); if (!b) return { absent: true }; const q = b.getBoundingClientRect(); return { absent: false, recouvre: a.left < q.right && a.right > q.left && a.top < q.bottom && a.bottom > q.top, pilule: [Math.round(a.left), Math.round(a.right)], marque: [Math.round(q.left), Math.round(q.right)] }; });
+    ok(!R.absent && !R.recouvre, f.split('/').pop() + ' ' + w + '×' + h + ' : « ← Portail » ne recouvre pas la marque Sourcing', R);
+    await ctx.close();
+  }
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

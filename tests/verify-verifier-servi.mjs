@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -72,6 +72,13 @@ const feuille = await (async () => { const b6 = await chromium.launch(exe ? { ex
   await p6.goto(f('feuille.html', '<!doctype html><body style="margin:0"><a id="acheter" href="#" style="display:block;width:200px;height:44px;margin:300px 20px">Acheter</a><div id="fond" style="position:fixed;inset:0;z-index:2147482500"></div><div data-kdmc-installer="feuille" style="position:fixed;left:0;right:0;bottom:0;height:200px;z-index:2147482600"><button aria-label="Fermer" type="button">✕</button></div><script>document.querySelector(\'[aria-label=Fermer]\').onclick=function(){document.getElementById("fond").remove();document.querySelector("[data-kdmc-installer]").remove();}</script></body>'));
   const avant = (await p6.evaluate(mesurer, true)).cache; const ferme = await p6.evaluate(fermerFeuilleInstalleur); const apres = (await p6.evaluate(mesurer, true)).cache; await b6.close(); return { avant, ferme, apres }; })();
 ok('2j. la feuille « Installer » du domaine est fermée avant la mesure (elle couvrait la page)', feuille.avant > 0 && feuille.ferme === true && feuille.apres === 0, JSON.stringify(feuille));
+/* 2j2 (6.11, Servi 42313704615) : la feuille « Installer » s'ouvre TARD (après les fermetures du robot, pendant la mesure) : on remesure après l'avoir refermée.
+   SABOTAGE=feuille-tardive : l'ancienne mesure unique → « cache » > 0 → rouge. */
+const tardive = await (async () => { const b7 = await chromium.launch(exe ? { executablePath: exe } : {}); const p7 = await b7.newPage({ viewport: { width: 390, height: 844 } });
+  await p7.goto(f('feuille-tardive.html', '<!doctype html><body style="margin:0"><a id="acheter" href="#" style="display:block;width:200px;height:44px;margin:300px 20px">Acheter</a><script>setTimeout(function(){var d=document.createElement("div");d.id="fond";d.style.cssText="position:fixed;inset:0;z-index:2147482500";var s=document.createElement("div");s.setAttribute("data-kdmc-installer","feuille");s.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:2147482600;height:50px";var x=document.createElement("button");x.setAttribute("aria-label","Fermer");x.textContent="x";x.onclick=function(){d.remove();s.remove()};s.appendChild(x);document.body.appendChild(d);document.body.appendChild(s)},300)</script>'));
+  await p7.waitForTimeout(700);
+  const m = process.env.SABOTAGE === 'feuille-tardive' ? await p7.evaluate(mesurer, true) : await mesurerSansFeuille(p7, true, {}); await b7.close(); return m; })();
+ok('2j2. une feuille « Installer » ouverte pendant la mesure est refermée puis la page remesurée', tardive && tardive.cache === 0, JSON.stringify(tardive && tardive.cache));
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

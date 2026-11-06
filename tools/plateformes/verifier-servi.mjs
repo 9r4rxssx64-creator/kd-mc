@@ -13,6 +13,20 @@
 import { chromium, webkit, devices } from 'playwright';
 import { ECRANS, mesurer, connecterAdmin, lectureSeule, fermerFeuilleInstalleur } from './verif-affichage-domaine.mjs';
 export { fermerFeuilleInstalleur };
+/** 6.11 (apex-cloud, Servi 42313704615 : Apex AI iphone-13 et portable « cache 26-27 », installeur « non ») : la feuille « 📲 Installer » du domaine s'ouvre
+ *  d'elle-même pour un compte connecté sur un appareil neuf, 1,5 s APRÈS que le domaine a répondu — parfois après les deux fermetures du robot. Elle couvre alors
+ *  toute la page, et le robot comptait 27 boutons « cachés » qui ne le sont pas. On ferme, on mesure, on referme : si elle s'est ouverte pendant la mesure, on remesure
+ *  (jusqu'à 3 fois). Un bouton réellement recouvert par autre chose reste signalé. */
+export async function mesurerSansFeuille(page, tel, r = {}) {
+  let m = null;
+  for (let i = 0; i < 3; i++) {
+    if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; await page.waitForTimeout(400); }
+    m = await page.evaluate(mesurer, tel).catch(() => null);
+    if (!(await page.evaluate(fermerFeuilleInstalleur).catch(() => false))) return m;
+    r.installeur = true; await page.waitForTimeout(400);
+  }
+  return m;
+}
 /** Retire tout texte de page (entre guillemets) d'un exemple de recouvrement : il ne reste que sélecteurs, position et z-index. */
 export const sansTexte = (ex) => (Array.isArray(ex) ? ex : []).map((x) => String(x).replace(/"[^"]*"/g, '…').slice(0, 160));
 /** Une page à corriger : erreur, titre sous la pastille, OU un bouton dont le centre est recouvert par un autre élément. */
@@ -171,7 +185,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           r.beeCadre = cadre ? await cadre.evaluate(() => String(window.JAVIS_VER || '')).catch(() => '?') : '';
           if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; await page.waitForTimeout(300); }   /* la feuille peut s'ouvrir APRÈS la 1re fermeture (iPhone paysage, 6.11) */
           Object.assign(r, await page.evaluate(mesurerFluidite).catch(() => ({})));
-          const m = await page.evaluate(mesurer, tel).catch(() => null);
+          const m = await mesurerSansFeuille(page, tel, r);
           /* 6.11 (Kevin : « creuse toujours pour savoir ») : Servi comptait « cache 4 » sur kit.kd-mc.com sans dire QUI cache QUOI, et ne le comptait pas
              « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré
              (dépôt public) — et un bouton recouvert compte comme un défaut. */

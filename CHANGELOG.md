@@ -13,6 +13,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - **Corrigé** (`tools/arbre/session/robots-recherche.mjs`) : un vrai moteur (Bing, Brave) est lu par le navigateur du Lenovo, avec des requêtes qui portent le nom ET un proche DÉFUNT (jamais un vivant : `contexteDe`) ; sources régionales (presse numérisée suisse pour la Suisse romande, Monaco, Nice) ; la consigne cite les proches pour reconnaître la bonne personne ; `scorerPiste` : nom + un proche dans le même extrait = piste FORTE (même sans année) ; un mariage déjà établi n'est plus un manque ; l'ordre privilégie parents, naissance, mariage.
 - **Garde** : `npm run test:robots-recherche` (+9 contrôles : proches défunts seulement, requête de couple, moteur, région, piste forte par un proche). **Non mesuré** : le rendement réel (le Lenovo est arrêté depuis 20h35 UTC) ; à mesurer à la prochaine collecte.
 
+## Bee v1.36 (marionnette 2.6) — le compteur ne dit plus « 0 img/s » pour un Bee caché (2026-11-06, nuit)
+- Capture de Kevin (iPhone) : « bee/v3 30 img/s · bee/v3 0 img/s ». **Lu** : le Bee flottant tourne à 30 images/s (le plafond voulu d'un petit personnage) ; le second est la tête de la fenêtre de discussion FERMÉE, qui mesure 0×0 px et n'est donc pas dessinée. Reproduit en local, mot pour mot (Chromium iPhone 13, vrai widget).
+- **Corrigé** : un personnage non dessiné s'affiche « caché », un personnage visible dont la mesure n'est pas encore faite « … » ; un visible dont la cadence tomberait vraiment à 0 reste affiché « 0 img/s » (c'est le signal d'un vrai gel).
+- **Garde** : `tests/verify-marionnette.mjs` (105 contrôles, +2) ; rouge avec la marionnette 2.5 (« donkey 60 img/s · donkey 0 img/s »), vert avec la 2.6.
+
 ## Bee v1.35 (marionnette 2.5) — le compteur « ?fps=1 » s'affiche enfin (2026-11-06, soir)
 - Retour de Kevin : « je n'ai rien vu » après `https://kd-mc.com/?fps=1`. **Cause (mon code)** : Bee tourne dans un CADRE (`/__javis/cadre`) dont l'adresse n'a jamais `?fps=1` ; le compteur lisait l'adresse du cadre et se serait dessiné dans un cadre minuscule.
 - **Corrigé** : le compteur lit l'adresse de la PAGE qui porte le cadre (même origine) et se pose dans la page ; `?fps=1` est mémorisé (`kdmc_fps`), `?fps=0` l'efface.

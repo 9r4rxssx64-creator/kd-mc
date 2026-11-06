@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.35';
+  var JAVIS_VER = 'v1.36';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -2757,7 +2757,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.5';
+  var VERSION = '2.6';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -3926,7 +3926,13 @@
       fpsNoeud.setAttribute('style', 'position:fixed;left:6px;bottom:6px;z-index:2147483646;background:rgba(0,0,0,.72);color:#fff;font:600 13px/1.3 system-ui,sans-serif;padding:4px 8px;border-radius:8px;pointer-events:none');
       if (!ancien) fpsDoc.body.appendChild(fpsNoeud);
     }
-    fpsNoeud.textContent = suivis.map(function (e) { return e.nom + ' ' + Math.round(e.ips || 0) + ' img/s'; }).slice(0, 4).join(' · ');
+    /* Un personnage qui n'est pas dessiné (la tête cachée d'un panneau fermé mesure 0 px) ne tourne pas : « caché », jamais « 0 img/s »
+       (Kevin 6.11 : « bee/v3 30 img/s · bee/v3 0 img/s » faisait croire à un Bee figé). Un visible dont la cadence tombe à 0 reste affiché « 0 img/s ». */
+    fpsNoeud.textContent = suivis.map(function (e) {
+      if (!e.vu || !e.taille) return e.nom + ' caché';
+      if (e.ips === undefined) return e.nom + ' …';
+      return e.nom + ' ' + Math.round(e.ips) + ' img/s';
+    }).slice(0, 4).join(' · ');
   }
   function demarrer() { if (!boucle && suivis.length) boucle = requestAnimationFrame(tour); }
   function tour(ms) {

@@ -66,6 +66,24 @@ for (const [w, h] of [[390, 844], [1280, 720]]) {
   ok(!R.absent && !R.recouvre, w + '×' + h + ' : la pastille ne cache pas le titre « Inscriptions à valider »', R);
   await ctx.close();
 }
+
+/* C. (pont 1882, iPhone SE : le chat de Javis occupe tout l'écran) : aucun endroit libre → la pastille se réduit à une languette au bord, jamais plus de 44 px de large */
+const PAGE_PLEIN = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%}textarea{position:fixed;inset:0;width:100%;height:100%;border:0;box-sizing:border-box;font:16px sans-serif}</style><textarea id="javis-input">Écris à Javis</textarea>`;
+{
+  const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  await p.route('**/__admin/vue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, mode: 'admin' }) }));
+  await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_PLEIN }));
+  await p.goto('https://kdmc.test/');
+  await p.evaluate(() => { document.cookie = 'kdmc_k=1; path=/'; });
+  await p.addScriptTag({ content: SRC });
+  await p.waitForSelector('[data-kdmc-vue]', { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(1500);
+  const R = await p.evaluate(() => { const b = document.querySelector('[data-kdmc-vue]'); if (!b) return { absent: true }; const r = b.getBoundingClientRect(); return { absent: false, largeur: Math.round(r.width), hauteur: Math.round(r.height), dedans: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight }; });
+  ok(!R.absent && R.largeur <= 44 && R.hauteur >= 44 && R.dedans, 'iPhone SE, champ plein écran : la pastille devient une languette (≤ 44 px de large, ≥ 44 px de haut, dans l\'écran)', R);
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

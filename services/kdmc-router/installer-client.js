@@ -36,6 +36,7 @@ export const INSTALLER_JS = String.raw`(function () {
         /* 24.10 (capture de Kevin, admin v2.7.13) : le badge de version est aussi en bas à gauche — dans l'app installée ils se chevauchaient.
            Le bouton se pose AU-DESSUS de tout ce qui occupe déjà son coin (badge chargé plus tard : on revérifie). */
         var degager = function () {
+          b.style.left = '8px'; ['width', 'min-width', 'overflow', 'white-space'].forEach(function (c) { b.style.removeProperty(c); }); b.style.padding = '0 14px'; b.style.borderRadius = '22px'; b.style.removeProperty('top'); b.style.removeProperty('right');   /* repart de la forme pleine : une languette se redéploie dès que la place se libère */
           var bas = 8, autres = document.querySelectorAll('#kdmc-version-badge');
           for (var k = 0; k < autres.length; k++) {
             var o = autres[k].getBoundingClientRect(), m = b.getBoundingClientRect();
@@ -86,7 +87,19 @@ export const INSTALLER_JS = String.raw`(function () {
                 AUTRES[a2].forEach(function (d) { var kv = d.split(/:(.+)/); b.style.setProperty(kv[0], kv[1]); });
                 if (!sous()) { garde = null; break; }
               }
-              if (garde !== null) { ['top', 'bottom', 'left', 'right'].forEach(function (c) { b.style.removeProperty(c); }); b.style.left = '8px'; b.style.bottom = garde; }   /* aucun endroit libre : retour au coin d'origine */
+              if (garde !== null) {
+                /* 6.11 soir (pont 1882 : « Vue admin » sur le champ de saisie du chat de Javis, iPhone SE, le chat occupe toute la hauteur) : aucun endroit libre →
+                   LANGUETTE : la pastille se réduit à 44 px (la couronne seule), collée au bord gauche, au premier endroit où elle ne cache plus rien ; sinon en bas à gauche. */
+                var LANG = ['bottom:calc(env(safe-area-inset-bottom,0px) + 84px)', 'top:50%', 'top:calc(env(safe-area-inset-top,0px) + 64px)', 'bottom:calc(env(safe-area-inset-bottom,0px) + 8px)', 'bottom:calc(env(safe-area-inset-bottom,0px) + 140px)'];
+                var restee = false, avantTxt = b.style.cssText;
+                for (var l2 = 0; l2 < LANG.length && !restee; l2++) {
+                  ['top', 'bottom', 'left', 'right'].forEach(function (c) { b.style.removeProperty(c); });
+                  var kvl = LANG[l2].split(/:(.+)/); b.style.setProperty(kvl[0], kvl[1]); b.style.left = '0';
+                  b.style.width = '44px'; b.style.minWidth = '44px'; b.style.padding = '0 0 0 9px'; b.style.overflow = 'hidden'; b.style.whiteSpace = 'nowrap'; b.style.borderRadius = '0 22px 22px 0';
+                  if (!sous()) restee = true;
+                }
+                if (!restee) { ['top', 'bottom', 'left', 'right'].forEach(function (c) { b.style.removeProperty(c); }); b.style.left = '0'; b.style.bottom = 'calc(env(safe-area-inset-bottom,0px) + 8px)'; }   /* nulle part de libre : languette en bas à gauche */
+              }
             }
           } catch (e4) { /* mesure impossible : la pastille reste où elle est */ }
         };

@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Pastille de version partagée — plus jamais écrite deux fois sur une page qui garde la sienne (2026-11-06)
+- **Constat** (photo de Kevin, Studio sur le Lenovo) : « v9.22.11 » affiché deux fois, superposé. **Cause** : `version-badge-pwa.js` jugeait la pastille propre (`#vbadge`, `pointer-events:none`) « cachée » via `elementFromPoint` (aveugle aux éléments sans événements) et posait la sienne dessus. **Corrigé** : la mesure rend la pastille propre interrogeable une fraction de temps (synchrone, sans repeinte). Fichier partagé : toutes les apps qui gardent leur pastille propre en `pointer-events:none` sont concernées.
+- **Garde** : `tests/verify-bulles-partout.mjs` bloc B6 (18 ✅ ; sans le correctif B6 ❌). LESSONS 860.
+
 ## Bee v1.31 (marionnette 2.4) — le corps ne s'arrête plus au repos + compteur d'images « ?fps=1 » (2026-11-06)
 - **Constat** (pont 1820/1822, Lenovo i3-N305, Chrome de Kevin) : version v1.30 bien servie sur 5 pages, mais « mouvement du corps NON constaté », cadence 1,2 img/s au repos, 5 img/s après un clic.
 - **Cause trouvée dans mon code** : après 20 s sans geste, le widget pose `body.javis-repos` et la marionnette **sautait entièrement** le dessin du bouton flottant (`continue`) : au repos, le corps était figé — contraire à la règle « tout le corps bouge, partout, toujours » (Kevin 03.10).

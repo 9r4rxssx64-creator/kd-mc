@@ -105,7 +105,11 @@ chk(tts.length === 1 && /l=fr/.test(tts[0]) && /v=shimmer/.test(tts[0]) && /faux
 chk(/voix du téléphone|Lecture impossible/.test(await t('iaOk') + await t('iaErr')), 'Voix du domaine indisponible → repli voix du téléphone annoncé');
 chk(erreurs.length === 0, '0 exception JS' + (erreurs.length ? ' : ' + erreurs.join(' | ') : ''));
 const src = await readFile('tools/crypto-bot-dashboard/index.html', 'utf8');
-chk(/data-version="v1\.5\.3"/.test(src), 'badge de version v1.5.3');
+chk(/data-version="v1\.5\.4"/.test(src), 'badge de version v1.5.4');
+const sw = await readFile('tools/crypto-bot-dashboard/sw.js', 'utf8');
+chk(/skipWaiting\(\)/.test(sw) && /clients\.claim\(\)/.test(sw) && /CACHE_VERSION = 'kdmc-bot-v1\.5\.4'/.test(sw), 'MAJ forcée : sw.js avec skipWaiting, clients.claim et CACHE_VERSION = version de la page');
+chk(/serviceWorker\.register\('sw\.js'\)/.test(src) && /\.update\(\)/.test(src) && /controllerchange/.test(src), 'MAJ forcée : la page enregistre le sw, le cherche à chaque ouverture et se recharge au changement');
+chk(!/\/__/.test(sw.replace(/indexOf\('\/__'\)/, '').replace(/\/\* [\s\S]*?\*\//, '').replace(/\(\/__bot[^)]*\)/, '')) || /pathname\.indexOf\('\/__'\) === 0\) return/.test(sw), 'MAJ forcée : le sw ne touche jamais aux réponses du domaine (/__...)');
 const petites = await page.evaluate(() => {
   document.querySelectorAll('.hid,[hidden]').forEach((e) => { e.classList.remove('hid'); e.hidden = false; });
   const o = [];

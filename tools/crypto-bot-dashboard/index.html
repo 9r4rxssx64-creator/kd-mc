@@ -278,7 +278,14 @@
   <div id="fatal" class="err hid"></div>
 </div>
 
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.5.3" data-color="#e8b830" defer></script>
+<script>
+/* MAJ forcée (6.11, pont 1836) : le service worker prend la main tout de suite (skipWaiting + claim) ; la page le cherche à chaque ouverture et se recharge UNE fois quand une nouvelle version arrive (jamais pendant une saisie). */
+(function(){ if(!('serviceWorker' in navigator)) return; var rec=false;
+  try{ navigator.serviceWorker.addEventListener('controllerchange',function(){ if(rec) return; var a=document.activeElement; if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return; rec=true; location.reload(); }); }catch(e){}
+  try{ navigator.serviceWorker.register('sw.js').then(function(r){ try{ r.update(); }catch(e){} }).catch(function(){}); }catch(e){}
+})();
+</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crypto-bot" data-version="v1.5.4" data-color="#e8b830" defer></script>
 <script>
 (function(){
   var API = location.origin, SSO_KEY = 'kdmc_sso_pass', lastStatus = '';

@@ -43,7 +43,7 @@ const navigateur = await chromium.launch();
 
 async function ouvrir(boutique, { qui = null, marque = false } = {}) {
   whoami = qui;
-  const ctx = await navigateur.newContext({ viewport: { width: 390, height: 800 } });
+  const ctx = await navigateur.newContext({ viewport: { width: 390, height: 800 }, serviceWorkers: 'block' });
   if (marque) await ctx.addInitScript(() => { try { localStorage.setItem('ld_admin_trust', '1'); localStorage.setItem('ld_admin', '1'); } catch (_) {} });
   const page = await ctx.newPage();
   const erreurs = []; page.on('pageerror', (e) => erreurs.push(e.message));

@@ -132,7 +132,7 @@ async function navigateur() {
   if (!browser) { R.avert.push('Chromium introuvable : contrôles en navigateur sautés'); return; }
   const srv = servir('kdmc-home'); await new Promise((r) => srv.listen(0, r));
   const BASE = 'http://127.0.0.1:' + srv.address().port;
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   await ctx.route('**/*', (route) => (/^https?:\/\/127\.0\.0\.1/.test(route.request().url()) || /^(data|blob|about):/.test(route.request().url()) ? route.continue() : route.abort()));
   const erreurs = [];
 

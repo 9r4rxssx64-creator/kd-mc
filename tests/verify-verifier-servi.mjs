@@ -7,7 +7,7 @@ import { readFileSync, existsSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -55,6 +55,11 @@ const couvert = await (async () => { const b5 = await chromium.launch(exe ? { ex
 const ex = sansTexte(couvert.cacheEx);
 ok('2h. un bouton recouvert est compté, nommé (lui ET ce qui le recouvre) et rend la page « à corriger »', couvert.cache === 1 && /a#acheter/.test(ex[0] || '') && /div#abeille/.test(ex[0] || '') && aCorriger({ cache: couvert.cache }), JSON.stringify(ex));
 ok('2i. l’exemple ne garde aucun texte de page', ex.length > 0 && !/secret|Dupont|Léa|Acheter/.test(JSON.stringify(ex)), JSON.stringify(ex));
+/* 2j (6.11) : la feuille « Installer » du domaine (ouverte d'office pour un compte neuf) n'est pas un défaut de la page : le robot la ferme par ✕ et mesure ensuite. */
+const feuille = await (async () => { const b6 = await chromium.launch(exe ? { executablePath: exe } : {}); const p6 = await b6.newPage({ viewport: { width: 390, height: 844 } });
+  await p6.goto(f('feuille.html', '<!doctype html><body style="margin:0"><a id="acheter" href="#" style="display:block;width:200px;height:44px;margin:300px 20px">Acheter</a><div id="fond" style="position:fixed;inset:0;z-index:2147482500"></div><div data-kdmc-installer="feuille" style="position:fixed;left:0;right:0;bottom:0;height:200px;z-index:2147482600"><button aria-label="Fermer" type="button">✕</button></div><script>document.querySelector(\'[aria-label=Fermer]\').onclick=function(){document.getElementById("fond").remove();document.querySelector("[data-kdmc-installer]").remove();}</script></body>'));
+  const avant = (await p6.evaluate(mesurer, true)).cache; const ferme = await p6.evaluate(fermerFeuilleInstalleur); const apres = (await p6.evaluate(mesurer, true)).cache; await b6.close(); return { avant, ferme, apres }; })();
+ok('2j. la feuille « Installer » du domaine est fermée avant la mesure (elle couvrait la page)', feuille.avant > 0 && feuille.ferme === true && feuille.apres === 0, JSON.stringify(feuille));
 const sortie = JSON.stringify(propre) + JSON.stringify(piege);
 ok('3. aucun texte de page dans la mesure', !/secret|Dupont|Léa/.test(sortie), sortie.slice(0, 120));
 const wf = readFileSync(new URL('../.github/workflows/verifier-servi.yml', import.meta.url), 'utf8');

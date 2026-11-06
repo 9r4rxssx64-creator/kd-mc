@@ -15,6 +15,16 @@ import { ECRANS, mesurer, connecterAdmin, lectureSeule } from './verif-affichage
 /** Retire tout texte de page (entre guillemets) d'un exemple de recouvrement : il ne reste que sélecteurs, position et z-index. */
 export const sansTexte = (ex) => (Array.isArray(ex) ? ex : []).map((x) => String(x).replace(/"[^"]*"/g, '…').slice(0, 160));
 /** Une page à corriger : erreur, titre sous la pastille, OU un bouton dont le centre est recouvert par un autre élément. */
+/** Exécuté DANS la page. La feuille « 📲 Installer » du domaine s'ouvre d'elle-même une fois par compte et par appareil ; le robot ouvre
+ *  un navigateur NEUF connecté à chaque passage, il la verrait donc toujours, couvrant les boutons de la page (6.11 : « cache 4 » sur kit).
+ *  On la ferme par son bouton ✕ (comme un visiteur) avant de mesurer, et on le dit. */
+export function fermerFeuilleInstalleur() {
+  const f = document.querySelector('[data-kdmc-installer="feuille"]');
+  if (!f) return false;
+  const x = f.querySelector('button[aria-label="Fermer"]');
+  if (x) x.click(); else f.remove();
+  return true;
+}
 export const aCorriger = (r) => !!(r.err || r.sousPastille || (process.env.SABOTAGE !== 'cache' && r.cache > 0));
 
 /* Écrans supplémentaires PROPRES À CE ROBOT (Kevin 29.10 : « portrait ET paysage sur tous les appareils, toujours » —
@@ -112,6 +122,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           const rep = await page.goto(a, { waitUntil: 'load', timeout: 30000 });
           r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
           await page.waitForTimeout(4500); await page.evaluate(() => window.scrollTo(0, 0));
+          r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
           r.sw = await versionSw(page);
           Object.assign(r, await page.evaluate(mesurerServi));
           /* BEE (Kevin 29.10 : « Javis n'est pas à jour de partout ») : la version qui tourne VRAIMENT, sur la page (app qui porte Bee) et dans le cadre posé par le routeur */
@@ -125,7 +136,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), haut: m.haut, deborde: m.deborde, petit: m.petit, js: m.js });
         } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90); }
         sortie.push(r);
-        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.err ? ' · ' + r.err : ''}`);
+        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.err ? ' · ' + r.err : ''}`);
       }
       await ctx.close();
     }

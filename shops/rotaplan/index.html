@@ -114,6 +114,8 @@ a:focus-visible,summary:focus-visible,button:focus-visible{
 header{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--surface) 88%,transparent);
   backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px);
   border-bottom:1px solid var(--bord)}
+/* 6.11 : sous 1100 px, la pastille « ← Portail » du domaine (fixe, en haut à gauche) recouvrait le logo et le titre (robot Servi, iPhone + iPad) : une bande lui laisse la place, comme Devenir croupier */
+@media(max-width:1100px){header{padding-top:calc(env(safe-area-inset-top,0px) + 56px)}}
 .bandeau{display:flex;align-items:center;justify-content:space-between;gap:var(--e12);min-height:60px}
 .marque{display:flex;align-items:center;gap:var(--e8);min-height:44px;font-weight:800;font-size:var(--t20);letter-spacing:-.03em;color:var(--texte);text-decoration:none}
 .pastille{width:28px;height:28px;border-radius:var(--r-md);background:var(--primaire);
@@ -529,7 +531,7 @@ footer nav a{min-height:44px;display:inline-flex;align-items:center}
       <a href="https://shops.kd-mc.com/legal/cgv.html">Conditions de vente</a>
       <a href="https://shops.kd-mc.com/legal/confidentialite.html">Confidentialité</a>
     </nav>
-    <p style="margin:var(--e8) 0 0;font-size:var(--t14);opacity:.75">Version <span class="version-site" data-app-ver="v1.0.0">v1.0.0</span></p>
+    <p style="margin:var(--e8) 0 0;font-size:var(--t14);opacity:.75">Version <span class="version-site" data-app-ver="v1.0.1">v1.0.1</span></p>
   </div>
 </footer>
 

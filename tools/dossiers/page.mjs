@@ -93,6 +93,7 @@ export function html(d) {
   </footer>
 </main>
 <script src="dossiers.js"></script>
+<script src="sw-enregistrer.js" defer></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="dossiers" data-version="v1.0.2" data-color="#c9a227" defer></script>
 </body>
@@ -152,9 +153,29 @@ export function js() {
 `;
 }
 
+export function swEnregistrer() {
+  /* 6.11 tâche 108 : la page interdit tout script en ligne (CSP script-src 'self') — l'enregistrement du service worker est donc un FICHIER à part
+     (un bloc <script> dans la page était bloqué : « fichier présent, non enregistré » mesuré par Servi). */
+  return `(function () {
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    var rl = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (rl || !sessionStorage.getItem('kdmc-sw-vu')) return;
+      rl = true; location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').then(function (r) {
+      sessionStorage.setItem('kdmc-sw-vu', '1');
+      try { r.update(); } catch (e) { /* mise à jour au prochain chargement */ }
+    }).catch(function () { /* hors ligne ou refus : la page marche sans */ });
+  } catch (e) { /* navigateur sans service worker */ }
+})();
+`;
+}
+
 export function fichiers() {
   const d = lit();
-  return { 'index.html': html(d), 'dossiers.css': css(), 'dossiers.js': js() };
+  return { 'index.html': html(d), 'dossiers.css': css(), 'dossiers.js': js(), 'sw-enregistrer.js': swEnregistrer() };
 }
 
 export function ecrire() {

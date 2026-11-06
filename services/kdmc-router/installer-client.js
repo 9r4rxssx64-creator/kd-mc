@@ -53,6 +53,33 @@ export const INSTALLER_JS = String.raw`(function () {
             }
           } catch (e3) { /* mesure impossible : la pastille reste en bas à gauche */ }
           b.style.bottom = bas > 8 ? bas + 'px' : 'calc(env(safe-area-inset-bottom,0px) + 8px)';   /* au-dessus d'un voisin : sa hauteur mesurée inclut déjà la zone de sécurité */
+          /* 6.11 (tâche 108, mesure de Servi à 1280×720 : studio button.on, dashboard a.nav-item, apex-ai .ax-tabbar__item) : une barre d'onglets en bas qui n'est ni
+             « fixed » ni « sticky » (mise en page en grille) échappait à la règle ci-dessus et la pastille la recouvrait. Règle générale, comme la pastille « Installer » :
+             si, sous la pastille, un élément CLIQUABLE est caché, on essaie d'autres endroits et on garde le premier qui ne cache rien. */
+          try {
+            var sous = function () {
+              var r = b.getBoundingClientRect(), pts = [[.15, .5], [.5, .5], [.85, .5], [.15, .85], [.85, .85]];
+              for (var i2 = 0; i2 < pts.length; i2++) {
+                var l = document.elementsFromPoint(r.left + r.width * pts[i2][0], r.top + r.height * pts[i2][1]);
+                for (var j = 0; j < l.length; j++) {
+                  var n = l[j]; if (n === b || n === document.body || n === document.documentElement) continue;
+                  if (n.getAttribute && n.getAttribute('data-kdmc-installer')) continue;
+                  if (cliquable(n)) return true; break;
+                }
+              }
+              return false;
+            };
+            if (sous()) {
+              var AUTRES = [['bottom:calc(env(safe-area-inset-bottom,0px) + 84px)', 'left:8px'], ['bottom:calc(env(safe-area-inset-bottom,0px) + 140px)', 'left:8px'], ['top:50%', 'left:8px'], ['top:calc(env(safe-area-inset-top,0px) + 64px)', 'left:8px'], ['bottom:calc(env(safe-area-inset-bottom,0px) + 84px)', 'right:8px']];
+              var garde = b.style.bottom;
+              for (var a2 = 0; a2 < AUTRES.length; a2++) {
+                ['top', 'bottom', 'left', 'right'].forEach(function (c) { b.style.removeProperty(c); });
+                AUTRES[a2].forEach(function (d) { var kv = d.split(/:(.+)/); b.style.setProperty(kv[0], kv[1]); });
+                if (!sous()) { garde = null; break; }
+              }
+              if (garde !== null) { ['top', 'bottom', 'left', 'right'].forEach(function (c) { b.style.removeProperty(c); }); b.style.left = '8px'; b.style.bottom = garde; }   /* aucun endroit libre : retour au coin d'origine */
+            }
+          } catch (e4) { /* mesure impossible : la pastille reste où elle est */ }
         };
         degager(); setTimeout(degager, 800); setTimeout(degager, 3000); setTimeout(degager, 8000); setTimeout(degager, 15000); window.addEventListener('resize', degager);
         /* 23.10 soir (Kevin : « Tableau KDMC a disparu… je ne suis pas connecté en admin… il était censé y avoir un bouton admin partout ») :

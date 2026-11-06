@@ -4,6 +4,15 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Servi (robot public) — mesure de fluidité + script bloquant nommé (2026-11-06)
+- **Pourquoi** : Studio lent sur le Lenovo de Kevin (1,6 img/s), cause inconnue. Servi ajoute à chaque écran « fluidité N i/s » et, sous 30 i/s, « [bloque fichier:ms] » (API `long-animation-frame`). Rapport seulement, pas encore un défaut qui rend la page « à corriger » : on mesure d'abord. LESSONS 869.
+- **Garde** : `tests/verify-verifier-servi.mjs` 6a/6b, rouge sous `SABOTAGE=fluidite`.
+
+## Robots de recherche v2 — un vrai moteur, les proches, les régions (2026-11-06, nuit)
+- Retour de Kevin : « les robots ne ramènent rien de vraiment intéressant, revois tout, bien plus performants ». **Mesuré** : 54 recherches rendues, 0 piste forte. Causes : (1) les travaux interrogeaient surtout archive.org et Europeana, qui ne contiennent presque jamais l'état civil d'une famille ordinaire (homonymes) ; (2) la requête « prénom nom lieu » seule ne distingue pas la bonne famille ; (3) des « manques » faux (un mariage déjà établi par une source mais sans date d'union) ; (4) photos et presse passaient avant les parents.
+- **Corrigé** (`tools/arbre/session/robots-recherche.mjs`) : un vrai moteur (Bing, Brave) est lu par le navigateur du Lenovo, avec des requêtes qui portent le nom ET un proche DÉFUNT (jamais un vivant : `contexteDe`) ; sources régionales (presse numérisée suisse pour la Suisse romande, Monaco, Nice) ; la consigne cite les proches pour reconnaître la bonne personne ; `scorerPiste` : nom + un proche dans le même extrait = piste FORTE (même sans année) ; un mariage déjà établi n'est plus un manque ; l'ordre privilégie parents, naissance, mariage.
+- **Garde** : `npm run test:robots-recherche` (+9 contrôles : proches défunts seulement, requête de couple, moteur, région, piste forte par un proche). **Non mesuré** : le rendement réel (le Lenovo est arrêté depuis 20h35 UTC) ; à mesurer à la prochaine collecte.
+
 ## Bee v1.35 (marionnette 2.5) — le compteur « ?fps=1 » s'affiche enfin (2026-11-06, soir)
 - Retour de Kevin : « je n'ai rien vu » après `https://kd-mc.com/?fps=1`. **Cause (mon code)** : Bee tourne dans un CADRE (`/__javis/cadre`) dont l'adresse n'a jamais `?fps=1` ; le compteur lisait l'adresse du cadre et se serait dessiné dans un cadre minuscule.
 - **Corrigé** : le compteur lit l'adresse de la PAGE qui porte le cadre (même origine) et se pose dans la page ; `?fps=1` est mémorisé (`kdmc_fps`), `?fps=0` l'efface.

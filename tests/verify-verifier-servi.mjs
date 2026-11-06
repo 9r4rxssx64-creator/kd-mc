@@ -7,7 +7,8 @@ import { readFileSync, existsSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw } from '../tools/plateformes/verifier-servi.mjs';
+import { createServer } from 'node:http';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -84,6 +85,20 @@ const lus = {
 ok('2k. la version du worker se lit dans CACHE, CACHE_NAME et CACHE_VERSION', lus.cache === 'javis-v1.30' && lus.nom === 'lingua-v2.142.11' && lus.version === 'kdmc-ia-v1.0.2', JSON.stringify(lus));
 ok('2l. la porte servie à la place de /sw.js n’est pas « vide » ; sans worker enregistré c’est « aucun » ; une erreur reste « illisible »',
   lus.porte === 'enregistré, /sw.js derrière la porte' && lus.sans === 'aucun' && lus.porteSans === 'aucun' && lus.erreur === 'illisible', JSON.stringify(lus));
+/* 6 (Kevin 6.11 : « creuse toujours ») : la fluidité est mesurée ET le script qui bloque est nommé. SABOTAGE=fluidite : on ne regarde pas qui bloque → rouge. */
+const srv = createServer((q, r) => {
+  if (q.url === '/bloqueur.js') { r.setHeader('content-type', 'text/javascript'); r.end('setInterval(()=>{const t=performance.now();while(performance.now()-t<120);},130);'); return; }
+  r.setHeader('content-type', 'text/html');
+  r.end(q.url === '/lent.html' ? '<!doctype html><body><script src="/bloqueur.js"></script><p>x</p>' : '<!doctype html><body><p>x</p>');
+}); /* http local : l'API long-animation-frame ne nomme les scripts que pour http(s), jamais pour file:// */
+await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+const base = 'http://127.0.0.1:' + srv.address().port;
+const b2 = await chromium.launch(exe ? { executablePath: exe } : {}); const p2 = await b2.newPage();
+await p2.goto(base + '/calme.html'); const fc = await p2.evaluate(mesurerFluidite);
+await p2.goto(base + '/lent.html'); const fl = await p2.evaluate(mesurerFluidite);
+await b2.close(); srv.close();
+ok('6a. page calme : plus de 20 images/s, aucun script ne bloque', fc.fps > 20 && fc.bloque.length === 0, JSON.stringify(fc));
+ok('6b. page saturée : fluidité basse ET le fichier qui bloque est nommé', fl.fps < fc.fps / 2 && (process.env.SABOTAGE === 'fluidite' ? false : fl.bloque.some((x) => x.startsWith('bloqueur.js') || x.includes('/bloqueur.js'))), JSON.stringify(fl));
 const sortie = JSON.stringify(propre) + JSON.stringify(piege);
 ok('3. aucun texte de page dans la mesure', !/secret|Dupont|Léa/.test(sortie), sortie.slice(0, 120));
 const wf = readFileSync(new URL('../.github/workflows/verifier-servi.yml', import.meta.url), 'utf8');

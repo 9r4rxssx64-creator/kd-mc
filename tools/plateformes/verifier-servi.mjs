@@ -35,6 +35,18 @@ export function adresseSure(a) {
 }
 
 /* Exécuté DANS la page : jamais de texte de page, des sélecteurs courts et des nombres. */
+/* 6.11 (Kevin : « creuse toujours ») : la fluidité. Studio tournait à 1,6 image/s dans le Chrome du Lenovo, corps vide compris : le fil principal est
+   saturé par un script. Servi compte les images par seconde (rAF, 2 s) et NOMME les scripts qui bloquent le plus (long-animation-frame : fin de chemin du
+   fichier seulement, jamais de texte de page ni de paramètres). Mesure d'abord, pas encore un défaut (processeur sans carte graphique = moins que le vrai). */
+export async function mesurerFluidite() {
+  const bloque = [];
+  try { new PerformanceObserver((l) => { for (const e of l.getEntries()) for (const s of (e.scripts || [])) bloque.push({ f: String(s.sourceURL || s.invoker || '?').split('?')[0].split('/').slice(-2).join('/'), d: Math.round(s.duration) }); }).observe({ type: 'long-animation-frame', buffered: true }); } catch (e) { /* navigateur sans cette mesure */ }
+  let n = 0; const t = performance.now();
+  await new Promise((r) => { (function f() { n++; performance.now() - t < 2000 ? requestAnimationFrame(f) : r(); })(); });
+  const parFichier = {}; for (const b of bloque) parFichier[b.f] = (parFichier[b.f] || 0) + b.d;
+  return { fps: +(n / 2).toFixed(1), bloque: Object.entries(parFichier).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([f, d]) => f + ':' + d + 'ms') };
+}
+
 export function mesurerServi() {
   const sel = (e) => (e.tagName || '').toLowerCase() + (e.id ? '#' + e.id : '') + (typeof e.className === 'string' && e.className.trim() ? '.' + e.className.trim().split(/\s+/)[0] : '');
   const vis = (e) => { const r = e.getBoundingClientRect(); const s = getComputedStyle(e); return r.width > 2 && r.height > 2 && s.visibility !== 'hidden' && s.display !== 'none' && +s.opacity > 0.05; };
@@ -155,6 +167,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           const cadre = page.frames().find((f) => /\/__javis\/cadre/.test(f.url()));
           r.beeCadre = cadre ? await cadre.evaluate(() => String(window.JAVIS_VER || '')).catch(() => '?') : '';
           if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; await page.waitForTimeout(300); }   /* la feuille peut s'ouvrir APRÈS la 1re fermeture (iPhone paysage, 6.11) */
+          Object.assign(r, await page.evaluate(mesurerFluidite).catch(() => ({})));
           const m = await page.evaluate(mesurer, tel).catch(() => null);
           /* 6.11 (Kevin : « creuse toujours pour savoir ») : Servi comptait « cache 4 » sur kit.kd-mc.com sans dire QUI cache QUOI, et ne le comptait pas
              « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré
@@ -162,7 +175,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), haut: m.haut, deborde: m.deborde, petit: m.petit, js: m.js });
         } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90); }
         sortie.push(r);
-        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.err ? ' · ' + r.err : ''}`);
+        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
       }
       await ctx.close();
     }

@@ -177,6 +177,8 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
           await page.waitForTimeout(4500); await page.evaluate(() => window.scrollTo(0, 0));
           r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
+          /* 6.11 : la pastille du module se retire au plus 1,5 s après la fermeture de la feuille d'installation (suivi toutes les 1,5 s) ; mesurer avant comptait « 2 pastilles » à tort sur Studio */
+          if (r.installeur) await page.waitForTimeout(1800);
           r.sw = await versionSw(page);
           Object.assign(r, await page.evaluate(mesurerServi));
           /* BEE (Kevin 29.10 : « Javis n'est pas à jour de partout ») : la version qui tourne VRAIMENT, sur la page (app qui porte Bee) et dans le cadre posé par le routeur */

@@ -6,6 +6,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ## Servi (robot public) — mesure de fluidité + script bloquant nommé (2026-11-06)
 - **Pourquoi** : Studio lent sur le Lenovo de Kevin (1,6 img/s), cause inconnue. Servi ajoute à chaque écran « fluidité N i/s » et, sous 30 i/s, « [bloque fichier:ms] » (API `long-animation-frame`). Rapport seulement, pas encore un défaut qui rend la page « à corriger » : on mesure d'abord. LESSONS 869.
+- Servi attend 1,8 s après la fermeture de la feuille d'installation avant de compter les pastilles de version (course de mesure : « 2 visibles » à tort sur Studio).
 - **Garde** : `tests/verify-verifier-servi.mjs` 6a/6b, rouge sous `SABOTAGE=fluidite`.
 
 ## Robots de recherche v2 — un vrai moteur, les proches, les régions (2026-11-06, nuit)

@@ -7,7 +7,8 @@ import { readFileSync, existsSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger } from '../tools/plateformes/verifier-servi.mjs';
+import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
 const exe = process.env.PW_EXE || ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((p) => existsSync(p));
@@ -46,6 +47,14 @@ const chat = await (async () => { const b4 = await chromium.launch(exe ? { execu
   const r = { rogne: await lit('chat-rogne.html', 70), dessous: await lit('chat-dessous.html', 0) }; await b4.close(); return r; })();
 ok('2f. un message défilé hors de sa liste n’est PAS « sous la pastille » (part visible mesurée)', chat.rogne.sousPastille === false && chat.rogne.premier && chat.rogne.premier.top >= chat.rogne.pastilleBas, JSON.stringify(chat.rogne.premier));
 ok('2g. une liste qui monte vraiment sous la pastille est toujours signalée', chat.dessous.sousPastille === true && chat.dessous.premier.top < chat.dessous.pastilleBas, JSON.stringify(chat.dessous.premier));
+/* 2h (6.11, kit.kd-mc.com « cache 4 » compté sans être nommé ni signalé) : un bouton recouvert par un élément flottant est un défaut,
+   le robot dit QUI recouvre QUOI (sélecteurs), sans aucun texte de page. SABOTAGE=cache : ignoré → rouge. */
+const couvert = await (async () => { const b5 = await chromium.launch(exe ? { executablePath: exe } : {}); const p5 = await b5.newPage({ viewport: { width: 1280, height: 720 } });
+  await p5.goto(f('couvert.html', '<!doctype html><body style="margin:0"><a id="acheter" class="btn" href="#" style="position:absolute;top:600px;left:1180px;width:80px;height:44px">Acheter Léa Dupont</a><div id="abeille" class="flottant" style="position:fixed;bottom:40px;right:10px;width:120px;height:120px;z-index:9">secret</div></body>'));
+  const m = await p5.evaluate(mesurer, false); await b5.close(); return m; })();
+const ex = sansTexte(couvert.cacheEx);
+ok('2h. un bouton recouvert est compté, nommé (lui ET ce qui le recouvre) et rend la page « à corriger »', couvert.cache === 1 && /a#acheter/.test(ex[0] || '') && /div#abeille/.test(ex[0] || '') && aCorriger({ cache: couvert.cache }), JSON.stringify(ex));
+ok('2i. l’exemple ne garde aucun texte de page', ex.length > 0 && !/secret|Dupont|Léa|Acheter/.test(JSON.stringify(ex)), JSON.stringify(ex));
 const sortie = JSON.stringify(propre) + JSON.stringify(piege);
 ok('3. aucun texte de page dans la mesure', !/secret|Dupont|Léa/.test(sortie), sortie.slice(0, 120));
 const wf = readFileSync(new URL('../.github/workflows/verifier-servi.yml', import.meta.url), 'utf8');

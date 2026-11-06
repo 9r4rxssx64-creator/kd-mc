@@ -258,8 +258,18 @@ export const INSTALLER_JS = String.raw`(function () {
       if (!pastille || feuille) return;
       var base = 'position:fixed;z-index:2147482000;min-width:44px;min-height:44px;border-radius:22px;border:1px solid ' + OR + ';background:' + NOIR + ';color:' + OR + ';font:700 18px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.45);cursor:pointer;padding:0 12px;';
       for (var i = 0; i < COINS.length; i++) { pastille.style.cssText = base + COINS[i]; if (!couvre()) return; }
+      /* 6.11 soir (pont 1879, mesure du robot d'affichage : 📲 recouvre un contrôle sur cmcteams 8, apex-ai 4, la-detente 4, apex-chat 3, lingua 2, beatbot 2, studio 1) :
+         aucun des six coins n'est libre → on la glisse le long du bord droit, à moitié sortie de l'écran (languette), au premier endroit qui ne cache rien. */
+      var BORD = ['top:calc(env(safe-area-inset-top,0px) + 64px)', 'top:25%', 'top:40%', 'top:60%', 'top:75%', 'bottom:calc(env(safe-area-inset-bottom,0px) + 140px)'];
+      for (var b2 = 0; b2 < BORD.length; b2++) { pastille.style.cssText = base + BORD[b2] + ';right:-14px;padding:0 20px 0 8px'; if (!couvre()) return; }
       pastille.style.cssText = base + COINS[0];
     }
+    /* la page change (menus qui s'ouvrent, barre qui apparaît, défilement) : on remesure 0,4 s après, sans boucle */
+    (function () {
+      var t = 0, tour = function () { clearTimeout(t); t = setTimeout(function () { if (pastille && !feuille) placer(); }, 400); };
+      try { new MutationObserver(tour).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { /* pas d'observateur */ }
+      window.addEventListener('scroll', tour, true); window.addEventListener('resize', tour);
+    })();
     window.addEventListener('resize', function () { placer(); });
     function ligne(titre, aide, bouton, onclick, fait) {
       var l = el('div', 'background:#16210f;border:1px solid #2a3a22;border-radius:14px;padding:14px;margin:0 0 12px');

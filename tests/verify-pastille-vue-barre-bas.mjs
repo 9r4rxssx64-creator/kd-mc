@@ -84,6 +84,30 @@ const PAGE_PLEIN = `<!doctype html><meta charset="utf-8"><meta name="viewport" c
   ok(!R.absent && R.largeur <= 44 && R.hauteur >= 44 && R.dedans, 'iPhone SE, champ plein écran : la pastille devient une languette (≤ 44 px de large, ≥ 44 px de haut, dans l\'écran)', R);
   await ctx.close();
 }
+
+/* D. (pont 1879) la pastille 📲 : les six coins sont pris par des boutons → elle se glisse le long du bord droit et ne recouvre AUCUN bouton */
+const PAGE_COINS = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%}button{position:fixed;width:60px;height:60px}
+#a{top:0;right:0}#b{top:0;left:0}#c{bottom:70px;left:0}#d{bottom:70px;right:0}#e{top:calc(50% - 30px);left:0}#f{top:calc(50% - 30px);right:0}</style>
+<button id="a">a</button><button id="b">b</button><button id="c">c</button><button id="d">d</button><button id="e">e</button><button id="f">f</button>`;
+for (const [w, h] of [[390, 844], [1280, 720]]) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_COINS }));
+  await p.goto('https://kdmc.test/');
+  await p.addScriptTag({ content: SRC });
+  await p.waitForSelector('[data-kdmc-installer="pastille"]', { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(1800);
+  const R = await p.evaluate(() => {
+    const b = document.querySelector('[data-kdmc-installer="pastille"]'); if (!b) return { absent: true };
+    const r = b.getBoundingClientRect(), rec = [];
+    document.querySelectorAll('button[id]').forEach((t) => { const q = t.getBoundingClientRect(); if (r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top) rec.push(t.id); });
+    return { absent: false, recouvre: rec, rect: [Math.round(r.left), Math.round(r.top), Math.round(r.width)] };
+  });
+  ok(!R.absent, w + '×' + h + ' : la pastille 📲 est posée');
+  ok(!R.absent && R.recouvre.length === 0, w + '×' + h + ' : la pastille 📲 ne recouvre aucun bouton (six coins pris)', R);
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

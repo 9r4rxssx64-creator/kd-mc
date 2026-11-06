@@ -84,7 +84,9 @@ export function mesurerServi() {
   const badgesVisibles = pastillesVisibles.length;
   const badgesVisiblesQui = pastillesVisibles.slice(0, 3).map((e) => (e.closest('#kdmc-version-badge') ? 'module' : (e.id ? '#' + e.id : e.tagName.toLowerCase())));
   /* qui recouvre chaque pastille visible (même mesure que le module : bulle interrogeable le temps de la mesure) — pour savoir POURQUOI le module ne se cache pas */
+  const modB = document.getElementById('kdmc-version-badge'); const modD = modB ? modB.style.display : ''; if (modB) modB.style.display = 'none';   /* sans la bulle du module : qui recouvre la bulle de l'app ? */
   const badgesDessus = pastillesVisibles.slice(0, 3).map((e) => { const h = e.closest('#vbadge, #ver, [data-own-badge]') || e; const pe = h.style.pointerEvents; h.style.pointerEvents = 'auto'; const r = e.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); h.style.pointerEvents = pe; return t ? sel(t) + '@' + Math.round(r.left) + ',' + Math.round(r.top) : '-'; });
+  if (modB) modB.style.display = modD;
   /* le plus large élément qui dépasse l'écran (débordement horizontal) : sélecteur + nombres, jamais de texte.
      29.10 : un élément contenu par un parent qui coupe ou fait défiler (grille dans .scroll) ne fait pas déborder la page : ignoré. */
   const L = document.documentElement.clientWidth; let deb = null;

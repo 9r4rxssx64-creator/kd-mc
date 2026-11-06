@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.33';
+  var JAVIS_VER = 'v1.34';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -482,7 +482,7 @@
       'body.javis-app #javis-launcher{position:static;width:min(56vw,270px);height:min(56vw,270px);' +
       'margin:calc(env(safe-area-inset-top) + 18px) auto 8px;display:block;animation:javis-float 3.4s ease-in-out infinite}' +
       'body.javis-app #javis-root{display:flex;flex-direction:column;height:100dvh}' +
-      'body.javis-app #javis-panel{position:static;display:flex;flex:1;max-width:none;max-height:none;' +
+      'body.javis-app #javis-panel{position:static;z-index:auto;display:flex;flex:1;max-width:none;max-height:none;' +
       'margin:0;border:0;border-radius:20px 20px 0 0;box-shadow:none;animation:none}' +
       'body.javis-app #javis-head .javis-mini{display:none}' +
       /* dans l'app, le panneau est TOUJOURS ouvert : la croix ne fermait rien (mesuré) → cachée */

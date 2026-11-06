@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Bee v1.34 (2026-11-06, nuit) — dans l'app Javis, les boutons du domaine ne passent plus sous le chat
+- Mesuré en ligne (robot affichage, run 42304384677, bouton situé par son parent) puis reproduit en local : « 👑 Vue admin » du domaine passait SOUS le chat de l'app Javis (iPhone : sous le champ ; ordinateur : sous la liste). Cause : en mode app, `#javis-panel` est un enfant de flex et garde son z 2147483001 même « static ». Correctif : `z-index:auto` en mode app. Vérifié en local avec les vrais scripts du domaine (Vue admin, 📲, ✉️) : 0 contrôle caché sur 3 écrans. Garde `test:javis-app-boutons-domaine` (ancien widget : 6 rouges).
+
 ## Bee v1.33 (2026-11-06, nuit) — après la mesure réelle du domaine
 - Mesuré en ligne (robot affichage, 33 apps × 7 écrans, run 42291889726) après v1.32 : Bee n'était plus en cause que sur 2 apps. (1) App Javis : « 🩺 Tester Bee » coupé par le bas de la liste du chat → la liste défile pour montrer les suggestions ; et le robot ne compte plus « caché » un bouton à faire défiler dans sa zone (test 7 du détecteur, rouge sans). (2) Apex AI tablette : bouton apparu entre deux veilles de 4 s → `bee-partout.js` se replace 0,3 s après tout changement de la page (observateur ; cas « bouton du contenu » de `test:bee-partout-navigateur` rouge sans, à 1,5 s).
 

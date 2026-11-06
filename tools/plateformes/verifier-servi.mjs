@@ -80,7 +80,10 @@ export function mesurerServi() {
   const badges = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim())).map((e) => (e.textContent || '').trim()).slice(0, 3);
   /* 6.11 (Studio : « v9.22.11 » DEUX FOIS l'une sur l'autre) : `badges` compte aussi une pastille cachée (display:none) ; ce qui fait le défaut,
      c'est le nombre de pastilles réellement VISIBLES. On le mesure (nombre seulement) et on note l'id de celles qui se voient. */
-  const versionVisible = (e) => { for (let a = e; a && a !== document.documentElement; a = a.parentElement) { const st = getComputedStyle(a); if (st.display === 'none' || st.visibility === 'hidden' || parseFloat(st.opacity) === 0) return false; } const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const versionVisible = (e) => { for (let a = e; a && a !== document.documentElement; a = a.parentElement) { const st = getComputedStyle(a); if (st.display === 'none' || st.visibility === 'hidden' || parseFloat(st.opacity) === 0) return false; } const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return false;
+    /* 6.11 soir (ia 1280×720, run 42312947970 : « visibles 2 » alors qu'une seule se voyait) : la bulle de l'app vivait dans le pied de page, 3 700 px SOUS l'écran ;
+       le module affichait la sienne à bon droit. Hors de l'écran = pas visible (même règle que le module : `elementFromPoint` nul). */
+    return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; };
   /* une pastille recouverte par un AUTRE élément (bouton, barre) ne se voit pas : on ne la compte pas ; recouverte par une autre pastille de version, si (c'est le défaut) */
   const decouverte = (e) => { const h = e.closest('#kdmc-version-badge, #vbadge, #ver, [data-own-badge]') || e; const pe = h.style.pointerEvents; h.style.pointerEvents = 'auto'; const r = e.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); h.style.pointerEvents = pe; return !t || h.contains(t) || t.contains(e) || !!t.closest('#kdmc-version-badge') || motV.test((t.textContent || '').trim()); };
   const pastillesVisibles = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim()) && versionVisible(e) && decouverte(e));

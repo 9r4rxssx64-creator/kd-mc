@@ -355,7 +355,7 @@ try {
   noter('ROBOT', false, 'ERREUR : ' + String(e && e.message).slice(0, 200));
 } finally {
   if (navigateur) await navigateur.close().catch(() => {});
-  for (const u of uids) if (u) { const d = await post(H, '/__admin/compte-supprimer', { uid: u, confirmer: true }).catch(() => ({ j: {} })); noter('Nettoyage : compte du domaine ' + u.slice(0, 14), d.j && d.j.ok === true, 'ligne Apex Chat à retirer : kdmc_' + u); }
+  for (const u of uids) if (u) { const d = await post(H, '/__admin/compte-supprimer', { uid: u, confirmer: true }).catch(() => ({ j: {} })); noter('Nettoyage : compte du domaine ' + u.slice(0, 14), d.j && d.j.ok === true, 'ligne Apex Chat à retirer : kdmc_' + u + (d.j && d.j.ok === true ? '' : ' · réponse du domaine : HTTP ' + (d.http || '?') + ' ' + JSON.stringify(d.j || {}).slice(0, 140))); }
   const ko = RES.filter((r) => r.ok === false), ok = RES.filter((r) => r.ok === true), nt = RES.filter((r) => r.ok === null);
   const lignes = RES.map((r) => `${r.ok === true ? '✅' : r.ok === false ? '❌' : '➖'} ${r.nom} — ${r.detail}`);
   for (const r of ko) annot('error', 'KO : ' + r.nom.slice(0, 70), String(r.detail).slice(0, 3500));

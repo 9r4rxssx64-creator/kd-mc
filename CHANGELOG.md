@@ -46,6 +46,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - **Une seule source** `tools/shared/horaires-amenages.js` (copie identique `tools/departs/`), utilisée par CMCteams et la light : `test:departs-compare` 0 écart.
 - **Gardes** : `npm run test:horaires-amenages` (35 ✅ ; `SABOTAGE=1` → 14 ❌) ; robot réel `departs-equipes` contrôle I (‹employé›, novembre c4, aucun départ) + `SABOTAGE=amenage` rouge. `test:entetes-light`, qui était déjà rouge sur main (52 anomalies : élèves en formation et septembre mal compris par le test), est réparé : 0 anomalie.
 
+## Robot Apex Chat — un nettoyage raté dit enfin pourquoi (2026-11-06)
+- Run 42308386136 : écran Réglages enfin lisible (0 bouton < 44 px, 0 doublon, 0 lien vide chez A et B) ; 1 KO « Nettoyage : compte du domaine » sans cause affichée. Le relevé donne maintenant le code HTTP et la réponse du domaine. Comptes de test relus après : 0 (Apex Chat 7 actifs, domaine 0 sur 25 fiches).
+
 ## Robot Apex Chat — le rapport tient dans les limites de GitHub, l'écran Réglages redevient lisible (2026-11-06)
 - Constat : sur 13 annotations émises, GitHub n'en montre que 10 (900 caractères chacune) : la ligne « bilan » et les 2 derniers blocs (Réglages) manquaient depuis le 5.11. Le robot met maintenant le bilan en premier, remplit au plus 8 blocs de 860 caractères et écrit le détail complet dans le résumé du job.
 - Garde `tests/verify-annotations-robot-apex.mjs` : 5 ✅ ; `SABOTAGE=1` (ancien découpage) : 2 ❌.

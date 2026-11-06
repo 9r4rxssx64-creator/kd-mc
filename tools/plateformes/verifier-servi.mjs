@@ -95,10 +95,32 @@ export function mesurerServi() {
   };
 }
 
+/* 6.11 (tâche 108, Kevin « pousse le reste ») : Servi disait « sw vide » ou « sans CACHE_VERSION » sur 16 hôtes alors que 6 d'entre eux
+ * servaient un worker complet (variable `CACHE`, pas `CACHE_VERSION`) et que les autres sont des pages SANS cache hors ligne (relues à chaque
+ * ouverture, mise à jour forcée par le module de pastille) ou servent la PORTE à la place de /sw.js (zones admin). Un robot qui compte sans
+ * nommer se corrige (leçon 858) : il lit maintenant CACHE_VERSION / CACHE_NAME / CACHE / VERSION, reconnaît une page HTML, et demande au
+ * navigateur si un worker est VRAIMENT enregistré. Ce qui s'affiche : « <version> » · « aucun » (pas de worker : page sans cache hors ligne)
+ * · « enregistré, version non lue » · « enregistré, /sw.js derrière la porte » · « illisible » (erreur). SABOTAGE=sw : l'ancienne lecture → rouge. */
+export function lireVersionSw(b) {
+  if (!b || b.erreur) return 'illisible';
+  const texte = String(b.texte || '');
+  const html = /text\/html/i.test(String(b.type || '')) || /^\s*<!doctype|^\s*<html/i.test(texte.slice(0, 200));
+  const re = process.env.SABOTAGE === 'sw' ? /CACHE_VERSION\s*=\s*['"]([^'"]{1,40})['"]/ : /\b(?:CACHE_VERSION|CACHE_NAME|CACHE|VERSION)\s*=\s*['"]([^'"]{1,40})['"]/;
+  const m = html ? null : texte.match(re);
+  if (m) return m[1] + (b.enregistre === false ? ' (fichier présent, non enregistré)' : '');
+  if (b.enregistre === false) return 'aucun';
+  if (html) return b.enregistre ? 'enregistré, /sw.js derrière la porte' : 'aucun';
+  if (b.statut === 404 || !texte.length) return b.enregistre ? 'enregistré, fichier absent' : 'aucun';
+  return b.enregistre ? 'enregistré, version non lue' : 'aucun';
+}
 async function versionSw(page) {
-  return page.evaluate(async () => {
-    try { const t = await (await fetch('/sw.js', { cache: 'no-store' })).text(); const m = t.match(/CACHE_VERSION\s*=\s*['"]([^'"]{1,40})['"]/); return m ? m[1] : (t.length ? 'sans CACHE_VERSION' : 'vide'); } catch { return 'illisible'; }
-  });
+  const brut = await page.evaluate(async () => {
+    const out = { texte: '', type: '', statut: 0, enregistre: null };
+    try { const rep = await fetch('/sw.js', { cache: 'no-store' }); out.statut = rep.status; out.type = rep.headers.get('content-type') || ''; out.texte = (await rep.text()).slice(0, 20000); } catch { out.erreur = true; }
+    try { if ('serviceWorker' in navigator) out.enregistre = !!(await navigator.serviceWorker.getRegistration()); } catch { /* navigateur sans worker : on garde null */ }
+    return out;
+  }).catch(() => ({ erreur: true }));
+  return lireVersionSw(brut);
 }
 
 export async function verifierServi({ adresses, hash = '', journal = console.log }) {

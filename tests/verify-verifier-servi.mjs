@@ -7,7 +7,7 @@ import { readFileSync, existsSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -60,6 +60,22 @@ const feuille = await (async () => { const b6 = await chromium.launch(exe ? { ex
   await p6.goto(f('feuille.html', '<!doctype html><body style="margin:0"><a id="acheter" href="#" style="display:block;width:200px;height:44px;margin:300px 20px">Acheter</a><div id="fond" style="position:fixed;inset:0;z-index:2147482500"></div><div data-kdmc-installer="feuille" style="position:fixed;left:0;right:0;bottom:0;height:200px;z-index:2147482600"><button aria-label="Fermer" type="button">✕</button></div><script>document.querySelector(\'[aria-label=Fermer]\').onclick=function(){document.getElementById("fond").remove();document.querySelector("[data-kdmc-installer]").remove();}</script></body>'));
   const avant = (await p6.evaluate(mesurer, true)).cache; const ferme = await p6.evaluate(fermerFeuilleInstalleur); const apres = (await p6.evaluate(mesurer, true)).cache; await b6.close(); return { avant, ferme, apres }; })();
 ok('2j. la feuille « Installer » du domaine est fermée avant la mesure (elle couvrait la page)', feuille.avant > 0 && feuille.ferme === true && feuille.apres === 0, JSON.stringify(feuille));
+/* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
+   `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
+   AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */
+const js = (v, nom = 'CACHE') => `var ${nom} = "${v}";\nself.addEventListener("install", function (e) { self.skipWaiting(); });`;
+const lus = {
+  cache: lireVersionSw({ texte: js('javis-v1.30'), type: 'application/javascript', statut: 200, enregistre: true }),
+  nom: lireVersionSw({ texte: js('lingua-v2.142.11', 'CACHE_NAME'), type: 'application/javascript', statut: 200, enregistre: true }),
+  version: lireVersionSw({ texte: js('kdmc-ia-v1.0.2', 'CACHE_VERSION'), type: 'application/javascript', statut: 200, enregistre: true }),
+  porte: lireVersionSw({ texte: '<!doctype html><title>Staging — connexion</title>', type: 'text/html; charset=utf-8', statut: 200, enregistre: true }),
+  sans: lireVersionSw({ texte: '', type: '', statut: 404, enregistre: false }),
+  porteSans: lireVersionSw({ texte: '<!doctype html><title>Dashboard — connexion</title>', type: 'text/html', statut: 200, enregistre: false }),
+  erreur: lireVersionSw({ erreur: true }),
+};
+ok('2k. la version du worker se lit dans CACHE, CACHE_NAME et CACHE_VERSION', lus.cache === 'javis-v1.30' && lus.nom === 'lingua-v2.142.11' && lus.version === 'kdmc-ia-v1.0.2', JSON.stringify(lus));
+ok('2l. la porte servie à la place de /sw.js n’est pas « vide » ; sans worker enregistré c’est « aucun » ; une erreur reste « illisible »',
+  lus.porte === 'enregistré, /sw.js derrière la porte' && lus.sans === 'aucun' && lus.porteSans === 'aucun' && lus.erreur === 'illisible', JSON.stringify(lus));
 const sortie = JSON.stringify(propre) + JSON.stringify(piege);
 ok('3. aucun texte de page dans la mesure', !/secret|Dupont|Léa/.test(sortie), sortie.slice(0, 120));
 const wf = readFileSync(new URL('../.github/workflows/verifier-servi.yml', import.meta.url), 'utf8');

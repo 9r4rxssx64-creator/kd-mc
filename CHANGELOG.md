@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Bee v1.35 (marionnette 2.5) — le compteur « ?fps=1 » s'affiche enfin (2026-11-06, soir)
+- Retour de Kevin : « je n'ai rien vu » après `https://kd-mc.com/?fps=1`. **Cause (mon code)** : Bee tourne dans un CADRE (`/__javis/cadre`) dont l'adresse n'a jamais `?fps=1` ; le compteur lisait l'adresse du cadre et se serait dessiné dans un cadre minuscule.
+- **Corrigé** : le compteur lit l'adresse de la PAGE qui porte le cadre (même origine) et se pose dans la page ; `?fps=1` est mémorisé (`kdmc_fps`), `?fps=0` l'efface.
+- **Garde** : `tests/verify-marionnette.mjs` (103 contrôles) — vraie page + vrai cadre ; rouge avec l'ancienne lecture (sabotage), vert avec le correctif.
+- **Non mesuré ici** : le chiffre sur l'iPhone de Kevin (après mise en ligne).
+
 ## Bee v1.34 (2026-11-06, nuit) — dans l'app Javis, les boutons du domaine ne passent plus sous le chat
 - Mesuré en ligne (robot affichage, run 42304384677, bouton situé par son parent) puis reproduit en local : « 👑 Vue admin » du domaine passait SOUS le chat de l'app Javis (iPhone : sous le champ ; ordinateur : sous la liste). Cause : en mode app, `#javis-panel` est un enfant de flex et garde son z 2147483001 même « static ». Correctif : `z-index:auto` en mode app. Vérifié en local avec les vrais scripts du domaine (Vue admin, 📲, ✉️) : 0 contrôle caché sur 3 écrans. Garde `test:javis-app-boutons-domaine` (ancien widget : 6 rouges).
 

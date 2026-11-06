@@ -35,7 +35,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.4';
+  var VERSION = '2.5';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -1175,20 +1175,34 @@
     e.vue = (e.vue || 0) + 1;
   }
 
-  /* « ?fps=1 » dans l'adresse (ou kdmc_fps=1 mémorisé) : un petit compteur lisible par Kevin, en bas à gauche, ex. « Bee 28 img/s ».
-     Sert à mesurer la fluidité sur SON appareil au lieu de la deviner. Rien d'affiché sans ce réglage. */
-  var fpsVeut = null, fpsNoeud = null;
+  /* « ?fps=1 » dans l'adresse de la PAGE (ou kdmc_fps=1 mémorisé) : un petit compteur lisible par Kevin, en bas à gauche, ex. « Bee 28 img/s ».
+     Bee tourne le plus souvent dans un CADRE (/__javis/cadre) : l'adresse du cadre n'a jamais « ?fps=1 » (Kevin 6.11 : « je n'ai rien vu »).
+     On lit donc l'adresse de la page qui porte le cadre (même origine : permis) et on y dessine le compteur, pas dans le cadre minuscule.
+     « ?fps=1 » est mémorisé (réglage de l'appareil) ; « ?fps=0 » l'efface. Rien d'affiché sans ce réglage. */
+  var fpsVeut = null, fpsNoeud = null, fpsDoc = null;
+  function hautDoc() {
+    try { if (window.top !== window && window.top.document && window.top.document.body) return window.top; } catch (_) { /* autre origine : on reste ici */ }
+    return window;
+  }
   function afficherFps() {
     if (fpsVeut === null) {
       fpsVeut = false;
-      try { fpsVeut = /[?&]fps=1(&|$)/.test(location.search) || localStorage.getItem('kdmc_fps') === '1'; } catch (_) {}
+      var haut = hautDoc(), q = '';
+      try { q = String(haut.location.search || '') + '&' + String(location.search || ''); } catch (_) {}
+      try {
+        if (/[?&]fps=0(&|$)/.test(q)) { try { localStorage.removeItem('kdmc_fps'); haut.localStorage.removeItem('kdmc_fps'); } catch (_) {} }
+        else if (/[?&]fps=1(&|$)/.test(q)) { fpsVeut = true; try { localStorage.setItem('kdmc_fps', '1'); } catch (_) {} }
+        else fpsVeut = localStorage.getItem('kdmc_fps') === '1';
+      } catch (_) {}
+      fpsDoc = haut.document;
     }
-    if (!fpsVeut || !document.body) return;
-    if (!fpsNoeud) {
-      fpsNoeud = document.createElement('div');
+    if (!fpsVeut || !fpsDoc || !fpsDoc.body) return;
+    if (!fpsNoeud || !fpsDoc.body.contains(fpsNoeud)) {
+      var ancien = fpsDoc.getElementById('mrn-fps');
+      fpsNoeud = ancien || fpsDoc.createElement('div');
       fpsNoeud.id = 'mrn-fps';
       fpsNoeud.setAttribute('style', 'position:fixed;left:6px;bottom:6px;z-index:2147483646;background:rgba(0,0,0,.72);color:#fff;font:600 13px/1.3 system-ui,sans-serif;padding:4px 8px;border-radius:8px;pointer-events:none');
-      document.body.appendChild(fpsNoeud);
+      if (!ancien) fpsDoc.body.appendChild(fpsNoeud);
     }
     fpsNoeud.textContent = suivis.map(function (e) { return e.nom + ' ' + Math.round(e.ips || 0) + ' img/s'; }).slice(0, 4).join(' · ');
   }

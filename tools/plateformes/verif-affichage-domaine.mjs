@@ -83,7 +83,7 @@ export function mesurer(tel) {
       /* 30.10 : dire QUI recouvre (position, z-index, début du texte, parent) — « sous div » ne permettait pas de savoir quel élément du routeur ou de la page cache le bouton */
       else { let cs = {}; try { cs = getComputedStyle(dessus); } catch (_) { /* style illisible */ }
         const qui = court(dessus) + '{' + (cs.position || '?') + (cs.zIndex && cs.zIndex !== 'auto' ? ' z' + cs.zIndex : '') + ' "' + String(dessus.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 18) + '" ← ' + court(dessus.parentElement) + '}';
-        caches.push(court(e) + ' ⟵ sous ' + qui);
+        caches.push(court(e) + (e.id || (typeof e.className === 'string' && e.className) ? '' : ' (dans ' + court(e.parentElement) + ')') + ' ⟵ sous ' + qui);   /* 6.11 : un bouton sans nom est situé par son parent */
         /* 6.11 (Kevin : « la pastille Javis Bee Lingua ne cache jamais rien ») : QUI, parmi les éléments flottants du domaine, recouvre le contrôle */
         const fl = (dessus.tagName === 'IFRAME' && /\/__javis\/cadre/.test(dessus.getAttribute('src') || '')) || (dessus.closest && dessus.closest('#javis-root,.bee-companion')) ? 'bee'
           : dessus.closest && dessus.closest('[data-kdmc-pastille]') ? 'portail' : dessus.closest && dessus.closest('[data-kdmc-vue]') ? 'vue-admin'

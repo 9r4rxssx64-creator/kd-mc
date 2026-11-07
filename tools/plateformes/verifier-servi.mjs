@@ -141,8 +141,11 @@ export function mesurerServi() {
   /* versions : jamais un texte libre, seulement ce qui ressemble à « v1.2.3 » */
   /* 7.11 (arbre : l'écran du code écrit « Arbre v3.200 » dans #gateVer, le robot disait « visibles 0 ») : un mot court devant le numéro (« Arbre », « Version ») reste une pastille. */
   const motV = /^(?:\p{L}{1,12}\s+)?(v\d+(?:\.\d+)+)$/iu;
-  const numV = (e) => ((e.textContent || '').trim().match(motV) || [])[1] || '';
-  const badges = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim())).map(numV).slice(0, 3);
+  /* 7.11 (arbre connecté admin : la pastille #ver dit « v3.200 · 411 pers. », le robot lisait « visibles 0 ») : une pastille FIXE peut porter un court complément après le numéro. */
+  const motVSuffixe = /^(v\d+(?:\.\d+)+)\s*[·|—–-]\s*.{1,24}$/i;
+  const estPastille = (e) => { const t = (e.textContent || '').trim(); if (motV.test(t)) return true; return motVSuffixe.test(t) && getComputedStyle(e).position === 'fixed'; };
+  const numV = (e) => { const t = (e.textContent || '').trim(); return (t.match(motV) || t.match(motVSuffixe) || [])[1] || ''; };
+  const badges = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && estPastille(e)).map(numV).slice(0, 3);
   /* 6.11 (Studio : « v9.22.11 » DEUX FOIS l'une sur l'autre) : `badges` compte aussi une pastille cachée (display:none) ; ce qui fait le défaut,
      c'est le nombre de pastilles réellement VISIBLES. On le mesure (nombre seulement) et on note l'id de celles qui se voient. */
   const versionVisible = (e) => { for (let a = e; a && a !== document.documentElement; a = a.parentElement) { const st = getComputedStyle(a); if (st.display === 'none' || st.visibility === 'hidden' || parseFloat(st.opacity) === 0) return false; } const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return false;
@@ -150,12 +153,12 @@ export function mesurerServi() {
        le module affichait la sienne à bon droit. Hors de l'écran = pas visible (même règle que le module : `elementFromPoint` nul). */
     return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; };
   /* une pastille recouverte par un AUTRE élément (bouton, barre) ne se voit pas : on ne la compte pas ; recouverte par une autre pastille de version, si (c'est le défaut) */
-  const decouverte = (e) => { const h = e.closest('#kdmc-version-badge, #vbadge, #ver, [data-own-badge]') || e; const pe = h.style.pointerEvents; h.style.pointerEvents = 'auto'; const r = e.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); h.style.pointerEvents = pe; return !t || h.contains(t) || t.contains(e) || !!t.closest('#kdmc-version-badge') || motV.test((t.textContent || '').trim()); };
-  const pastillesVisibles = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim()) && versionVisible(e) && decouverte(e));
+  const decouverte = (e) => { const h = e.closest('#kdmc-version-badge, #vbadge, #ver, [data-own-badge]') || e; const pe = h.style.pointerEvents; h.style.pointerEvents = 'auto'; const r = e.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); h.style.pointerEvents = pe; return !t || h.contains(t) || t.contains(e) || !!t.closest('#kdmc-version-badge') || estPastille(t); };
+  const pastillesVisibles = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && estPastille(e) && versionVisible(e) && decouverte(e));
   const badgesVisibles = pastillesVisibles.length;
   /* 7.11 (arbre : « badge v3.200/v3.200 visibles 0 », sans dire pourquoi) : quand il y a des textes de version et qu'aucun ne se voit, le robot NOMME la cause de chacun
      (caché par quel ancêtre, hors de l'écran, ou recouvert par qui) : un « 0 » sans cause ne se corrige pas (leçons 871, 878). */
-  const badgesCaches = badgesVisibles ? [] : [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim())).slice(0, 3).map((e) => {
+  const badgesCaches = badgesVisibles ? [] : [...document.querySelectorAll('body *')].filter((e) => !e.children.length && estPastille(e)).slice(0, 3).map((e) => {
     const qui = e.id ? '#' + e.id : sel(e);
     for (let a = e; a && a !== document.documentElement; a = a.parentElement) { const st = getComputedStyle(a); const k = st.display === 'none' ? 'display none' : st.visibility === 'hidden' ? 'visibility hidden' : parseFloat(st.opacity) === 0 ? 'opacity 0' : ''; if (k) return qui + ' : ' + (a === e ? 'lui-même' : sel(a)) + ' ' + k; }
     const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return qui + ' : taille 0';

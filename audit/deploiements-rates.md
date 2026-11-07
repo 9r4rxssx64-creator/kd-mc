@@ -7,71 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ Deploy Apex Chat (Cloudflare Workers) — 07/11/2026 18:51 UTC
-
-- **Branche** : `main` · **Commit** : `98eff06c` · **Run** : `42403255583`
-- **Ce qui a lâché** : Tests unitaires du commit (porte avant déploiement) › Tests + seuils de couverture (vitest.config.js)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/42403255583
-- **Ce que la machine a dit** :
-
-```
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/lot2-quota-otp.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/lot2-roles-audit.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/lot2-validation.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: ENOENT: no such file or directory, open '/home/runner/work/kd-mc/kd-mc/messaging-app/workers/api-worker.js'
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { errno: -2, code: 'ENOENT', syscall: 'open', path: '/home/runner/work/kd-mc/kd-mc/messaging-app/workers/api-worker.js' }
-##[error]Error: ENOENT: no such file or directory, open '/home/runner/work/kd-mc/kd-mc/messaging-app/workers/api-worker.js'
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { errno: -2, code: 'ENOENT', syscall: 'open', path: '/home/runner/work/kd-mc/kd-mc/messaging-app/workers/api-worker.js' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/purge-comptes-de-test.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/revue-a1-invitation-reclamation.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/revue-a4-jwt-exp-obligatoire.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/revue-d5-numero-complet.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/revue-f1-sso-apres-suppression.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/rgpd-suppression-schema-reel.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/sso-reprise-domaine.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/un-compte-par-personne.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Error: Cannot find module '../../workers/api-worker.js' imported from /home/runner/work/kd-mc/kd-mc/messaging-app/tests/unit/ws-ticket-relais-do.test.js
-Tests unitaires du commit (porte avant déploiement)	Tests + seuils de couverture (vitest.config.js)	Serialized Error: { code: 'ERR_MODULE_NOT_FOUND' }
-##[error]Process completed with exit code 1.
-```
-
-## ❌ KDMC — Déploie le connecteur Monaco Telecom (IMAP → factures) — 07/11/2026 18:51 UTC
-
-- **Branche** : `main` · **Commit** : `98eff06c` · **Run** : `42403255628`
-- **Ce qui a lâché** : deploy › Déploiement du worker Monaco
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/42403255628
-- **Ce que la machine a dit** :
-
-```
-  Please update to the latest version to prevent critical errors.
-^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mThe entry-point file at "worker.js" was not found.^[[0m
-##[error]Process completed with exit code 1.
-```
-
-## ❌ Deploy kdmc-apis (passerelle APIs gratuites domaine) — 07/11/2026 18:50 UTC
-
-- **Branche** : `main` · **Commit** : `98eff06c` · **Run** : `42403255565`
-- **Ce qui a lâché** : deploy › Tests unitaires (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/42403255565
-- **Ce que la machine a dit** :
-
-```
-Error: Cannot find module '/home/runner/work/kd-mc/kd-mc/services/kdmc-apis/worker.js'
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -539,5 +474,71 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 
 ```
 === 32 servies / 0 en échec ===
+##[error]Process completed with exit code 1.
+```
+
+## ❌ KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ) — 19/09/2026 14:24 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `f0a8d662` · **Run** : `35448582768`
+- **Ce qui a lâché** : publier › Vérifier l'adresse STABLE (celle qu'attend le routeur)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35448582768
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::l'adresse STABLE $STABLE ne répond pas (HTTP $code) — NE PAS basculer le routeur dessus"^[[0m
+^[[36;1m  echo "::error::l'adresse stable $STABLE ne sert pas toutes les adresses — bascule interdite"^[[0m
+^[[36;1m  head -25 sonde-stable.log | while IFS= read -r l; do echo "::error::$l"; done^[[0m
+=== 32 servies / 0 en échec ===
+##[error]l'adresse stable https://kdmc-site-bj5.pages.dev ne sert pas toutes les adresses — bascule interdite
+##[error]Sonde de 32 adresses sur https://kdmc-site-bj5.pages.dev (servi à la racine)
+##[error]adresse                        HTTP   contenu
+##[error]────────────────────────────────────────────────
+##[error]✅ kd-mc.com                    200    23432 car.
+##[error]✅ www.kd-mc.com                200    23432 car.
+##[error]✅ cmcteams.kd-mc.com           200  3382632 car.
+##[error]✅ apex-ai.kd-mc.com            200    23571 car.
+##[error]✅ apex-chat.kd-mc.com          200   855110 car.
+##[error]✅ la-detente.kd-mc.com         200     5786 car.
+##[error]✅ chez-lolo.kd-mc.com          200   109823 car.
+##[error]✅ dashboard.kd-mc.com          200    41865 car.
+##[error]✅ sourcing.kd-mc.com           200    12559 car.
+##[error]✅ coffre.kd-mc.com             200    53666 car.
+##[error]✅ departs.kd-mc.com            200   174389 car.
+##[error]✅ cmcteams-light.kd-mc.com     200   174389 car.
+##[error]✅ bot.kd-mc.com                200    32155 car.
+##[error]✅ beatbot.kd-mc.com            200   156883 car.
+##[error]✅ autorisations.kd-mc.com      200    40283 car.
+##[error]✅ arbre.kd-mc.com              200   315106 car.
+##[error]✅ lingua.kd-mc.com             200    70275 car.
+##[error]✅ studio.kd-mc.com             200   419944 car.
+##[error]✅ cuisine.kd-mc.com            200   310280 car.
+##[error]✅ cocina.kd-mc.com             200   310280 car.
+##[error]✅ cujina.kd-mc.com             200   310280 car.
+##[error]Process completed with exit code 1.
+```
+
+## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
+- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
+##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
 ##[error]Process completed with exit code 1.
 ```

@@ -264,7 +264,9 @@ export const INSTALLER_JS = String.raw`(function () {
         var l = document.elementsFromPoint(box.left + box.width * (i + .5) / 3, box.top + box.height * (j + .5) / 3);
         for (k = 0; k < l.length; k++) {
           var n = l[k]; if (n === moi || n === document.body || n === document.documentElement || (n.getAttribute && n.getAttribute('data-kdmc-installer'))) continue;
-          var c = controle(n); if (c && vus.indexOf(c) < 0) vus.push(c); break;
+          /* 7.11 (Apex Chat iPhone 13, reproduit : un écran d'accueil / une feuille transparente et non cliquable passait entre la pastille et le lien « ← KDMC » ; on ne s'arrêtait
+             qu'au PREMIER élément et le lien dessous restait recouvert) : on regarde toute la pile sous la pastille. */
+          var c = controle(n); if (c && vus.indexOf(c) < 0) vus.push(c);
         }
       }
       for (i = 0; i < vus.length; i++) {

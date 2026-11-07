@@ -166,6 +166,25 @@ for (const [w, h] of [[390, 844], [375, 667]]) {
   ok(!R.absent && R.cache.length === 0, w + '×' + h + ' : page pleine de cartes — aucun onglet caché (critère du robot), la pastille n\'est pas rejetée sur la barre', R);
   await ctx.close();
 }
+
+/* H. (pont 1930, Apex Chat iPhone 13 portrait — REPRODUIT sur la vraie page : un écran d'accueil transparent et non cliquable passe entre la pastille et le lien « ← KDMC ») : on regarde toute la pile, pas le seul premier élément */
+const PAGE_VOILE = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%}#haut{position:fixed;top:0;right:0;width:80px;height:56px}
+#lien{position:fixed;left:8px;bottom:72px;z-index:150;display:flex;align-items:center;justify-content:center;min-height:44px;width:80px;background:#222;color:#fff}
+#voile{position:fixed;top:100px;left:0;right:0;bottom:0;z-index:1000;background:transparent}</style>
+<button id="haut">x</button><a id="lien" href="#">← KDMC</a><div id="voile"></div>`;
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 664 }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_VOILE }));
+  await p.goto('https://kdmc.test/');
+  await p.addScriptTag({ content: SRC });
+  await p.waitForSelector('[data-kdmc-installer="pastille"]', { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(1800);
+  const R = await p.evaluate(() => { const b = document.querySelector('[data-kdmc-installer="pastille"]'); if (!b) return { absent: true }; const r = b.getBoundingClientRect(), q = document.getElementById('lien').getBoundingClientRect(); const cx = q.left + q.width / 2, cy = q.top + q.height / 2; return { absent: false, centreSous: cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom, pill: [Math.round(r.left), Math.round(r.top)] }; });
+  ok(!R.absent && !R.centreSous, 'écran transparent non cliquable devant le lien : la pastille 📲 ne recouvre pas le centre du lien', R);
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

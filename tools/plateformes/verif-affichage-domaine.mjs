@@ -71,6 +71,8 @@ export function mesurer(tel) {
       const ra = a.getBoundingClientRect(); if (cx < ra.left || cx > ra.right || cy < ra.top || cy > ra.bottom) { coupe = true; break; }
     }
     if (coupe) continue;
+    /* 7.11 (cloud-installer, pont 1929 : « je ne peux pas désigner l'élément ni l'écran sans deviner ») : les RECTANGLES (nombres seulement) du contrôle recouvert et de ce qui le recouvre */
+    const rects = (a, b) => { try { const f = (n) => { const q = n.getBoundingClientRect(); return Math.round(q.left) + ',' + Math.round(q.top) + ' ' + Math.round(q.width) + 'x' + Math.round(q.height); }; return ' [@' + f(a) + ' sous @' + f(b) + ']'; } catch (_) { return ''; } };
     const dessus = document.elementFromPoint(cx, cy);
     if (dessus && dessus !== e && !e.contains(dessus) && !dessus.contains(e)) {
       /* pas un recouvrement : un libellé du même champ, un marqueur de carte sous les contrôles de la carte (normal) */
@@ -83,7 +85,7 @@ export function mesurer(tel) {
       /* 30.10 : dire QUI recouvre (position, z-index, début du texte, parent) — « sous div » ne permettait pas de savoir quel élément du routeur ou de la page cache le bouton */
       else { let cs = {}; try { cs = getComputedStyle(dessus); } catch (_) { /* style illisible */ }
         const qui = court(dessus) + '{' + (cs.position || '?') + (cs.zIndex && cs.zIndex !== 'auto' ? ' z' + cs.zIndex : '') + ' "' + String(dessus.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 18) + '" ← ' + court(dessus.parentElement) + '}';
-        caches.push(court(e) + (e.id || (typeof e.className === 'string' && e.className) ? '' : ' (dans ' + court(e.parentElement) + ')') + ' ⟵ sous ' + qui);   /* 6.11 : un bouton sans nom est situé par son parent */
+        caches.push(court(e) + (e.id || (typeof e.className === 'string' && e.className) ? '' : ' (dans ' + court(e.parentElement) + ')') + ' ⟵ sous ' + qui + rects(e, dessus));   /* 6.11 : un bouton sans nom est situé par son parent */
         /* 6.11 (Kevin : « la pastille Javis Bee Lingua ne cache jamais rien ») : QUI, parmi les éléments flottants du domaine, recouvre le contrôle */
         const fl = (dessus.tagName === 'IFRAME' && /\/__javis\/cadre/.test(dessus.getAttribute('src') || '')) || (dessus.closest && dessus.closest('#javis-root,.bee-companion')) ? 'bee'
           : dessus.closest && dessus.closest('[data-kdmc-pastille]') ? 'portail' : dessus.closest && dessus.closest('[data-kdmc-vue]') ? 'vue-admin'

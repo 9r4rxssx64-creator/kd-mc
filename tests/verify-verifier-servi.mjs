@@ -79,6 +79,11 @@ const tardive = await (async () => { const b7 = await chromium.launch(exe ? { ex
   await p7.waitForTimeout(700);
   const m = process.env.SABOTAGE === 'feuille-tardive' ? await p7.evaluate(mesurer, true) : await mesurerSansFeuille(p7, true, {}); await b7.close(); return m; })();
 ok('2j2. une feuille « Installer » ouverte pendant la mesure est refermée puis la page remesurée', tardive && tardive.cache === 0, JSON.stringify(tardive && tardive.cache));
+/* 2j3 (7.11, cloud-installer pont 1929) : un contrôle recouvert est livré avec ses RECTANGLES (nombres seulement) : on voit où il est et ce qui le cache, sans deviner. */
+const rect = await (async () => { const b8 = await chromium.launch(exe ? { executablePath: exe } : {}); const p8 = await b8.newPage({ viewport: { width: 390, height: 844 } });
+  await p8.goto(f('rect.html', '<!doctype html><body style="margin:0"><a id="acheter" href="#" style="display:block;width:200px;height:44px;margin:300px 20px">Acheter</a><div id="fond" style="position:fixed;inset:0;z-index:99"></div>'));
+  const m = await p8.evaluate(mesurer, true); await b8.close(); return sansTexte(m.cacheEx)[0] || ''; })();
+ok('2j3. un contrôle recouvert est livré avec ses rectangles (x,y largeurxhauteur), sans texte', /\[@\d+,\d+ \d+x\d+ sous @\d+,\d+ \d+x\d+\]/.test(rect) && !/Acheter/.test(rect), rect);
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

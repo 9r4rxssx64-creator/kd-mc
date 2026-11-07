@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Servi — un contrôle recouvert est livré avec ses rectangles (2026-11-07)
+- Demande de cloud-installer (pont 1929) : « je ne peux pas désigner l'élément ni l'écran sans deviner ». Le relevé « cache » ajoute `[@x,y LxH sous @x,y LxH]` (nombres seulement, aucun texte de page) pour le contrôle recouvert et ce qui le recouvre. Cas visé : `a#kdmc-portal-link` d'Apex Chat sur iPhone 13 portrait (cache 1 persistant après PR 5523).
+- Garde `tests/verify-verifier-servi.mjs` 2j3 : vert ; rouge sur l'ancien relevé (sans rectangles).
+
 ## Arbre v3.200 — la fiche choisie est centrée en vue Plan / Paysage (2026-11-07)
 - **Pourquoi** : Kevin « mal centré sur la fiche en plan » : mesuré, la branche entière tenait à ×0,06-0,1 en bande collée en haut, la personne décalée de 100-170 px.
 - **Fait** : en Plan / Paysage la personne est posée au centre de la zone libre à ≥ ×0,3 ; vue Arbre inchangée.

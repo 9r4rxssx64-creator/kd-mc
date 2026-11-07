@@ -7,6 +7,19 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le connecteur Monaco Telecom (IMAP → factures) — 07/11/2026 18:51 UTC
+
+- **Branche** : `main` · **Commit** : `98eff06c` · **Run** : `42403255628`
+- **Ce qui a lâché** : deploy › Déploiement du worker Monaco
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/42403255628
+- **Ce que la machine a dit** :
+
+```
+  Please update to the latest version to prevent critical errors.
+^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mThe entry-point file at "worker.js" was not found.^[[0m
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Deploy kdmc-apis (passerelle APIs gratuites domaine) — 07/11/2026 18:50 UTC
 
 - **Branche** : `main` · **Commit** : `98eff06c` · **Run** : `42403255565`
@@ -527,17 +540,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

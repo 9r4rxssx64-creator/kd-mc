@@ -126,7 +126,14 @@ export function partout() {
       veille = setInterval(function () { if (!document.hidden) choisirPlace(); }, 4000);
       window.addEventListener('scroll', function () { discret(true); clearTimeout(defile); defile = setTimeout(function () { discret(false); choisirPlace(); }, 700); }, true);
       /* 6.11 (Kevin : « ne cache jamais rien ») : un contrôle qui ARRIVE (Apex AI sur tablette : bouton principal sous le rond entre deux veilles de 4 s) → replacement 0,3 s après le changement de la page */
-      try { if (window.MutationObserver) { var mo = 0; new MutationObserver(function () { clearTimeout(mo); mo = setTimeout(choisirPlace, 300); }).observe(document.body, { childList: true, subtree: true }); } } catch (e) { /* page sans observateur */ }
+      /* 7.11 (robot d'affichage, run 42370404742 : sur CMCteams en paysage, « 👑 Vue admin » s'est DÉPLACÉE sous le rond) : une pastille du domaine qui change de place
+         ne change que son style — l'observateur des ajouts ne le voyait pas, il fallait attendre la veille de 4 s. On suit aussi le style des pastilles du domaine. */
+      try { if (window.MutationObserver) {
+        var mo = 0, plus = function () { clearTimeout(mo); mo = setTimeout(choisirPlace, 300); }, suivis = typeof WeakSet === 'function' ? new WeakSet() : null, obsStyle = new MutationObserver(plus);
+        var suivre = function () { if (!suivis) return; var fl = document.querySelectorAll('[data-kdmc-vue],[data-kdmc-pastille],[data-kdmc-installer],#kdmc-version-badge'); for (var i = 0; i < fl.length; i++) if (!suivis.has(fl[i])) { suivis.add(fl[i]); obsStyle.observe(fl[i], { attributes: true, attributeFilter: ['style', 'class', 'hidden'] }); } };
+        suivre();
+        new MutationObserver(function () { suivre(); plus(); }).observe(document.body, { childList: true, subtree: true });
+      } } catch (e) { /* page sans observateur */ }
     }
     /* PENDANT LE DÉFILEMENT, BEE S'EFFACE (Kevin 25.10, iPhone sur kd-mc.com : en faisant défiler le portail, la bulle passe sur les flèches › et le texte des cartes — du contenu qui n'est pas un bouton fixe, donc impossible à éviter par la place) :
        elle rétrécit (×0,75 ≈ 51 px, toujours ≥ 44 px) et devient à moitié transparente tant que la page bouge, puis revient pleine 0,7 s après l'arrêt. transform + opacity seulement (GPU), jamais quand le chat est ouvert. */

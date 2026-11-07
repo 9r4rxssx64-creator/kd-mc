@@ -371,6 +371,20 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
     chk(r.rec === 0, `150 boutons dans la page AVANT la barre de secours (cas réel d'Apex AI) : Bee voit quand même la barre et s'écarte (${r.rec} bouton(s) de la barre recouvert(s), rond en ${r.f.join(',')})`);
     await p.ctx.close();
   }
+  /* 7.11 (run 42370404742, CMCteams en paysage) : « 👑 Vue admin » (pastille du domaine, fixe) se DÉPLACE sous le rond en changeant seulement son style.
+     La veille de 4 s est neutralisée (page déclarée cachée) : seul le suivi du style des pastilles peut faire réagir Bee, en moins de 1,5 s. */
+  {
+    const p = await ouvre();
+    await p.page.waitForFunction(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); return f && getComputedStyle(f).display === 'block'; }, null, { timeout: 20000 }).catch(() => {});
+    await p.page.evaluate(() => { const b = document.createElement('button'); b.setAttribute('data-kdmc-vue', 'admin'); b.textContent = '👑 Vue admin'; b.style.cssText = 'position:fixed;left:8px;top:8px;width:136px;height:44px;z-index:2147481900'; document.body.appendChild(b); });
+    await dors(9500);
+    await p.page.evaluate(() => { Object.defineProperty(document, 'hidden', { get: () => true, configurable: true }); });
+    await p.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), b = document.querySelector('[data-kdmc-vue]'); b.style.left = Math.max(0, Math.round(f.right - 136)) + 'px'; b.style.top = Math.round(f.top + 24) + 'px'; });
+    await dors(1500);
+    const r = await p.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), q = document.querySelector('[data-kdmc-vue]').getBoundingClientRect(); return { rec: Math.min(f.right, q.right) - Math.max(f.left, q.left) > 2 && Math.min(f.bottom, q.bottom) - Math.max(f.top, q.top) > 2, f: [Math.round(f.left), Math.round(f.top)] }; });
+    chk(r.rec === false, `« 👑 Vue admin » qui se déplace sous le rond (veille arrêtée) : Bee s'écarte en moins de 1,5 s (rond en ${r.f.join(',')})`);
+    await p.ctx.close();
+  }
   /* PENDANT LE DÉFILEMENT, BEE S'EFFACE (Kevin 25.10, pont 1042 : sur le portail la bulle passe sur les flèches › et les cartes) : plus petite (≥ 44 px) et à moitié transparente tant que la page bouge, pleine après l'arrêt */
   await n.page.evaluate(() => { const g = document.createElement('div'); g.id = 'grand'; g.style.cssText = 'height:3000px;width:1px'; document.body.appendChild(g); });
   const etat = () => n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'), r = f.getBoundingClientRect(), c = getComputedStyle(f); return { op: +(+c.opacity).toFixed(2), w: Math.round(r.width), tf: f.style.transform }; });

@@ -9,7 +9,7 @@ Trois couches, toutes gratuites :
    a. `node tools/arbre/appliquer-nuage.mjs --exporter f.json` ; entrée `{"export": <f.json>, "vus": null}` → `node tools/arbre/session/relecture-modifs.mjs --sommes < entree.json` (un total par seau = 1re lettre de l'id) ;
    b. D1 `kdmc-pont` : `SELECT substr(id,1,1) b, count(*) n, sum(unicode(substr(h,1,1))*31+unicode(substr(h,2,1))*17+unicode(substr(h,3,1))*13+unicode(substr(h,4,1))*7) s FROM arbre_vu GROUP BY b` ; comparer ; **si tout est égal : rien n'a bougé, s'arrêter** ;
    c. pour les seaux qui diffèrent (ou nouveaux) : `SELECT id,h FROM arbre_vu WHERE substr(id,1,1) IN ('x','y')` → entrée `{"export":…, "vus":[{id,h}…], "seaux":["x","y"]}` → `node tools/arbre/session/relecture-modifs.mjs < entree.json` (rapport) puis `--sql` (les nouvelles empreintes, seulement les fiches qui ont bougé), à exécuter dans D1 **après** avoir traité ;
-   - écart de texte sûr (année, lieu, date) → corriger par `ecrire.sh` (`notesReecrite` si le début change) ;
+   - écart de texte sûr (année, lieu, date) → corriger par `ecrire.sh` (`notesReecrite` si le début change ; CHAQUE entrée du patch porte `"fusion": true`, sinon `importerPaquet` l'ignore sans erreur et affiche « 0 complétée » : relire le nombre de fiches « complétée(s) » avant de dire « écrit », et relire le texte dans un export frais, 7.11) ;
    - personne nouvelle sans preuve → mission au Lenovo (`arbre-pc`, contenu complet dans le message) : actes, sources, JO / archives, puis ses parents (on remonte) ;
    - filiation ou conjoint contredit → ne pas deviner : question à Kevin en une phrase ;
    - effacer l'export et l'entrée après (rien de familial dans le dépôt).

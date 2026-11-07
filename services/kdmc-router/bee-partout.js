@@ -56,13 +56,22 @@ export function partout() {
       if (ouvert) { s.width = Math.max(280, Math.min(window.innerWidth - 16, 436)) + 'px'; s.height = Math.max(320, Math.min(Math.round(window.innerHeight * 0.8), 660)) + 'px'; }
       else { s.width = '92px'; s.height = '92px'; }
     }
-    function permanent(e) {
-      for (var n = e, k = 0; n && n.nodeType === 1 && k < 14; n = n.parentElement, k++) { var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true; }
-      return false;
+    /* memo : un même parent n'est lu qu'une fois par relevé (une page à des centaines de boutons reste légère) */
+    function permanent(e, memo) {
+      var vus = [], res = false;
+      for (var n = e, k = 0; n && n.nodeType === 1 && k < 14; n = n.parentElement, k++) {
+        if (memo && memo.has(n)) { res = memo.get(n); break; }
+        vus.push(n);
+        var p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') { res = true; break; }
+      }
+      if (memo) for (var j = 0; j < vus.length; j++) memo.set(vus[j], res);
+      return res;
     }
     function controles() {
-      var out = [], els = document.querySelectorAll('button,a[href],input,textarea,select,summary,[role="button"],[onclick]');
-      for (var i = 0; i < els.length && out.length < 120; i++) {
+      /* 7.11 (pont 1896, Chrome de Kevin sur Apex AI) : le relevé s'arrêtait aux 120 premiers contrôles visibles ; la barre de secours, en FIN de page, n'était jamais vue
+         et Bee recouvrait « Dashboard » et « Admin ». Désormais : les contrôles FIXES sont tous relevés, ceux du contenu jusqu'à 400. */
+      var out = [], nContenu = 0, memo = typeof WeakMap === 'function' ? new WeakMap() : null, els = document.querySelectorAll('button,a[href],input,textarea,select,summary,[role="button"],[onclick]');
+      for (var i = 0; i < els.length && i < 3000; i++) {
         var e = els[i], r = e.getBoundingClientRect();
         if (r.width < 8 || r.height < 8 || r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) continue;
         var cs = getComputedStyle(e);
@@ -70,7 +79,10 @@ export function partout() {
         if (e.disabled || e.getAttribute('aria-disabled') === 'true') continue;       // un bouton grisé n'attend aucun doigt
         /* 6.11 (Kevin : « la pastille ne cache jamais rien, aucune fonction ») : TOUT contrôle visible compte, plus seulement les barres fixes ;
            un contrôle fixe ou collant pèse 100 (jamais recouvert s'il existe une autre place), un contrôle du contenu pèse 1 */
-        out.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, poids: permanent(e) ? 100 : 1 });
+        var fixe = permanent(e, memo);
+        if (!fixe && nContenu >= 400) continue;
+        if (!fixe) nContenu++;
+        out.push({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, poids: fixe ? 100 : 1 });
       }
       return out;
     }

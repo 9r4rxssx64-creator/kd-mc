@@ -185,6 +185,8 @@ console.log('C. Le bouton de confirmation');
   await fr.locator('#javis-input').fill('rappelle-moi lundi à 9h30 d\'appeler Laurence');
   await fr.locator('#javis-input').press('Enter');
   await fr.waitForSelector('.javis-carte', { timeout: 10000 });
+  /* 7.11 : le panneau s'ouvre avec une animation (javis-pop, 0,18 s, échelle < 1) ; la réponse de test arrive avant la fin → un bouton de 44 px mesurait 43. On mesure une fois l'ouverture finie. */
+  await fr.waitForFunction(() => !document.getAnimations().some((a) => a.animationName === 'javis-pop' && a.playState === 'running'), null, { timeout: 3000 }).catch(() => {});
   const carte = await fr.evaluate(() => { const c = document.querySelector('.javis-carte'); const b = [...c.querySelectorAll('button')].map((x) => { const r = x.getBoundingClientRect(); return { t: x.textContent, h: Math.round(r.height), w: Math.round(r.width) }; }); return { t: c.querySelector('.javis-carte-t').textContent, r: c.querySelector('.javis-carte-r').textContent, b, html: c.querySelector('.javis-carte-r').innerHTML, xss: window.__xss === 1 }; });
   chk(/Programmer un rappel/.test(carte.t) && /lundi 5 octobre/.test(carte.r), `la carte montre le titre et le résumé du SERVEUR (${carte.t})`);
   if (process.env.BEE_SHOT) await page.screenshot({ path: process.env.BEE_SHOT + '/carte.png' });
@@ -349,6 +351,26 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
   await dors(6500);
   const apres = await mes();
   chk(apres.rec === 0, `barre de secours MONTRÉE : Bee s'écarte seule en moins de 7 s, aucun des 5 boutons n'est recouvert (rond en ${apres.f.join(',')})`);
+  /* 7.11 (pont 1896, Chrome de Kevin sur Apex AI : Bee couvrait « Dashboard » 91 % et « Admin » 54 % de la barre de secours MONTRÉE) : la page a des CENTAINES de boutons avant la barre ;
+     le relevé s'arrêtait aux 120 premiers contrôles visibles → la barre (en fin de page) n'était jamais vue. Ici : 150 boutons du contenu AVANT la barre, Bee doit quand même s'écarter. */
+  {
+    const p = await ouvre();
+    await p.page.waitForFunction(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); return f && getComputedStyle(f).display === 'block'; }, null, { timeout: 20000 }).catch(() => {});
+    await dors(9000);
+    await p.page.evaluate(() => {
+      const z = document.createElement('div'); z.id = 'beaucoup';
+      for (let i = 0; i < 150; i++) { const b = document.createElement('button'); b.textContent = '·'; b.style.cssText = 'position:absolute;left:' + (8 + (i % 15) * 24) + 'px;top:' + (60 + Math.floor(i / 15) * 24) + 'px;width:20px;height:20px;padding:0'; z.appendChild(b); }
+      document.body.insertBefore(z, document.body.firstChild);
+      const t = document.createElement('div'); t.id = 'apex-rescue-toolbar';
+      t.style.cssText = 'position:fixed;bottom:72px;right:4px;display:flex;flex-direction:column;gap:3px;z-index:9998';
+      ['coffre', 'dashboard', 'admin', 'chat', 'login'].forEach((k) => { const b = document.createElement('button'); b.id = 'apex-rescue-' + k; b.textContent = k[0]; b.style.cssText = 'width:44px;height:44px;padding:0'; t.appendChild(b); });
+      document.body.appendChild(t);
+    });
+    await dors(2500);
+    const r = await p.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), bs = [...document.querySelectorAll('#apex-rescue-toolbar button')].map((b) => b.getBoundingClientRect()); return { f: [Math.round(f.left), Math.round(f.top)], rec: bs.filter((q) => Math.min(f.right, q.right) - Math.max(f.left, q.left) > 2 && Math.min(f.bottom, q.bottom) - Math.max(f.top, q.top) > 2).length }; });
+    chk(r.rec === 0, `150 boutons dans la page AVANT la barre de secours (cas réel d'Apex AI) : Bee voit quand même la barre et s'écarte (${r.rec} bouton(s) de la barre recouvert(s), rond en ${r.f.join(',')})`);
+    await p.ctx.close();
+  }
   /* PENDANT LE DÉFILEMENT, BEE S'EFFACE (Kevin 25.10, pont 1042 : sur le portail la bulle passe sur les flèches › et les cartes) : plus petite (≥ 44 px) et à moitié transparente tant que la page bouge, pleine après l'arrêt */
   await n.page.evaluate(() => { const g = document.createElement('div'); g.id = 'grand'; g.style.cssText = 'height:3000px;width:1px'; document.body.appendChild(g); });
   const etat = () => n.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'), r = f.getBoundingClientRect(), c = getComputedStyle(f); return { op: +(+c.opacity).toFixed(2), w: Math.round(r.width), tf: f.style.transform }; });

@@ -52,6 +52,9 @@ await p.setContent(`<!doctype html><title>t</title><div id="liste" style="positi
 const m7 = await p.evaluate(mesurer, true);
 ok('un bouton à faire défiler dans sa liste n\'est pas « caché » (6.11, chat de Javis)', m7.cache === 0, JSON.stringify(m7.cacheEx));
 ok('un bouton sous le cadre de Bee est attribué à « bee »', m6.cache === 1 && m6.parFlottant && m6.parFlottant.bee === 1, JSON.stringify(m6.parFlottant));
+/* 7.11 (pont 1929) : chaque recouvrement par un flottant est NOMMÉ avec ses positions, pas seulement compté (2-3 exemples ne suffisaient pas pour corriger) */
+ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m6.flotEx) && m6.flotEx.length === 1 && /^bee : button#ok .*\[@\d+,\d+ \d+x\d+ sous @/.test(m6.flotEx[0]), JSON.stringify(m6.flotEx));
+{ const { bilan } = await import('../tools/plateformes/verif-affichage-domaine.mjs'); const B = bilan([{ app: 'x', ecran: 'iphone-se', flotEx: m6.flotEx }, { app: 'x', ecran: 'portable', flotEx: m6.flotEx }]); ok('le bilan garde chaque recouvrement par écran', B.x.flotEx && B.x.flotEx.length === 2 && /^\[iphone-se\] bee : /.test(B.x.flotEx[0]), JSON.stringify(B.x.flotEx)); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

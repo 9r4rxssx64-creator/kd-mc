@@ -58,7 +58,7 @@ export function mesurer(tel) {
   };
   const cliquables = [...document.querySelectorAll('a[href], button, [role="button"], input:not([type="hidden"]), select, textarea, [onclick], summary')]
     .filter(visible);
-  const caches = [], petits = [], toasts = [], parFlottant = {};
+  const caches = [], petits = [], toasts = [], parFlottant = {}, flotEx = [];
   for (const e of cliquables) {
     const r = e.getBoundingClientRect();
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -90,7 +90,9 @@ export function mesurer(tel) {
         const fl = (dessus.tagName === 'IFRAME' && /\/__javis\/cadre/.test(dessus.getAttribute('src') || '')) || (dessus.closest && dessus.closest('#javis-root,.bee-companion')) ? 'bee'
           : dessus.closest && dessus.closest('[data-kdmc-pastille]') ? 'portail' : dessus.closest && dessus.closest('[data-kdmc-vue]') ? 'vue-admin'
             : dessus.closest && dessus.closest('button[aria-label*="Installer l\'application"],button[aria-label="Activer les notifications"]') ? 'installeur' : 'autre';
-        parFlottant[fl] = (parFlottant[fl] || 0) + 1; }
+        parFlottant[fl] = (parFlottant[fl] || 0) + 1;
+        /* 7.11 (pont 1929 : « le robot n'imprime que 2-3 exemples par app, je ne peux pas désigner l'élément sans deviner ») : CHAQUE recouvrement par un flottant du domaine est gardé, avec ses positions */
+        if (fl !== 'autre' && flotEx.length < 40) flotEx.push(fl + ' : ' + caches[caches.length - 1]); }
     }
     if (tel && (r.width < 44 || r.height < 44) && e.tagName !== 'INPUT' && e.tagName !== 'TEXTAREA' && e.tagName !== 'SELECT') petits.push(court(e));
   }
@@ -117,7 +119,7 @@ export function mesurer(tel) {
   const largeur = Math.max(document.documentElement.scrollWidth, document.body ? document.body.scrollWidth : 0);
   return {
     titre: !!document.title,
-    cache: caches.length, cacheEx: caches.slice(0, 4), parFlottant, toast: toasts.length,
+    cache: caches.length, cacheEx: caches.slice(0, 4), parFlottant, flotEx, toast: toasts.length,
     haut: haut.length, hautEx: haut.slice(0, 3),
     /* sur téléphone, Chrome/Safari ÉLARGISSENT la page pour faire tenir un contenu trop large (innerWidth grossit, la page se dézoome) :
        on compare donc à la largeur de l'ÉCRAN, pas à innerWidth. */
@@ -280,6 +282,7 @@ export function bilan(res) {
     if (r.err && !a.err) a.err = r.err;
     if (r.jsEx && r.jsEx.length && !a.jsEx) a.jsEx = r.jsEx;
     for (const x of [...(r.cacheEx || []).slice(0, 2).map((v) => 'caché ' + v), ...(r.hautEx || []).slice(0, 1).map((v) => 'haut ' + v)]) if (a.ex.size < 4) a.ex.add(x);
+    for (const x of r.flotEx || []) { a.flotEx = a.flotEx || []; const l = '[' + r.ecran + '] ' + x; if (a.flotEx.length < 60 && !a.flotEx.includes(l)) a.flotEx.push(l); }
     for (const [k, v] of Object.entries(r.parFlottant || {})) { a.flottants = a.flottants || {}; a.flottants[k] = (a.flottants[k] || 0) + v; }
     a.cache += r.cache || 0; a.haut += r.haut || 0; a.deborde = Math.max(a.deborde, r.deborde || 0); a.js += r.js || 0;
     if (ECRANS.find((e) => e.nom === r.ecran)?.tel) a.petit = Math.max(a.petit, r.petit || 0);
@@ -301,6 +304,8 @@ if (process.argv[1] && process.argv[1].endsWith('verif-affichage-domaine.mjs')) 
     if (mauvais) ko++;
     console.log(`${mauvais ? '❌' : '✅'} ${app} · cache ${a.cache}${a.flottants ? ' [' + Object.entries(a.flottants).map(([k, v]) => k + ' ' + v).join(' · ') + ']' : ''} · haut ${a.haut} · deborde ${a.deborde} · petit ${a.petit} · js ${a.js}${a.morts ? ' · ' + a.morts + ' bouton(s) sans réaction' : ''}${a.sansRetour ? ' · ' + a.sansRetour + ' page(s) sans retour' : ''}${a.encoche ? ' · encoche iPhone' : ''}${a.petitEx ? ' · petits : ' + a.petitEx.join(' | ') : ''}${a.ecransKO.length ? ' · écrans : ' + [...new Set(a.ecransKO)].join(',') : ''}${a.err ? ' · erreur : ' + a.err : ''}${a.jsEx ? ' · js ex : ' + a.jsEx.join(' / ') : ''}${a.ex.size ? ' · ex : ' + [...a.ex].join(' | ') : ''}`);
   }
+  /* 7.11 : tous les recouvrements par un flottant du domaine (bee · portail · vue-admin · installeur), app par app, écran et positions — pour que le propriétaire corrige sans deviner */
+  for (const [app, a] of Object.entries(B)) if (a.flotEx && a.flotEx.length) { console.log(`\n— ${app} : ${a.flotEx.length} recouvrement(s) par un flottant du domaine`); for (const l of a.flotEx) console.log('   ↳ ' + l); }
   console.log(`\nℹ️ ${Object.keys(B).length} apps × ${ECRANS.length} écrans = ${res.length} pages ; ${ko} app(s) à corriger`);
   if (process.env.SORTIE) writeFileSync(process.env.SORTIE, JSON.stringify(res, null, 1));
 }

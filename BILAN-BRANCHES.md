@@ -45,7 +45,7 @@
 - **Branche** : `claude/verify-cmcteams-light-data-rzlvau` — existe, dernier commit **2026-09-06** (17 j), `3a9c07df`
 - **État déclaré** : `actif` · mise à jour le **2026-09-10** (il y a 14 j)
 - **Discussions** : 46 envoyées, 83 reçues · **à lire : m003, m004, m005, m014, m015, m016, m018, m019, m020, m021, m026, m028, m035, m037, m055, m056, m059, m062, m067-arbre, m073-arbre, m078-video-review, m079-video-review, m081-javis-bee, m083-javis-bee, m085-javis-bee, m086-javis-bee, m087-tor-securite, m088-tor-securite, m090-javis-bee, m090-video-review, m091-tor-securite, m092-transfert-ia, m094-transfert-ia, m095-video-review, m099-video-review, m101-video-review, m122-video-review, m123-video-review, m124-transfert-ia, m125-transfert-ia, m126-transfert-ia** · ses signalements encore ouverts : m039, m040, m041, m043, m044, m045, m046, m048, m049, m050, m051, m052, m057, m058, m060, m061, m069, m070, m071, m072, m073, m098-cmcteams-pdf, m102-cmcteams-pdf, m103-cmcteams-pdf, m104-cmcteams-pdf, m105-cmcteams-pdf, m106-cmcteams-pdf, m107-cmcteams-pdf, m108-cmcteams-pdf, m109-cmcteams-pdf, m110-cmcteams-pdf, m111-cmcteams-pdf, m112-cmcteams-pdf, m113-cmcteams-pdf, m114-cmcteams-pdf, m115-cmcteams-pdf, m116-cmcteams-pdf, m117-cmcteams-pdf, m118-cmcteams-pdf, m119-cmcteams-pdf, m120-cmcteams-pdf, m121-cmcteams-pdf
-- **Dernière note** : 10.09 : équipes lues dans le récapitulatif page 1 (v9.897), octobre 2026 intégré, cellules+équipes 0 écart 4 mois × 2 surfaces, CASSINI A/MOREL F retrouvés
+- **Dernière note** : 10.09 : équipes lues dans le récapitulatif page 1 (v9.897), octobre 2026 intégré, cellules+équipes 0 écart 4 mois × 2 surfaces, ‹employé› A/MOREL F retrouvés
 - **Verdict** : 🟠 pas de mise à jour depuis 14 j
 
 ### 🟠 Domain Kdmc  `domain-kdmc`

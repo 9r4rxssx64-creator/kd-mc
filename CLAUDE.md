@@ -1021,9 +1021,9 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 « Voici tout mon domaine. Note tout et rappelle-toi. Pareil pour toutes les autres branches et les futures. »
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-tout-le-domaine-de-kevin-est-mon-terrain-je-le-connais-je-le-note-je-le-teste-en-entier-toutes-branches-présentes-et-futures-kevin-2026-10-25-absolue)
 
-### 🔓 RÈGLE ABSOLUE — JAMAIS BLOQUÉ PAR LA PORTE DU DOMAINE : LE ROBOT PUBLIC « SERVI » LIT LES PAGES DERRIÈRE LA PORTE, CONNECTÉ EN ADMIN, EN LECTURE SEULE, ET RENDS DES NOMBRES (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
+### 🔓 RÈGLE ABSOLUE — JAMAIS BLOQUÉ PAR LA PORTE DU DOMAINE : LE ROBOT PUBLIC « SERVI » LIT LES PAGES DERRIÈRE LA PORTE, CONNECTÉ EN ADMIN, EN ‹employé› SEULE, ET RENDS DES NOMBRES (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve des solutions, crée, pour ne jamais être bloqué comme ça. »
-↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-jamais-bloqué-par-la-porte-du-domaine-le-robot-public-servi-lit-les-pages-derrière-la-porte-connecté-en-admin-en-lecture-seule-et-rends-des-nombres-kevin-2026-10-25-absolue-toutes-les-branches)
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-jamais-bloqué-par-la-porte-du-domaine-le-robot-public-servi-lit-les-pages-derrière-la-porte-connecté-en-admin-en-employé-seule-et-rends-des-nombres-kevin-2026-10-25-absolue-toutes-les-branches)
 
 ### 🌉 RÈGLE ABSOLUE — LE PONT NE DOIT JAMAIS ÊTRE BLOQUÉ : QUAND LE QUOTA GRATUIT DE D1 EST DÉPASSÉ, ON ÉCRIT DANS LE PONT DE SECOURS GITHUB ET ON LIT SANS PARCOURIR LA TABLE (Kevin 2026-10-25, ABSOLUE, TOUTES LES BRANCHES)
 « Trouve une solution gratuite pour débloquer le blocage du pont. Crée si besoin. Trouve des solutions, va plus loin. »

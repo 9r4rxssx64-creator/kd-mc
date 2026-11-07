@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* verify-chez-lolo-sans-lecture-anonyme — la boutique ne lit plus la liste d'accès de la base au chargement.
+/* verify-boutique-sans-acces-anonyme — la boutique ne lit plus la liste d'accès de la base au chargement.
  *
  * Contrôle réel du Lenovo (pont 970, 24.10.2026) : chez-lolo.kd-mc.com v2.0.19 recevait « 401 » de la base Firebase :
  * au démarrage, la page lisait SANS jeton shops_admin_v1/access (la liste d'accès de la boutique), que les règles

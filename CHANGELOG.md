@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.361 — l'encart « écran d'accueil » laisse libre le lien « ← Portail » (2026-11-07)
+- Servi (run 42362275731, iPhone 13 portrait) : une fois la pastille « 📲 » du domaine déplacée par cloud-installer, le lien `a#kdmc-portal-link @8,548 80x44` était recouvert par MON encart (`div#install-hint-t @27,544 306x38`), qu'il fallait pousser : l'encart commence maintenant à 100 px du bord gauche, à droite du lien (8 → 88 px), sur deux lignes si besoin ; toujours sous le dernier bouton de la liste vide (haut 542 px, bas des boutons 530 px).
+- Garde `tests/verify-install-hint-compact.mjs` : 8 ✅ ; `SABOTAGE=2` (ancien bord à 12 px) : 1 ❌ ; `SABOTAGE=1` (3 gestes d'office) : 3 ❌.
+
 ## Servi — il attend la fin de l'écran de démarrage et chronomètre sa durée (2026-11-07)
 - Runs 42355883096 et 42361880522 : Apex AI « 1er texte div.apex-splash-logo », pastille de version absente, 17 i/s sur iPhone 13 portrait puis portable : à 4,5 s l'écran de démarrage de l'app était encore là et le robot mesurait ce démarrage. Il attend maintenant sa disparition (15 s de plus au plus) et écrit « démarrage N s » ou « ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s » (défaut de l'app, pas du robot).
 - Garde `tests/verify-verifier-servi.mjs` 2j5 : vert (1,2 s → 1,5 s lues, page sans démarrage → null, éternel → « toujours ») ; rouge (import impossible) sans la fonction.

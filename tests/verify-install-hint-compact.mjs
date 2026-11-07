@@ -11,17 +11,19 @@ const src = readFileSync(new URL('../messaging-app/index.html', import.meta.url)
 const a = src.indexOf('K._maybeShowInstallHint = function(){'), b = src.indexOf('K._contactSupport = async function(){');
 t(a > 0 && b > a, 'la vraie fonction de l\'encart est dans messaging-app/index.html');
 let code = src.slice(a, b);
-if (process.env.SABOTAGE) code = code.replace('id="install-hint-d" style="display:none', 'id="install-hint-d" style="display:block');
+if (process.env.SABOTAGE === '2') code = code.replace('left:100px;right:12px', 'left:12px;right:12px');
+if (process.env.SABOTAGE === '1') code = code.replace('id="install-hint-d" style="display:none', 'id="install-hint-d" style="display:block');
 const page = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>:root{--ax-bg-2:#111;--ax-text-2:#aaa;--ax-shadow:0 2px 8px #000}body{margin:0;font-family:sans-serif;font-size:16px;background:#000;color:#fff}
-.b{position:absolute;left:87px;width:216px;height:48px}</style><button class="b" id="c1" style="top:424px">📤 Inviter mes amis</button><button class="b" id="c2" style="top:482px">👥 Créer un groupe</button>`;
+.b{position:absolute;left:87px;width:216px;height:48px}</style><a id="lien" href="#" style="position:fixed;left:8px;top:548px;width:80px;height:44px;z-index:150">← Portail</a><button class="b" id="c1" style="top:424px">📤 Inviter mes amis</button><button class="b" id="c2" style="top:482px">👥 Créer un groupe</button>`;
 const nav = await chromium.launch();
 const ctx = await nav.newContext({ viewport: { width: 390, height: 664 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' });
 const p = await ctx.newPage(); await p.route('https://apex-chat.test/', (r) => r.fulfill({ contentType: 'text/html; charset=utf-8', body: page })); await p.goto('https://apex-chat.test/');
 await p.evaluate((c) => { const K = { user: { id: 'u' } }; window.K = K; (new Function('K', c))(K); K._maybeShowInstallHint(); }, code);
-const m = await p.evaluate(() => { const h = document.getElementById('install-hint'); if (!h) return null; const r = h.getBoundingClientRect(); const c2 = document.getElementById('c2').getBoundingClientRect(); return { top: Math.round(r.top), h: Math.round(r.height), c2bas: Math.round(c2.bottom), pose: document.elementFromPoint(195, 450) === document.getElementById('c1') || document.getElementById('c1').contains(document.elementFromPoint(195, 450)), pose2: document.elementFromPoint(195, 506) === document.getElementById('c2') }; });
+const m = await p.evaluate(() => { const h = document.getElementById('install-hint'); if (!h) return null; const r = h.getBoundingClientRect(); const c2 = document.getElementById('c2').getBoundingClientRect(); const lk = document.getElementById('lien').getBoundingClientRect(); const chevauche = !(r.right <= lk.left || r.left >= lk.right || r.bottom <= lk.top || r.top >= lk.bottom); return { top: Math.round(r.top), h: Math.round(r.height), c2bas: Math.round(c2.bottom), chevauche, gauche: Math.round(r.left), lienDroite: Math.round(lk.right), lienTouche: document.elementFromPoint(48, 570) === document.getElementById('lien'), pose: document.elementFromPoint(195, 450) === document.getElementById('c1') || document.getElementById('c1').contains(document.elementFromPoint(195, 450)), pose2: document.elementFromPoint(195, 506) === document.getElementById('c2') }; });
 t(!!m, 'l\'encart s\'affiche pour un compte connecté sur iPhone (Safari, hors app installée)');
 if (m) {
   t(m.top >= m.c2bas, `l'encart (haut ${m.top} px, ${m.h} px de haut) commence sous le dernier bouton (bas ${m.c2bas} px)`);
+  t(!m.chevauche && m.lienTouche, `l'encart (à ${m.gauche} px du bord) ne recouvre pas le lien « ← Portail » (qui finit à ${m.lienDroite} px) et le lien reçoit le toucher`);
   t(m.pose && m.pose2, 'les deux boutons de la liste vide reçoivent le toucher (rien par-dessus)');
   const ouvert = await p.evaluate(() => { document.getElementById('install-hint-t').click(); const d = document.getElementById('install-hint-d'); return { vis: d && getComputedStyle(d).display !== 'none', exp: document.getElementById('install-hint-t').getAttribute('aria-expanded') }; });
   t(!process.env.SABOTAGE ? ouvert.vis && ouvert.exp === 'true' : true, 'toucher la ligne ouvre les 3 gestes (aria-expanded=true)');

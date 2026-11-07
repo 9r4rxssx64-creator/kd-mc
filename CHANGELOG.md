@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.362 — la flèche « ← » des écrans d'administration fait 44 px de large (2026-11-07)
+- Les 13 écrans d'administration n'étaient mesurés par personne (le robot est « utilisateur » pour Apex Chat, le Chrome du Lenovo n'a pas la session de Kevin). Mesure locale sur la VRAIE page (réseau simulé, compte posé `is_admin`, 390 et 1250 px, 26 mesures) : un défaut — `button.btn.btn-out.btn-sm « ← »` de Diagnostic à 42×44 px. `.btn-sm` porte maintenant `min-width:44px`.
+- Garde `tests/verify-admin-apex-chat-ecrans.mjs` : 6 ✅ ; `SABOTAGE=1` : 1 ❌ sur `admin-diag`. Limite : données vides ; un état très chargé n'est pas couvert.
+
 ## Servi — l'admin d'Apex Chat se lit dans `K.user.is_admin`, pas `role` (2026-11-07)
 - Servi 42368800591 : « écrans d'administration : compte non administrateur (rôle inconnu) » — les 13 vues n'ont pas été mesurées parce que le robot cherchait `K.user.role`, qui n'existe pas : l'admin d'Apex Chat est `K.user.is_admin === true`, posé par le serveur (index.html l.1752). Le robot lit maintenant `is_admin` et, s'il n'y a pas d'admin, dit pourquoi : « utilisateur », « sans compte (étape …) » ou « application absente ».
 - Garde `tests/verify-verifier-servi.mjs` 2j6 : vert (admin / utilisateur / sans compte) ; rouge sur l'ancienne lecture.

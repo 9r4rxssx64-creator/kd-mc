@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Servi — il attend la fin de l'écran de démarrage et chronomètre sa durée (2026-11-07)
+- Runs 42355883096 et 42361880522 : Apex AI « 1er texte div.apex-splash-logo », pastille de version absente, 17 i/s sur iPhone 13 portrait puis portable : à 4,5 s l'écran de démarrage de l'app était encore là et le robot mesurait ce démarrage. Il attend maintenant sa disparition (15 s de plus au plus) et écrit « démarrage N s » ou « ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s » (défaut de l'app, pas du robot).
+- Garde `tests/verify-verifier-servi.mjs` 2j5 : vert (1,2 s → 1,5 s lues, page sans démarrage → null, éternel → « toujours ») ; rouge (import impossible) sans la fonction.
+
 ## Servi — un « délai dépassé » dit quelles requêtes n'avaient pas fini (2026-11-07)
 - Servi 42361310862 : Apex AI « page.goto Timeout 30000ms » sur iPhone 13 paysage et iPad paysage (2 runs de suite, 2 écrans différents) sans aucune cause. Le relevé ajoute maintenant « en attente : hôte/chemin Ns » (5 requêtes au plus, jamais les paramètres).
 - Garde `tests/verify-verifier-servi.mjs` 2j4 : vert ; rouge (import impossible) sans la fonction.

@@ -27,6 +27,16 @@ export async function mesurerSansFeuille(page, tel, r = {}) {
   }
   return m;
 }
+/** 7.11 (apex-cloud, Servi 42361880522 / 42355883096 : Apex AI « 1er texte div.apex-splash-logo », pastille absente, 17 i/s) : à 4,5 s l'écran de démarrage de l'app est parfois encore là,
+ *  et le robot mesurait ce démarrage au lieu de l'app. On attend sa disparition (15 s de plus au plus) et on RAPPORTE le temps : `n` secondes après les 4,5 s, 0 si déjà parti,
+ *  null si la page n'en a pas, « toujours » s'il est encore là au bout. Un écran de démarrage qui dure 20 s est un défaut de l'app, pas du robot. */
+export async function attendreFinSplash(page, maxMs = 15000) {
+  const present = () => page.evaluate(() => { const e = document.querySelector('[class*="splash"], [id*="splash"]'); if (!e) return false; const r = e.getBoundingClientRect(), c = getComputedStyle(e); return r.width > 0 && r.height > 0 && c.visibility !== 'hidden' && c.display !== 'none' && Number(c.opacity) > 0.05; }).catch(() => false);
+  if (!(await present())) return null;
+  const t0 = Date.now();
+  while (Date.now() - t0 < maxMs) { await page.waitForTimeout(500); if (!(await present())) return Math.round((Date.now() - t0) / 100) / 10; }
+  return 'toujours';
+}
 /** Requêtes restées sans réponse (hôte + chemin, sans paramètres), les plus anciennes d'abord — pour expliquer un délai dépassé. */
 export function enAttente(enCours, maintenant = Date.now()) {
   const l = [...enCours.entries()].sort((x, y) => x[1] - y[1]).slice(0, 5).map(([q, t]) => { let u; try { u = new URL(q.url()); } catch { return '?'; } return `${u.hostname}${u.pathname.slice(0, 50)} ${Math.round((maintenant - t) / 1000)}s`; });
@@ -183,7 +193,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
         try {
           const rep = await page.goto(a, { waitUntil: 'load', timeout: 30000 });
           r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
-          await page.waitForTimeout(4500); await page.evaluate(() => window.scrollTo(0, 0));
+          await page.waitForTimeout(4500); r.demarrage = await attendreFinSplash(page); await page.evaluate(() => window.scrollTo(0, 0));
           r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
           /* 6.11 : la pastille du module se retire au plus 1,5 s après la fermeture de la feuille d'installation (suivi toutes les 1,5 s) ; mesurer avant comptait « 2 pastilles » à tort sur Studio */
           if (r.installeur) await page.waitForTimeout(1800);
@@ -202,7 +212,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), haut: m.haut, deborde: m.deborde, petit: m.petit, js: m.js });
         } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours); }
         sortie.push(r);
-        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
+        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
       }
       await ctx.close();
     }

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -87,6 +87,14 @@ ok('2j3. un contrôle recouvert est livré avec ses rectangles (x,y largeurxhaut
 /* 2j4 (7.11) : un délai dépassé dit QUELLES requêtes n'avaient pas fini (hôte + chemin, jamais les paramètres). */
 const attente = (() => { const q = (u) => ({ url: () => u }); const m = new Map([[q('https://apex-ai.kd-mc.com/assets/gros.js?token=SECRET'), 1000], [q('https://fonts.example.org/css'), 5000]]); return enAttente(m, 31000); })();
 ok('2j4. un délai dépassé liste les requêtes en attente (hôte + chemin + secondes), sans paramètres', /apex-ai\.kd-mc\.com\/assets\/gros\.js 30s \| fonts\.example\.org\/css 26s/.test(attente) && !/SECRET|token/.test(attente), attente);
+/* 2j5 (7.11) : l'écran de démarrage est attendu (et chronométré) avant la mesure ; une page sans écran de démarrage rend null ; un écran qui ne part jamais rend « toujours ». */
+const splash = await (async () => { const b9 = await chromium.launch(exe ? { executablePath: exe } : {}); const p9 = await b9.newPage({ viewport: { width: 390, height: 844 } });
+  await p9.goto(f('splash-court.html', '<!doctype html><body><div class="apex-splash-logo" style="width:100px;height:100px">A</div><script>setTimeout(function(){document.querySelector(".apex-splash-logo").remove()},1200)</script>'));
+  const court = await attendreFinSplash(p9, 6000);
+  await p9.goto(f('sans-splash.html', '<!doctype html><body><p>app</p>')); const aucun = await attendreFinSplash(p9, 3000);
+  await p9.goto(f('splash-long.html', '<!doctype html><body><div class="apex-splash-logo" style="width:100px;height:100px">A</div>')); const long = await attendreFinSplash(p9, 1500);
+  await b9.close(); return { court, aucun, long }; })();
+ok('2j5. l\'écran de démarrage est attendu et chronométré (1,2 s → ~1 s), absent → null, éternel → « toujours »', typeof splash.court === 'number' && splash.court >= 0.5 && splash.court < 3 && splash.aucun === null && splash.long === 'toujours', JSON.stringify(splash));
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

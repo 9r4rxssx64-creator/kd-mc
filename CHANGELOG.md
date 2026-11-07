@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+
+## Apex Chat 1.1.363 — la fenêtre « Activer les notifications » s'ouvre aussi quand l'appli rouvre une session gardée (2026-11-07)
+- Constat (Kevin, iPhone : « rien n'est apparu ») : la fenêtre n'était demandée qu'à une connexion neuve ; à la réouverture d'une session gardée le démarrage n'agissait que si la permission était déjà accordée, donc un téléphone qui n'avait jamais répondu ne la voyait jamais.
+- Correctif : le démarrage appelle aussi la demande quand la permission est « default » ; la fenêtre (un tap = le geste qu'iOS exige) revient au plus une fois par semaine par appareil (« Plus tard » respecté).
+- Garde `tests/verify-notif-demande.mjs` (`test:notif-demande`, dans test:ci) : 4 contrôles sur la vraie page ; `SABOTAGE=1` (ancien démarrage) rouge. Limite : l'acceptation réelle sur iPhone reste à voir sur l'appareil.
+
 ## Servi — un délai dépassé ponctuel est rejoué une fois (2026-11-07)
 - Le nouveau relevé « en attente » a montré, sur 3 runs, des blocages qui tombent sur des requêtes DIFFÉRENTES : Apex AI (2 écrans paysage), `apex-chat.kd-mc.com/` lui-même (30 s), `javis.kd-mc.com/javis-widget.js` (29 s) — alors que ces mêmes adresses répondent en moins d'une seconde (curl) et passaient au run d'avant : des blocages ponctuels, pas un défaut d'une page. Servi rouvre UNE fois et écrit « reprise après délai · en attente : … » ; si la 2ᵉ ouverture échoue aussi, c'est une erreur comme avant.
 - Garde `tests/verify-verifier-servi.mjs` 2j7 : vert ; rouge (import impossible) sans la fonction.

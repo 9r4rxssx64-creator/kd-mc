@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.362",
+  "softwareVersion": "v1.1.363",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -492,7 +492,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.362';
+const __APEX_CHAT_VERSION__ = 'v1.1.363';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -839,7 +839,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.362" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.362</div>
+  <div id="splash-version" data-ver="v1.1.363" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -853,7 +853,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.362</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.360</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -13172,10 +13172,15 @@ K._requestNotifPermissionIfNeeded = async function(){
         }).catch(()=>{});
       }
     } else if(Notification.permission === 'default'){
+      // 7.11 (Kevin : « rien n'est apparu sur l'application ») : redemandé au plus une fois par semaine par appareil
+      // (« Plus tard » ne harcèle pas), et aussi à la RÉOUVERTURE d'une session gardée (voir le démarrage).
+      let _dernier = 0; try{ _dernier = +lg('notif_ask_ts', 0) || 0; }catch(_){}
+      if(Date.now() - _dernier < 7 * 86400000) return;
       // Prompt gentil après 4s (laisse l'app s'afficher avant)
       setTimeout(() => {
         if(Notification.permission !== 'default') return;
         if(typeof K._showModal !== 'function') return;
+        try{ ls('notif_ask_ts', Date.now()); }catch(_){}
         K._showModal('🔔 Recevoir messages & appels app fermée', `
           <p style="color:var(--ax-text-2);margin:0 0 14px">
             Active les notifications pour que tes <strong>messages</strong> et
@@ -19419,10 +19424,11 @@ async function _boot(){
     // Au login frais, K.login() appelle déjà _requestNotifPermissionIfNeeded ;
     // ici on couvre le cas du RETOUR (session restaurée sans nouveau login) où
     // ça ne tournait jamais → la souscription pouvait expirer et plus de notifs.
-    // SANS jamais afficher de prompt : on n'agit que si permission DÉJÀ accordée.
+    // 7.11 : permission déjà accordée = réabonnement silencieux ; permission jamais répondue ('default') = la fenêtre
+    // « Activer » de _requestNotifPermissionIfNeeded (un tap = le geste qu'iOS exige), au plus une fois par semaine.
     // Fail-open : tout échec = no-op, ne casse ni le boot ni la session.
     try{
-      if(typeof Notification !== 'undefined' && Notification.permission === 'granted'
+      if(typeof Notification !== 'undefined' && (Notification.permission === 'granted' || Notification.permission === 'default')
          && typeof K._requestNotifPermissionIfNeeded === 'function'){
         K._requestNotifPermissionIfNeeded();
       }
@@ -19641,6 +19647,6 @@ if(document.readyState !== 'loading') _boot();
      version visible permanent" satisfaite par la topbar pour ce projet. -->
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.362", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "apex-chat", "data-version": "v1.1.363", "data-version-el": "#splash-version", "data-own-badge": "#topbar-version", "data-auto-update": "false", "data-color": "#7c8cff"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

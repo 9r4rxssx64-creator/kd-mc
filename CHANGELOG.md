@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Servi — un délai dépassé ponctuel est rejoué une fois (2026-11-07)
+- Le nouveau relevé « en attente » a montré, sur 3 runs, des blocages qui tombent sur des requêtes DIFFÉRENTES : Apex AI (2 écrans paysage), `apex-chat.kd-mc.com/` lui-même (30 s), `javis.kd-mc.com/javis-widget.js` (29 s) — alors que ces mêmes adresses répondent en moins d'une seconde (curl) et passaient au run d'avant : des blocages ponctuels, pas un défaut d'une page. Servi rouvre UNE fois et écrit « reprise après délai · en attente : … » ; si la 2ᵉ ouverture échoue aussi, c'est une erreur comme avant.
+- Garde `tests/verify-verifier-servi.mjs` 2j7 : vert ; rouge (import impossible) sans la fonction.
+
 ## Apex Chat 1.1.362 — la flèche « ← » des écrans d'administration fait 44 px de large (2026-11-07)
 - Les 13 écrans d'administration n'étaient mesurés par personne (le robot est « utilisateur » pour Apex Chat, le Chrome du Lenovo n'a pas la session de Kevin). Mesure locale sur la VRAIE page (réseau simulé, compte posé `is_admin`, 390 et 1250 px, 26 mesures) : un défaut — `button.btn.btn-out.btn-sm « ← »` de Diagnostic à 42×44 px. `.btn-sm` porte maintenant `min-width:44px`.
 - Garde `tests/verify-admin-apex-chat-ecrans.mjs` : 6 ✅ ; `SABOTAGE=1` : 1 ❌ sur `admin-diag`. Limite : données vides ; un état très chargé n'est pas couvert.

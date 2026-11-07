@@ -59,6 +59,18 @@ export async function mesurerVuesAdminApexChat(page, tel, vues = VUES_ADMIN_APEX
   return { admin: true, role, vues: sortie };
 }
 export const vueAdminACorriger = (x) => !!(x.err || x.affichee === false || x.cache > 0 || x.deborde > 0 || x.petit > 0);
+/** 7.11 (apex-cloud, Servi 42361310862 / 42373432923) : un « page.goto Timeout 30000ms » tombait sur des requêtes DIFFÉRENTES à chaque fois (Apex AI deux écrans paysage ; apex-chat.kd-mc.com/ lui-même ;
+ *  javis.kd-mc.com/javis-widget.js à 29 s) — des blocages ponctuels, pas un défaut d'une page. On rouvre UNE fois : si la 2ᵉ ouverture réussit, la mesure est faite et le relevé écrit « reprise après délai »
+ *  avec les requêtes qui bloquaient ; si elle échoue aussi, c'est un défaut rapporté comme avant. */
+export async function ouvrirAvecReprise(page, adresse, r = {}, enCours = new Map(), ouvrir = (u) => page.goto(u, { waitUntil: 'load', timeout: 30000 })) {
+  try { return await ouvrir(adresse); }
+  catch (e) {
+    if (!/Timeout/i.test(String(e && e.message))) throw e;
+    r.reprise = 'reprise après délai' + enAttente(enCours);
+    enCours.clear();
+    return await ouvrir(adresse);
+  }
+}
 /** Requêtes restées sans réponse (hôte + chemin, sans paramètres), les plus anciennes d'abord — pour expliquer un délai dépassé. */
 export function enAttente(enCours, maintenant = Date.now()) {
   const l = [...enCours.entries()].sort((x, y) => x[1] - y[1]).slice(0, 5).map(([q, t]) => { let u; try { u = new URL(q.url()); } catch { return '?'; } return `${u.hostname}${u.pathname.slice(0, 50)} ${Math.round((maintenant - t) / 1000)}s`; });
@@ -213,7 +225,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
       for (const a of adresses) {
         const r = { adresse: a, ecran: nom, admin };
         try {
-          const rep = await page.goto(a, { waitUntil: 'load', timeout: 30000 });
+          const rep = await ouvrirAvecReprise(page, a, r, enCours);
           r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
           await page.waitForTimeout(4500); r.demarrage = await attendreFinSplash(page); await page.evaluate(() => window.scrollTo(0, 0));
           r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
@@ -240,7 +252,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           }
         } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours); }
         sortie.push(r);
-        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
+        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
       }
       await ctx.close();
     }

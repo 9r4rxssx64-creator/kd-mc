@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -104,6 +104,16 @@ const adminVues = await (async () => { const b10 = await chromium.launch(exe ? {
   await b10.close(); return { oui, non, aucun }; })();
 const [vOk, vPetit, vAbs] = adminVues.oui.vues;
 ok('2j6. vues admin : mesurées (ok propre, bouton 20 px signalé, vue non affichée signalée) ; compte non admin → rien à mesurer', adminVues.oui.admin === true && vueAdminACorriger(vOk) === false && vPetit.petit >= 1 && vueAdminACorriger(vPetit) && vAbs.affichee === false && vueAdminACorriger(vAbs) && adminVues.non.admin === false && adminVues.non.vues.length === 0 && adminVues.non.role === 'utilisateur' && adminVues.aucun.role.startsWith('sans compte'), JSON.stringify({ vOk: vOk.petit, vPetit: vPetit.petit, vAbs: vAbs.affichee, non: adminVues.non.role, aucun: adminVues.aucun.role }));
+/* 2j7 (7.11) : un délai dépassé ponctuel est rejoué UNE fois (et dit quelles requêtes bloquaient) ; deux délais de suite restent une erreur ; une autre erreur n'est pas rejouée. */
+const reprise = await (async () => {
+  const q = (u) => ({ url: () => u });
+  let n = 0; const r1 = {}; const m1 = new Map([[q('https://javis.kd-mc.com/javis-widget.js?x=1'), Date.now() - 29000]]);
+  const ok1 = await ouvrirAvecReprise({}, 'https://x', r1, m1, async () => { n++; if (n === 1) throw new Error('page.goto: Timeout 30000ms exceeded.'); return 'ok'; });
+  let n2 = 0; let deux = null; try { await ouvrirAvecReprise({}, 'https://x', {}, new Map(), async () => { n2++; throw new Error('page.goto: Timeout 30000ms exceeded.'); }); } catch (e) { deux = n2; }
+  let n3 = 0; try { await ouvrirAvecReprise({}, 'https://x', {}, new Map(), async () => { n3++; throw new Error('net::ERR_NAME_NOT_RESOLVED'); }); } catch (e) { /* attendu */ }
+  return { ok1, n, r1: r1.reprise, deux, n3 };
+})();
+ok('2j7. un délai dépassé est rejoué une fois (dit les requêtes), deux de suite = erreur, autre erreur = pas rejoué', reprise.ok1 === 'ok' && reprise.n === 2 && /reprise après délai · en attente : javis\.kd-mc\.com\/javis-widget\.js/.test(reprise.r1) && !/x=1/.test(reprise.r1) && reprise.deux === 2 && reprise.n3 === 1, JSON.stringify(reprise));
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

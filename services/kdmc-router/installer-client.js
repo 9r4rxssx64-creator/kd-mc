@@ -266,8 +266,14 @@ export const INSTALLER_JS = String.raw`(function () {
     }
     /* la page change (menus qui s'ouvrent, barre qui apparaît, défilement) : on remesure 0,4 s après, sans boucle */
     (function () {
-      var t = 0, tour = function () { clearTimeout(t); t = setTimeout(function () { if (pastille && !feuille) placer(); }, 400); };
-      try { new MutationObserver(tour).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) { /* pas d'observateur */ }
+      var t = 0, tour = function () { if (t) return; t = setTimeout(function () { t = 0; if (pastille && !feuille) placer(); }, 400); };   /* au plus une remesure toutes les 0,4 s : une page animée n'affame pas la pastille */
+      /* 6.11 nuit (pont 1911, Apex Chat iPhone 13 : un lien montré par style.display après coup) : on regarde aussi les attributs style / class / hidden ;
+         les changements faits sur la pastille elle-même (placer() réécrit son style) sont ignorés, sinon elle se remesurerait à l'infini. */
+      try {
+        new MutationObserver(function (recs) {
+          for (var i = 0; i < recs.length; i++) { var c = recs[i].target; if (c && c.nodeType === 1 && (c === pastille || (c.closest && c.closest('[data-kdmc-installer]')))) continue; return tour(); }
+        }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+      } catch (e) { /* pas d'observateur */ }
       window.addEventListener('scroll', tour, true); window.addEventListener('resize', tour);
     })();
     window.addEventListener('resize', function () { placer(); });

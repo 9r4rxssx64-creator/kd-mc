@@ -123,6 +123,24 @@ for (const f of ['shops/sourcing/index.html', 'shops/sourcing/supplier.html']) {
     await ctx.close();
   }
 }
+
+/* F. (pont 1911, Apex Chat iPhone 13) : un bouton MONTRÉ après coup par style.display sous la pastille 📲 → elle se replace en moins d'une seconde (pas aux minuteurs de 5 s) */
+const PAGE_TARDIF = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%}#z{position:fixed;top:0;right:0;width:70px;height:70px;display:none}</style><button id="z">z</button>`;
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_TARDIF }));
+  await p.goto('https://kdmc.test/');
+  await p.addScriptTag({ content: SRC });
+  await p.waitForSelector('[data-kdmc-installer="pastille"]', { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(2500);
+  await p.evaluate(() => { document.getElementById('z').style.display = 'block'; });
+  await p.waitForTimeout(1400);
+  const R = await p.evaluate(() => { const b = document.querySelector('[data-kdmc-installer="pastille"]'); if (!b) return { absent: true }; const r = b.getBoundingClientRect(), q = document.getElementById('z').getBoundingClientRect(); return { absent: false, recouvre: r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top }; });
+  ok(!R.absent && !R.recouvre, 'un bouton montré après coup (style.display) : la pastille 📲 se replace en moins de 1,4 s', R);
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

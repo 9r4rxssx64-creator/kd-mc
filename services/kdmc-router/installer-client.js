@@ -68,13 +68,14 @@ export const INSTALLER_JS = String.raw`(function () {
               return false;
             };
             var sous = function () {
-              var r = b.getBoundingClientRect(), pts = [[.15, .5], [.5, .5], [.85, .5], [.15, .85], [.85, .85]];
-              for (var i2 = 0; i2 < pts.length; i2++) {
-                var l = document.elementsFromPoint(r.left + r.width * pts[i2][0], r.top + r.height * pts[i2][1]);
+              var r = b.getBoundingClientRect();
+              if (cacheUnJeu(r, b)) return true;
+              for (var i2 = 0; i2 < 5; i2++) {   /* texte : n'importe quelle ligne écrite sous la pastille */
+                var pt = [[.15, .5], [.5, .5], [.85, .5], [.15, .85], [.85, .85]][i2], l = document.elementsFromPoint(r.left + r.width * pt[0], r.top + r.height * pt[1]);
                 for (var j = 0; j < l.length; j++) {
                   var n = l[j]; if (n === b || n === document.body || n === document.documentElement) continue;
                   if (n.getAttribute && n.getAttribute('data-kdmc-installer')) continue;
-                  if (cliquable(n) || texte(n)) return true; break;   /* 6.11 soir (capture de Kevin : « Vue admin » cachait le titre « Inscriptions à valider ») : un TEXTE caché compte autant qu'un bouton */
+                  if (texte(n)) return true; break;
                 }
               }
               return false;
@@ -250,7 +251,28 @@ export const INSTALLER_JS = String.raw`(function () {
       for (var i = 0; i < pts.length; i++) {
         var x = r.left + r.width * pts[i][0], y = r.top + r.height * pts[i][1], l = document.elementsFromPoint(x, y);
         if (l.length && l[0] !== pastille && !(l[0].getAttribute && l[0].getAttribute('data-kdmc-installer')) && l[0] !== document.body && l[0] !== document.documentElement) return true;   /* quelque chose (la mascotte d'Apex Chat, un cadre) est PAR-DESSUS la pastille : on change de coin */
-        for (var j = 0; j < l.length; j++) { if (l[j] === pastille || l[j].getAttribute('data-kdmc-installer') || l[j] === document.body || l[j] === document.documentElement) continue; if (cliquable(l[j])) return true; break; }
+      }
+      return cacheUnJeu(r, pastille);
+    }
+    /* 7.11 (mesure de Servi : « caché » = le centre du contrôle est sous la pastille OU plus de la moitié de sa surface ; un champ de saisie ne se recouvre jamais) :
+       on juge comme le robot, sur la surface réellement couverte, pas sur un simple point. Une grande carte dont un coin est touché n'est pas « cachée ». */
+    function controle(n) { var k = 0; while (n && n.nodeType === 1 && k++ < 6) { if (cliquable1(n)) return n; n = n.parentNode; } return null; }
+    function cliquable1(n) { var t = n.tagName; if (t === 'BUTTON' || t === 'A' || t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA' || n.getAttribute('role') === 'button' || n.onclick) return true; try { if (getComputedStyle(n).cursor === 'pointer') return true; } catch (e) { /* */ } return false; }
+    function cacheUnJeu(box, moi) {
+      var vus = [], i, j, k;
+      for (i = 0; i < 3; i++) for (j = 0; j < 3; j++) {
+        var l = document.elementsFromPoint(box.left + box.width * (i + .5) / 3, box.top + box.height * (j + .5) / 3);
+        for (k = 0; k < l.length; k++) {
+          var n = l[k]; if (n === moi || n === document.body || n === document.documentElement || (n.getAttribute && n.getAttribute('data-kdmc-installer'))) continue;
+          var c = controle(n); if (c && vus.indexOf(c) < 0) vus.push(c); break;
+        }
+      }
+      for (i = 0; i < vus.length; i++) {
+        var q = vus[i].getBoundingClientRect(); if (!(q.width > 0 && q.height > 0)) continue;
+        var t = vus[i].tagName, champ = t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || vus[i].isContentEditable;
+        var ix = Math.max(0, Math.min(q.right, box.right) - Math.max(q.left, box.left)), iy = Math.max(0, Math.min(q.bottom, box.bottom) - Math.max(q.top, box.top));
+        var cx = q.left + q.width / 2, cy = q.top + q.height / 2;
+        if (champ || (ix * iy) / (q.width * q.height) > .5 || (cx >= box.left && cx <= box.right && cy >= box.top && cy <= box.bottom)) return true;
       }
       return false;
     }

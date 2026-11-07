@@ -141,6 +141,31 @@ const PAGE_TARDIF = `<!doctype html><meta charset="utf-8"><meta name="viewport" 
   ok(!R.absent && !R.recouvre, 'un bouton montré après coup (style.display) : la pastille 📲 se replace en moins de 1,4 s', R);
   await ctx.close();
 }
+
+/* G. (mesure de Servi, Lingua : « button.tab.active sous 👑 Vue admin ») : la page est PLEINE de grandes cartes cliquables et d'une barre d'onglets : la pastille se juge comme le robot (centre ou > 50 % d'un contrôle = caché), un coin de grande carte ne compte pas */
+const PAGE_CARTES = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%}body{display:flex;flex-direction:column}main{flex:1;display:grid;grid-template-columns:1fr;gap:6px;padding:6px;overflow:hidden}
+.carte{border:1px solid #888;background:#eee;min-height:90px}nav{display:flex}.tab{flex:1;min-height:56px;border:0;background:#222;color:#fff}</style>
+<main>${'<button class="carte">carte</button>'.repeat(9)}</main><nav id="barre"><button class="tab">1</button><button class="tab">2</button><button class="tab">3</button><button class="tab">4</button><button class="tab">5</button></nav>`;
+for (const [w, h] of [[390, 844], [375, 667]]) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  await p.route('**/__admin/vue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, mode: 'admin' }) }));
+  await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_CARTES }));
+  await p.goto('https://kdmc.test/');
+  await p.evaluate(() => { document.cookie = 'kdmc_k=1; path=/'; });
+  await p.addScriptTag({ content: SRC });
+  await p.waitForSelector('[data-kdmc-vue]', { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(1500);
+  const R = await p.evaluate(() => {
+    const b = document.querySelector('[data-kdmc-vue]'); if (!b) return { absent: true };
+    const r = b.getBoundingClientRect(), cache = [];
+    document.querySelectorAll('.tab').forEach((t) => { const q = t.getBoundingClientRect(); const ix = Math.max(0, Math.min(q.right, r.right) - Math.max(q.left, r.left)), iy = Math.max(0, Math.min(q.bottom, r.bottom) - Math.max(q.top, r.top)); const cx = q.left + q.width / 2, cy = q.top + q.height / 2; if ((ix * iy) / (q.width * q.height) > .5 || (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom)) cache.push(t.textContent); });
+    return { absent: false, cache, rect: [Math.round(r.left), Math.round(r.top), Math.round(r.width)] };
+  });
+  ok(!R.absent && R.cache.length === 0, w + '×' + h + ' : page pleine de cartes — aucun onglet caché (critère du robot), la pastille n\'est pas rejetée sur la barre', R);
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

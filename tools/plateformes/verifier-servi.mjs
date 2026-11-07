@@ -37,6 +37,26 @@ export async function attendreFinSplash(page, maxMs = 15000) {
   while (Date.now() - t0 < maxMs) { await page.waitForTimeout(500); if (!(await present())) return Math.round((Date.now() - t0) / 100) / 10; }
   return 'toujours';
 }
+/** Les écrans d'ADMINISTRATION d'Apex Chat (7.11, tâche 97 : « écrans admin non mesurés — les comptes de test ne sont pas admin »). Servi est connecté en admin du domaine, donc en admin d'Apex Chat :
+ *  on affiche chaque vue (K.sv, lecture seule : le robot bloque toute requête qui écrit, on ne clique rien) et on la mesure comme une page. `{ admin: false }` si le compte n'est pas admin. */
+export const VUES_ADMIN_APEX_CHAT = ['admin', 'admin-diag', 'admin-users', 'admin-connections', 'admin-toggles', 'admin-sentinels', 'admin-audit', 'admin-invite-book', 'admin-trusted-circle', 'admin-search', 'admin-timeline', 'admin-map', 'admin-premium'];
+export async function mesurerVuesAdminApexChat(page, tel, vues = VUES_ADMIN_APEX_CHAT, attenteMs = 900) {
+  const role = await page.evaluate(() => (window.K && K.user && K.user.role) || null).catch(() => null);
+  if (role !== 'admin') return { admin: false, role, vues: [] };
+  const sortie = [];
+  for (const v of vues) {
+    const rep = { vue: v };
+    try {
+      await page.evaluate((nom) => { K.sv(nom); }, v); await page.waitForTimeout(attenteMs);
+      rep.affichee = (await page.evaluate(() => (window.K && K.view) || '').catch(() => '')) === v;
+      const m = await mesurerSansFeuille(page, tel, rep);
+      if (m) Object.assign(rep, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), petit: m.petit, petitEx: sansTexte(m.petitEx || []), deborde: m.deborde, js: m.js });
+    } catch (e) { rep.err = String(e && e.message).split('\n')[0].slice(0, 80); }
+    sortie.push(rep);
+  }
+  return { admin: true, role, vues: sortie };
+}
+export const vueAdminACorriger = (x) => !!(x.err || x.affichee === false || x.cache > 0 || x.deborde > 0 || x.petit > 0);
 /** Requêtes restées sans réponse (hôte + chemin, sans paramètres), les plus anciennes d'abord — pour expliquer un délai dépassé. */
 export function enAttente(enCours, maintenant = Date.now()) {
   const l = [...enCours.entries()].sort((x, y) => x[1] - y[1]).slice(0, 5).map(([q, t]) => { let u; try { u = new URL(q.url()); } catch { return '?'; } return `${u.hostname}${u.pathname.slice(0, 50)} ${Math.round((maintenant - t) / 1000)}s`; });
@@ -210,6 +230,12 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
              « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré
              (dépôt public) — et un bouton recouvert compte comme un défaut. */
           if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), haut: m.haut, deborde: m.deborde, petit: m.petit, js: m.js });
+          /* 7.11 : Apex Chat, écrans d'administration (portrait étroit et portable seulement : 13 vues x 5 écrans ferait trop long) */
+          if (r.hoteFinal === 'apex-chat.kd-mc.com' && (nom === 'iphone-13' || nom === 'portable')) {
+            const adm = await mesurerVuesAdminApexChat(page, tel);
+            if (!adm.admin) journal(`➖ ${a} · ${nom} · écrans d'administration : compte non administrateur (rôle ${adm.role ?? 'inconnu'}) — rien à mesurer`);
+            for (const x of adm.vues) journal(`${vueAdminACorriger(x) ? '❌' : '✅'} ${a} · ${nom} · vue ${x.vue} · affichée ${x.affichee === false ? 'NON' : 'oui'} · cache ${x.cache ?? '-'}${x.cache && x.cacheEx && x.cacheEx.length ? ' [' + x.cacheEx.join(' | ') + ']' : ''} · petit ${x.petit ?? '-'}${x.petit && x.petitEx && x.petitEx.length ? ' [' + x.petitEx.slice(0, 3).join(' | ') + ']' : ''} · déborde ${x.deborde ?? '-'}${x.err ? ' · ' + x.err : ''}`);
+          }
         } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours); }
         sortie.push(r);
         journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);

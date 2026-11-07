@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -95,6 +95,14 @@ const splash = await (async () => { const b9 = await chromium.launch(exe ? { exe
   await p9.goto(f('splash-long.html', '<!doctype html><body><div class="apex-splash-logo" style="width:100px;height:100px">A</div>')); const long = await attendreFinSplash(p9, 1500);
   await b9.close(); return { court, aucun, long }; })();
 ok('2j5. l\'écran de démarrage est attendu et chronométré (1,2 s → ~1 s), absent → null, éternel → « toujours »', typeof splash.court === 'number' && splash.court >= 0.5 && splash.court < 3 && splash.aucun === null && splash.long === 'toujours', JSON.stringify(splash));
+/* 2j6 (7.11) : les écrans d'administration d'Apex Chat sont affichés (K.sv) puis mesurés ; un bouton de 20 px, une vue qui ne s'affiche pas et un compte non admin sont dits. */
+const adminVues = await (async () => { const b10 = await chromium.launch(exe ? { executablePath: exe } : {}); const p10 = await b10.newPage({ viewport: { width: 390, height: 664 } });
+  const faux = (role) => '<!doctype html><body><div id="app"></div><script>window.K={user:{role:' + JSON.stringify(role) + '},view:"chats",sv:function(v){if(v==="admin-absente"){return}K.view=v;document.getElementById("app").innerHTML=v==="admin-petit"?\'<button style="width:20px;height:20px">x</button>\':\'<button style="width:200px;height:48px">ok</button>\'}}</script>';
+  await p10.goto(f('admin-oui.html', faux('admin'))); const oui = await mesurerVuesAdminApexChat(p10, true, ['admin-ok', 'admin-petit', 'admin-absente'], 200);
+  await p10.goto(f('admin-non.html', faux('user'))); const non = await mesurerVuesAdminApexChat(p10, true, ['admin-ok'], 200);
+  await b10.close(); return { oui, non }; })();
+const [vOk, vPetit, vAbs] = adminVues.oui.vues;
+ok('2j6. vues admin : mesurées (ok propre, bouton 20 px signalé, vue non affichée signalée) ; compte non admin → rien à mesurer', adminVues.oui.admin === true && vueAdminACorriger(vOk) === false && vPetit.petit >= 1 && vueAdminACorriger(vPetit) && vAbs.affichee === false && vueAdminACorriger(vAbs) && adminVues.non.admin === false && adminVues.non.vues.length === 0, JSON.stringify({ vOk: vOk.petit, vPetit: vPetit.petit, vAbs: vAbs.affichee, non: adminVues.non.admin }));
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

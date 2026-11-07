@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Servi — il mesure aussi les 13 écrans d'administration d'Apex Chat (2026-11-07)
+- Tâche 97 : « écrans admin d'Apex Chat non mesurés (les comptes de test ne sont pas admin) ». Servi est connecté en admin du domaine : sur iPhone 13 portrait et portable il affiche chaque vue (`K.sv`, lecture seule : le robot bloque toute requête qui écrit, rien n'est cliqué) et la mesure comme une page : affichée oui/non, éléments recouverts, petites cibles, débordement. Vues : admin, admin-diag, admin-users, admin-connections, admin-toggles, admin-sentinels, admin-audit, admin-invite-book, admin-trusted-circle, admin-search, admin-timeline, admin-map, admin-premium. Compte non admin : dit « rien à mesurer ».
+- Garde `tests/verify-verifier-servi.mjs` 2j6 : vert (vue propre, bouton de 20 px signalé, vue non affichée signalée, compte non admin) ; rouge (import impossible) sans la fonction.
+
 ## Apex Chat 1.1.361 — l'encart « écran d'accueil » laisse libre le lien « ← Portail » (2026-11-07)
 - Servi (run 42362275731, iPhone 13 portrait) : une fois la pastille « 📲 » du domaine déplacée par cloud-installer, le lien `a#kdmc-portal-link @8,548 80x44` était recouvert par MON encart (`div#install-hint-t @27,544 306x38`), qu'il fallait pousser : l'encart commence maintenant à 100 px du bord gauche, à droite du lien (8 → 88 px), sur deux lignes si besoin ; toujours sous le dernier bouton de la liste vide (haut 542 px, bas des boutons 530 px).
 - Garde `tests/verify-install-hint-compact.mjs` : 8 ✅ ; `SABOTAGE=2` (ancien bord à 12 px) : 1 ❌ ; `SABOTAGE=1` (3 gestes d'office) : 3 ❌.

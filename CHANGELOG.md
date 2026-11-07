@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat 1.1.360 — l'encart « Mets Apex Chat sur ton écran d'accueil » ne cache plus les boutons de la liste vide (2026-11-07)
+- Mesuré par Servi (run 42339956251, iPhone 13 portrait 390×664) : `div#install-hint @12,446 366x140` recouvrait `button.btn @87,424 216x48` et `button.btn.btn-out` = « 📤 Inviter mes amis » et « 👥 Créer un groupe ». L'encart tient maintenant sur une ligne de 44 px (haut à 542 px, sous le dernier bouton qui finit à 530 px) ; toucher la ligne ouvre les 3 gestes ; ✕ le ferme et le mémorise comme avant.
+- Garde `tests/verify-install-hint-compact.mjs` : 7 ✅ ; `SABOTAGE=1` (3 gestes d'office) : 2 ❌ avec 453/133 px, comme Servi.
+
 ## Servi — un contrôle recouvert est livré avec ses rectangles (2026-11-07)
 - Demande de cloud-installer (pont 1929) : « je ne peux pas désigner l'élément ni l'écran sans deviner ». Le relevé « cache » ajoute `[@x,y LxH sous @x,y LxH]` (nombres seulement, aucun texte de page) pour le contrôle recouvert et ce qui le recouvre. Cas visé : `a#kdmc-portal-link` d'Apex Chat sur iPhone 13 portrait (cache 1 persistant après PR 5523).
 - Garde `tests/verify-verifier-servi.mjs` 2j3 : vert ; rouge sur l'ancien relevé (sans rectangles).

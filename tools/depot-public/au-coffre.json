@@ -497,6 +497,7 @@
   "tools/arbre/verify-photo-immediat.mjs",
   "tools/arbre/verify-photo-profil.mjs",
   "tools/arbre/verify-photos-r2.mjs",
+  "tools/arbre/verify-plan-centre.mjs",
   "tools/arbre/verify-poster.mjs",
   "tools/arbre/verify-recherche-lieu.mjs",
   "tools/arbre/verify-reglages-compte.mjs",

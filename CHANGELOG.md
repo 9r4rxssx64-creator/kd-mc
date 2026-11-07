@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Arbre v3.200 — la fiche choisie est centrée en vue Plan / Paysage (2026-11-07)
+- **Pourquoi** : Kevin « mal centré sur la fiche en plan » : mesuré, la branche entière tenait à ×0,06-0,1 en bande collée en haut, la personne décalée de 100-170 px.
+- **Fait** : en Plan / Paysage la personne est posée au centre de la zone libre à ≥ ×0,3 ; vue Arbre inchangée.
+- **Garde** : `tools/arbre/verify-plan-centre.mjs` (rouge sur v3.199, vert sur v3.200).
+
 ## Bulle de version du module — plus jamais sur un onglet du bas (2026-11-07)
 - **Pourquoi** : Servi (mesure en ligne) a vu sur Studio iPhone « cache 1 [button.on ⟵ sous button#kdmc-version-badge] » : l'abeille couvrait la bulle de l'app, le module posait la sienne sur l'onglet Caméra. `tools/shared/version-badge-pwa.js` : seul un élément couvrant ≥ 25 % de l'écran rend la bulle de l'app invisible. LESSONS 874.
 - **Garde** : `tests/verify-bulles-partout.mjs` B7/B8, B7 rouge sans le correctif.

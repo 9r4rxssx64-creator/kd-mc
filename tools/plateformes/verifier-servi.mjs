@@ -153,6 +153,15 @@ export function mesurerServi() {
   const decouverte = (e) => { const h = e.closest('#kdmc-version-badge, #vbadge, #ver, [data-own-badge]') || e; const pe = h.style.pointerEvents; h.style.pointerEvents = 'auto'; const r = e.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); h.style.pointerEvents = pe; return !t || h.contains(t) || t.contains(e) || !!t.closest('#kdmc-version-badge') || motV.test((t.textContent || '').trim()); };
   const pastillesVisibles = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim()) && versionVisible(e) && decouverte(e));
   const badgesVisibles = pastillesVisibles.length;
+  /* 7.11 (arbre : « badge v3.200/v3.200 visibles 0 », sans dire pourquoi) : quand il y a des textes de version et qu'aucun ne se voit, le robot NOMME la cause de chacun
+     (caché par quel ancêtre, hors de l'écran, ou recouvert par qui) : un « 0 » sans cause ne se corrige pas (leçons 871, 878). */
+  const badgesCaches = badgesVisibles ? [] : [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim())).slice(0, 3).map((e) => {
+    const qui = e.id ? '#' + e.id : sel(e);
+    for (let a = e; a && a !== document.documentElement; a = a.parentElement) { const st = getComputedStyle(a); const k = st.display === 'none' ? 'display none' : st.visibility === 'hidden' ? 'visibility hidden' : parseFloat(st.opacity) === 0 ? 'opacity 0' : ''; if (k) return qui + ' : ' + (a === e ? 'lui-même' : sel(a)) + ' ' + k; }
+    const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return qui + ' : taille 0';
+    if (!(r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth)) return qui + ' : hors écran @' + Math.round(r.left) + ',' + Math.round(r.top);
+    const t = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return qui + ' : sous ' + (t ? sel(t) : '?');
+  });
   const badgesVisiblesQui = pastillesVisibles.slice(0, 3).map((e) => (e.closest('#kdmc-version-badge') ? 'module' : (e.id ? '#' + e.id : e.tagName.toLowerCase())));
   /* qui recouvre chaque pastille visible (même mesure que le module : bulle interrogeable le temps de la mesure) — pour savoir POURQUOI le module ne se cache pas */
   const modB = document.getElementById('kdmc-version-badge'); const modD = modB ? modB.style.display : ''; if (modB) modB.style.display = 'none';   /* sans la bulle du module : qui recouvre la bulle de l'app ? */
@@ -171,7 +180,7 @@ export function mesurerServi() {
   return {
     debordeur: deb,
     appVer: document.documentElement.getAttribute('data-app-ver') || '',
-    badges, badgesVisibles, badgesVisiblesQui, badgesDessus,
+    badges, badgesVisibles, badgesVisiblesQui, badgesDessus, badgesCaches,
     pastilleBas: pb ? Math.round(pb.bottom) : null,
     premier,
     sousPastille: !!(pb && premier && premier.top < pb.bottom && premier.gauche < pb.right && premier.droite > pb.left),
@@ -255,7 +264,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           }
         } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours); }
         sortie.push(r);
-        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
+        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
       }
       await ctx.close();
     }

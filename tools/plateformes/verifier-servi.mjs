@@ -139,8 +139,10 @@ export function mesurerServi() {
     if (!premier || r.top < premier.top) premier = { top: Math.round(r.top), gauche: Math.round(r.left), droite: Math.round(r.right), s: sel(e) };
   }
   /* versions : jamais un texte libre, seulement ce qui ressemble à « v1.2.3 » */
-  const motV = /^v\d+(?:\.\d+)+$/i;
-  const badges = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim())).map((e) => (e.textContent || '').trim()).slice(0, 3);
+  /* 7.11 (arbre : l'écran du code écrit « Arbre v3.200 » dans #gateVer, le robot disait « visibles 0 ») : un mot court devant le numéro (« Arbre », « Version ») reste une pastille. */
+  const motV = /^(?:\p{L}{1,12}\s+)?(v\d+(?:\.\d+)+)$/iu;
+  const numV = (e) => ((e.textContent || '').trim().match(motV) || [])[1] || '';
+  const badges = [...document.querySelectorAll('body *')].filter((e) => !e.children.length && motV.test((e.textContent || '').trim())).map(numV).slice(0, 3);
   /* 6.11 (Studio : « v9.22.11 » DEUX FOIS l'une sur l'autre) : `badges` compte aussi une pastille cachée (display:none) ; ce qui fait le défaut,
      c'est le nombre de pastilles réellement VISIBLES. On le mesure (nombre seulement) et on note l'id de celles qui se voient. */
   const versionVisible = (e) => { for (let a = e; a && a !== document.documentElement; a = a.parentElement) { const st = getComputedStyle(a); if (st.display === 'none' || st.visibility === 'hidden' || parseFloat(st.opacity) === 0) return false; } const r = e.getBoundingClientRect(); if (!(r.width > 0 && r.height > 0)) return false;
@@ -159,7 +161,8 @@ export function mesurerServi() {
   /* le plus large élément qui dépasse l'écran (débordement horizontal) : sélecteur + nombres, jamais de texte.
      29.10 : un élément contenu par un parent qui coupe ou fait défiler (grille dans .scroll) ne fait pas déborder la page : ignoré. */
   const L = document.documentElement.clientWidth; let deb = null;
-  const contenu = (e) => { for (let a = e.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) if (getComputedStyle(a).overflowX !== 'visible') return true; return false; };
+  /* 7.11 (arbre : « déborde 0 [b droite 509 / écran 390 · parent div#aura] ») : si le corps ou la racine coupe le débordement (overflow-x hidden), rien ne dépasse à l'écran : personne n'est nommé. */
+  const contenu = (e) => { for (let a = e.parentElement; a; a = a.parentElement) if (getComputedStyle(a).overflowX !== 'visible') return true; return false; };
   for (const e of document.querySelectorAll('body *')) {
     const r = e.getBoundingClientRect(); if (r.width < 2 || r.right <= L + 1 || !vis(e)) continue;
     const st = getComputedStyle(e); if (st.position === 'fixed' || contenu(e)) continue;

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -84,6 +84,9 @@ const rect = await (async () => { const b8 = await chromium.launch(exe ? { execu
   await p8.goto(f('rect.html', '<!doctype html><body style="margin:0"><a id="acheter" href="#" style="display:block;width:200px;height:44px;margin:300px 20px">Acheter</a><div id="fond" style="position:fixed;inset:0;z-index:99"></div>'));
   const m = await p8.evaluate(mesurer, true); await b8.close(); return sansTexte(m.cacheEx)[0] || ''; })();
 ok('2j3. un contrôle recouvert est livré avec ses rectangles (x,y largeurxhauteur), sans texte', /\[@\d+,\d+ \d+x\d+ sous @\d+,\d+ \d+x\d+\]/.test(rect) && !/Acheter/.test(rect), rect);
+/* 2j4 (7.11) : un délai dépassé dit QUELLES requêtes n'avaient pas fini (hôte + chemin, jamais les paramètres). */
+const attente = (() => { const q = (u) => ({ url: () => u }); const m = new Map([[q('https://apex-ai.kd-mc.com/assets/gros.js?token=SECRET'), 1000], [q('https://fonts.example.org/css'), 5000]]); return enAttente(m, 31000); })();
+ok('2j4. un délai dépassé liste les requêtes en attente (hôte + chemin + secondes), sans paramètres', /apex-ai\.kd-mc\.com\/assets\/gros\.js 30s \| fonts\.example\.org\/css 26s/.test(attente) && !/SECRET|token/.test(attente), attente);
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

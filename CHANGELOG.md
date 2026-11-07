@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Servi — un « délai dépassé » dit quelles requêtes n'avaient pas fini (2026-11-07)
+- Servi 42361310862 : Apex AI « page.goto Timeout 30000ms » sur iPhone 13 paysage et iPad paysage (2 runs de suite, 2 écrans différents) sans aucune cause. Le relevé ajoute maintenant « en attente : hôte/chemin Ns » (5 requêtes au plus, jamais les paramètres).
+- Garde `tests/verify-verifier-servi.mjs` 2j4 : vert ; rouge (import impossible) sans la fonction.
+
 ## Apex Chat 1.1.360 — l'encart « Mets Apex Chat sur ton écran d'accueil » ne cache plus les boutons de la liste vide (2026-11-07)
 - Mesuré par Servi (run 42339956251, iPhone 13 portrait 390×664) : `div#install-hint @12,446 366x140` recouvrait `button.btn @87,424 216x48` et `button.btn.btn-out` = « 📤 Inviter mes amis » et « 👥 Créer un groupe ». L'encart tient maintenant sur une ligne de 44 px (haut à 542 px, sous le dernier bouton qui finit à 530 px) ; toucher la ligne ouvre les 3 gestes ; ✕ le ferme et le mémorise comme avant.
 - Garde `tests/verify-install-hint-compact.mjs` : 7 ✅ ; `SABOTAGE=1` (3 gestes d'office) : 2 ❌ avec 453/133 px, comme Servi.

@@ -27,6 +27,11 @@ export async function mesurerSansFeuille(page, tel, r = {}) {
   }
   return m;
 }
+/** Requêtes restées sans réponse (hôte + chemin, sans paramètres), les plus anciennes d'abord — pour expliquer un délai dépassé. */
+export function enAttente(enCours, maintenant = Date.now()) {
+  const l = [...enCours.entries()].sort((x, y) => x[1] - y[1]).slice(0, 5).map(([q, t]) => { let u; try { u = new URL(q.url()); } catch { return '?'; } return `${u.hostname}${u.pathname.slice(0, 50)} ${Math.round((maintenant - t) / 1000)}s`; });
+  return l.length ? ' · en attente : ' + l.join(' | ') : ' · aucune requête en attente';
+}
 /** Retire tout texte de page (entre guillemets) d'un exemple de recouvrement : il ne reste que sélecteurs, position et z-index. */
 export const sansTexte = (ex) => (Array.isArray(ex) ? ex : []).map((x) => String(x).replace(/"[^"]*"/g, '…').slice(0, 240));
 /** Une page à corriger : erreur, titre sous la pastille, OU un bouton dont le centre est recouvert par un autre élément. */
@@ -167,6 +172,9 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
       const moteur = bw && nom === 'iphone-13' ? bw : b;
       const ctx = await moteur.newContext({ ...opts }); await lectureSeule(ctx);
       const page = await ctx.newPage();
+      /* 7.11 (apex-cloud, Servi 42361310862 : Apex AI « page.goto Timeout 30000ms » sur 2 écrans paysage, 2 runs de suite) : au dépassement du délai on dit QUELLES requêtes
+         n'avaient pas fini (hôte + chemin, jamais les paramètres) — un « timeout » sans cause ne se corrige pas. */
+      const enCours = new Map(); page.on('request', (q) => enCours.set(q, Date.now())); page.on('requestfinished', (q) => enCours.delete(q)); page.on('requestfailed', (q) => enCours.delete(q));
       let admin = false;
       if (hash) admin = !!(await connecterAdmin(page, hash).catch(() => ({ ok: false }))).ok;
       journal(`=== ${nom} [${moteur === bw ? 'webkit' : 'chromium'}] (${opts.viewport.width}×${opts.viewport.height}) — connexion admin : ${admin ? 'oui' : 'NON'}`);
@@ -192,7 +200,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
              « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré
              (dépôt public) — et un bouton recouvert compte comme un défaut. */
           if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), haut: m.haut, deborde: m.deborde, petit: m.petit, js: m.js });
-        } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90); }
+        } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours); }
         sortie.push(r);
         journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
       }

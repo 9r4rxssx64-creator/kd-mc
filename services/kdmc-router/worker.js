@@ -655,6 +655,8 @@ async function handleArbre(request, url, env) {
     return J({ ok: true, ts: e.ts, notifie });
   }
   if (path === '/__arbre/journal' && request.method === 'GET') {
+    /* 7.11 (Kevin : « l'historique des modifs, sauf pour moi l'admin ») : le journal des corrections n'est lu que par l'admin PROUVÉ (code ou Face ID), plus par tout membre qui a le code de la famille */
+    if (!(await adminSession(request, env))) return J({ ok: false, reason: 'admin_seulement' }, null, 403);
     const hash = String(request.headers.get('x-arbre-code') || '').trim().toLowerCase();
     if (!stored) return J({ ok: false, reason: 'code_non_publie' });
     if (!hexEq(hash, stored)) return J({ ok: false, reason: 'code_invalide' }, null, 403);

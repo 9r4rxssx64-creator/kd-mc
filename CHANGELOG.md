@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Servi — l'admin d'Apex Chat se lit dans `K.user.is_admin`, pas `role` (2026-11-07)
+- Servi 42368800591 : « écrans d'administration : compte non administrateur (rôle inconnu) » — les 13 vues n'ont pas été mesurées parce que le robot cherchait `K.user.role`, qui n'existe pas : l'admin d'Apex Chat est `K.user.is_admin === true`, posé par le serveur (index.html l.1752). Le robot lit maintenant `is_admin` et, s'il n'y a pas d'admin, dit pourquoi : « utilisateur », « sans compte (étape …) » ou « application absente ».
+- Garde `tests/verify-verifier-servi.mjs` 2j6 : vert (admin / utilisateur / sans compte) ; rouge sur l'ancienne lecture.
+
 ## Servi — il mesure aussi les 13 écrans d'administration d'Apex Chat (2026-11-07)
 - Tâche 97 : « écrans admin d'Apex Chat non mesurés (les comptes de test ne sont pas admin) ». Servi est connecté en admin du domaine : sur iPhone 13 portrait et portable il affiche chaque vue (`K.sv`, lecture seule : le robot bloque toute requête qui écrit, rien n'est cliqué) et la mesure comme une page : affichée oui/non, éléments recouverts, petites cibles, débordement. Vues : admin, admin-diag, admin-users, admin-connections, admin-toggles, admin-sentinels, admin-audit, admin-invite-book, admin-trusted-circle, admin-search, admin-timeline, admin-map, admin-premium. Compte non admin : dit « rien à mesurer ».
 - Garde `tests/verify-verifier-servi.mjs` 2j6 : vert (vue propre, bouton de 20 px signalé, vue non affichée signalée, compte non admin) ; rouge (import impossible) sans la fonction.

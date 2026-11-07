@@ -41,8 +41,10 @@ export async function attendreFinSplash(page, maxMs = 15000) {
  *  on affiche chaque vue (K.sv, lecture seule : le robot bloque toute requête qui écrit, on ne clique rien) et on la mesure comme une page. `{ admin: false }` si le compte n'est pas admin. */
 export const VUES_ADMIN_APEX_CHAT = ['admin', 'admin-diag', 'admin-users', 'admin-connections', 'admin-toggles', 'admin-sentinels', 'admin-audit', 'admin-invite-book', 'admin-trusted-circle', 'admin-search', 'admin-timeline', 'admin-map', 'admin-premium'];
 export async function mesurerVuesAdminApexChat(page, tel, vues = VUES_ADMIN_APEX_CHAT, attenteMs = 900) {
-  const role = await page.evaluate(() => (window.K && K.user && K.user.role) || null).catch(() => null);
-  if (role !== 'admin') return { admin: false, role, vues: [] };
+  /* 7.11 (Servi 42368800591 : « rôle inconnu ») : Apex Chat n'a pas de `K.user.role` — l'admin est `K.user.is_admin === true` (index.html l.1752, posé par le SERVEUR). */
+  const etat = await page.evaluate(() => ({ k: typeof window.K, user: !!(window.K && K.user), admin: !!(window.K && K.user && (K.user.is_admin === true || K.user.role === 'admin')), vue: (window.K && K.view) || null, etape: (window.K && K.authStep) || null })).catch(() => ({ k: 'illisible' }));
+  const role = etat.admin ? 'admin' : (etat.user ? 'utilisateur' : etat.k === 'object' ? 'sans compte (étape ' + (etat.etape || '?') + ')' : 'application absente');
+  if (!etat.admin) return { admin: false, role, vues: [] };
   const sortie = [];
   for (const v of vues) {
     const rep = { vue: v };

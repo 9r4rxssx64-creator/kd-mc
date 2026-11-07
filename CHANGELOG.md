@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Bulle de version du module — plus jamais sur un onglet du bas (2026-11-07)
+- **Pourquoi** : Servi (mesure en ligne) a vu sur Studio iPhone « cache 1 [button.on ⟵ sous button#kdmc-version-badge] » : l'abeille couvrait la bulle de l'app, le module posait la sienne sur l'onglet Caméra. `tools/shared/version-badge-pwa.js` : seul un élément couvrant ≥ 25 % de l'écran rend la bulle de l'app invisible. LESSONS 874.
+- **Garde** : `tests/verify-bulles-partout.mjs` B7/B8, B7 rouge sans le correctif.
+
 ## Servi (robot public) — mesure de fluidité + script bloquant nommé (2026-11-06)
 - **Pourquoi** : Studio lent sur le Lenovo de Kevin (1,6 img/s), cause inconnue. Servi ajoute à chaque écran « fluidité N i/s » et, sous 30 i/s, « [bloque fichier:ms] » (API `long-animation-frame`). Rapport seulement, pas encore un défaut qui rend la page « à corriger » : on mesure d'abord. LESSONS 869.
 - Servi attend 1,8 s après la fermeture de la feuille d'installation avant de compter les pastilles de version (course de mesure : « 2 visibles » à tort sur Studio).

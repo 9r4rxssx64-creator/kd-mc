@@ -498,6 +498,7 @@
   "tools/arbre/verify-ordi-recouvrement.mjs",
   "tools/arbre/verify-ordinateur.mjs",
   "tools/arbre/verify-ouverture-acte.mjs",
+  "tools/arbre/verify-pastille-union.mjs",
   "tools/arbre/verify-pastilles-admin.mjs",
   "tools/arbre/verify-photo-ameliorer.mjs",
   "tools/arbre/verify-photo-fiche.mjs",

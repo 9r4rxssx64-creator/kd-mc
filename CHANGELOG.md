@@ -5,6 +5,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.208 — pastilles d'union (divorcés, pacs…) jamais coupées sous une carte (2026-11-08)
+- Constat (photos iPad de Kevin) : « DIVORCÉS » passait sous la carte voisine (24 px entre deux époux, pastille de ~95 px).
+- En vue Plan la pastille est ronde (💔, 📝, 🤝…), le mot est dans son titre ; mesuré : 31 % de recouvrement avant, 0 après. Autres vues inchangées.
+- Garde `tools/arbre/verify-pastille-union.mjs` (rouge sur v3.207).
+
 ## Arbre v3.207 — vue 🌳 Arbre : portraits ovales encadrés d'or, photos en gravure (2026-11-08)
 - Idée de Kevin (capture d'un arbre gravé : médaillons ovales à cadre doré accrochés aux branches) : en vue Arbre chaque personne est un médaillon ovale (plus haut que large) à cadre doré ; la photo est en gravure (grisée, sépia léger) et reprend ses couleurs au toucher et pour la personne centrale. Le liseré de couleur de la branche et le nom restent. Rien retiré : Plan, Paysage et Lignée inchangés.
 - Garde `tools/arbre/verify-gravure.mjs` (rouge sur v3.206).

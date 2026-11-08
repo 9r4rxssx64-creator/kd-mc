@@ -1224,7 +1224,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.22.13';
+var APP_VER='v9.22.14';
 document.getElementById('vbadge').textContent=APP_VER;
 /* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
 function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}
@@ -2364,6 +2364,24 @@ var Cam=(function(){
   var stream=null,fx='aucun',facing='user',mirror=true,grid=false,timer=0,torch=false;
   var mask='aucun',faceBox=null,trackRaf=null,lastDetect=0;
   var rec=null,chunks=[],recT=null,recStart=0,holding=false,holdTimer=null;
+  /* 8.11 (Kevin : « Oui caméra direct auto ») — sur ORDINATEUR, « Prendre une photo » / « Filmer » /
+     « Me prendre en photo » n'ouvrent plus un sélecteur de fichiers (trompeur) : ils ouvrent la caméra
+     en direct et la démarrent seuls ; la photo ou le film part directement dans l'outil d'où on vient
+     (`pour`). Sur téléphone / tablette on garde la caméra du système (capture=), qui marche très bien. */
+  var pour=null;
+  var OUTILS_PHOTO={photo:'Photo',aivid:'AiVid',magic:'Magic',mini:'Mini'};
+  function ordi(){
+    var mobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'')
+      ||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);   /* iPadOS se dit « Mac » */
+    return !mobile&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+  }
+  function ouvrirPour(outil){
+    if(!ordi())return false;            /* l'appelant ouvre alors la caméra du système (capture=) */
+    pour=outil;facing='user';
+    go('cam');start();
+    return true;
+  }
+  function libererPour(){pour=null;}
   function v(){return $('camView');}
   function hint(t){var e=$('camHint');if(e)e.textContent=t||'';}
   function css(){var f=FX.filter(function(x){return x.id===fx;})[0];return (f&&f.css)||'none';}
@@ -2435,7 +2453,8 @@ var Cam=(function(){
         for(var i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];lum=s/(d.length/4)/3;}catch(e){lum=255;}
       if(lum>=35||Date.now()-t0>4000){
         hint(lum<35?'Prêt ✅ Il fait sombre : ajoute de la lumière pour une belle image.'
-                   :'Prêt ✅ Appuie pour une photo, garde appuyé pour filmer.');
+                   :(pour==='video'?'Prêt ✅ Garde le bouton rond appuyé pour filmer (1 min au plus).'
+                                   :'Prêt ✅ Appuie pour une photo, garde appuyé pour filmer.'));
         return;}
       setTimeout(boucle,300);
     })();
@@ -2500,6 +2519,12 @@ var Cam=(function(){
       archive(b,'Photo caméra');
       hint('📸 Photo prise et rangée dans « Mes créas » ('+Math.round(b.size/1024)+' Ko).');
       toast('Photo prise 📸',1600);
+      var outil=OUTILS_PHOTO[pour]&&window[OUTILS_PHOTO[pour]];
+      if(outil&&outil._load){                       /* venue d'un outil : la photo y retourne directement */
+        var vers=pour;pour=null;
+        go(vers);outil._load(new File([b],'photo.jpg',{type:'image/jpeg'}));
+        return;
+      }
       openExport('Photo prise 📸','Tu peux la garder, la retoucher, ou en reprendre une.',[
         {label:'📤 Enregistrer / Partager',fn:function(){shareOrSave(b,'photo-camera.jpg','Ma photo');closeSheet();}},
         {label:'🖼 La retoucher dans Photo',ghost:true,fn:function(){
@@ -2570,6 +2595,10 @@ var Cam=(function(){
       if(!b.size)return hint('⚠️ Vidéo vide, réessaie.');
       hint('🎬 Vidéo enregistrée dans « Mes créas » ('+Math.round(b.size/1024)+' Ko).');
       var ext=(mime.indexOf('mp4')>=0)?'mp4':'webm';
+      if(pour==='video'&&window.Vid&&Vid._load){      /* venue de l'outil Vidéo : le film y retourne directement */
+        pour=null;go('video');Vid._load(new File([b],'v.'+ext,{type:b.type}));
+        return;
+      }
       openExport('Vidéo prête 🎬','Elle est déjà rangée dans « Mes créas ».',[
         {label:'📤 Enregistrer / Partager',fn:function(){shareOrSave(b,'video-camera.'+ext,'Ma vidéo');closeSheet();}},
         {label:'🎬 La monter dans Vidéo',ghost:true,fn:function(){
@@ -2613,7 +2642,7 @@ var Cam=(function(){
   return {init:init,start:start,stop:stop,shoot:shoot,startVideo:startVideo,stopVideo:stopVideo,
           filters:FX,setFx:function(id){fx=id;chips();applyFx();},current:function(){return fx;},
           setMask:function(id){mask=id;Face.reset();maskChips();},mask:function(){return mask;},
-          grab:grab};
+          grab:grab,ouvrirPour:ouvrirPour,libererPour:libererPour,ordi:ordi,pour:function(){return pour;}};
 })();
 
 /* ---------- 👤 Écran de connexion + espace admin ---------- */
@@ -2910,7 +2939,7 @@ function go(name){
   CUR=name;
   if(name==='mine'&&window.Mine){Mine.refresh();if(window.Account)Account.paint();}
   if(name==='fam'&&window.Fam){Fam.montrer();if(Fam.etat())Fam.charger();}
-  if(name!=='cam'&&window.Cam)Cam.stop(true);   /* la caméra ne reste JAMAIS allumée en fond */
+  if(name!=='cam'&&window.Cam){Cam.stop(true);Cam.libererPour();}   /* la caméra ne reste JAMAIS allumée en fond */
   if(name!=='avatar'&&window.Avatar)Avatar.pause();   /* idem pour la caméra et le son de l'avatar */
   document.querySelectorAll('.studio').forEach(function(s){s.classList.remove('active')});
   $('s-'+name).classList.add('active');
@@ -3678,7 +3707,7 @@ var Photo=(function(){
       $('photoCrop').querySelectorAll('[data-ar]').forEach(function(b){b.onclick=function(){Crop.setAR(+b.dataset.ar);b.parentNode.querySelectorAll('[data-ar]').forEach(function(x){x.classList.remove('on')});b.classList.add('on');};});
     },
     pick:function(){$('fileImg').click();},
-    camera:function(){$('fileImgCam').click();},
+    camera:function(){if(!Cam.ouvrirPour('photo'))$('fileImgCam').click();},
     _load:function(file){
       var img=new Image();img.onload=function(){loadImage(img);URL.revokeObjectURL(img.src);};
       img.onerror=function(){toast('Image illisible');};img.src=URL.createObjectURL(file);
@@ -4494,7 +4523,7 @@ var Vid=(function(){
       $('capStyleRow').querySelectorAll('[data-cap]').forEach(function(b){b.onclick=function(){capStyle=b.dataset.cap;b.parentNode.querySelectorAll('[data-cap]').forEach(function(x){x.classList.remove('on')});b.classList.add('on');};});
     },
     pick:function(){$('fileVid').click();},
-    camera:function(){$('fileVidCam').click();},
+    camera:function(){if(!Cam.ouvrirPour('video'))$('fileVidCam').click();},
     _load:function(file){
       if(vel.src)URL.revokeObjectURL(vel.src);
       vel.src=URL.createObjectURL(file);vel.load();loaded=true;curFilter='orig';filterStr='none';vel.style.filter='none';speed=1;vel.playbackRate=1;
@@ -5828,7 +5857,7 @@ var AiVid=(function(){
       }); };
     });
   }
-  return {init:buildVibes,pick:function(){$('fileAiPhoto').click();},camera:function(){$('fileAiPhotoCam').click();},_load:loadPhoto,generate:generate,
+  return {init:buildVibes,pick:function(){$('fileAiPhoto').click();},camera:function(){if(!Cam.ouvrirPour('aivid'))$('fileAiPhotoCam').click();},_load:loadPhoto,generate:generate,
     _setVibe:function(id){vibe=id;buildVibes();},_vibes:function(){return VIBES.map(function(v){return {id:v.id,mode:v.mode||'dance',n:v.n||5,style:v.style||null};});},_mux:muxMusic,
     pickRef:function(){if(!photoData){toast('Charge d\'abord ta photo');return;}$('fileDanceRef').click();},_ref:refVideo,
     export:function(){if(out)save(out);else toast('Génère d\'abord une vidéo');}};
@@ -6456,7 +6485,7 @@ var Magic=(function(){
   return {
     init:build,
     pick:function(){$('fileMagicPhoto').click();},
-    camera:function(){$('fileMagicCam').click();},
+    camera:function(){if(!Cam.ouvrirPour('magic'))$('fileMagicCam').click();},
     pickSong:function(){$('fileMagicSong').click();},
     pick2:function(){$('fileMagicPhoto2').click();},
     _load:loadPhoto,
@@ -6631,7 +6660,7 @@ var Mini=(function(){
   function hint(t){var el=$('miniHint');if(el)el.textContent=t;}
   function setOn(b,sel){b.parentNode.querySelectorAll(sel).forEach(function(x){x.classList.remove('on');});b.classList.add('on');}
   function pick(){ $('fileMiniPhoto').click(); }
-  function camera(){ $('fileMiniPhotoCam').click(); }
+  function camera(){ if(!Cam.ouvrirPour('mini'))$('fileMiniPhotoCam').click(); }
 
   function _load(file){
     var im=new Image();
@@ -7443,6 +7472,6 @@ catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)
 <script src="avatar-persos.js" defer></script>
 <script src="avatar-studio.js" defer></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.13" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.14" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
 </body>
 </html>

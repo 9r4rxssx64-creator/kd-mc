@@ -5,6 +5,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Créa Studio v9.22.14 — sur ordinateur, « Prendre une photo » ouvre la caméra en direct (2026-11-08)
+- **Demande de Kevin** : « Oui caméra direct auto » (sur ordinateur, « Prendre une photo » ouvrait un sélecteur de fichiers).
+- **Fait** : sur ordinateur, les boutons « Prendre une photo » / « Filmer » / « Me prendre en photo » (Photo, Vidéo, Vidéo IA, Magie, Mini-moi) ouvrent l'écran Caméra et la démarrent seuls ; la photo (ou le film) retourne directement dans l'outil d'où l'on vient, la caméra s'éteint. Sur téléphone, rien ne change (caméra du système) ; si la caméra est refusée, « 📂 Importer » reste sur l'écran Caméra. Aucune fonction retirée.
+- **Garde** : `npm run test:crea-camera` 32 OK ; rouge sur v9.22.13 (`CREA_DIR=<ancien dossier>` : « Cam.ordi is not a function », sortie 1).
 ## Arbre v3.215 — un prénom ajouté corrige tout seul les textes de la famille (2026-11-08)
 - Kevin : « on a rajouté le prénom de Juan, c'est Joseph : la modif se fait automatiquement ? sinon que tout soit auto après toute modification ». Constat : NON pour un prénom ajouté (seuls un prénom corrigé, un nom, une date, un lieu, un nombre d'enfants se propageaient) : le texte d'Annick disait encore « M. JUAN, dont le prénom reste à retrouver ».
 - Maintenant : un prénom AJOUTÉ à une fiche sans prénom corrige les textes des proches (3 pas) : « M. JUAN » → « Joseph JUAN », « dont le prénom reste à retrouver » disparaît, la ligne « – Le prénom de … » de « 🔎 À retrouver » est retirée (avec son titre s'il ne reste rien) ; aucun doute (un autre proche sans prénom de même nom) → on ne devine pas. Ça marche à l'enregistrement et à la réception d'une fiche changée ailleurs (autre compte, autre appareil).

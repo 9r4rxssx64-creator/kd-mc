@@ -16,7 +16,8 @@
 import { chromium } from 'playwright';
 import http from 'http'; import fs from 'fs'; import path from 'path';
 
-const ROOT = path.resolve(new URL('../tools/crea-studio', import.meta.url).pathname), PORT = 8255;
+// CREA_DIR=<ancien dossier> : preuve de sabotage (le test doit devenir rouge sur l'ancienne version)
+const ROOT = process.env.CREA_DIR ? path.resolve(process.env.CREA_DIR) : path.resolve(new URL('../tools/crea-studio', import.meta.url).pathname), PORT = 8255;
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 const srv = http.createServer((q, s) => {
   let p = decodeURIComponent(q.url.split('?')[0]); if (p === '/') p = '/index.html';
@@ -33,6 +34,8 @@ const browser = await chromium.launch({
 });
 const ctx = await browser.newContext({
   viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
+  // un vrai iPhone s'annonce « iPhone … Mobile » : sans cela le Studio le prendrait pour un ordinateur
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   permissions: ['camera', 'microphone'],
 });
 const page = await ctx.newPage(); const errs = [];
@@ -214,6 +217,83 @@ await fermer();
 await page.click('#bnav button[data-go="photo"]'); await page.waitForTimeout(500);
 const eteinte = await page.evaluate(() => !document.getElementById('camView').srcObject);
 chk(eteinte, 'quitter l\'écran ÉTEINT la caméra (batterie + vie privée)');
+
+// 6b) 8.11 (Kevin : « Oui caméra direct auto ») — TÉLÉPHONE : « Prendre une photo » garde la caméra du système
+//     (sélecteur capture=), jamais la caméra du navigateur
+const tel = await page.evaluate(() => ({ ordi: window.Cam.ordi() }));
+chk(tel.ordi === false, 'sur téléphone, le Studio ne se prend pas pour un ordinateur (caméra du système conservée)');
+{
+  const choix = page.waitForEvent('filechooser', { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.evaluate(() => window.Photo.camera());
+  chk(await choix, 'téléphone : « Prendre une photo » ouvre la caméra du système (sélecteur capture=)');
+  await page.waitForTimeout(200);
+}
+
+// 6c) ORDINATEUR : « Prendre une photo » ouvre la caméra EN DIRECT et la démarre seule ;
+//     la photo retourne directement dans l'outil d'où l'on vient ; « Filmer » idem avec le film
+{
+  const ctxPc = await browser.newContext({ viewport: { width: 1280, height: 720 }, permissions: ['camera', 'microphone'] });
+  const pc = await ctxPc.newPage(); const errsPc = [];
+  pc.on('pageerror', e => errsPc.push('PAGEERROR: ' + e.message));
+  await pc.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'load' }); await pc.waitForTimeout(400);
+  await pc.fill('#gateName', 'Test Camera'); await pc.fill('#gateCode', '123456');
+  await pc.click('#gateGo'); await pc.waitForTimeout(300);
+  const etat = () => pc.evaluate(() => ({
+    ecran: ((document.querySelector('.studio.active') || {}).id || '').replace('s-', ''),
+    surligne: (document.querySelector('#bnav button.on') || {}).dataset.go,
+    largeur: (document.getElementById('camView') || {}).videoWidth || 0,
+    eteinte: !document.getElementById('camView').srcObject,
+    pour: window.Cam.pour(),
+  }));
+  let selecteur = false; pc.on('filechooser', () => { selecteur = true; });
+  await pc.evaluate(() => window.Cam.ordi()).then(o => chk(o === true, 'ordinateur reconnu (pas un téléphone)'));
+  await pc.click('#bnav button[data-go="photo"]'); await pc.waitForTimeout(200);
+  await pc.click('#s-photo button[onclick="Photo.camera()"]');
+  await pc.waitForFunction(() => { const v = document.getElementById('camView'); return v && v.videoWidth > 0; }, { timeout: 15000 }).catch(() => {});
+  let e = await etat();
+  chk(e.ecran === 'cam' && e.surligne === 'cam' && e.largeur > 0 && !selecteur,
+    `ordinateur : « Prendre une photo » ouvre la caméra en direct, démarrée seule (${e.largeur}px), sans sélecteur de fichiers`);
+  chk(e.pour === 'photo', 'la caméra sait d\'où l\'on vient (outil Photo)');
+  const avantPc = await pc.evaluate(async () => (await window.Mine.list()).length);
+  await pc.waitForFunction(() => /Prêt/.test(document.getElementById('camHint').textContent), { timeout: 8000 }).catch(() => {});
+  await pc.evaluate(() => window.Cam.shoot()); await pc.waitForTimeout(1200);
+  e = await etat();
+  const apresPc = await pc.evaluate(async () => (await window.Mine.list()).length);
+  chk(e.ecran === 'photo' && e.surligne === 'photo' && e.eteinte && e.pour === null && apresPc === avantPc + 1,
+    `la photo retourne DIRECTEMENT dans l'outil Photo, la caméra s'éteint, elle est rangée (${avantPc} → ${apresPc}, écran ${e.ecran})`);
+  const chargee = await pc.evaluate(() => { const c = document.querySelector('#s-photo canvas'); return !!(c && c.width > 50); });
+  chk(chargee, 'l\'outil Photo a bien reçu l\'image (zone de retouche remplie)');
+
+  // « Me prendre en photo » (Mini-moi) : même chemin, vers Mini-moi
+  await pc.click('#bnav button[data-go="mini"]'); await pc.waitForTimeout(200);
+  await pc.click('#s-mini button[onclick="Mini.camera()"]');
+  await pc.waitForFunction(() => { const v = document.getElementById('camView'); return v && v.videoWidth > 0; }, { timeout: 15000 }).catch(() => {});
+  e = await etat();
+  chk(e.ecran === 'cam' && e.largeur > 0 && e.pour === 'mini' && !selecteur, 'ordinateur : « Me prendre en photo » (Mini-moi) ouvre aussi la caméra en direct');
+  // quitter par un autre onglet : l'origine est oubliée et la caméra éteinte
+  await pc.click('#bnav button[data-go="magic"]'); await pc.waitForTimeout(300);
+  e = await etat();
+  chk(e.eteinte && e.pour === null, 'quitter l\'écran Caméra éteint la caméra et oublie l\'origine');
+
+  // « Filmer » : le film retourne dans l'outil Vidéo
+  await pc.click('#bnav button[data-go="video"]'); await pc.waitForTimeout(200);
+  await pc.click('#s-video button[onclick="Vid.camera()"]');
+  await pc.waitForFunction(() => { const v = document.getElementById('camView'); return v && v.videoWidth > 0 && v.readyState >= 2; }, { timeout: 15000 }).catch(() => {});
+  await pc.waitForFunction(() => /Prêt/.test(document.getElementById('camHint').textContent), { timeout: 8000 }).catch(() => {});
+  const phraseVideo = await pc.evaluate(() => document.getElementById('camHint').textContent);
+  chk(/Garde le bouton rond appuyé/.test(phraseVideo), `« Filmer » dit comment filmer (« ${phraseVideo.slice(0, 40)} »)`);
+  let vidOk = false;
+  for (let essai = 1; essai <= 2 && !vidOk; essai++) {
+    await pc.evaluate(() => window.Cam.startVideo()); await pc.waitForTimeout(1600);
+    await pc.evaluate(() => window.Cam.stopVideo());
+    vidOk = await pc.waitForFunction(() => document.querySelector('.studio.active').id === 's-video', null, { timeout: 15000 }).then(() => true).catch(() => false);
+    if (!vidOk) await pc.waitForTimeout(800);
+  }
+  e = await etat();
+  chk(vidOk && e.eteinte && e.pour === null, `le film retourne DIRECTEMENT dans l'outil Vidéo (écran ${e.ecran})`);
+  chk(errsPc.length === 0, `ordinateur : 0 erreur JS${errsPc.length ? ' — ' + errsPc[0] : ''}`);
+  await ctxPc.close();
+}
 
 // 7) import : reconnaissance des formats + refus clairs
 const imports = await page.evaluate(() => {

@@ -179,7 +179,7 @@ for (const [cours, base] of Object.entries(ATTENDU)) {
   const sansLecture = creations.filter((i) => !/_sonLecture\(\)/.test(avant(i)) && !/beeLipSyncStream/.test(avant(i)));
   chk(/navigator\.audioSession\.type="playback"/.test(src) && creations.length >= 3 && !sansLecture.length,
     `7. mode silencieux : « lecture voulue » posée avant chaque création du moteur audio (${creations.length} créations, ${sansLecture.length} sans)`);
-  const dict = src.slice(src.indexOf('function dictate('), src.indexOf('function dictate(') + 1200);
+  const dict = src.slice(src.indexOf('function dictate('), src.indexOf('function dictate(') + 2800);
   chk(/_sonEcoute\(\);\s*r\.start\(\)/.test(dict) && /_sonEcoute\(\);\s*return navigator\.mediaDevices\.getUserMedia/.test(src),
     '7bis. la dictée et l\'appel en direct rendent la session au système avant d\'écouter');
 }

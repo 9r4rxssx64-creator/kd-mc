@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.13";
+var APP_VER="v2.142.14";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -966,6 +966,10 @@ function speak(text){ if(!S.sound||!text)return; text=texteADire(text); var vid=
    et rien ne le disait. On préfère désormais le dire et proposer la solution. */
 var _voixManquante={};
 function _webSpeak(text){ if(!S.sound||!text)return; try{ var u=new SpeechSynthesisUtterance(text); u.lang=COURSES[S.course]?COURSES[S.course].ttsLang:"fr-FR"; u.rate=.92; u.volume=1;
+  /* 8.11 (Kevin : « il ne dicte pas tous les mots d'office, je dois appuyer sur le haut-parleur ») : Safari rend souvent une liste de voix
+     VIDE tant qu'elle n'est pas chargée (surtout au 1er mot après l'ouverture) ; on concluait « aucune voix de cette langue » et on se TAISAIT.
+     Liste vide = pas encore chargée, pas « absente » : on parle quand même avec la langue demandée (le navigateur choisit sa voix). */
+  if(!(speechSynthesis.getVoices()||[]).length){ _wsSpeak(u); return; }
   var base=(u.lang).split("-")[0], vs=speechSynthesis.getVoices().filter(function(v){return v.lang&&v.lang.indexOf(base)===0;});
   var best=vs.filter(function(v){return /premium|enhanced|siri|natural/i.test(v.name);})[0] || vs.filter(function(v){return v.localService;})[0] || vs[0];
   if(best){ u.voice=best; _wsSpeak(u); return; }
@@ -3681,7 +3685,24 @@ function _webSpeakLang(text,lang,fem,cfg){ if(!S.sound||!text)return; try{ var u
   var femV=fem?vs.filter(function(v){return /am[eé]lie|audrey|aur[eé]lie|c[eé]line|chantal|julie|marie|virginie|alice|elsa|paulina|monica|petra|anna|female|femme|woman/i.test(v.name);})[0]:null;
   var best=femV||vs.filter(function(v){return v.localService;})[0]||vs[0]; if(best)u.voice=best; _wsSpeak(u);}catch(e){} }
 function _srOk(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
-function dictate(cb,lang){ try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast("Micro non dispo sur ce navigateur"); cb&&cb("",[]); return; } var r=new SR(); r.lang=lang||"fr-FR"; r.interimResults=false; r.maxAlternatives=6; /* 6 hypothèses : le bon mot est souvent dans la 2e/3e */ r.onresult=function(e){ var alts=[]; try{ var res=e.results[0]; for(var i=0;i<res.length;i++){ if(res[i]&&res[i].transcript) alts.push(res[i].transcript); } }catch(_){} cb&&cb(alts[0]||"", alts); }; r.onerror=function(){ cb&&cb("",[]); }; _sonEcoute(); r.start(); toast("🎤 Parle…"); }catch(e){ toast("Micro indisponible"); cb&&cb("",[]); } }
+/* DICTÉE QUI NE RESTE JAMAIS « EN ATTENTE » (Kevin 8.11 : « j'ai dit le mot, il n'entend pas, il ne valide pas, c'est bloqué »).
+   Avant : seuls onresult et onerror rappelaient l'écran. Safari (iPad / iPhone) termine parfois SANS résultat ni erreur (silence, Siri coupé,
+   micro pris par un son) → onend seul → le rappel ne partait jamais, « …je t'écoute » restait affiché. Maintenant UN SEUL rappel garanti :
+   résultat, erreur, « rien compris », fin sans résultat, ou chien de garde (_DICTEE_MS) — et le micro est rendu dans tous les cas. */
+var _DICTEE_MS=9000;
+function dictate(cb,lang){ var r=null,fini=false,garde=0;
+  function fin(txt,alts){ if(fini) return; fini=true; if(garde){ clearTimeout(garde); garde=0; }
+    try{ if(r){ r.onresult=r.onerror=r.onend=r.onnomatch=null; } }catch(_){}
+    try{ if(r) r.abort(); }catch(_){}
+    cb&&cb(txt||"",alts||[]); }
+  try{ var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR){ toast("Micro non dispo sur ce navigateur"); cb&&cb("",[]); return; }
+    r=new SR(); r.lang=lang||"fr-FR"; r.interimResults=false; r.continuous=false; r.maxAlternatives=6; /* 6 hypothèses : le bon mot est souvent dans la 2e/3e */
+    r.onresult=function(e){ var alts=[]; try{ var res=e.results[0]; for(var i=0;i<res.length;i++){ if(res[i]&&res[i].transcript) alts.push(res[i].transcript); } }catch(_){} fin(alts[0]||"", alts); };
+    r.onnomatch=function(){ fin("",[]); };
+    r.onerror=function(e){ var c=e&&e.error; if(c==="not-allowed"||c==="service-not-allowed") toast("🎤 Micro refusé : autorise-le dans les réglages de l'appareil"); fin("",[]); };
+    r.onend=function(){ setTimeout(function(){ fin("",[]); },350); };   /* un résultat tardif passe avant ; sinon on rend la main */
+    garde=setTimeout(function(){ try{ r.stop(); }catch(_){} setTimeout(function(){ fin("",[]); },1200); },_DICTEE_MS);
+    _sonEcoute(); r.start(); toast("🎤 Parle…"); }catch(e){ toast("Micro indisponible"); fin("",[]); } }
 
 /* ============ LEÇON ============ */
 function startLesson(ui,li,rev){ if(!UNLIMITED && S.hearts<=0){ outOfHearts(); return; }

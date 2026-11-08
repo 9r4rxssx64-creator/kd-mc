@@ -5,6 +5,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.205 — la branche d'une personne (et la famille d'un nom) remonte partout et descend partout (2026-11-08)
+- Constat (Kevin, iPad, « Branche de Laurence SAINT-POLIT », 35 personnes : « il manque des personnes… on remonte partout et on descend partout, au plus haut et au plus bas, pour chaque personne ou famille »).
+- Avant : ancêtres + descendants de la personne + oncles / tantes seulement ; ni cousins, ni petits-cousins, ni les enfants des grands-oncles. Mesuré sur la vraie base : 36 personnes avec tous les descendants des ancêtres, 43 avec les conjoints (35 avant).
+- Maintenant : ancêtres (toutes lignes) + TOUS les descendants de chacun + conjoints et autre parent des enfants ; la famille d'un nom = porteurs + leurs ancêtres + descendants + conjoints. Les lignées des conjoints s'ouvrent en touchant le conjoint.
+- Garde `tools/arbre/verify-branche-complete.mjs` (rouge sur v3.204 : 2 échecs) ; `verify-loupe-direct` mis à jour (les ancêtres des porteurs sont permis, jamais ceux d'un conjoint).
 ## Créa Studio v9.22.12 — Caméra : on ne dit plus « Prêt » devant un écran noir (2026-11-08)
 - **Constat** (Kevin : caméra noire sur le Lenovo) ; mesuré par `pc-config` (pont 2041, Chrome de Kevin, onglet visible) : « Integrated Camera », flux vivant 640×480, permission accordée, luminance 25 → 33 → 39 sur 255 en 3 s = l'auto-exposition démarre sombre. Dans un vrai Chromium avec fausse caméra (mêmes contraintes que le Studio) l'image arrive (luminance 47, 0 erreur) : le code ne produit pas de noir.
 - **Corrigé** : après l'allumage, le Studio dit « Réglage de la lumière de la caméra… » et attend que l'image s'éclaire (≥ 35/255, 4 s au plus) avant « Prêt ✅ » ; toujours noire après 4 s : « Il fait sombre : ajoute de la lumière ».

@@ -468,6 +468,7 @@
   "tools/arbre/verify-a-completer.mjs",
   "tools/arbre/verify-ajout-famille.mjs",
   "tools/arbre/verify-bee-ne-cache-rien.mjs",
+  "tools/arbre/verify-branche-complete.mjs",
   "tools/arbre/verify-cadrage.mjs",
   "tools/arbre/verify-cadre-noyau.mjs",
   "tools/arbre/verify-coherence-auto.mjs",

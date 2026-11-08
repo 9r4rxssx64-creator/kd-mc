@@ -876,7 +876,8 @@ function clInstallAdminUI(){
   var old=document.getElementById("clAdminBar");if(old)old.remove();
   if(!LD_ADMIN)return;
   var bar=document.createElement("div");bar.id="clAdminBar";
-  bar.style.cssText="position:fixed;left:10px;bottom:74px;z-index:9000;display:flex;gap:6px;flex-wrap:wrap;max-width:74vw";
+  /* 8.11 (mesure Servi 2108) : la barre ne FLOTTE plus (elle recouvrait « Créer mon design » et se faisait recouvrir par la pastille de version) : elle est posée dans la page, en haut, sous la pastille « ← Portail » ; boutons ≥ 44 px. */
+  bar.style.cssText="position:relative;z-index:1;display:flex;gap:8px;flex-wrap:wrap;padding:58px 10px 8px;background:rgba(20,20,24,.96)";
   bar.innerHTML='<a href="studio.html" title="Studio de création" style="background:linear-gradient(135deg,#ff7eb3,#b5179e);color:#fff;font:700 12px system-ui;padding:9px 14px;border-radius:100px;text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.35)">🎨 Studio</a>'
    +'<button onclick="clAddProductForm()" title="Ajouter un produit (textile, cosmétique, goodies…)" style="background:linear-gradient(135deg,#7c8c3c,#5d6b2a);color:#fff;border:none;border-radius:100px;font:700 12px system-ui;padding:9px 14px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35)">➕ Produit</button>'
    +'<button onclick="window.kdmcCatalog?kdmcCatalog.open():toast(\'Catalogue en chargement…\',\'error\')" title="Catalogue Printify : choisir un support, publier en boutique, prix + port réels" style="background:linear-gradient(135deg,#3c6e8c,#2a4d5d);color:#fff;border:none;border-radius:100px;font:700 12px system-ui;padding:9px 14px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35)">🖨 Catalogue</button>'
@@ -884,7 +885,8 @@ function clInstallAdminUI(){
    +'<button onclick="ldAccessPanel()" style="background:rgba(20,20,24,.92);color:#fff;border:1px solid #555;border-radius:100px;font:700 12px system-ui;padding:9px 12px;cursor:pointer">👥 Accès</button>'
    +'<button onclick="ldShowStorage()" title="Stockage" style="background:rgba(20,20,24,.92);color:#fff;border:1px solid #555;border-radius:100px;font:700 13px system-ui;padding:9px 12px;cursor:pointer">📦</button>'
    +'<button onclick="ldAdminLogout()" title="Déconnexion" style="background:rgba(20,20,24,.92);color:#fff;border:1px solid #555;border-radius:100px;font:700 13px system-ui;padding:9px 12px;cursor:pointer">🚪</button>';
-  document.body.appendChild(bar);
+  Array.prototype.forEach.call(bar.querySelectorAll("a,button"),function(x){x.style.minHeight="44px";x.style.minWidth="44px";x.style.display="inline-flex";x.style.alignItems="center";x.style.justifyContent="center";x.style.boxSizing="border-box";});
+  document.body.insertBefore(bar,document.body.firstChild);
 }
 function clShowPodOrders(){
   var q=[];try{q=JSON.parse(localStorage.getItem("cl_pod_orders")||"[]")}catch(_){}
@@ -1018,7 +1020,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.23"
+        data-version="v2.0.24"
         data-color="#e8b830"
         defer></script>
 

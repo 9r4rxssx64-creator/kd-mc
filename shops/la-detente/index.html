@@ -500,7 +500,7 @@ var name=document.querySelector('[type=text]');var email=document.querySelector(
 if(!name||!email||!msg||!email.value)return toast("Remplissez tous les champs","error");
 if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{to_email:LD_ADMIN_EMAIL,reply_to:email.value,name:name.value,email:email.value,from_name:name.value,from_email:email.value,title:"Message contact "+STORE_NAME,message:msg.value,store:STORE_NAME,time:new Date().toLocaleString("fr-FR")}).then(function(){toast("Message envoyé ! Réponse sous 24h 📧");name.value="";email.value="";msg.value=""}).catch(function(){toast("Envoyé ! Réponse sous 24h 📧")})}else{toast("Message envoyé ! Réponse sous 24h 📧")}}
 function notifyPayment(total){
-if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{to_email:LD_ADMIN_EMAIL,name:STORE_NAME+" — Paiement",title:"Paiement initié",message:"Paiement initié "+STORE_NAME+" — "+fmtP(total)+"\n"+S.cart.map(function(i){return i.name+" x"+i.qty}).join("\n"),store:STORE_NAME,amount:fmtP(total),time:new Date().toLocaleString("fr-FR")}).catch(function(){})}}
+if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{to_email:LD_ADMIN_EMAIL,from_name:STORE_NAME,name:STORE_NAME+" — Paiement",title:"Paiement initié",message:"Paiement initié "+STORE_NAME+" — "+fmtP(total)+"\n"+S.cart.map(function(i){return i.name+" x"+i.qty}).join("\n"),store:STORE_NAME,amount:fmtP(total),time:new Date().toLocaleString("fr-FR")}).catch(function(){})}}
 function showPayment(total){
 var m=document.createElement("div");m.id="payModal";
 m.style.cssText="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px";
@@ -1320,7 +1320,7 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.34"
+        data-version="v1.53.35"
         data-color="#e8b830"
         defer></script>
 

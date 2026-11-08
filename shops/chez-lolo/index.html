@@ -545,7 +545,7 @@ cf.innerHTML=_shipBarHtml(subtotal-discAmt)
 +'<button onclick="toggleCart();sv(\'cart\')" style="width:100%;padding:10px;background:transparent;color:var(--muted);font-size:12px;cursor:pointer;margin-top:6px;border:none">Voir le panier complet →</button>'}
 function nlSub(){var e=document.getElementById("nlEmail");if(!e||e.value.indexOf("@")<1)return toast("Email invalide","error");
 var email=e.value;
-if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{to_email:email,store:STORE_NAME,message:"Nouvel abonné newsletter "+STORE_NAME}).then(function(){toast("Bienvenue ! Vérifiez vos emails 📧")}).catch(function(){toast("Inscrit ! 📧")})}else{toast("Bienvenue ! Vérifiez vos emails 📧")}
+if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{to_email:email,from_name:STORE_NAME,store:STORE_NAME,message:"Nouvel abonné newsletter "+STORE_NAME}).then(function(){toast("Bienvenue ! Vérifiez vos emails 📧")}).catch(function(){toast("Inscrit ! 📧")})}else{toast("Bienvenue ! Vérifiez vos emails 📧")}
 e.value=""}
 /* INIT */
 function sendContact(){
@@ -555,7 +555,7 @@ if(!name.value.trim()||!email.value.trim()||!msg.value.trim())return toast("Remp
 if(email.value.indexOf("@")<1)return toast("Email invalide","error");
 if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{from_name:name.value,from_email:email.value,message:msg.value,store:STORE_NAME}).then(function(){toast("Message envoyé ! Réponse sous 24h 📧");name.value="";email.value="";msg.value=""}).catch(function(){toast("Envoyé ! Réponse sous 24h 📧")})}else{toast("Message envoyé ! Réponse sous 24h 📧")}}
 function notifyPayment(total){
-if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{store:STORE_NAME,amount:fmtP(total),items:S.cart.map(function(i){return i.name+" x"+i.qty}).join(", "),timestamp:new Date().toLocaleString("fr-FR")}).catch(function(){})}}
+if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{from_name:STORE_NAME,store:STORE_NAME,amount:fmtP(total),items:S.cart.map(function(i){return i.name+" x"+i.qty}).join(", "),timestamp:new Date().toLocaleString("fr-FR")}).catch(function(){})}}
 /* FICHE DE COMMANDE OBLIGATOIRE (Kevin 27.09 : « renseignements obligatoires partout pour les
    nouveaux » ; pour les boutiques : « à la commande »). Mesuré avant : on payait SANS rien donner
    (ni nom, ni e-mail, ni CGV acceptées) et la commande d'impression partait chez Printify SANS
@@ -909,7 +909,7 @@ if(typeof ldAdminLogout==="function"){var _o=ldAdminLogout;ldAdminLogout=functio
    if(pod.length){try{
      var ck={};try{ck=JSON.parse(localStorage.getItem("cl_checkout")||localStorage.getItem("ld_checkout")||"{}")}catch(_){}
      var lines=pod.map(function(i){return "• "+i.name+" ["+i.size+"] x"+i.qty+" — vêtement:"+i.garment+" couleur:"+i.color+" emplacement:"+i.placement;}).join("\n");
-     if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{to_email:LD_ADMIN_EMAIL,name:STORE_NAME+" — à imprimer",title:"🎨 PRODUIT À IMPRIMER (Printify) — "+STORE_NAME,store:STORE_NAME,message:"PRODUITS PERSONNALISÉS À PRODUIRE VIA TON PRINTIFY :\n\n"+lines+"\n\nCLIENT :\n"+(ck.name||"")+"\n"+(ck.addr||"")+"\n"+((ck.zip||"")+" "+(ck.city||""))+"\n"+(ck.country||"France")+"\n\n→ Tu valides puis tu places la commande dans ton Printify."}).catch(function(){});}
+     if(typeof emailjs!=="undefined"){emailjs.init("nUso3vcsGadvrWTtC");emailjs.send("service_4s16z8l","template_fzva9uf",{to_email:LD_ADMIN_EMAIL,from_name:STORE_NAME,name:STORE_NAME+" — à imprimer",title:"🎨 PRODUIT À IMPRIMER (Printify) — "+STORE_NAME,store:STORE_NAME,message:"PRODUITS PERSONNALISÉS À PRODUIRE VIA TON PRINTIFY :\n\n"+lines+"\n\nCLIENT :\n"+(ck.name||"")+"\n"+(ck.addr||"")+"\n"+((ck.zip||"")+" "+(ck.city||""))+"\n"+(ck.country||"France")+"\n\n→ Tu valides puis tu places la commande dans ton Printify."}).catch(function(){});}
      var q=[];try{q=JSON.parse(localStorage.getItem("cl_pod_orders")||"[]")}catch(_){}q.push({ts:Date.now(),items:pod,ship:ck});localStorage.setItem("cl_pod_orders",JSON.stringify(q.slice(-100)));
      /* 🚀 Auto-création commande Printify via worker partagé (statut on-hold, aucun débit auto). L'email ci-dessus reste la trace de secours. */
      (function(){
@@ -1020,7 +1020,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.24"
+        data-version="v2.0.25"
         data-color="#e8b830"
         defer></script>
 

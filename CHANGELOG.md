@@ -5,6 +5,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Créa Studio v9.22.12 — Caméra : on ne dit plus « Prêt » devant un écran noir (2026-11-08)
+- **Constat** (Kevin : caméra noire sur le Lenovo) ; mesuré par `pc-config` (pont 2041, Chrome de Kevin, onglet visible) : « Integrated Camera », flux vivant 640×480, permission accordée, luminance 25 → 33 → 39 sur 255 en 3 s = l'auto-exposition démarre sombre. Dans un vrai Chromium avec fausse caméra (mêmes contraintes que le Studio) l'image arrive (luminance 47, 0 erreur) : le code ne produit pas de noir.
+- **Corrigé** : après l'allumage, le Studio dit « Réglage de la lumière de la caméra… » et attend que l'image s'éclaire (≥ 35/255, 4 s au plus) avant « Prêt ✅ » ; toujours noire après 4 s : « Il fait sombre : ajoute de la lumière ».
+- **Garde** : `npm run test:crea-camera` 19 OK ; rouge (2 échecs) sur v9.22.11.
+
 ## Arbre v3.204 — une personne divorcée de deux conjoints : chaque enfant sous SON couple (2026-11-08)
 - Constat (Kevin, iPad, « Branche d'Annick TOURSEL », « après créations mauvaise implantation ») : Annick, divorcée de Patrick puis de Juan, était dessinée [Patrick, Juan, Annick] ; Juan cachait le trait Patrick–Annick et Laurence semblait fille de Juan.
 - Cause (mesurée) : (1) l'ordre des membres mettait les deux ex à gauche ; (2) le rapatriement visait le milieu du couple du SEUL premier enfant et glissait tout le bloc de 111 px.

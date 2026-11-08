@@ -70,6 +70,30 @@ await page.waitForFunction(() => {
 const live = await page.evaluate(() => (document.getElementById('camView') || {}).videoWidth || 0);
 chk(live > 0, `la caméra est allumée et affiche l'image (${live}px de large)`);
 
+// 3b) caméra d'ordinateur qui démarre NOIRE (auto-exposition, mesuré sur le Lenovo de Kevin 8.11) :
+//     on ne dit jamais « Prêt » devant un écran noir ; on dit qu'on règle la lumière, puis qu'il fait sombre
+await page.waitForFunction(() => /Prêt/.test((document.getElementById('camHint') || {}).textContent || ''), { timeout: 8000 }).catch(() => {});
+const hintClair = await page.evaluate(() => (document.getElementById('camHint') || {}).textContent || '');
+chk(/Prêt ✅ Appuie/.test(hintClair), `image claire → « Prêt ✅ Appuie… » (« ${hintClair.slice(0, 40)} »)`);
+const noir = await page.evaluate(async () => {
+  const vrai = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+  const c = document.createElement('canvas'); c.width = 64; c.height = 36;
+  const g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, 64, 36);
+  const flux = c.captureStream(10);
+  navigator.mediaDevices.getUserMedia = async () => flux;
+  window.Cam.start();
+  await new Promise(r => setTimeout(r, 700));
+  const pendant = document.getElementById('camHint').textContent;
+  await new Promise(r => setTimeout(r, 4600));
+  const apres = document.getElementById('camHint').textContent;
+  navigator.mediaDevices.getUserMedia = vrai;
+  return { pendant, apres };
+});
+chk(/Réglage de la lumière/.test(noir.pendant), `caméra noire au départ → « ${noir.pendant.slice(0, 40)} » (pas « Prêt »)`);
+chk(/sombre/.test(noir.apres), `toujours noire après 4 s → on le dit (« ${noir.apres.slice(0, 45)}… »)`);
+await page.evaluate(() => window.Cam.start());
+await page.waitForFunction(() => { const v = document.getElementById('camView'); return v && v.videoWidth > 0; }, { timeout: 15000 }).catch(() => {});
+
 const avant = await page.evaluate(async () => (await window.Mine.list()).length);
 await page.evaluate(() => window.Cam.shoot());
 await page.waitForTimeout(900);

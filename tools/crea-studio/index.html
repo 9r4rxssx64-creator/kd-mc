@@ -1224,7 +1224,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.22.11';
+var APP_VER='v9.22.12';
 document.getElementById('vbadge').textContent=APP_VER;
 /* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
 function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}
@@ -2413,7 +2413,7 @@ var Cam=(function(){
         stream=st;var el=v();el.srcObject=st;el.play().catch(function(){});
         el.classList.toggle('mir',mirror&&facing==='user');
         applyFx();
-        hint('Prêt ✅ Appuie pour une photo, garde appuyé pour filmer.');
+        attendreLumiere(st);
       })
       .catch(function(e){
         var m=String(e&&e.name||e);
@@ -2422,6 +2422,23 @@ var Cam=(function(){
           : (m==='NotFoundError'?'⚠️ Aucune caméra trouvée sur cet appareil.'
             :'⚠️ Caméra indisponible ('+m.slice(0,40)+'). Tu peux importer une photo.'));
       });
+  }
+  /* Une caméra d'ordinateur démarre SOMBRE 1 à 3 s (auto-exposition ; mesuré sur le Lenovo de Kevin 8.11 :
+     25 → 33 → 39 sur 255). On le dit au lieu d'annoncer « Prêt » devant un écran noir. */
+  function attendreLumiere(st){
+    hint('Réglage de la lumière de la caméra… une seconde.');
+    var t0=Date.now(),c=document.createElement('canvas');c.width=16;c.height=9;var g=c.getContext('2d');
+    (function boucle(){
+      if(stream!==st)return;
+      var lum=0;
+      try{g.drawImage(v(),0,0,16,9);var d=g.getImageData(0,0,16,9).data,s=0;
+        for(var i=0;i<d.length;i+=4)s+=d[i]+d[i+1]+d[i+2];lum=s/(d.length/4)/3;}catch(e){lum=255;}
+      if(lum>=35||Date.now()-t0>4000){
+        hint(lum<35?'Prêt ✅ Il fait sombre : ajoute de la lumière pour une belle image.'
+                   :'Prêt ✅ Appuie pour une photo, garde appuyé pour filmer.');
+        return;}
+      setTimeout(boucle,300);
+    })();
   }
   function stop(silencieux){
     try{if(rec&&rec.state!=='inactive')rec.stop();}catch(e){}
@@ -7426,6 +7443,6 @@ catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)
 <script src="avatar-persos.js" defer></script>
 <script src="avatar-studio.js" defer></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.11" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.12" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
 </body>
 </html>

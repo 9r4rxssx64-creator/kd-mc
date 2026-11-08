@@ -127,7 +127,7 @@ input,textarea,select{font:inherit}img{max-width:100%;height:auto}
 .cart-empty span{font-size:48px;display:block;margin-bottom:16px}
 /* FOOTER */
 .footer{background:var(--card);border-top:1px solid var(--border);padding:32px 16px;margin-top:48px}
-.footer-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px}
+.footer-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:24px}.footer-inner>*{min-width:0;overflow-wrap:anywhere}
 .footer h4{font-family:"Fraunces",Georgia,serif;font-size:14px;font-weight:700;margin-bottom:12px;color:var(--p)}
 .footer a{display:block;font-size:13px;color:var(--muted);padding:4px 0;transition:color .2s}
 .footer a:hover{color:var(--p)}
@@ -154,7 +154,7 @@ input,textarea,select{font:inherit}img{max-width:100%;height:auto}
 .pdp-grid{grid-template-columns:1fr}.search-box{max-width:none;order:3;width:100%}
 .hdr-inner{flex-wrap:wrap;height:auto;padding:46px 16px 10px}.grid{grid-template-columns:repeat(2,1fr);gap:10px}
 .card-img{font-size:40px}.card-body{padding:10px}.card-title{font-size:13px}.price-now{font-size:15px}
-.hero{padding:32px 16px}.hero h1{font-size:24px}.footer-inner{grid-template-columns:1fr 1fr}
+.hero{padding:32px 16px}.hero h1{font-size:24px}.footer-inner{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 }
 @media(max-width:375px){.grid{gap:8px}.card-body{padding:8px}.nav-item{padding:6px 12px;font-size:12px}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
@@ -1320,7 +1320,7 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.33"
+        data-version="v1.53.34"
         data-color="#e8b830"
         defer></script>
 

@@ -23,6 +23,9 @@ for (const [w, h] of [[750, 340], [844, 390], [375, 667], [320, 568]]) {
   /* 8.11 (runs 42506236759 puis 42516577864) : le bouton flottant « 🎨 Studio » cachait une pastille ou une carte sur un écran ou un autre → il vit dans l'en-tête (admin seulement), plus en flottant */
   const S = !afficheFab ? await p.evaluate(() => { try { LD_ADMIN = true; dc(); } catch (e) { return { err: String(e) }; } const a = document.querySelector('.nav-actions a[href="studio.html"]'), f = document.getElementById('studioFab'), l = document.querySelector('.logo').getBoundingClientRect(); const q = a && a.getBoundingClientRect(); return { entete: !!a, h: q ? Math.round(q.height) : 0, w: q ? Math.round(q.width) : 0, flottant: !!(f && getComputedStyle(f).display !== 'none'), logo: Math.round(l.height) }; }) : { afficheFab, logo: 44 };
   ok(S.entete && S.h >= 44 && S.w >= 44 && !S.flottant && !afficheFab, `${w}×${h} : admin — « 🎨 Studio » est dans l'en-tête (44 px), aucun bouton flottant`, S);
+  /* 8.11 (run 42518295225, iPhone SE WebKit : « déborde : div (135→383 px) ×3 ») : le pied de page (2 colonnes) ne dépasse jamais l'écran */
+  const F = await p.evaluate(() => { const W = innerWidth; return [...document.querySelectorAll('.footer-inner > *')].map((e) => Math.round(e.getBoundingClientRect().right)).filter((r) => r > W + 2); });
+  ok(F.length === 0, `${w}×${h} : le pied de page tient dans l'écran`, F);
   ok(S.logo >= 44, `${w}×${h} : le logo (lien vers l'accueil) fait au moins 44 px de haut`, S);
   await ctx.close();
 }

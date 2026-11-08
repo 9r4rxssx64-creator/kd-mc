@@ -52,6 +52,12 @@ await p.setContent(`<!doctype html><title>t</title><div id="liste" style="positi
 const m7 = await p.evaluate(mesurer, true);
 ok('un bouton à faire défiler dans sa liste n\'est pas « caché » (6.11, chat de Javis)', m7.cache === 0, JSON.stringify(m7.cacheEx));
 ok('un bouton sous le cadre de Bee est attribué à « bee »', m6.cache === 1 && m6.parFlottant && m6.parFlottant.bee === 1, JSON.stringify(m6.parFlottant));
+/* 8.11 : le débordement est NOMMÉ (La Détente iPhone SE : « déborde +63px » sans nom) ; une liste qui défile d'elle-même ne compte pas */
+{ const vp = p.viewportSize(); await p.setViewportSize({ width: 320, height: 568 });
+  await p.setContent('<!doctype html><title>t</title><div style="overflow-x:auto"><div id="liste" style="width:900px">liste</div></div><div id="large" style="width:383px;height:20px">trop large</div>');
+  const md = await p.evaluate(mesurer, true);
+  ok('le débordement est nommé (élément + positions), la liste qui défile ne l\'est pas', md.deborde > 0 && md.debordeEx.length === 1 && /div#large/.test(md.debordeEx[0]), JSON.stringify(md.debordeEx));
+  await p.setViewportSize(vp); }
 /* 8.11 : la feuille « Installer l'application » qui s'ouvre APRÈS la fermeture par le robot est refermée dès qu'elle apparaît (sinon elle masque toute la page mesurée) */
 await p.setContent('<!doctype html><title>t</title><button id="b">Ok</button>');
 await p.evaluate(fermerFeuilleToujours);

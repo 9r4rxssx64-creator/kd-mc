@@ -124,6 +124,21 @@ export function mesurer(tel) {
     /* sur téléphone, Chrome/Safari ÉLARGISSENT la page pour faire tenir un contenu trop large (innerWidth grossit, la page se dézoome) :
        on compare donc à la largeur de l'ÉCRAN, pas à innerWidth. */
     deborde: largeur > LARG_ECRAN + 2 ? largeur - LARG_ECRAN : 0,
+    /* 8.11 (La Détente iPhone SE : « déborde +63px » sans nom, introuvable en local) : QUI dépasse — les éléments les plus HAUTS dans l'arbre dont le bord droit
+       sort de l'écran, hors éléments fixes et hors listes qui défilent d'elles-mêmes (overflow-x auto/scroll/hidden sur un parent) */
+    debordeEx: largeur > LARG_ECRAN + 2 ? (() => {
+      const out = [];
+      const coupe = (e) => { for (let n = e.parentElement; n && n !== document.body; n = n.parentElement) { const ox = getComputedStyle(n).overflowX; if (ox === 'auto' || ox === 'scroll' || ox === 'hidden' || ox === 'clip') return true; } return false; };
+      for (const e of document.body ? document.body.querySelectorAll('*') : []) {
+        if (out.length >= 4) break;
+        const r = e.getBoundingClientRect(); if (!(r.width > 0) || r.right <= LARG_ECRAN + 2) continue;
+        const cs = getComputedStyle(e); if (cs.position === 'fixed' || cs.display === 'none' || cs.visibility === 'hidden') continue;
+        if (coupe(e)) continue;
+        if (out.some((o) => o.el.contains(e))) continue;   /* le parent déjà nommé suffit */
+        out.push({ el: e, t: court(e) + ' (' + Math.round(r.left) + '→' + Math.round(r.right) + ' px)' });
+      }
+      return out.map((o) => o.t);
+    })() : [],
     encoche,
     petit: petits.length, petitEx: petits.slice(0, 3),
     cliquables: cliquables.length,
@@ -254,6 +269,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
         journal(`${pb.length ? '❌' : '✅'} ${h} · ${nom} · HTTP ${st} · ${ligne.ms} ms${pb.length ? ' · ' + pb.join(' · ') : ''}`);
         if (m && m.cache) journal('   ↳ caché : ' + m.cacheEx.join(' | '));
         if (m && m.haut) journal('   ↳ haut : ' + m.hautEx.join(' | '));
+        if (m && m.deborde && m.debordeEx && m.debordeEx.length) journal('   ↳ déborde : ' + m.debordeEx.join(' | '));
         if (js.length) journal('   ↳ js : ' + [...new Set(js)].slice(0, 2).join(' | '));
         if (js.length && reseau.length) journal('   ↳ réseau : ' + reseau.join(' | '));
         if (explo) journal(`   ↳ exploré : ${explo.touches} touché(s) · ${explo.morts} sans réaction · ${explo.sansRetour} page(s) sans retour · ${explo.cache} caché(s) · haut ${explo.haut} · déborde ${explo.deborde}${explo.ex.length ? ' · ' + explo.ex.join(' | ') : ''}`);

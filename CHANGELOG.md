@@ -5,6 +5,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.215 — un prénom ajouté corrige tout seul les textes de la famille (2026-11-08)
+- Kevin : « on a rajouté le prénom de Juan, c'est Joseph : la modif se fait automatiquement ? sinon que tout soit auto après toute modification ». Constat : NON pour un prénom ajouté (seuls un prénom corrigé, un nom, une date, un lieu, un nombre d'enfants se propageaient) : le texte d'Annick disait encore « M. JUAN, dont le prénom reste à retrouver ».
+- Maintenant : un prénom AJOUTÉ à une fiche sans prénom corrige les textes des proches (3 pas) : « M. JUAN » → « Joseph JUAN », « dont le prénom reste à retrouver » disparaît, la ligne « – Le prénom de … » de « 🔎 À retrouver » est retirée (avec son titre s'il ne reste rien) ; aucun doute (un autre proche sans prénom de même nom) → on ne devine pas. Ça marche à l'enregistrement et à la réception d'une fiche changée ailleurs (autre compte, autre appareil).
+- Données : texte d'Annick TOURSEL corrigé (« avec Joseph JUAN », ligne retirée), écriture relue.
+- Garde `tools/arbre/verify-prenom-ajoute.mjs` (rouge sur v3.214).
+
 ## Arbre v3.214 — la voix dit bien Saint-Poli, Scarlo, Dézarzin (2026-11-08)
 - Kevin : « elle prononce mal Saint-Polit (saint-polite), Scarlot (scarlote), Desarzens (desarzeinse) ». Liste de prononciations (`PRONONCIATIONS`) appliquée à tout ce qui est lu, par toutes les voix : Saint-Polit → « Saint-Poli », Scarlot → « Scarlo », Desarzens / Désarzens → « Dézarzin ». L'écran garde l'orthographe. Un nom mal dit s'ajoute en une ligne.
 - Garde `tools/arbre/verify-prononciation.mjs` (rouge sur v3.213).

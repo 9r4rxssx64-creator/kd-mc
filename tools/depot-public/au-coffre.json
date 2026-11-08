@@ -509,6 +509,7 @@
   "tools/arbre/verify-photos-r2.mjs",
   "tools/arbre/verify-plan-centre.mjs",
   "tools/arbre/verify-poster.mjs",
+  "tools/arbre/verify-prenom-ajoute.mjs",
   "tools/arbre/verify-prenom-inconnu.mjs",
   "tools/arbre/verify-prononciation.mjs",
   "tools/arbre/verify-recherche-lieu.mjs",

@@ -34,7 +34,7 @@ input,textarea,select{font:inherit}img{max-width:100%;height:auto}
 /* HEADER */
 .hdr{position:sticky;top:0;z-index:100;background:rgba(20,22,26,.92);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .hdr-inner{max-width:1280px;margin:0 auto;padding:0 16px 0 100px;height:64px;display:flex;align-items:center;gap:16px}
-.logo{font-size:22px;font-weight:800;font-family:"Fraunces",Georgia,serif;letter-spacing:0.5px;color:var(--p);cursor:pointer;white-space:nowrap}
+.logo{font-size:22px;font-weight:800;font-family:"Fraunces",Georgia,serif;letter-spacing:0.5px;color:var(--p);cursor:pointer;white-space:nowrap;min-height:44px;display:inline-flex;align-items:center}
 .logo span{font-size:14px;color:var(--muted);font-weight:400;margin-left:4px}
 .search-box{flex:1;max-width:440px;position:relative;transition:max-width .25s ease}
 .search-box:focus-within{max-width:640px}
@@ -1320,12 +1320,12 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.30"
+        data-version="v1.53.31"
         data-color="#e8b830"
         defer></script>
 
 <script>(function(){if(!('serviceWorker' in navigator))return;var had=!!navigator.serviceWorker.controller,rl=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!had){had=true;return}if(rl)return;rl=true;location.reload()});navigator.serviceWorker.register('sw.js').then(function(reg){function chk(){try{reg.update()}catch(e){}if(reg.waiting)reg.waiting.postMessage('skipWaiting')}setInterval(chk,60000);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')chk()});window.addEventListener('focus',chk)})})();</script>
-<a href="studio.html" id="studioFab" title="Studio de création (admin)" style="display:none;position:fixed;left:12px;bottom:74px;z-index:9000;background:linear-gradient(135deg,#ff4d4d,#b30d0d);color:#fff;font:700 12px system-ui;padding:9px 14px;border-radius:100px;text-decoration:none;box-shadow:0 6px 20px rgba(220,38,38,.5)">🎨 Studio</a>
+<a href="studio.html" id="studioFab" title="Studio de création (admin)" style="display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);min-height:44px;line-height:44px;box-sizing:border-box;white-space:nowrap;z-index:9000;background:linear-gradient(135deg,#ff4d4d,#b30d0d);color:#fff;font:700 14px system-ui;padding:0 16px;border-radius:100px;text-decoration:none;box-shadow:0 6px 20px rgba(220,38,38,.5)">🎨 Studio</a>
 <script>(function(){try{
   if(typeof ldAdminTry==="function"){var _t=ldAdminTry;ldAdminTry=async function(){var r=await _t.apply(this,arguments);try{ldInstallAdminBar()}catch(_){}return r;};}
   if(typeof LD_ADMIN!=="undefined"&&LD_ADMIN&&typeof ldInstallAdminBar==="function")ldInstallAdminBar();

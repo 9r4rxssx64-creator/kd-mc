@@ -5,6 +5,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.210 — « 🎯 Lire ici » lit aussi la fiche à voix haute (2026-11-08)
+- Kevin : « Lire d'ici n'a pas de sons ; dans Réglages et sur la fiche oui, mais de mauvaise qualité ». Le bouton ne faisait que l'agrandissement. Le 1er appui lit maintenant la fiche de la personne (un 2ᵉ appui pendant la lecture change seulement l'échelle, il ne relance pas la voix). Qualité : la voix douce du domaine est refusée par Google (401, clé supprimée le 7.11) → mission 2088 au Lenovo.
+- Garde `tools/arbre/verify-lire-ici.mjs` étendue (rouge sur v3.209 : 0 lecture).
+
 ## Arbre v3.209 — prénom encore inconnu : « Prénom ? » au lieu de « JUAN JUAN » (2026-11-08)
 - Kevin : « le Juan vide, c'est le père de Marc, on ne connaît pas encore son prénom ; Laurence et moi, on le cherche, les renseignements arrivent au compte-gouttes ». La fiche reste telle quelle (rien n'est inventé) ; la carte dit « Prénom ? JUAN » (initiales « ?J ») dans les trois vues.
 - Données : le père de Marc JUAN (lien cassé vers une fiche qui n'existait plus) est relié à cette fiche JUAN, comme Kevin l'a dit (écrit par `ecrire.sh`, relu).

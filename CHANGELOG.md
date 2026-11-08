@@ -5,6 +5,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.206 — l'enfant est relié à SES DEUX parents, même quand un ex est loin (2026-11-08)
+- Constat (Kevin, iPad : « enfant au centre de ses parents ; quand ce n'est pas possible, au moins la liaison ») : Marc JUAN pendait du seul Juan, loin d'Annick.
+- Cause : quand un ex glisse au-dessus de ses enfants (v3.79), le trait de l'enfant ne partait que de lui. Désormais il part toujours du milieu du couple des DEUX parents (long trait « divorcés »). Mesuré : 403 px d'écart avant, 0 après.
+- Garde `tools/arbre/verify-lien-deux-parents.mjs` (rouge sur v3.205).
+
 ## Arbre v3.205 — la branche d'une personne (et la famille d'un nom) remonte partout et descend partout (2026-11-08)
 - Constat (Kevin, iPad, « Branche de Laurence SAINT-POLIT », 35 personnes : « il manque des personnes… on remonte partout et on descend partout, au plus haut et au plus bas, pour chaque personne ou famille »).
 - Avant : ancêtres + descendants de la personne + oncles / tantes seulement ; ni cousins, ni petits-cousins, ni les enfants des grands-oncles. Mesuré sur la vraie base : 36 personnes avec tous les descendants des ancêtres, 43 avec les conjoints (35 avant).

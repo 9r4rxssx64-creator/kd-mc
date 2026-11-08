@@ -1320,12 +1320,12 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.31"
+        data-version="v1.53.32"
         data-color="#e8b830"
         defer></script>
 
 <script>(function(){if(!('serviceWorker' in navigator))return;var had=!!navigator.serviceWorker.controller,rl=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(!had){had=true;return}if(rl)return;rl=true;location.reload()});navigator.serviceWorker.register('sw.js').then(function(reg){function chk(){try{reg.update()}catch(e){}if(reg.waiting)reg.waiting.postMessage('skipWaiting')}setInterval(chk,60000);document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')chk()});window.addEventListener('focus',chk)})})();</script>
-<a href="studio.html" id="studioFab" title="Studio de création (admin)" style="display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);min-height:44px;line-height:44px;box-sizing:border-box;white-space:nowrap;z-index:9000;background:linear-gradient(135deg,#ff4d4d,#b30d0d);color:#fff;font:700 14px system-ui;padding:0 16px;border-radius:100px;text-decoration:none;box-shadow:0 6px 20px rgba(220,38,38,.5)">🎨 Studio</a>
+<a href="studio.html" id="studioFab" title="Studio de création (admin)" style="display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);min-height:44px;line-height:44px;box-sizing:border-box;white-space:nowrap;z-index:9000;background:linear-gradient(135deg,#ff4d4d,#b30d0d);color:#fff;font:700 14px system-ui;padding:0;width:44px;text-align:center;font-size:20px;border-radius:100px;text-decoration:none;box-shadow:0 6px 20px rgba(220,38,38,.5)" aria-label="Studio de création">🎨</a>
 <script>(function(){try{
   if(typeof ldAdminTry==="function"){var _t=ldAdminTry;ldAdminTry=async function(){var r=await _t.apply(this,arguments);try{ldInstallAdminBar()}catch(_){}return r;};}
   if(typeof LD_ADMIN!=="undefined"&&LD_ADMIN&&typeof ldInstallAdminBar==="function")ldInstallAdminBar();

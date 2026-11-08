@@ -20,8 +20,8 @@ for (const [w, h] of [[750, 340], [844, 390], [375, 667], [320, 568]]) {
   ok(R && R.w >= 44 && R.h >= 44, `${w}×${h} : le ✕ du bandeau fait au moins 44×44`, R);
   ok(R && !(R.cx > R.W - 60 && R.cy < 56), `${w}×${h} : son centre n'est pas dans le coin haut-droit (place de la pastille 📲)`, R);
   /* 8.11 (run 42506236759) : « 🎨 Studio » (admin) était sous la pastille de version du domaine (bas-gauche, 93×44) ; le logo faisait moins de 44 px */
-  const S = await p.evaluate(() => { const f = document.getElementById('studioFab'); f.style.display = 'block'; const q = f.getBoundingClientRect(), l = document.querySelector('.logo').getBoundingClientRect(); return { h: Math.round(q.height), left: Math.round(q.left), bas: Math.round(innerHeight - q.bottom), logo: Math.round(l.height) }; });
-  ok(S.h >= 44 && !(S.left < 100 && S.bas < 110), `${w}×${h} : « 🎨 Studio » fait 44 px et n'est plus dans le coin bas-gauche (pastille de version, Vue admin)`, S);
+  const S = await p.evaluate(() => { const f = document.getElementById('studioFab'); f.style.display = 'block'; const q = f.getBoundingClientRect(), l = document.querySelector('.logo').getBoundingClientRect(); return { w: Math.round(q.width), h: Math.round(q.height), left: Math.round(q.left), bas: Math.round(innerHeight - q.bottom), logo: Math.round(l.height) }; });
+  ok(S.h >= 44 && S.w <= 52 && !(S.left < 100 && S.bas < 110), `${w}×${h} : « 🎨 Studio » est un rond de 44 px (il ne cache pas une carte), hors du coin bas-gauche (pastille de version, Vue admin)`, S);
   ok(S.logo >= 44, `${w}×${h} : le logo (lien vers l'accueil) fait au moins 44 px de haut`, S);
   await ctx.close();
 }

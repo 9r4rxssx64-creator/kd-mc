@@ -5,6 +5,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Créa Studio v9.22.13 — La barre du bas surligne l'écran affiché (2026-11-08)
+- **Constat** : mesure réelle du Lenovo (pont 2091) — à l'ouverture, « Caméra » était surlignée en bas alors que l'écran affiché était « Photo » (défaut ancien, présent dès la première version de la barre).
+- **Corrigé** : au démarrage « Photo » est surlignée (l'écran d'accueil ne change pas). Aucune fonction retirée.
+- **Garde** : `npm run test:crea-camera` 20 OK ; rouge sur v9.22.12 (« l'onglet surligné (cam) = l'écran affiché (photo) »).
+- **Confirmé en réel (Chrome de Kevin, pont 2091)** : v9.22.12 → « Réglage de la lumière… » à 3 s (luminance 6), « Prêt ✅ » à 5 s (luminance 140).
+
 ## Arbre v3.212 + routeur — voix douce pour les histoires, gratuite (2026-11-08)
 - Kevin : « les voix sont trop robotiques, toutes ; je veux des voix douces pour les belles histoires ». Cause mesurée : Google Cloud TTS (Chirp 3 HD) exige une facturation (refusée par Kevin) → toutes les voix retombaient sur MeloTTS, robotique.
 - Solution gratuite : la voix Gemini (palier gratuit, déjà configurée, voix Aoede) en tête pour le style `i=douce` (consigne « voix douce, chaleureuse, posée, histoire de famille ») ; son quota étant court (4 appels de suite mesurés, puis refus), l'arbre découpe en peu de morceaux (un premier court de ~300 caractères, puis 900) et le routeur retombe sur MeloTTS si Gemini refuse. Cache : une lecture déjà faite ne recompte rien. Bee, Lingua et les autres gardent l'ordre d'avant.

@@ -45,6 +45,13 @@ await page.waitForTimeout(400);
 await page.fill('#gateName', 'Test Camera'); await page.fill('#gateCode', '123456');
 await page.click('#gateGo'); await page.waitForTimeout(300);
 
+// 0) à l'ouverture, l'onglet surligné en bas est celui de l'écran affiché (8.11 : « Caméra » surlignée, écran Photo)
+const depart = await page.evaluate(() => ({
+  surligne: (document.querySelector('#bnav button.on') || {}).dataset ? document.querySelector('#bnav button.on').dataset.go : null,
+  affiche: ((document.querySelector('.studio.active') || {}).id || '').replace('s-', ''),
+}));
+chk(depart.surligne === depart.affiche, `à l'ouverture l'onglet surligné (${depart.surligne}) = l'écran affiché (${depart.affiche})`);
+
 // 1) l'écran et ses réglages
 await page.click('#bnav button[data-go="cam"]'); await page.waitForTimeout(300);
 const reglages = await page.evaluate(() => ['camSwap', 'camTorch', 'camTimer', 'camGridBtn', 'camMirror']

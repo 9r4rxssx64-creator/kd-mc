@@ -1104,8 +1104,8 @@
 
 <!-- BOTTOM NAV -->
 <div id="bnav">
-  <button class="on" data-go="cam"><span class="ic">📷</span>Caméra</button>
-  <button data-go="photo"><span class="ic">🖼</span>Photo</button>
+  <button data-go="cam"><span class="ic">📷</span>Caméra</button>
+  <button class="on" data-go="photo"><span class="ic">🖼</span>Photo</button>
   <button data-go="video"><span class="ic">🎬</span>Vidéo</button>
   <button data-go="anim"><span class="ic">✏️</span>Cartoon</button>
   <button data-go="aivid"><span class="ic">🕺</span>Danse IA</button>
@@ -1224,7 +1224,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.22.12';
+var APP_VER='v9.22.13';
 document.getElementById('vbadge').textContent=APP_VER;
 /* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
 function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}
@@ -7443,6 +7443,6 @@ catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)
 <script src="avatar-persos.js" defer></script>
 <script src="avatar-studio.js" defer></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.12" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.13" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
 </body>
 </html>

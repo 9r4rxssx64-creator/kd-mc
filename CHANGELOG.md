@@ -5,6 +5,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.209 — prénom encore inconnu : « Prénom ? » au lieu de « JUAN JUAN » (2026-11-08)
+- Kevin : « le Juan vide, c'est le père de Marc, on ne connaît pas encore son prénom ; Laurence et moi, on le cherche, les renseignements arrivent au compte-gouttes ». La fiche reste telle quelle (rien n'est inventé) ; la carte dit « Prénom ? JUAN » (initiales « ?J ») dans les trois vues.
+- Données : le père de Marc JUAN (lien cassé vers une fiche qui n'existait plus) est relié à cette fiche JUAN, comme Kevin l'a dit (écrit par `ecrire.sh`, relu).
+- Garde `tools/arbre/verify-prenom-inconnu.mjs` (rouge sur v3.208).
+
 ## Arbre v3.208 — pastilles d'union (divorcés, pacs…) jamais coupées sous une carte (2026-11-08)
 - Constat (photos iPad de Kevin) : « DIVORCÉS » passait sous la carte voisine (24 px entre deux époux, pastille de ~95 px).
 - En vue Plan la pastille est ronde (💔, 📝, 🤝…), le mot est dans son titre ; mesuré : 31 % de recouvrement avant, 0 après. Autres vues inchangées.

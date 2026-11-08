@@ -96,3 +96,21 @@ a.home{color:var(--mut);text-decoration:none;font-size:13px;border:1px solid var
 .ouvtous.on{border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.08)}
 .ouvtous.on .sw{background:#34d399}
 .ouvtous.on .sw::after{transform:translateX(18px)}
+/* 8.11 — fiche d'un compte en 4 rubriques repliables (Identité · Activité · Droits · Code) + la section 🔑 Code. Cibles ≥ 44 px, lisible à 375 px. */
+.rub{margin-top:10px;border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden}
+.rub>summary{min-height:44px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:14px;font-weight:600}
+.rub>summary .rr{font-weight:400;font-size:13px;color:var(--mut)}
+.rub>.rc{padding:2px 14px 14px}
+.rub .kv{margin-top:6px}
+.codeetat{font-size:14px;line-height:1.45;margin:6px 0 4px}
+.codeetat .d,.codevu .d,.rub .d{color:var(--subtle);font-size:13px}
+.codevu{margin:8px 0;padding:10px 12px;border:1px solid rgba(232,184,48,.45);border-radius:10px;display:flex;flex-direction:column;gap:4px}
+.codeclair{font-size:26px;letter-spacing:3px;color:var(--gold2,#f6d97a);font-variant-numeric:tabular-nums;user-select:all}
+.coderow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.cbtn{min-height:44px;padding:10px 14px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid rgba(232,184,48,.45);background:transparent;color:var(--gold,#e8b830);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.cbtn.cdanger{border-color:rgba(255,107,107,.4);color:#ff8a8a}
+.cbtn:disabled{opacity:.7;cursor:default}
+.cbtn:active{transform:scale(.97)}
+.codein{flex:1 1 180px;min-width:0;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:inherit;font-size:16px;box-sizing:border-box}
+.codemsg{font-size:13.5px;margin-top:8px;min-height:1em}
+.cbtn[hidden],.codevu[hidden]{display:none}

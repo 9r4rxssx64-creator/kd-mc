@@ -53,11 +53,11 @@ export async function lireJeton(secret, t, now = Date.now()) {
   return { uid: o.u, email: o.e };
 }
 
-/** Le mail (EmailJS, best-effort : true/false, ne lève jamais). */
-export async function envoyerMailConfirmation(env, { email, name, lien, fetchFn }) {
-  if (!mailPret(env) || !emailValide(email) || !lien) return false;
+/** Un mail texte du domaine (EmailJS, même service et gabarit ; best-effort : true/false, ne lève jamais). Sert aussi au lien « Code oublié ? » (codes-comptes.js). */
+export async function envoyerMail(env, { email, title, message, fetchFn }) {
+  if (!mailPret(env) || !emailValide(email) || !message) return false;
   const f = fetchFn || fetch;
-  /* 6 s au plus : une messagerie lente ne doit jamais retarder l'inscription (la personne attend Kevin si le mail n'est pas parti). */
+  /* 6 s au plus : une messagerie lente ne doit jamais retarder la réponse. */
   const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
   const minuteur = ctrl ? setTimeout(() => ctrl.abort(), 6000) : null;
   try {
@@ -67,14 +67,19 @@ export async function envoyerMailConfirmation(env, { email, name, lien, fetchFn 
         service_id: EMAILJS.service, template_id: EMAILJS.template, user_id: EMAILJS.user, accessToken: env.EMAILJS_PRIVATE_KEY,
         template_params: {
           to_email: normaliseEmail(email), store: 'kd-mc.com', name: 'kd-mc.com', from_name: 'kd-mc.com', from_email: 'no-reply@kd-mc.com', reply_to: 'no-reply@kd-mc.com',
-          title: 'Confirme ton compte kd-mc.com',
-          message: 'Bonjour ' + String(name || '').slice(0, 80) + ',\n\nTon compte kd-mc.com est créé. Pour l’ouvrir, touche ce lien (il marche 48 heures) :\n'
-            + lien + '\n\nSi tu n’es pas à l’origine de cette inscription, ignore ce message : rien ne s’ouvrira.\n\nkd-mc.com',
+          title: String(title || 'kd-mc.com').slice(0, 120), message: String(message),
         },
       }),
     });
     return !!(r && r.ok);
   } catch { return false; } finally { if (minuteur) clearTimeout(minuteur); }
+}
+/** Le mail de confirmation d'inscription. */
+export async function envoyerMailConfirmation(env, { email, name, lien, fetchFn }) {
+  if (!lien) return false;
+  return envoyerMail(env, { email, fetchFn, title: 'Confirme ton compte kd-mc.com',
+    message: 'Bonjour ' + String(name || '').slice(0, 80) + ',\n\nTon compte kd-mc.com est créé. Pour l’ouvrir, touche ce lien (il marche 48 heures) :\n'
+      + lien + '\n\nSi tu n’es pas à l’origine de cette inscription, ignore ce message : rien ne s’ouvrira.\n\nkd-mc.com' });
 }
 
 const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

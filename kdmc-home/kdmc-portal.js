@@ -647,6 +647,7 @@
       +   '<input class="fld" id="l-code" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Ton code">'
       +   '<button class="btn" id="l-go" type="button">Me connecter</button>'
       +   '<p class="g-err" id="l-err" role="alert" aria-live="polite"></p>'
+      +   oublieBlock('l')
       + '</div>'
       /* « Je suis l'administrateur » RETIRÉ (Kevin 10.10 : « inutile si je suis reconnu auto ») : Kevin est reconnu par Face ID, et
          sur un appareil neuf il tape simplement son nom + son code admin dans « J'ai déjà un compte » — c'est le DOMAINE qui
@@ -674,6 +675,7 @@
       if (!box.hidden) document.getElementById('l-nom').focus();
     });
     document.getElementById('l-go').addEventListener('click', doLoginCode);
+    wireOublie('l', function () { return (document.getElementById('l-nom').value || '').trim(); });
     /* 18.10 : la porte d'une app envoie « J'ai déjà un compte » avec ?connexion=1 → la boîte nom + code est DÉJÀ ouverte (un geste de moins pour qui a un compte). */
     try { if (/[?&]connexion=1(&|$)/.test(location.search)) { document.getElementById('f-deja-box').hidden = false; document.getElementById('l-nom').focus(); } } catch (e) { /* */ }
     wireAdmin();
@@ -690,6 +692,31 @@
     });
   }
 
+  /* « CODE OUBLIÉ ? » (Kevin 7.11 / 8.11 : une seule option pour tout le monde, épurée — « beaucoup ont déjà du mal à s'inscrire ») :
+     UN bouton ; il envoie le prénom + nom déjà là au domaine, qui envoie un lien par e-mail (1 h). La réponse est la même que le compte existe
+     ou non (le domaine ne dit jamais qui a un compte). La page du lien (domaine) demande le nouveau code deux fois, rien d'autre. */
+  function oublieBlock(p) {
+    return '<button class="btn ghost" id="' + p + '-oublie" type="button" style="min-height:44px;margin-top:6px">Code oublié ?</button>'
+      + '<p class="g-sub" id="' + p + '-oublie-msg" role="status" aria-live="polite" style="margin:6px 0 0"></p>';
+  }
+  function wireOublie(p, nomDe) {
+    var b = document.getElementById(p + '-oublie'), m = document.getElementById(p + '-oublie-msg');
+    if (!b || !m) return;
+    b.addEventListener('click', function () {
+      var nom = String(nomDe() || '').trim();
+      if (nom.split(/\s+/).length < 2) { m.textContent = 'Écris d\'abord ton prénom et ton nom, puis touche « Code oublié ? ».'; return; }
+      b.disabled = true; m.textContent = '…';
+      fetch('/__sso/code/oublie', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: nom }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok) { m.textContent = '📧 C\'est parti. Ouvre tes e-mails et touche le lien (il marche 1 heure). Rien reçu ? Regarde dans les indésirables.'; b.textContent = 'Renvoyer le lien'; }
+          else m.textContent = (j && j.message) || 'Réessaie dans un moment.';
+          b.disabled = false;
+        })
+        .catch(function () { m.textContent = 'Pas de connexion. Réessaie.'; b.disabled = false; });
+    });
+  }
+
   var _pkAuto = false; /* Face ID automatique : une seule fois par chargement de page */
   function renderUnlock(acc) {
     var hasPk = _hasPasskey(acc.uid) && _pkSupported();
@@ -700,7 +727,8 @@
       + '<input class="fld" id="u-code" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Code secret"' + (hasPk ? ' style="margin-top:8px"' : '') + '>'
       + '<button class="btn' + (hasPk ? ' ghost' : '') + '" id="u-go">' + (hasPk ? 'Utiliser mon code' : 'Se connecter') + '</button>'
       + '<button class="btn ghost" id="u-other">Ce n\'est pas moi</button>'
-      + '<p class="g-err" id="u-err" role="alert" aria-live="polite"></p>';
+      + '<p class="g-err" id="u-err" role="alert" aria-live="polite"></p>'
+      + (acc.admin ? '' : oublieBlock('u'));
     /* Face ID AUTOMATIQUE à la 1re ouverture (Kevin 13.10 : « Face ID automatique seulement à la 1re ouverture »).
        Une seule tentative par chargement de page (_pkAuto) : si iOS la refuse faute de geste, ou si la personne
        annule, on n'écrit AUCUNE erreur et le bouton + le code restent là — jamais de boucle de Face ID. */
@@ -720,6 +748,7 @@
       if (!_pkAuto) { _pkAuto = true; setTimeout(function () { tenterPk(true); }, 0); }
     }
     document.getElementById('u-go').addEventListener('click', function () { doUnlock(acc); });
+    if (!acc.admin) wireOublie('u', function () { return acc.name || ''; });
     document.getElementById('u-code').addEventListener('keydown', function (e) { if (e.key === 'Enter') doUnlock(acc); });
     document.getElementById('u-other').addEventListener('click', function () {
       if (confirm('Créer un autre compte sur cet appareil ? (ton compte actuel reste enregistré)')) renderCreate();

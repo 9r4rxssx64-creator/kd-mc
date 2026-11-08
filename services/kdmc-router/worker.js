@@ -15,6 +15,7 @@ import { handleBoite, codeAttenteDeposer, inscriptionAdminDeposer, presenceBattr
 import { lotKV } from './lot-kv.js';
 import { envAvecSecours } from './kv-secours.js';   // KV ACCOUNTS au plafond / en panne → les écritures texte partent dans D1 (gratuit, 100 000/jour) — voir kv-secours.js   // création de compte : chaque clé KV écrite UNE fois (1 écriture/s/clé au KV) — voir lot-kv.js
 import { ficheLue, ficheOubliee } from './acc-memo.js';   // mémo de 15 s de la fiche de compte (moins de lectures KV) — voir acc-memo.js
+import { handleCodesComptes, chiffrerCode, dechiffrerCode, codeAuHasard } from './codes-comptes.js';   // codes des comptes : l'admin voit/pose/réinitialise, « Code oublié ? » par e-mail (Kevin 7.11 / 8.11)
 import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret, jetonConfirmation, envoyerMailConfirmation, sha256Hex as sha256HexMail } from './mail-confirme.js';   // confirmation par MAIL de l'inscription (Kevin 17.10 : « B », pas de 2e numéro pour WhatsApp)
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
@@ -1468,10 +1469,18 @@ async function credRec(code) {
   const salt = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
   return { s: salt, h: await credHash(code, salt), i: CRED_ITER, at: Date.now() };
 }
+/* credSet = code CHOISI PAR LA PERSONNE (ou effacé puis rechoisi) : empreinte seulement, et la copie relisible de l'admin (`credv:`) est
+   EFFACÉE au même moment (Kevin 7.11 : « la copie relisible est effacée dès que la personne change son code »). Voir codes-comptes.js. */
 async function credSet(env, uid, code) {
   const rec = await credRec(code);
   await env.ACCOUNTS.put('cred:' + uid, JSON.stringify(rec));
+  if (!(typeof process !== 'undefined' && process.env && process.env.SABOTAGE === 'credv')) { try { await env.ACCOUNTS.delete('credv:' + uid); } catch { /* */ } }
   return rec;
+}
+/* Code POSÉ PAR L'ADMIN : l'empreinte (qui sert à la connexion) + la copie CHIFFRÉE relisible par l'admin seul. Jamais pour l'admin lui-même. */
+async function credPoseAdmin(env, uid, code) {
+  await credSet(env, uid, code);
+  await env.ACCOUNTS.put('credv:' + uid, JSON.stringify(await chiffrerCode(env.KDMC_SSO_SECRET, uid, code)));
 }
 /* Code obligatoire (Kevin 8.10) : à la création, et pour tout compte existant qui n'en a pas. Coupe-circuit KDMC_CODE_OBLIGATOIRE=0 (tests seulement). */
 const codeObligatoire = (env) => String((env && env.KDMC_CODE_OBLIGATOIRE) || '1') !== '0';
@@ -3723,6 +3732,23 @@ async function handleSso(request, url, env, ctx) {
       if (echecs && echecs.length) enFond(ctx, notifyPush(env, '⚠️ KDMC — stockage des comptes refusé', echecs.length + ' écriture(s) refusée(s) pendant une inscription (' + echecs[0] + '). Le compte reste fermé ; la personne devra recommencer.'));
     }
   }
+  /* « Code oublié ? » (Kevin 7.11 / 8.11) : lien e-mail signé, 1 h, usage unique → la personne choisit son nouveau code. Voir codes-comptes.js. */
+  if (path.startsWith('/__sso/code/')) {
+    const rCode = await handleCodesComptes(request, url, env, secret, {
+      J, accGet: (u) => accGet(env, u), accPut: (a) => accPut(env, a, true), audLog: (e) => audLog(env, e),
+      credSet: (u, c) => credSet(env, u, c), credReussite: (u) => credReussite(env, u),
+      ipHash: (r) => sha256Hex((r.headers.get('CF-Connecting-IP') || '') + '|kdmc-cro'),
+      enFond: (p) => enFond(ctx, p),
+      estAdmin: (u, a) => u === CANON_UID || ADMIN_UIDS.indexOf(u) >= 0 || isAdminName((a && a.name) || ''),
+      trouverCompte: async (name) => {
+        const mots = name.split(/\s+/).filter(Boolean);
+        let cle = await canonFor(env, '', name, { sansCreer: true });
+        if (!cle && mots.length >= 2) cle = await canonFor(env, '', mots.slice(1).join(' ') + ' ' + mots[0], { sansCreer: true });
+        if (!cle && mots.length >= 2) cle = await canonFor(env, '', mots[mots.length - 1] + ' ' + mots.slice(0, -1).join(' '), { sansCreer: true });
+        return cle || '';
+      } });
+    if (rCode) return rCode;
+  }
   /* Confirmation par MAIL (17.10) : le bouton du mail « Confirme ton compte » ouvre le compte sans l'admin. */
   if (path.startsWith('/__sso/mail/')) {
     const rMail = await handleMailConfirme(request, url, env, secret, {
@@ -5486,6 +5512,7 @@ async function handleAdmin(request, url, env) {
       try { await env.ACCOUNTS.put('del:' + uid, JSON.stringify(acc), { expirationTtl: 30 * 86400 }); } catch { /* la copie est un filet, pas une condition */ }
       await env.ACCOUNTS.delete('acc:' + uid);
       await env.ACCOUNTS.delete('cred:' + uid);
+      try { await env.ACCOUNTS.delete('credv:' + uid); await env.ACCOUNTS.delete('crr:' + uid); } catch { /* */ }
       await env.ACCOUNTS.delete('rlc:' + uid);
       const n = normName(acc.name || '');
       if (n && (await env.ACCOUNTS.get('nm:' + n)) === uid) await env.ACCOUNTS.delete('nm:' + n);
@@ -5581,7 +5608,7 @@ async function handleAdmin(request, url, env) {
     else acc.tel_requis = true;   /* rien ne s'ouvre tant que la personne n'a pas confirmé son numéro par WhatsApp (whoami → tel_a_confirmer) */
     await env.ACCOUNTS.put('nm:' + n, uid);
     await accPut(env, acc);
-    await credSet(env, uid, code);
+    await credPoseAdmin(env, uid, code);   /* posé par l'admin → relisible par lui seul (copie chiffrée credv:) */
     await audLog(env, { ev: 'compte_invite_cree', uid, name, detail: mode === 'whatsapp' ? 'téléphone à confirmer par WhatsApp' : 'téléphone saisi par l\'admin' });
     return J({ ok: true, uid, name });
   }
@@ -5694,9 +5721,49 @@ async function handleAdmin(request, url, env) {
     let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
     const uid = String(b.uid || '').slice(0, 80).trim();
     if (!uid) return J({ ok: false, reason: 'uid requis' });
-    try { await env.ACCOUNTS.delete('cred:' + uid); await env.ACCOUNTS.delete('rlc:' + uid); } catch { return J({ ok: false, reason: 'registre indisponible' }); }
+    try { await env.ACCOUNTS.delete('cred:' + uid); await env.ACCOUNTS.delete('credv:' + uid); await env.ACCOUNTS.delete('rlc:' + uid); } catch { return J({ ok: false, reason: 'registre indisponible' }); }
     await audLog(env, { ev: 'code_efface', uid });
     return J({ ok: true, uid });
+  }
+  /* CODES DES COMPTES — vue admin (Kevin 7.11, « Code posé par l'admin, relisible »). Kevin seul (barrière admin plus haut) ; jamais le compte
+     de l'administrateur ; le code n'est JAMAIS écrit dans le journal, seulement rendu UNE fois dans la réponse. Voir codes-comptes.js. */
+  const estCompteAdmin = (u, a) => u === CANON_UID || ADMIN_UIDS.indexOf(u) >= 0 || isAdminName((a && a.name) || '');
+  if (path === '/__admin/code-poser' && request.method === 'POST') {
+    const o = request.headers.get('origin') || '';
+    if (o && !/^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/i.test(o)) return J({ ok: false, reason: 'origine_refusee' }, undefined, 403);
+    let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
+    const uid = String(b.uid || '').slice(0, 80).trim();
+    if (!uid || !env.ACCOUNTS) return J({ ok: false, reason: 'uid requis' }, undefined, 400);
+    const a = await accGet(env, uid);
+    if (!a) return J({ ok: false, reason: 'not_found' }, undefined, 404);
+    if (estCompteAdmin(uid, a)) return J({ ok: false, reason: 'compte_admin', message: 'Le compte de l\'administrateur ne s\'ouvre jamais par un code de compte.' }, undefined, 403);
+    const auHasard = !(typeof b.code === 'string' && b.code !== '');
+    const code = auHasard ? codeAuHasard() : b.code;
+    if (!CODE_VALIDE(code)) return J({ ok: false, reason: 'code_invalide', message: 'Le code doit faire au moins 6 caractères.' }, undefined, 400);
+    try { await credPoseAdmin(env, uid, code); await credReussite(env, uid); } catch { return J({ ok: false, reason: 'registre indisponible' }, undefined, 503); }
+    a.code_at = Date.now(); delete a.revoked_at_code;
+    await accPut(env, a, true);
+    await audLog(env, { ev: 'code_pose_admin', uid, name: a.name, detail: auHasard ? 'code tiré au hasard par l\'admin' : 'code posé à la main par l\'admin' });
+    return J({ ok: true, uid, code, au_hasard: auHasard });
+  }
+  if (path === '/__admin/code-voir' && request.method === 'GET') {
+    const uid = String(url.searchParams.get('uid') || '').slice(0, 80).trim();
+    if (!uid || !env.ACCOUNTS) return J({ ok: false, reason: 'uid requis' }, undefined, 400);
+    const a = await accGet(env, uid);
+    if (!a) return J({ ok: false, reason: 'not_found' }, undefined, 404);
+    const f = a.fiche || {};
+    const base = { ok: true, uid, name: a.name || '', telephone: f.telephone || '', email_masque: f.email ? masqueEmail(f.email) : '' };
+    if (estCompteAdmin(uid, a)) return J({ ...base, etat: 'admin', lisible: false, message: 'Compte de l\'administrateur : Face ID ou code admin, jamais un code de compte.' });
+    const [rc, rv] = await Promise.all([env.ACCOUNTS.get('cred:' + uid), env.ACCOUNTS.get('credv:' + uid)]);
+    if (!rc) return J({ ...base, etat: 'aucun', lisible: false, message: 'Pas de code : la personne en choisira un à sa prochaine connexion, ou pose-lui en un.' });
+    let v = null; try { v = JSON.parse(rv || 'null'); } catch { v = null; }
+    const clair = v ? await dechiffrerCode(env.KDMC_SSO_SECRET, uid, v) : null;
+    if (!clair) return J({ ...base, etat: 'personne', lisible: false, message: 'Code choisi par la personne : illisible, même pour toi. Tu peux en poser un nouveau.' });
+    if (url.searchParams.get('montrer') === '1') {
+      await audLog(env, { ev: 'code_vu_admin', uid, name: a.name });
+      return J({ ...base, etat: 'admin_pose', lisible: true, code: clair, pose_at: v.at || 0 });
+    }
+    return J({ ...base, etat: 'admin_pose', lisible: true, pose_at: v.at || 0 });
   }
   if (path === '/__admin/account' && request.method === 'GET') {
     const uid = url.searchParams.get('uid') || '';

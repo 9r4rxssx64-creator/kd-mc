@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 250 règles — le texte de Kevin, une par une
+## 📜 Les 251 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1088,6 +1088,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🔍 RÈGLE ABSOLUE — CREUSER TOUJOURS JUSQU'À LA CAUSE, PUIS CORRIGER ; JAMAIS « NON CREUSÉ » (Kevin 2026-11-06, ABSOLUE, TOUTES LES BRANCHES)
 **« Creuse toujours pour savoir et corriger si nécessaire. Note le. Va tjs au bout »** — Kevin 2026-11-06, après une réponse qui disait « 4 éléments cachés sur Kit IA, je ne l'ai pas creusé » et […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-creuser-toujours-jusquà-la-cause-puis-corriger-jamais-non-creusé-kevin-2026-11-06-absolue-toutes-les-branches)
+
+### 🔑 RÈGLE ABSOLUE — CODES DES COMPTES : L'ADMIN VOIT / POSE / RÉINITIALISE DANS LA FICHE ; LA PERSONNE A UNE SEULE OPTION, « CODE OUBLIÉ ? » PAR E-MAIL (Kevin 2026-11-08, ABSOLUE)
+**« Code posé par l'admin, relisible »** (choix de Kevin le 7.11 entre deux options) puis, le 8.11 : **« côté personnes : une seule option, Code oublié ? »**, **« je veux tout le visuel dans […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-codes-des-comptes-ladmin-voit-pose-réinitialise-dans-la-fiche-la-personne-a-une-seule-option-code-oublié-par-e-mail-kevin-2026-11-08-absolue)
 
 ---
 

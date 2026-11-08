@@ -102,6 +102,7 @@ export async function codeDecider(env, db, outils, uid, accepter, now) {
   if (!r) return { ok: false, reason: 'demande_introuvable' };
   if (accepter) {
     await env.ACCOUNTS.put('cred:' + uid, r.rec);
+    try { await env.ACCOUNTS.delete('credv:' + uid); } catch { /* code proposé par la personne : la copie relisible de l'admin disparaît (codes-comptes.js) */ }
     /* « J'ai validé son code et il reste bloqué » (Kevin 16.10) : accepter le CODE d'une personne que l'admin a sous les yeux (nom, appareil, lieu) vaut
        aussi ouverture du compte — sinon `attente_admin` restait posé, la demande d'inscription avait déjà quitté la file, et la personne ne
        pouvait plus jamais entrer. Un compte refusé par l'admin puis dont il accepte le code est rouvert : le dernier geste de Kevin gagne. */

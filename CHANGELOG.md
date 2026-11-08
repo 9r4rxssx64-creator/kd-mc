@@ -46,6 +46,13 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Demande de cloud-installer (pont 1929) : « je ne peux pas désigner l'élément ni l'écran sans deviner ». Le relevé « cache » ajoute `[@x,y LxH sous @x,y LxH]` (nombres seulement, aucun texte de page) pour le contrôle recouvert et ce qui le recouvre. Cas visé : `a#kdmc-portal-link` d'Apex Chat sur iPhone 13 portrait (cache 1 persistant après PR 5523).
 - Garde `tests/verify-verifier-servi.mjs` 2j3 : vert ; rouge sur l'ancien relevé (sans rectangles).
 
+## Arbre v3.202 — la branche est centrée à la verticale, la moitié haute de l'écran n'est plus vide (2026-11-08)
+
+- **Symptôme (capture de Kevin sur iPad, vue « Famille Saint-Polit · Irle », Plan)** : la personne choisie (Patrick) était au centre de l'écran, mais comme elle se trouvait dans les premières générations, la branche occupait seulement le bas de l'écran et le haut restait vide.
+- **Cause** : v3.201 centrait la PERSONNE verticalement, même quand toute la branche tenait dans la zone libre.
+- **Correction** : la personne reste centrée à l'horizontale (dx = 0) ; à la verticale, si toute la branche tient (jusqu'à +25 % d'écart d'estimation), c'est la BRANCHE qui est centrée, la personne restant toujours dans la zone (marge 30 px).
+- **Garde** : `tools/arbre/verify-plan-centre.mjs` mesure aussi le centrage vertical (écart ≤ 12 % de la zone) : 80 vert sur v3.202, 38 rouges sur v3.201.
+
 ## Arbre v3.201 — la personne est centrée sur toutes les tailles d'écran (2026-11-07)
 - **Kevin** : « et corrige aussi pour l'ordinateur ; corrige toujours pour tout, sans me demander ».
 - **Mesure d'arbre-pc** (120 mesures, 20 appareils) : 12 écarts sur les largeurs ≥ 1133 px (personne décalée de 340 à 950 px à gauche).

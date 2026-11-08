@@ -279,38 +279,146 @@
     return '<div class="kv"><div style="grid-column:1/-1"><span>📋 Fiche de renseignements'
       + (f.maj ? ' — mise à jour ' + esc(ago(f.maj)) : '') + '</span></div>' + rows.join('') + '</div>';
   }
+  /* 8.11 (Kevin : « tout le visuel dans chaque fiche, toutes les infos » + « épuré, simple, intuitif ») : la fiche range TOUT ce que le domaine
+     sait de la personne en 4 rubriques repliables — 🪪 Identité · 📈 Activité · 🔐 Droits · 🔑 Code. L'essentiel est sur la ligne fermée
+     (nom · dernière connexion · connexions · état du code · ⚠️ si suspecte) ; le détail est un toucher plus bas. Rien n'a été retiré de l'ancienne
+     fiche : mêmes champs, mêmes boutons, seulement rangés. Aucune information n'apparaît deux fois. */
+  var ADMIN_UID_FICHE = { kdmc_admin: 1, 'kevin-desarzens': 1 };
+  function etatCodeCourt(a) {
+    if (ADMIN_UID_FICHE[a.uid]) return '🔑 Face ID / code admin';
+    return a.code_at ? '🔑 code posé' : '⚠️ sans code';
+  }
+  function rubrique(cls, titre, resume, corps, attrs) {
+    return '<details class="rub ' + cls + '"' + (attrs || '') + '><summary><span class="rt">' + titre + '</span>'
+      + (resume ? '<span class="rr">' + resume + '</span>' : '') + '</summary><div class="rc">' + corps + '</div></details>';
+  }
+  function blocCode(a) {
+    if (ADMIN_UID_FICHE[a.uid]) return '<div class="d">Le compte de l\'administrateur s\'ouvre par Face ID ou le code admin, jamais par un code de compte. Rien à régler ici.</div>';
+    var u = esc(a.uid);
+    return '<div class="codeetat" data-uid="' + u + '">Touche pour lire l\'état du code…</div>'
+      + '<div class="codevu" data-uid="' + u + '" hidden></div>'
+      + '<div class="coderow"><button class="cbtn" data-act="voir" data-uid="' + u + '" type="button" hidden>👁 Voir le code</button>'
+      + '<button class="cbtn" data-act="hasard" data-uid="' + u + '" type="button">🎲 Générer au hasard</button></div>'
+      + '<div class="coderow"><input class="codein" data-uid="' + u + '" type="text" inputmode="numeric" autocomplete="off" maxlength="64" placeholder="Nouveau code (6 caractères min.)" aria-label="Nouveau code">'
+      + '<button class="cbtn" data-act="poser" data-uid="' + u + '" type="button">✍️ Poser ce code</button></div>'
+      + '<div class="coderow"><button class="cbtn cdanger" data-act="effacer" data-uid="' + u + '" type="button">🧹 Effacer (la personne en choisit un)</button>'
+      + '<a class="cbtn ctel" data-uid="' + u + '" hidden>📞 Appeler pour dicter le code</a></div>'
+      + '<div class="codemsg" data-uid="' + u + '" role="status" aria-live="polite"></div>';
+  }
   function fiche(a) {
     var places = (a.places || []).map(esc).join(' · ') || esc(a.last_place || '—');
     var devs = (a.devices || []).map(esc).join(' · ') || esc(a.last_device || '—');
     var anom = a.anomaly && a.anomaly.at
       ? '<div class="anom">⚠️ Connexion suspecte — <b>' + esc(a.anomaly.from || '?') + ' → ' + esc(a.anomaly.to || '?') + '</b> en ' + esc(String(a.anomaly.mins || '?')) + ' min · ' + esc(ago(a.anomaly.at)) + '</div>'
       : '';
-    /* 16.10 nuit (Kevin : « Ferme les fiches par défaut, ça prend trop de place, et fais plus lisible ») : une fiche est une ligne
-       (nom · dernière connexion · nombre de connexions · ⚠️ si suspecte) ; tout le détail s'ouvre d'un toucher. Une fiche visée
-       (#fiche-<uid>, « Sa fiche admin ») s'ouvre toute seule (tableau.js, aller()). */
+    var etatCompte = a.attente_admin === 'refuse' ? '🚫 refusé' : (a.attente_admin ? '⏳ en attente de validation' : '✅ ouvert');
+    /* 16.10 nuit (Kevin : « Ferme les fiches par défaut, ça prend trop de place, et fais plus lisible ») : une fiche est une ligne ; tout le détail
+       s'ouvre d'un toucher. Une fiche visée (#fiche-<uid>, « Sa fiche admin ») s'ouvre toute seule (tableau.js, aller()). */
+    var identite = '<div class="kv">'
+      + kvp('Nom', esc(a.name || '—'))
+      + kvp('Identifiant', esc(a.uid))
+      + kvp('Compte créé', dt(a.created), 'journal:' + a.uid)
+      + kvp('CGU acceptée', a.cgu_at ? dt(a.cgu_at) : '—', 'journal:' + a.uid)
+      + kvp('État du compte', etatCompte)
+      + (a.externe ? kvp('Type', 'Compte invité (créé par toi)') : '')
+      + '</div>' + ficheRens(a.fiche);
+    var activite = '<div class="kv">'
+      + kvp('Connexions', String(a.hits || 0), 'journal:' + a.uid)
+      + kvp('Dernière connexion', dt(a.last_seen), 'journal:' + a.uid)
+      + kvp('Sites utilisés', appsDetail(a.apps))
+      + kvp('Appareils', devs, 'journal:' + a.uid)
+      + kvp('Lieux', places, 'journal:' + a.uid)
+      + '</div>';
+    var droits = blocAcces(a)
+      + '<button class="etatcompte" data-uid="' + esc(a.uid) + '" type="button" title="Dit pourquoi cette personne est bloquée (ou pas), et permet de l\'ouvrir.">🔎 État du compte</button>'
+      + '<div class="etatbox" data-uid="' + esc(a.uid) + '" hidden></div>'
+      + '<button class="revoke" data-uid="' + esc(a.uid) + '" type="button" '
+      + 'title="Coupe toutes ses sessions ouvertes (appareil perdu/volé). Il pourra se reconnecter normalement.">🚪 Déconnecter partout</button>';
+    var nbApps = a.apps ? Object.keys(a.apps).length : 0;
     return '<details class="kdmc-card kdmc-in fiche" id="fiche-' + esc(a.uid) + '">'
       + '<summary class="fhead"><span class="fqui"><h3>' + esc(a.name || a.uid) + '</h3>'
-      + '<span class="fres">' + esc(ago(a.last_seen)) + ' · ' + (a.hits || 0) + ' connexion' + ((a.hits || 0) > 1 ? 's' : '') + (a.anomaly && a.anomaly.at ? ' · <b class="fsusp">⚠️ suspecte</b>' : '') + '</span></span>'
+      + '<span class="fres">' + esc(ago(a.last_seen)) + ' · ' + (a.hits || 0) + ' connexion' + ((a.hits || 0) > 1 ? 's' : '') + ' · ' + etatCodeCourt(a) + (a.anomaly && a.anomaly.at ? ' · <b class="fsusp">⚠️ suspecte</b>' : '') + '</span></span>'
       + '<span class="fchev" aria-hidden="true">›</span></summary>'
       + '<div class="fcorps"><div class="uid">' + esc(a.uid) + ' · <span class="lien-info" data-va="journal:' + esc(a.uid) + '">journal</span></div>'
       + anom
       + (a.uid === 'kdmc_admin' ? '' : '<button class="savacc ouvrir-compte" data-uid="' + esc(a.uid) + '" type="button" style="margin:6px 0 10px" title="Ouvre ce compte : la personne n\'attend plus ton accord.">✅ Ouvrir ce compte</button>')
-      + '<div class="kv">'
-      + kvp('Compte créé', dt(a.created), 'journal:' + a.uid)
-      + kvp('CGU acceptée', a.cgu_at ? dt(a.cgu_at) : '—', 'journal:' + a.uid)
-      + kvp('Connexions', String(a.hits || 0), 'journal:' + a.uid)
-      + kvp('Sites utilisés', appsDetail(a.apps))
-      + kvp('Appareils', devs, 'journal:' + a.uid)
-      + kvp('Lieux', places, 'journal:' + a.uid)
-      + kvp('Dernière connexion', dt(a.last_seen), 'journal:' + a.uid)
-      + '</div>'
-      + ficheRens(a.fiche)
-      + blocAcces(a)
-      + '<button class="etatcompte" data-uid="' + esc(a.uid) + '" type="button" title="Dit pourquoi cette personne est bloquée (ou pas), et permet de l\'ouvrir.">🔎 État du compte</button>'
-      + '<div class="etatbox" data-uid="' + esc(a.uid) + '" hidden></div>'
-      + '<button class="revoke" data-uid="' + esc(a.uid) + '" type="button" '
-      + 'title="Coupe toutes ses sessions ouvertes (appareil perdu/volé). Il pourra se reconnecter normalement.">🚪 Déconnecter partout</button>'
+      + rubrique('rub-id', '🪪 Identité', esc(etatCompte), identite)
+      + rubrique('rub-act', '📈 Activité', nbApps + ' app' + (nbApps > 1 ? 's' : ''), activite)
+      + rubrique('rub-droits', '🔐 Droits', '', droits)
+      + rubrique('rub-code', '🔑 Code', esc(etatCodeCourt(a).replace(/^🔑 |^⚠️ /, '')), blocCode(a), ' data-uid="' + esc(a.uid) + '"')
       + '</div></details>';
+  }
+  /* ---- 🔑 Code (Kevin 7.11, « Code posé par l'admin, relisible ») : voir · poser · hasard · effacer. Le DOMAINE juge et garde (copie chiffrée) ;
+     ici rien n'est gardé : un code affiché s'efface de l'écran après 30 s. */
+  var CODE_MINUTEURS = {};
+  function codeMontrer(uid, code, titre) {
+    var vu = document.querySelector('.codevu[data-uid="' + uid + '"]'); if (!vu) return;
+    vu.hidden = false;
+    vu.innerHTML = '<span class="d">' + esc(titre) + '</span><b class="codeclair">' + esc(code) + '</b><span class="d">Disparaît de l\'écran dans 30 s.</span>';
+    clearTimeout(CODE_MINUTEURS[uid]);
+    CODE_MINUTEURS[uid] = setTimeout(function () { vu.innerHTML = ''; vu.hidden = true; }, 30000);
+  }
+  function codeLire(uid) {
+    var etat = document.querySelector('.codeetat[data-uid="' + uid + '"]'); if (!etat) return;
+    fetch('/__admin/code-voir?uid=' + encodeURIComponent(uid), { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok) { etat.textContent = '⚠️ ' + ((j && j.reason === 'need_admin_code') ? 'Reconnecte-toi en admin.' : 'État illisible — réessaie.'); return; }
+        var lignes = { admin_pose: '✅ Code posé par toi : tu peux le revoir.', personne: '🔒 Code choisi par la personne : personne ne peut le lire, même toi.', aucun: '⚠️ Pas de code : pose-lui en un, ou elle en choisira un.', admin: j.message || '' };
+        etat.innerHTML = esc(lignes[j.etat] || j.message || '')
+          + '<br><span class="d">' + (j.email_masque ? '« Code oublié ? » marche : lien envoyé à ' + esc(j.email_masque) + '.' : 'Pas d\'e-mail : « Code oublié ? » ne peut rien envoyer — dicte-lui un code.') + '</span>';
+        var bv = document.querySelector('.cbtn[data-act="voir"][data-uid="' + uid + '"]'); if (bv) bv.hidden = !j.lisible;
+        var court = { admin_pose: 'posé par toi', personne: 'choisi par la personne', aucun: 'sans code' }[j.etat];
+        var rr = document.querySelector('.rub-code[data-uid="' + uid + '"] > summary .rr'); if (rr && court) rr.textContent = court;
+        var tel = document.querySelector('.ctel[data-uid="' + uid + '"]');
+        if (tel) { if (j.telephone) { tel.href = 'tel:' + String(j.telephone).replace(/[^+0-9]/g, ''); tel.hidden = false; tel.textContent = '📞 Appeler pour dicter (' + j.telephone + ')'; } else tel.hidden = true; }
+      })
+      .catch(function () { etat.textContent = '⚠️ Réseau — réessaie.'; });
+  }
+  function wireCode() {
+    var list = document.getElementById('list');
+    if (!list || list.__code) return; list.__code = true;
+    list.addEventListener('toggle', function (e) {
+      var d = e.target; if (!d || !d.classList || !d.classList.contains('rub-code') || !d.open) return;
+      codeLire(d.getAttribute('data-uid') || '');
+    }, true);
+    list.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('button.cbtn') : null;
+      if (!b) return;
+      var uid = b.getAttribute('data-uid') || '', act = b.getAttribute('data-act');
+      var msg = document.querySelector('.codemsg[data-uid="' + uid + '"]');
+      var dire = function (t) { if (msg) msg.textContent = t; };
+      var H = Object.assign({ 'content-type': 'application/json' }, adminHeaders());
+      var fin = function () { b.disabled = false; };
+      if (act === 'voir') {
+        b.disabled = true;
+        return fetch('/__admin/code-voir?uid=' + encodeURIComponent(uid) + '&montrer=1', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
+          .then(function (r) { return r.json(); })
+          .then(function (j) { fin(); if (j && j.code) { codeMontrer(uid, j.code, 'Son code :'); dire(''); } else dire('⚠️ Ce code ne se lit pas.'); })
+          .catch(function () { fin(); dire('⚠️ Réseau — réessaie.'); });
+      }
+      var corps = { uid: uid };
+      if (act === 'poser') {
+        var inp = document.querySelector('.codein[data-uid="' + uid + '"]');
+        var c = inp ? inp.value.trim() : '';
+        if (c.length < 6) { dire('⚠️ Le code doit faire au moins 6 caractères.'); return; }
+        corps.code = c;
+      }
+      if (act === 'effacer' && !confirm('Effacer son code ?\n\nSon code actuel ne marchera plus ; elle en choisira un nouveau à sa prochaine connexion.')) return;
+      if ((act === 'poser' || act === 'hasard') && !confirm('Remplacer son code ?\n\nL\'ancien ne marchera plus, dans toutes les apps.')) return;
+      b.disabled = true; dire('…');
+      fetch(act === 'effacer' ? '/__admin/code' : '/__admin/code-poser', { method: 'POST', credentials: 'include', headers: H, body: JSON.stringify(corps) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          fin();
+          if (!j || !j.ok) { dire('⚠️ ' + ((j && j.message) || (j && j.reason === 'need_admin_code' ? 'Reconnecte-toi en admin.' : 'Échec — réessaie.'))); return; }
+          var inp2 = document.querySelector('.codein[data-uid="' + uid + '"]'); if (inp2) inp2.value = '';
+          if (j.code) { codeMontrer(uid, j.code, j.au_hasard ? 'Nouveau code tiré au hasard :' : 'Nouveau code :'); dire('✅ Enregistré. Donne-le à la personne : il marche tout de suite.'); }
+          else { dire('✅ Code effacé.'); var vu0 = document.querySelector('.codevu[data-uid="' + uid + '"]'); if (vu0) { clearTimeout(CODE_MINUTEURS[uid]); vu0.innerHTML = ''; vu0.hidden = true; } }
+          codeLire(uid);
+        })
+        .catch(function () { fin(); dire('⚠️ Réseau — réessaie.'); });
+    });
   }
 
   /* ---- Où cette personne a le droit d'aller (Kevin 2026-09-15) -------------
@@ -859,6 +967,7 @@
     wireBloques();
     wireAttendus();
     wireAcces();
+    wireCode();
     wireFermees(); wireOutils();
     wireCreer();
     wireLot();

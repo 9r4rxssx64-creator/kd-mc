@@ -30,7 +30,7 @@ const ENV = () => ({ ACCOUNTS: kv(), GEMINI_API_KEY: 'k', AI: { run: async () =>
 let env = ENV(); geminiAppels = []; melo = 0; geminiStatut = 200;
 let r = await mod.fetch(req('gratuit=1&l=fr&v=nova&i=douce&t=Il%20etait%20une%20fois'), env);
 ok(r.status === 200 && r.headers.get('x-voix') === 'gemini-gratuite' && geminiAppels.length === 1 && melo === 0, '1. i=douce → Gemini en premier, MeloTTS pas appelé', JSON.stringify({ x: r.headers.get('x-voix'), g: geminiAppels.length, melo }));
-ok(/douce/i.test(JSON.stringify(geminiAppels[0] || {})), '4. la consigne envoyée à Gemini dit « douce »');
+{ const tx = (((geminiAppels[0] || {}).contents || [{}])[0].parts || [{}])[0].text || ''; ok(/douce/i.test(tx) && /:\s*Il etait/.test(tx) && tx.length < 160, '4. directive courte « douce » terminée par « : » puis le texte', tx); }
 r = await mod.fetch(req('gratuit=1&l=fr&v=nova&i=douce&t=Il%20etait%20une%20fois'), env);
 ok(r.status === 200 && geminiAppels.length === 1, '5. même lecture : servie du cache, aucun appel de plus', String(geminiAppels.length));
 
@@ -38,7 +38,7 @@ ok(r.status === 200 && geminiAppels.length === 1, '5. même lecture : servie du 
 env = ENV(); geminiAppels = []; melo = 0; geminiStatut = 429;
 r = await mod.fetch(req('gratuit=1&l=fr&v=nova&i=douce&t=Autre%20phrase'), env);
 let j = await r.json().catch(() => ({}));
-ok(r.status === 200 && j.reason === 'douce_occupee' && melo === 0 && geminiAppels.length === 3, '2. Gemini refuse → 3 essais puis « douce_occupee », MeloTTS jamais appelé', JSON.stringify({ j, melo, g: geminiAppels.length }));
+ok(r.status === 200 && j.reason === 'douce_occupee' && melo === 0 && geminiAppels.length === 2, '2. Gemini refuse → 2 essais puis « douce_occupee », MeloTTS jamais appelé', JSON.stringify({ j, melo, g: geminiAppels.length }));
 
 /* 6 : un refus passager puis un succès → la belle voix est servie quand même (réessai côté serveur) */
 env = ENV(); geminiAppels = []; melo = 0; geminiStatut = 429;

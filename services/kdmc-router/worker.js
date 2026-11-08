@@ -1859,8 +1859,10 @@ async function _voixGeminiUnique(env, texte, voix, consigne, cleCache, cors) {
     const rr = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_TTS_MODELE + ':generateContent?key=' + env.GEMINI_API_KEY, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
+      signal: AbortSignal.timeout(14000),   /* v3.217 : un essai qui traîne est coupé (mesuré : 3 essais × 25 s = 86 s de silence) */
       body: JSON.stringify({
-        contents: [{ parts: [{ text: (consigne ? consigne + '\n\n' : '') + String(texte || '').slice(0, 2000) }] }],
+        /* v3.217 : une directive COURTE terminée par « : » — Gemini dit tout ce qui suit ; une longue consigne sans délimiteur était LUE À VOIX HAUTE (mesuré : « Bonjour » → 14 s de son) */
+        contents: [{ parts: [{ text: (consigne ? String(consigne).trim() + ' ' : '') + String(texte || '').slice(0, 2000) }] }],
         generationConfig: {
           responseModalities: ['AUDIO'],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: GEMINI_VOIX[voix] || 'Kore' } } },
@@ -2664,6 +2666,8 @@ async function handleLingua(request, url, env) {
       };
       const style = Object.prototype.hasOwnProperty.call(STYLES, String(url.searchParams.get('i') || '')) ? String(url.searchParams.get('i')) : 'prof';
       const HD_CONSIGNE = STYLES[style];
+      /* v3.217 : pour Gemini, une phrase d'introduction courte qui finit par « : » (le texte à dire vient après) */
+      const DIRECTIVE_GEMINI = { douce: 'Dis d\'une voix douce, chaleureuse et posée, lentement, comme une belle histoire du soir :', calme: 'Dis d\'une voix posée et basse, lentement :', prof: 'Dis naturellement, avec chaleur :' };
       const hd = speed === 1;                       // vitesse normale → nouveau moteur
       const modele = hd ? HD_MODELE : 'tts-1';
       const voixPour = (m) => (m === 'tts-1' && VOIX_HD[voice]) ? VOIX_HD[voice] : voice;
@@ -2682,17 +2686,17 @@ async function handleLingua(request, url, env) {
          la voix du téléphone en dernier. Jamais de facture : aucune clé payante n'est touchée. */
       const geminiSecours = async (essais) => {
         if (!env.GEMINI_API_KEY) return null;
-        const gkey = 'ltts:' + (await hashOf('gemini:' + voice + ':' + style + ':' + text));
+        const gkey = 'ltts:' + (await hashOf('gemini2:' + voice + ':' + style + ':' + text));
         try {
           const gc = (await lireCacheVoix(gkey)) || (await env.ACCOUNTS.get(gkey, 'arrayBuffer'));
           if (gc) return new Response(gc, { status: 200, headers: Object.assign({ 'content-type': 'audio/wav', 'cache-control': 'public, max-age=31536000, immutable', 'x-voix': 'gemini-gratuite' }, cors) });
         } catch (_) { /* cache best-effort */ }
         if (!(await souslePlafond(env, 'gemini', request, 60, 3600, true))) return null;
-        return await voixGemini(env, text, voice, HD_CONSIGNE, gkey, cors, essais);
+        return await voixGemini(env, text, voice, DIRECTIVE_GEMINI[style] || DIRECTIVE_GEMINI.prof, gkey, cors, essais);
       };
       const voixGratuiteOuGemini = async (cleP) => (await voixGratuite(env, text, cleP, cors, url.searchParams.get('l'))) || (await geminiSecours());
       if (moteurDemande === 'gemini') {
-        const gkey = 'ltts:' + (await hashOf('gemini:' + voice + ':' + style + ':' + text));
+        const gkey = 'ltts:' + (await hashOf('gemini2:' + voice + ':' + style + ':' + text));
         const gc = await env.ACCOUNTS.get(gkey, 'arrayBuffer');
         if (gc) return new Response(gc, { status: 200, headers: { 'content-type': 'audio/wav', 'cache-control': 'public, max-age=31536000, immutable', 'x-voix': 'gemini-gratuite' } });
         /* Gratuit ne veut pas dire sans limite : le palier gratuit de Google a
@@ -2700,7 +2704,7 @@ async function handleLingua(request, url, env) {
            autant qu'on veut) empêche qu'une page emballée l'épuise pour tout le
            monde. Compté APRÈS le cache, comme pour la voix payante. */
         if (!(await souslePlafond(env, 'gemini', request, 60, 3600, true))) return JL({ ok: false, reason: 'plafond_atteint' });
-        const g = await voixGemini(env, text, voice, HD_CONSIGNE, gkey);
+        const g = await voixGemini(env, text, voice, DIRECTIVE_GEMINI[style] || DIRECTIVE_GEMINI.prof, gkey);
         if (g) return g;
         return JL({ ok: false, reason: 'gemini_indisponible' }); // fail-open (200) → repli navigateur
       }
@@ -2731,7 +2735,7 @@ async function handleLingua(request, url, env) {
            un refus / un plafond retombe sur MeloTTS, jamais de silence. Les autres usages (Bee, Lingua…) gardent l'ordre d'avant. */
         if (style === 'douce') {
           /* v3.213 : la belle voix ou RIEN d'automatique — jamais MeloTTS (robotique) pour une histoire : en cas d'échec après 3 essais l'arbre attend et réessaie lui-même (`douce_occupee`) */
-          const gd = await geminiSecours(3);
+          const gd = await geminiSecours(2);
           return gd || JL({ ok: false, reason: 'douce_occupee' });
         }
         if (!(await souslePlafond(env, 'gratuite', request, 60, 3600, true))) return (await geminiSecours()) || JL({ ok: false, reason: 'plafond_atteint' });

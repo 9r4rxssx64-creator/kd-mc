@@ -1,12 +1,14 @@
 /* Garde (Kevin 6.11.2026 : « vérifie réel dans les apps que la pastille Javis Bee Lingua ne cache jamais rien, aucune fonction »).
  * Lingua a sa propre compagne (.bee-companion), fixe en bas à droite. Dans un vrai Chromium, 4 écrans × plusieurs écrans de l'app (accueil, haut et bas
  * de page, chaque onglet visible) : au repos, AUCUN contrôle ne doit avoir son centre ou plus de la moitié de sa surface sous la compagne.
+ * LA BULLE aussi (pont 2103/2117, iPhone 13 : elle recouvrait « button.plan-diff ») : à chaque écran on fait parler Bee (beeBubble, puis beeAsk) et la bulle ne
+ * doit recouvrir aucun contrôle qui reçoit le toucher ; si aucune place n'est libre elle doit au moins laisser passer le toucher (pointer-events:none).
  * LINGUA_DIR=<dossier d'une ancienne Lingua> doit être ROUGE. */
 import { chromium } from 'playwright'; import path from 'node:path';
 const DIR = process.env.LINGUA_DIR || path.resolve('lingua');
 const PAGE = 'file://' + path.join(DIR, 'index.html');
 const nav = await chromium.launch();
-let n = 0, ko = 0, vues = 0;
+let n = 0, ko = 0, vues = 0, bulles = 0, koB = 0;
 for (const [w, h, mob] of [[390, 664, true], [844, 390, true], [820, 1180, true], [1280, 720, false]]) {
   const ctx = await nav.newContext({ viewport: { width: w, height: h }, hasTouch: mob, isMobile: mob });
   await ctx.addInitScript(() => { localStorage.setItem('lingua_g_accounts', JSON.stringify([{ id: 'a1', name: 'Essai Robot', avatar: '🐝', code: '', created: 1 }])); localStorage.setItem('lingua_g_current', JSON.stringify('a1')); localStorage.setItem('lingua_a_a1_course', JSON.stringify('en')); });
@@ -34,9 +36,30 @@ for (const [w, h, mob] of [[390, 664, true], [844, 390, true], [820, 1180, true]
     });
     if (r === null) continue; vues++; n++; if (r.length) ko++;
     if (r.length) console.log(`  ❌ ${w}×${h} ${nom} : Bee cache ${r.join(', ')}`);
+    for (const mode of ['bulle', 'question']) {
+      await p.evaluate((m) => { if (m === 'bulle') window.__linguaBeeBulle('Essai : la bulle de Bee ne doit rien cacher', 60000); else window.__linguaBeeQuestion('Essai : on continue ?', 'Oui', 60000); }, mode);
+      await p.waitForTimeout(450); await p.evaluate(() => { if (window.__linguaBeeEviter) window.__linguaBeeEviter(); }); await p.waitForTimeout(500);
+      const rb = await p.evaluate(() => {
+        const c = document.querySelector('.bee-bubble'); if (!c) return null; const out = [];
+        const b = c.getBoundingClientRect(), laisse = getComputedStyle(c).pointerEvents === 'none';
+        for (const e of document.querySelectorAll('a[href],button,[role=button],input,select,textarea,summary,label,[onclick]')) {
+          if (e.closest('.bee-companion,.bee-bubble')) continue; const r = e.getBoundingClientRect(); if (r.width < 6 || r.height < 6) continue;
+          const cs = getComputedStyle(e); if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0 || cs.pointerEvents === 'none') continue;
+          const ix = Math.min(b.right, r.right) - Math.max(b.left, r.left), iy = Math.min(b.bottom, r.bottom) - Math.max(b.top, r.top); if (ix <= 2 || iy <= 2) continue;
+          const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+          if ((cx > b.left && cx < b.right && cy > b.top && cy < b.bottom) || ix * iy > 0.5 * r.width * r.height) out.push((e.id ? '#' + e.id : e.tagName.toLowerCase() + (e.className && typeof e.className === 'string' ? '.' + e.className.split(' ')[0] : '')) + ' « ' + (e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 22) + ' »');
+        }
+        return { out, laisse, dedans: b.left >= -1 && b.right <= innerWidth + 1 && b.top >= -1 && b.bottom <= innerHeight + 1 };
+      }, mode);
+      await p.evaluate(() => { const b = document.querySelector('.bee-bubble'); if (b) b.remove(); });
+      if (rb === null) continue; bulles++;
+      const mal = (rb.out.length && !rb.laisse) || !rb.dedans; if (mal) koB++;
+      if (mal) console.log(`  ❌ ${w}×${h} ${nom} : la ${mode} de Bee cache ${rb.out.join(', ') || '(rien)'}${rb.dedans ? '' : ' / sort de l\'écran'}`);
+    }
   }
   await ctx.close();
 }
 await nav.close();
-if (!vues) { console.log('❌ la compagne n\'apparaît jamais : le garde ne voit rien'); process.exit(1); }
-console.log(`\n${ko ? '❌ ' + ko + '/' + n + ' écran(s) où la compagne cache un contrôle' : '✅ la compagne de Lingua ne cache rien : ' + n + ' écrans mesurés, 4 tailles'}`); process.exit(ko ? 1 : 0);
+if (!vues || !bulles) { console.log('❌ la compagne ou sa bulle n\'apparaît jamais : le garde ne voit rien'); process.exit(1); }
+if (koB) console.log(`❌ ${koB}/${bulles} bulle(s) qui cachent un contrôle`); else console.log(`✅ la bulle de Bee ne cache rien : ${bulles} bulles mesurées`);
+console.log(`\n${ko ? '❌ ' + ko + '/' + n + ' écran(s) où la compagne cache un contrôle' : '✅ la compagne de Lingua ne cache rien : ' + n + ' écrans mesurés, 4 tailles'}`); process.exit(ko || koB ? 1 : 0);

@@ -5,6 +5,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.217 — la belle voix démarre vite, et dit « Dessarzin » (2026-11-08)
+- Kevin : « On dit dessarzens · pas de son à part dans le réglage · ou alors très très long ». Cause mesurée : la longue consigne de style était lue À VOIX HAUTE par Gemini (« Bonjour » = 14 s de son) et 3 essais × 25 s = 86 s avant l'échec. Routeur : directive courte terminée par « : » (`DIRECTIVE_GEMINI`), essai coupé à 14 s, 2 essais, cache `gemini2:` (l'ancien son fautif n'est plus servi). Arbre : premier morceau ≤ 170 caractères pour que le son démarre vite ; Desarzens se dit « Dessarzin ».
+- Gardes : `services/kdmc-router/voix-douce.test.mjs`, `verify-voix-douce.mjs`, `verify-prononciation.mjs`.
+
 ## Arbre v3.216 — « Lire ici » centre le couple, ses enfants restent visibles (2026-11-08)
 - Kevin (capture iPhone, branche de Denise FILIPOZZI) : « Lire ici ne fonctionne pas correctement » : son mari Jacques était coupé au bord de l'écran, une demi-page vide au-dessus. Mesuré sur une famille inventée : couple décentré de 67 à 144 px, un enfant sous le bandeau au niveau le plus grand.
 - Maintenant : on centre le COUPLE (la personne et son conjoint dessiné à côté) ; les niveaux ×0,6 · ×0,85 · ×1,2 ne dépassent jamais ce que le couple occupe en largeur (sur iPhone : ×0,6 et ×0,85) ; la personne se pose en haut de la zone libre, au-dessus du bandeau, pour qu'on voie aussi ses enfants.

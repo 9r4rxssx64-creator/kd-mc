@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.16";
+var APP_VER="v2.142.17";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -2397,7 +2397,7 @@ function beeLine(){ try{
   return MCRI()+" On apprend quelque chose ?"; }catch(_){ return MCRI(); } }
 function beeBubble(text,ms){ try{ var old=document.querySelector(".bee-bubble"); if(old)old.remove();
   var b=document.createElement("div"); b.className="bee-bubble"; b.textContent=text;
-  b.onclick=function(){ b.remove(); }; document.body.appendChild(b);
+  b.onclick=function(){ b.remove(); }; document.body.appendChild(b); try{ bcBulle(b); }catch(_){}
   setTimeout(function(){ try{ b.classList.add("bye"); setTimeout(function(){b.remove();},400); }catch(_){} }, ms||6000); }catch(_){} }
 /* Marionnette réutilisable : les couches animées découpées de SON image (ailes+bras+paupières).
    Tout est enveloppé dans .rig-look, qui porte l'orientation vers ton doigt : le conteneur
@@ -2531,7 +2531,7 @@ function beeAsk(text,yes,fn,ms){ try{ var old=document.querySelector(".bee-bubbl
   y.onclick=function(ev){ ev.stopPropagation(); b.remove(); vibrate(12); fn(); };
   act.appendChild(y); b.appendChild(act);
   b.onclick=function(){ b.remove(); };
-  document.body.appendChild(b);
+  document.body.appendChild(b); try{ bcBulle(b); }catch(_){}
   if(!coursSignes()) speakLang(String(text).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}·]/gu," "),"fr-FR",BEE_VOICE,true);
   setTimeout(function(){ try{ b.classList.add("bye"); setTimeout(function(){b.remove();},400); }catch(_){} }, ms||14000); }catch(_){} }
 /* BEE NE CACHE JAMAIS RIEN (Kevin 6.11 : « vérifie réel dans les apps que la pastille Javis Bee Lingua ne cache jamais rien, aucune fonction ») :
@@ -2552,11 +2552,20 @@ function bcAppliquer(p,petit){ _bcPlace=p; var R=document.documentElement.style,
   R.setProperty("--bc-b",p.bas+"px"); R.setProperty("--bc-r",p.cote==="right"?bord:"auto"); R.setProperty("--bc-l",p.cote==="right"?"auto":bord);
   R.setProperty("--bc-rb",p.cote==="right"?"14px":"auto"); R.setProperty("--bc-lb",p.cote==="right"?"auto":"14px"); R.setProperty("--bc-or",p.cote==="right"?"bottom right":"bottom left"); bcDiscret(petit); }
 function bcDiscret(oui){ var R=document.documentElement.style; R.setProperty("--bc-sc",oui?"0.7":"1"); R.setProperty("--bc-op",oui?"0.45":"1"); }
-function bcChoisir(){ try{ if(!document.querySelector(".bee-companion")) return; var rs=bcControles(); if(!bcRecouvre(bcBoite(_bcPlace),rs)){ bcDiscret(false); return; }
+function bcChoisir(){ try{ if(!document.querySelector(".bee-companion")) return; var rs=bcControles(); if(!bcRecouvre(bcBoite(_bcPlace),rs)){ bcDiscret(false); bcBulle(); return; }
   var max=Math.max(96,Math.round(innerHeight*0.8)-64), best=null, note=1e9, cotes=["right","left"];
   for(var m=0;m<2&&note;m++) for(var c=0;c<2&&note;c++) for(var b=16;b<=max;b+=12){ var p={cote:cotes[c],bas:b,range:m===1}, n=bcRecouvre(bcBoite(p),rs); if(n<note){note=n;best=p;} if(!n) break; }
   if(best) bcAppliquer(best, note>0&&!best.range); }catch(_){} }
-window.__linguaBeeEviter=bcChoisir;
+/* LA BULLE DE BEE NE CACHE RIEN NON PLUS (pont 2103/2117 : sur iPhone 13 la bulle de Lingua recouvrait « button.plan-diff ») : la bulle était posée
+   par le seul CSS (au-dessus de la compagne) et ne regardait jamais ce qu'elle recouvre. Elle cherche une place libre (côté de la compagne, puis l'autre
+   côté, du bas vers le haut) ; sans place libre, elle laisse passer le toucher (pointer-events:none, sauf le bouton « oui » de beeAsk) et reste lisible. */
+function bcBulle(b){ try{ b=b||document.querySelector(".bee-bubble"); if(!b||!b.isConnected) return; var rs=bcControles(), w=b.offsetWidth, h=b.offsetHeight; if(!w||!h) return;
+  var cote=_bcPlace.cote, autre=cote==="right"?"left":"right", bas0=_bcPlace.bas+66, max=Math.max(bas0,innerHeight-h-8), best=null, note=1e9, cs=[cote,autre];
+  function boite(c,bas){ var l=c==="right"?innerWidth-14-w:14; return {l:l,r:l+w,t:innerHeight-bas-h,b:innerHeight-bas}; }
+  for(var c=0;c<2&&note;c++) for(var bas=bas0;bas<=max;bas+=12){ var n=bcRecouvre(boite(cs[c],bas),rs); if(n<note){note=n;best={cote:cs[c],bas:bas};} if(!n) break; }
+  if(best){ var st=b.style; st.bottom="calc("+best.bas+"px + env(safe-area-inset-bottom))"; st.right=best.cote==="right"?"14px":"auto"; st.left=best.cote==="right"?"auto":"14px"; st.transformOrigin=best.cote==="right"?"bottom right":"bottom left"; }
+  if(note>0){ b.style.pointerEvents="none"; b.style.opacity=".92"; var y=b.querySelector(".bb-yes"); if(y) y.style.pointerEvents="auto"; } }catch(_){} }
+window.__linguaBeeEviter=function(){ bcChoisir(); bcBulle(); }; window.__linguaBeeBulle=function(t,ms){ beeBubble(t,ms); }; window.__linguaBeeQuestion=function(t,y,ms){ beeAsk(t,y,function(){},ms); };
 function bcVeiller(){ if(_bcVeille) return; _bcVeille=1;
   setInterval(function(){ if(!document.hidden) bcChoisir(); },2500);
   addEventListener("resize",function(){ clearTimeout(_bcMinut); _bcMinut=setTimeout(bcChoisir,250); });

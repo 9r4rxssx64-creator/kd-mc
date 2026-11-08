@@ -473,6 +473,7 @@
   "tools/arbre/verify-coherence-auto.mjs",
   "tools/arbre/verify-corbeille.mjs",
   "tools/arbre/verify-deplacement.mjs",
+  "tools/arbre/verify-deux-ex.mjs",
   "tools/arbre/verify-domaine.mjs",
   "tools/arbre/verify-doublons-sans-perte.mjs",
   "tools/arbre/verify-envoi-visible.mjs",

@@ -5,6 +5,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.204 — une personne divorcée de deux conjoints : chaque enfant sous SON couple (2026-11-08)
+- Constat (Kevin, iPad, « Branche d'Annick TOURSEL », « après créations mauvaise implantation ») : Annick, divorcée de Patrick puis de Juan, était dessinée [Patrick, Juan, Annick] ; Juan cachait le trait Patrick–Annick et Laurence semblait fille de Juan.
+- Cause (mesurée) : (1) l'ordre des membres mettait les deux ex à gauche ; (2) le rapatriement visait le milieu du couple du SEUL premier enfant et glissait tout le bloc de 111 px.
+- Correctif : une personne qui n'a que des ex (au moins deux) se place au milieu (ex 1 · elle · ex 2) ; chaque enfant vise le milieu de SON couple. Garde `tools/arbre/verify-deux-ex.mjs` (rouge sur v3.203 : 6 échecs ; vert : ordre juste, enfants à 20 px du milieu de leur couple), + `verify-plan-centre` et `verify-lire-ici` verts.
+
 ## Apex Chat 1.1.363 — la fenêtre « Activer les notifications » s'ouvre aussi quand l'appli rouvre une session gardée (2026-11-07)
 - Constat (Kevin, iPhone : « rien n'est apparu ») : la fenêtre n'était demandée qu'à une connexion neuve ; à la réouverture d'une session gardée le démarrage n'agissait que si la permission était déjà accordée, donc un téléphone qui n'avait jamais répondu ne la voyait jamais.
 - Correctif : le démarrage appelle aussi la demande quand la permission est « default » ; la fenêtre (un tap = le geste qu'iOS exige) revient au plus une fois par semaine par appareil (« Plus tard » respecté).

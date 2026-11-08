@@ -46,6 +46,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Demande de cloud-installer (pont 1929) : « je ne peux pas désigner l'élément ni l'écran sans deviner ». Le relevé « cache » ajoute `[@x,y LxH sous @x,y LxH]` (nombres seulement, aucun texte de page) pour le contrôle recouvert et ce qui le recouvre. Cas visé : `a#kdmc-portal-link` d'Apex Chat sur iPhone 13 portrait (cache 1 persistant après PR 5523).
 - Garde `tests/verify-verifier-servi.mjs` 2j3 : vert ; rouge sur l'ancien relevé (sans rectangles).
 
+## Arbre v3.203 — « Lire ici » change toujours quelque chose (2026-11-08)
+
+- **Symptôme (capture iPad de Kevin : « Lire ici ne fonctionne pas »)** : dès que l'arbre était déjà à ×0,5 ou plus, l'appui ne faisait rien de visible.
+- **Correction** : chaque appui passe au niveau de lecture suivant (×0,6 → ×0,9 → ×1,3, puis retour à ×0,6), la personne au centre de la zone libre (la copie la plus proche du centre si elle est dessinée plusieurs fois), avec un message qui dit le niveau.
+- **Garde** : `tools/arbre/verify-lire-ici.mjs` (3 tailles, souris ET toucher émulé : ×0,6 → ×0,9 → ×1,3 → ×0,6, personne centrée à 0 px).
+
 ## Arbre v3.202 — la branche est centrée à la verticale, la moitié haute de l'écran n'est plus vide (2026-11-08)
 
 - **Symptôme (capture de Kevin sur iPad, vue « Famille Saint-Polit · Irle », Plan)** : la personne choisie (Patrick) était au centre de l'écran, mais comme elle se trouvait dans les premières générations, la branche occupait seulement le bas de l'écran et le haut restait vide.

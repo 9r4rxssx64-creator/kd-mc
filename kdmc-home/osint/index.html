@@ -107,7 +107,7 @@ a[href="https://globe.adsb.lol/"],a[href="https://www.windy.com/-Webcams/webcams
     <div class="empty" id="empty" style="display:none">Aucun outil ne correspond.</div>
   </section>
 </div>
-<span class="ver" id="ver" title="Forcer la mise à jour">OSINT v2.6</span>
+<span class="ver" id="ver" title="Forcer la mise à jour">OSINT v2.8</span>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -356,7 +356,7 @@ document.addEventListener("visibilitychange",function(){if(document.visibilitySt
 /* MAJ auto force (leçon #102) : badge cliquable = échappatoire garantie */
 $("ver").onclick=function(){if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister();});});if(window.caches&&caches.keys)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});location.replace(location.pathname+"?_force_upd_"+Date.now());};
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="osint" data-version="v2.8" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="osint" data-version="v2.8" data-own-badge="#ver" data-color="#c9a227" defer></script>
 <script>/* 6.11 tâche 108 : MAJ forcée tôt — le service worker prend la main dès son installation, la page se recharge une fois au changement */(function(){try{if(!("serviceWorker" in navigator))return;var rl=false;navigator.serviceWorker.addEventListener("controllerchange",function(){if(rl||!sessionStorage.getItem("kdmc-sw-vu"))return;rl=true;location.reload();});navigator.serviceWorker.register("sw.js").then(function(r){sessionStorage.setItem("kdmc-sw-vu","1");try{r.update();}catch(e){}}).catch(function(){});}catch(e){}})();</script>
 </body>
 </html>

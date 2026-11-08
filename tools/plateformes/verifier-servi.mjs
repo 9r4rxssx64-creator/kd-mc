@@ -13,6 +13,20 @@
 import { chromium, webkit, devices } from 'playwright';
 import { ECRANS, mesurer, connecterAdmin, lectureSeule, fermerFeuilleInstalleur } from './verif-affichage-domaine.mjs';
 export { fermerFeuilleInstalleur };
+/* 8.11 (cmcteams : 27 boutons « sous div#cmcV10Welcome », écran de bienvenue VOULU, une fois par navigateur, pont 1891 : « c'est au robot de le fermer ») :
+   un écran plein cadre (fixe, ≥ 90 % de la fenêtre) qui porte un bouton « Plus tard / Fermer / Continuer / Compris / Commencer / OK » est un accueil ou une
+   boîte de dialogue, pas un défaut : on touche ce bouton une fois avant de mesurer. Exécuté DANS la page. */
+export function fermerAccueil() {
+  const W = innerWidth, H = innerHeight; const mots = /^(plus tard|fermer|continuer|ok|d.accord|compris|j.ai compris|commencer|passer|ignorer|non merci)$/i;
+  for (const d of document.querySelectorAll('body *')) {
+    const st = getComputedStyle(d); if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden') continue;
+    const r = d.getBoundingClientRect(); if (r.width < W * 0.9 || r.height < H * 0.9) continue;
+    if (d.hasAttribute('data-kdmc-installer') || d.id === 'kdmc-version-badge') continue;
+    const b = [...d.querySelectorAll('button, [role="button"], a')].find((x) => mots.test((x.textContent || '').trim().replace(/\s+/g, ' ')));
+    if (b) { b.click(); return (d.id ? '#' + d.id : d.tagName.toLowerCase()); }
+  }
+  return '';
+}
 /** 6.11 (apex-cloud, Servi 42313704615 : Apex AI iphone-13 et portable « cache 26-27 », installeur « non ») : la feuille « 📲 Installer » du domaine s'ouvre
  *  d'elle-même pour un compte connecté sur un appareil neuf, 1,5 s APRÈS que le domaine a répondu — parfois après les deux fermetures du robot. Elle couvre alors
  *  toute la page, et le robot comptait 27 boutons « cachés » qui ne le sont pas. On ferme, on mesure, on referme : si elle s'est ouverte pendant la mesure, on remesure
@@ -244,6 +258,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
           await page.waitForTimeout(4500); r.demarrage = await attendreFinSplash(page); await page.evaluate(() => window.scrollTo(0, 0));
           r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
+          r.accueil = await page.evaluate(fermerAccueil).catch(() => ''); if (r.accueil) await page.waitForTimeout(500);
           /* 6.11 : la pastille du module se retire au plus 1,5 s après la fermeture de la feuille d'installation (suivi toutes les 1,5 s) ; mesurer avant comptait « 2 pastilles » à tort sur Studio */
           if (r.installeur) await page.waitForTimeout(1800);
           r.sw = await versionSw(page);
@@ -267,7 +282,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           }
         } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours); }
         sortie.push(r);
-        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
+        journal(`${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'}${r.accueil ? ' · accueil fermé ' + r.accueil : ''} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`);
       }
       await ctx.close();
     }

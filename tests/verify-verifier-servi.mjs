@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -84,6 +84,11 @@ const feuille = await (async () => { const b6 = await chromium.launch(exe ? { ex
   await p6.goto(f('feuille.html', '<!doctype html><body style="margin:0"><a id="acheter" href="#" style="display:block;width:200px;height:44px;margin:300px 20px">Acheter</a><div id="fond" style="position:fixed;inset:0;z-index:2147482500"></div><div data-kdmc-installer="feuille" style="position:fixed;left:0;right:0;bottom:0;height:200px;z-index:2147482600"><button aria-label="Fermer" type="button">✕</button></div><script>document.querySelector(\'[aria-label=Fermer]\').onclick=function(){document.getElementById("fond").remove();document.querySelector("[data-kdmc-installer]").remove();}</script></body>'));
   const avant = (await p6.evaluate(mesurer, true)).cache; const ferme = await p6.evaluate(fermerFeuilleInstalleur); const apres = (await p6.evaluate(mesurer, true)).cache; await b6.close(); return { avant, ferme, apres }; })();
 ok('2j. la feuille « Installer » du domaine est fermée avant la mesure (elle couvrait la page)', feuille.avant > 0 && feuille.ferme === true && feuille.apres === 0, JSON.stringify(feuille));
+/* 2ab (8.11, cmcteams : écran de bienvenue v10 voulu, pont 1891) : un écran plein cadre avec un bouton « Plus tard » est fermé avant la mesure ; une petite boîte ou une page sans accueil ne l'est pas. */
+const accueil = await (async () => { const b8 = await chromium.launch(exe ? { executablePath: exe } : {}); const p8 = await b8.newPage({ viewport: { width: 390, height: 844 } });
+  await p8.goto(f('accueil.html', '<!doctype html><body style="margin:0"><a id="acheter" href="#" style="display:block;width:200px;height:44px;margin:300px 20px">Acheter</a><div id="cmcV10Welcome" style="position:fixed;inset:0;z-index:10001;background:#222"><h2>Bienvenue</h2><button id="later" onclick="document.getElementById(\'cmcV10Welcome\').remove()">Plus tard</button></div><div id="petite" style="position:fixed;left:10px;bottom:10px;width:200px;height:60px"><button>Fermer</button></div></body>'));
+  const avant = (await p8.evaluate(mesurer, true)).cache; const ferme = await p8.evaluate(fermerAccueil); await p8.waitForTimeout(100); const apres = (await p8.evaluate(mesurer, true)).cache; const encore = await p8.evaluate(fermerAccueil); await b8.close(); return { avant, ferme, apres, encore }; })();
+ok('2ab. un écran d’accueil plein cadre (« Plus tard ») est fermé avant la mesure ; une petite boîte « Fermer » ne compte pas', accueil.avant > 0 && accueil.ferme === '#cmcV10Welcome' && accueil.apres === 0 && accueil.encore === '', JSON.stringify(accueil));
 /* 2j2 (6.11, Servi 42313704615) : la feuille « Installer » s'ouvre TARD (après les fermetures du robot, pendant la mesure) : on remesure après l'avoir refermée.
    SABOTAGE=feuille-tardive : l'ancienne mesure unique → « cache » > 0 → rouge. */
 const tardive = await (async () => { const b7 = await chromium.launch(exe ? { executablePath: exe } : {}); const p7 = await b7.newPage({ viewport: { width: 390, height: 844 } });

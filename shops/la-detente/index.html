@@ -973,7 +973,7 @@ try{(function(){
       if(LD_ADMIN)return;
       try{if(_adm)localStorage.setItem("ld_admin_trust","1");localStorage.setItem("ld_admin_who",j.name||"Kevin");}catch(_){}
       LD_ADMIN=true;
-      try{var sf=document.getElementById("studioFab");if(sf)sf.style.display="block";}catch(_){}
+      /* 8.11 : le Studio est déjà dans l'en-tête (🎨, admin) : plus de bouton flottant en double, il cachait une pastille ou une carte */
       try{if(typeof toast==="function")toast("🔓 Admin + Studio ouverts par le domaine (kd-mc.com)");}catch(_){}
       try{if(typeof dc==="function")dc();}catch(_){}
     })
@@ -1320,7 +1320,7 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.32"
+        data-version="v1.53.33"
         data-color="#e8b830"
         defer></script>
 

@@ -5,6 +5,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.214 — la voix dit bien Saint-Poli, Scarlo, Dézarzin (2026-11-08)
+- Kevin : « elle prononce mal Saint-Polit (saint-polite), Scarlot (scarlote), Desarzens (desarzeinse) ». Liste de prononciations (`PRONONCIATIONS`) appliquée à tout ce qui est lu, par toutes les voix : Saint-Polit → « Saint-Poli », Scarlot → « Scarlo », Desarzens / Désarzens → « Dézarzin ». L'écran garde l'orthographe. Un nom mal dit s'ajoute en une ligne.
+- Garde `tools/arbre/verify-prononciation.mjs` (rouge sur v3.213).
+
 ## Arbre v3.213 + routeur — la belle voix reste : on réessaie au lieu de passer au robot (2026-11-08)
 - Kevin : « il y a enfin une belle voix mais elle n'a pas duré, on passe trop vite au robot ; garde la belle voix toujours ». Cause mesurée : le service gratuit de Google refuse de temps en temps (2 refus sur 8 appels espacés de 12 s) et le routeur retombait aussitôt sur MeloTTS.
 - Maintenant : le routeur réessaie 3 fois (pauses 0,9 s puis 1,8 s) et, pour une histoire, ne sert JAMAIS MeloTTS (`douce_occupee`) ; l'arbre attend 3 s et réessaie le même morceau jusqu'à 6 fois, affiche « ⏳ La belle voix se prépare… » et, si c'est vraiment occupé, dit de retoucher 🔊 sans lancer la voix robotique. Hors ligne (réseau coupé) la voix du téléphone reste le secours.

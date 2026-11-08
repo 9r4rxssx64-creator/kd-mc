@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.15";
+var APP_VER="v2.142.16";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -1133,7 +1133,7 @@ function vAccounts(){
   var login=el("button","btn-ghost small"); login.innerHTML="🔑 J'ai déjà un compte"; login.onclick=openLogin; d.appendChild(login);
   if(faceIdDispo()){ var fi=el("button","btn-ghost small"); fi.innerHTML="🔐 Me connecter avec Face ID"; fi.onclick=function(){ kdmcFaceId(true); }; d.appendChild(fi); }
   if(ACC){ var back=el("button","btn-ghost small"); back.textContent="← Revenir"; back.onclick=function(){ PICK=false; render(); }; d.appendChild(back); }
-  var note=el("div","legal-note"); note.textContent="Application originale KDMC — non affiliée à un tiers."; d.appendChild(note);
+  var note=el("div","legal-note"); note.textContent="Application originale KDMC — non affiliée à un tiers. · Lingua "+APP_VER; d.appendChild(note);   /* 8.11 : la version se lit dès l'écran « Qui apprend aujourd'hui ? » (pc-config 1632 : « pastille manquante » ; une photo suffit à savoir quelle version tourne) */
   return d;
 }
 function openCreate(){

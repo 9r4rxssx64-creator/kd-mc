@@ -5,6 +5,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.216 — « Lire ici » centre le couple, ses enfants restent visibles (2026-11-08)
+- Kevin (capture iPhone, branche de Denise FILIPOZZI) : « Lire ici ne fonctionne pas correctement » : son mari Jacques était coupé au bord de l'écran, une demi-page vide au-dessus. Mesuré sur une famille inventée : couple décentré de 67 à 144 px, un enfant sous le bandeau au niveau le plus grand.
+- Maintenant : on centre le COUPLE (la personne et son conjoint dessiné à côté) ; les niveaux ×0,6 · ×0,85 · ×1,2 ne dépassent jamais ce que le couple occupe en largeur (sur iPhone : ×0,6 et ×0,85) ; la personne se pose en haut de la zone libre, au-dessus du bandeau, pour qu'on voie aussi ses enfants.
+- Garde `tools/arbre/verify-lire-ici.mjs` étendue (couple sur iPhone 390 et iPad ; rouge sur v3.215 : 8 échecs).
+
 ## Créa Studio v9.22.14 — sur ordinateur, « Prendre une photo » ouvre la caméra en direct (2026-11-08)
 - **Demande de Kevin** : « Oui caméra direct auto » (sur ordinateur, « Prendre une photo » ouvrait un sélecteur de fichiers).
 - **Fait** : sur ordinateur, les boutons « Prendre une photo » / « Filmer » / « Me prendre en photo » (Photo, Vidéo, Vidéo IA, Magie, Mini-moi) ouvrent l'écran Caméra et la démarrent seuls ; la photo (ou le film) retourne directement dans l'outil d'où l'on vient, la caméra s'éteint. Sur téléphone, rien ne change (caméra du système) ; si la caméra est refusée, « 📂 Importer » reste sur l'écran Caméra. Aucune fonction retirée.

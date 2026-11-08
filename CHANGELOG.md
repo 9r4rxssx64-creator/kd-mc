@@ -5,6 +5,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.207 — vue 🌳 Arbre : portraits ovales encadrés d'or, photos en gravure (2026-11-08)
+- Idée de Kevin (capture d'un arbre gravé : médaillons ovales à cadre doré accrochés aux branches) : en vue Arbre chaque personne est un médaillon ovale (plus haut que large) à cadre doré ; la photo est en gravure (grisée, sépia léger) et reprend ses couleurs au toucher et pour la personne centrale. Le liseré de couleur de la branche et le nom restent. Rien retiré : Plan, Paysage et Lignée inchangés.
+- Garde `tools/arbre/verify-gravure.mjs` (rouge sur v3.206).
+
 ## Arbre v3.206 — l'enfant est relié à SES DEUX parents, même quand un ex est loin (2026-11-08)
 - Constat (Kevin, iPad : « enfant au centre de ses parents ; quand ce n'est pas possible, au moins la liaison ») : Marc JUAN pendait du seul Juan, loin d'Annick.
 - Cause : quand un ex glisse au-dessus de ses enfants (v3.79), le trait de l'enfant ne partait que de lui. Désormais il part toujours du milieu du couple des DEUX parents (long trait « divorcés »). Mesuré : 403 px d'écart avant, 0 après.

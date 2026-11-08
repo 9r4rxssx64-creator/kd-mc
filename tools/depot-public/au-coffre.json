@@ -482,6 +482,7 @@
   "tools/arbre/verify-famille-simple.mjs",
   "tools/arbre/verify-focus-famille.mjs",
   "tools/arbre/verify-gate-version.mjs",
+  "tools/arbre/verify-gravure.mjs",
   "tools/arbre/verify-histoire.mjs",
   "tools/arbre/verify-historique-admin.mjs",
   "tools/arbre/verify-lecture-pistes.mjs",

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -147,6 +147,16 @@ const reprise = await (async () => {
   return { ok1, n, r1: r1.reprise, deux, n3 };
 })();
 ok('2j7. un délai dépassé est rejoué une fois (dit les requêtes), deux de suite = erreur, autre erreur = pas rejoué', reprise.ok1 === 'ok' && reprise.n === 2 && /reprise après délai · en attente : javis\.kd-mc\.com\/javis-widget\.js/.test(reprise.r1) && !/x=1/.test(reprise.r1) && reprise.deux === 2 && reprise.n3 === 1, JSON.stringify(reprise));
+/* 2j8 (8.11, pont-check 2104) : (a) une adresse qui ne finit pas est coupée au bout du délai et ne bloque pas la suivante ; (b) l'hôte final différent de l'hôte demandé est écrit avec la chaîne de redirections (hôte + chemin, sans paramètres). */
+const limite = await (async () => {
+  const t0 = Date.now(); let coupe = null; try { await avecLimite(() => new Promise(() => {}), 80); } catch (e) { coupe = String(e.message); }
+  const rapide = await avecLimite(async () => 'fini', 500);
+  const rep = { request: () => ({ url: () => 'https://kd-mc.com/?return=x&connexion=1', redirectedFrom: () => ({ url: () => 'https://apex-chat.kd-mc.com/', redirectedFrom: () => null }) }) };
+  return { coupe, rapide, ms: Date.now() - t0, chaine: chaineRedirections(rep), dem: hoteDemande('https://apex-chat.kd-mc.com/'), dem2: hoteDemande('apex-chat.kd-mc.com') };
+})();
+const ligneRedir = ligneServi('https://apex-chat.kd-mc.com/', 'portable', { statut: 200, hoteFinal: 'kd-mc.com', redirige: 'apex-chat.kd-mc.com', chaine: limite.chaine });
+const ligneDirecte = ligneServi('https://apex-chat.kd-mc.com/', 'iphone-13', { statut: 200, hoteFinal: 'apex-chat.kd-mc.com' });
+ok('2j8. adresse bloquée coupée au délai ; redirection écrite avec sa chaîne (sans paramètres) ; pas de mention quand l\'hôte est celui demandé', /délai dépassé pour cette adresse/.test(limite.coupe || '') && limite.rapide === 'fini' && limite.ms < 3000 && limite.chaine === 'apex-chat.kd-mc.com/ → kd-mc.com/' && limite.dem === 'apex-chat.kd-mc.com' && limite.dem2 === 'apex-chat.kd-mc.com' && /REDIRIGÉ \(demandé apex-chat\.kd-mc\.com · chaîne : apex-chat\.kd-mc\.com\/ → kd-mc\.com\/\)/.test(ligneRedir) && !/REDIRIGÉ/.test(ligneDirecte) && !/return=/.test(ligneRedir), JSON.stringify(limite));
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

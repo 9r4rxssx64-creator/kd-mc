@@ -253,9 +253,27 @@ async function versionSw(page) {
 }
 
 
+/* 8.11 (pont-check 2104 : « apex-chat.kd-mc.com en portable : hôte final kd-mc.com ») : quand l'hôte final n'est pas celui demandé, la ligne dit par où la page est passée
+   (statut + hôte + chemin, jamais les paramètres) — sinon on ne sait pas si c'est la porte, l'app ou le robot. */
+export function chaineRedirections(rep) {
+  const out = []; let q = rep && rep.request ? rep.request() : null;
+  while (q && out.length < 6) {
+    try { const u = new URL(q.url()); out.unshift(`${u.hostname}${u.pathname}`); } catch (_) { break; }
+    q = q.redirectedFrom ? q.redirectedFrom() : null;
+  }
+  return out.join(' → ');
+}
+export function hoteDemande(a) { try { return new URL(/^https?:/i.test(a) ? a : 'https://' + a).hostname; } catch (_) { return ''; } }
+/* 8.11 (Servi 42520525324 annulé à 20 min : Apex AI portable ne finissait pas) : une adresse qui ne finit pas ne bloque plus tout le job — au bout de `ms` elle est notée en erreur et on passe à la suivante. */
+export async function avecLimite(fn, ms, msg = 'délai dépassé pour cette adresse') {
+  let t; const corps = Promise.resolve().then(fn); corps.catch(() => {});
+  try { return await Promise.race([corps, new Promise((_, rej) => { t = setTimeout(() => rej(new Error(`${msg} (${Math.round(ms / 1000)} s)`)), ms); })]); }
+  finally { clearTimeout(t); }
+}
 /* 8.11 : la ligne du journal est une fonction (testable) ; « petit N » NOMME les cibles < 44 px (sélecteurs, sans texte), comme « cache » nomme les boutons recouverts. */
 export function ligneServi(a, nom, r) {
-  return `${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'}${r.accueil ? ' · accueil fermé ' + r.accueil : ''} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.petit && r.petitEx && r.petitEx.length ? ' [' + r.petitEx.slice(0, 3).join(' | ') + ']' : ''} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}`;
+  const redir = r.redirige ? ` · REDIRIGÉ (demandé ${r.redirige}${r.chaine ? ' · chaîne : ' + r.chaine : ''})` : '';
+  return `${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'}${r.accueil ? ' · accueil fermé ' + r.accueil : ''} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.petit && r.petitEx && r.petitEx.length ? ' [' + r.petitEx.slice(0, 3).join(' | ') + ']' : ''} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}${redir}`;
 }
 export async function verifierServi({ adresses, hash = '', journal = console.log }) {
   const b = await chromium.launch({ headless: true });
@@ -268,18 +286,21 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
       const ec = trouverEcranServi(nom); const { nom: _n, tel, explorer: _e, ...opts } = ec; delete opts.defaultBrowserType;
       const moteur = bw && nom === 'iphone-13' ? bw : b;
       const ctx = await moteur.newContext({ ...opts }); await lectureSeule(ctx);
-      const page = await ctx.newPage();
+      let page = await ctx.newPage();
       /* 7.11 (apex-cloud, Servi 42361310862 : Apex AI « page.goto Timeout 30000ms » sur 2 écrans paysage, 2 runs de suite) : au dépassement du délai on dit QUELLES requêtes
          n'avaient pas fini (hôte + chemin, jamais les paramètres) — un « timeout » sans cause ne se corrige pas. */
       const enCours = new Map(); page.on('request', (q) => enCours.set(q, Date.now())); page.on('requestfinished', (q) => enCours.delete(q)); page.on('requestfailed', (q) => enCours.delete(q));
       let admin = false;
       if (hash) admin = !!(await connecterAdmin(page, hash).catch(() => ({ ok: false }))).ok;
       journal(`=== ${nom} [${moteur === bw ? 'webkit' : 'chromium'}] (${opts.viewport.width}×${opts.viewport.height}) — connexion admin : ${admin ? 'oui' : 'NON'}`);
+      const LIMITE_MS = Math.max(30000, Number(process.env.SERVI_ADRESSE_MAX_MS) || 240000);
       for (const a of adresses) {
         const r = { adresse: a, ecran: nom, admin };
         try {
+          await avecLimite(async () => {
           const rep = await ouvrirAvecReprise(page, a, r, enCours);
           r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
+          { const dem = hoteDemande(a); if (dem && r.hoteFinal !== dem) { r.redirige = dem; r.chaine = chaineRedirections(rep); } }
           await page.waitForTimeout(4500); r.demarrage = await attendreFinSplash(page); await page.evaluate(() => window.scrollTo(0, 0));
           r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
           r.accueil = await page.evaluate(fermerAccueil).catch(() => ''); if (r.accueil) await page.waitForTimeout(500);
@@ -304,7 +325,15 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
             if (!adm.admin) journal(`➖ ${a} · ${nom} · écrans d'administration : compte non administrateur (rôle ${adm.role ?? 'inconnu'}) — rien à mesurer`);
             for (const x of adm.vues) journal(`${vueAdminACorriger(x) ? '❌' : '✅'} ${a} · ${nom} · vue ${x.vue} · affichée ${x.affichee === false ? 'NON' : 'oui'} · cache ${x.cache ?? '-'}${x.cache && x.cacheEx && x.cacheEx.length ? ' [' + x.cacheEx.join(' | ') + ']' : ''} · petit ${x.petit ?? '-'}${x.petit && x.petitEx && x.petitEx.length ? ' [' + x.petitEx.slice(0, 3).join(' | ') + ']' : ''} · déborde ${x.deborde ?? '-'}${x.err ? ' · ' + x.err : ''}`);
           }
-        } catch (e) { r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours); }
+          }, LIMITE_MS);
+        } catch (e) {
+          r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours);
+          if (/délai dépassé pour cette adresse/.test(String(e && e.message))) {   /* page peut-être figée : on la jette et on repart d'une neuve pour les adresses suivantes */
+            await page.close().catch(() => {}); enCours.clear(); page = await ctx.newPage();
+            page.on('request', (q) => enCours.set(q, Date.now())); page.on('requestfinished', (q) => enCours.delete(q)); page.on('requestfailed', (q) => enCours.delete(q));
+            if (hash) await connecterAdmin(page, hash).catch(() => ({ ok: false }));
+          }
+        }
         sortie.push(r);
 journal(ligneServi(a, nom, r));
       }

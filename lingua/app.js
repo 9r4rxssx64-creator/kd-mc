@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.14";
+var APP_VER="v2.142.15";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -142,7 +142,10 @@ function reportProgress(){
 }
 
 /* ============ Comptes (CRUD) ============ */
-var AVATARS=["🦊","🐼","🐨","🦁","🐵","🐸","🦄","🐙","🐯","🐧","🐷","🐰","🐻","🐮","🐲","🦖"];
+/* 8.11 (Kevin : « ajoute beaucoup d'avatars plus mignons ») : les 16 d'origine d'abord (un compte déjà créé garde le sien), puis des petites bêtes et
+   des douceurs. Seulement des émojis qui existent sur iOS 14 / Android récent (aucun sélecteur de variante), un par case, aucun doublon : garde test:lingua-avatars. */
+var AVATARS=["🦊","🐼","🐨","🦁","🐵","🐸","🦄","🐙","🐯","🐧","🐷","🐰","🐻","🐮","🐲","🦖",
+  "🐶","🐱","🐭","🐹","🐥","🐣","🦆","🦉","🦋","🐝","🐞","🐢","🐬","🐳","🦭","🦦","🦥","🦔","🦝","🦙","🦘","🦒","🐘","🦩","🦜","🦢","🐠","🐡","🦈","🦀","🐌","🐑","🐴","🦌","🦕","🐊","🧸","🌸","🌈","⭐","🍓","🍑","🍉","🍩","🧁","🍭","🍪","🎈"];
 function accounts(){ return gg("accounts",[]); }
 function createAccount(name,avatar,code,kdmcUid){
   var id="acc_"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
@@ -1152,6 +1155,7 @@ function openCreate(){
   var g=el("div","av-pick");
   AVATARS.forEach(function(a){ var b=el("button","av-opt"+(a===av?" sel":"")); b.textContent=a; b.onclick=function(){ av=a; g.querySelectorAll(".av-opt").forEach(function(x){x.classList.remove("sel");}); b.classList.add("sel"); }; g.appendChild(b); });
   m.body.appendChild(g);
+  try{ var sel0=g.querySelector(".av-opt.sel"); if(sel0) g.scrollTop=Math.max(0,sel0.offsetTop-g.offsetTop-70); }catch(_){}   /* l'avatar tiré au sort est visible d'emblée */
   var ok=el("button","btn-main"); ok.textContent="Créer mon compte";
   ok.onclick=function(){
     var n=((m.body.querySelector("#acPrenom").value||"")+" "+(m.body.querySelector("#acNom").value||"")).trim().replace(/\s+/g," ");

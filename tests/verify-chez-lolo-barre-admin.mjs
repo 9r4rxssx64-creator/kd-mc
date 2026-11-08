@@ -49,7 +49,9 @@ try {
     const pos = getComputedStyle(bar).position;
     let surHero = 0; for (const b of btns) for (const h of hero) surHero += inter(b, h);
     let surPas = 0; for (const b of btns) surPas += inter({ x: b.fx, y: b.fy, w: b.w, h: b.h }, { x: pasR.fx, y: pasR.fy, w: pasR.w, h: pasR.h });
-    return { pos, n: btns.length, nHero: hero.length, surHero: Math.round(surHero), surPas: Math.round(surPas), minH: Math.round(Math.min(...btns.map((b) => b.h))), minW: Math.round(Math.min(...btns.map((b) => b.w))) };
+    const en = Array.from(document.querySelectorAll('.logo, .icon-btn')).map((e) => { const r = e.getBoundingClientRect(); return { w: r.width, h: r.height }; }).filter((r) => r.w > 0);
+    const enteteMin = en.length ? Math.round(Math.min(...en.map((r) => Math.min(r.w, r.h)))) : 0;
+    return { enteteMin, nEntete: en.length, pos, n: btns.length, nHero: hero.length, surHero: Math.round(surHero), surPas: Math.round(surPas), minH: Math.round(Math.min(...btns.map((b) => b.h))), minW: Math.round(Math.min(...btns.map((b) => b.w))) };
   });
   console.log('  mesure :', JSON.stringify(m));
   ok(m.n >= 6 && m.nHero >= 2, 'la barre admin (' + m.n + ' boutons) et l\'accueil (' + m.nHero + ' boutons) sont dessinés');
@@ -57,6 +59,7 @@ try {
   ok(m.surHero === 0, 'aucun bouton de la barre ne recouvre un bouton de l\'accueil (surface ' + m.surHero + ' px²)');
   ok(m.surPas === 0, 'la pastille de version ne recouvre aucun bouton de la barre (surface ' + m.surPas + ' px²)');
   ok(m.minH >= 44 && m.minW >= 44, 'chaque bouton de la barre se touche au doigt (≥ 44 px : ' + m.minW + '×' + m.minH + ')');
+  ok(m.nEntete >= 2 && m.enteteMin >= 44, 'le logo et les icônes de l\'en-tête se touchent au doigt (≥ 44 px : ' + m.nEntete + ' éléments, plus petit côté ' + m.enteteMin + ' px)');
 } catch (e) { fails.push('exception : ' + (e && e.message)); console.log('  ❌ ' + (e && e.stack)); }
 await browser.close(); server.close();
 console.log(`\n${pass} ok / ${fails.length} échec(s)`);

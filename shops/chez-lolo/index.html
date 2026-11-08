@@ -36,7 +36,7 @@ input,textarea,select{font:inherit}img{max-width:100%;height:auto}
 /* HEADER */
 .hdr{position:sticky;top:0;z-index:100;background:rgba(255,254,249,0.95);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .hdr-inner{max-width:1280px;margin:0 auto;padding:0 16px 0 100px;height:64px;display:flex;align-items:center;gap:16px}
-.logo{font-size:22px;font-weight:800;font-family:"Playfair Display",Georgia,serif;letter-spacing:0.5px;color:var(--p);cursor:pointer;white-space:nowrap}
+.logo{font-size:22px;font-weight:800;font-family:"Playfair Display",Georgia,serif;letter-spacing:0.5px;color:var(--p);cursor:pointer;white-space:nowrap;min-height:44px;display:flex;align-items:center}
 .logo span{font-size:14px;color:var(--muted);font-weight:400;margin-left:4px}
 .search-box{flex:1;max-width:440px;position:relative;transition:max-width .25s ease}
 .search-box:focus-within{max-width:640px}
@@ -155,7 +155,7 @@ input,textarea,select{font:inherit}img{max-width:100%;height:auto}
 @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
 .card{animation:fadeUp .5s ease both}
 /* WISHLIST + ORDERS NAV */
-.icon-btn{position:relative;font-size:18px;padding:8px;cursor:pointer;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background .2s}
+.icon-btn{position:relative;font-size:18px;padding:8px;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background .2s}
 .icon-btn:hover{background:var(--hover)}
 .icon-btn .badge-dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#ef4444;display:none}
 .icon-btn.has .badge-dot{display:block}
@@ -1020,7 +1020,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.25"
+        data-version="v2.0.26"
         data-color="#e8b830"
         defer></script>
 

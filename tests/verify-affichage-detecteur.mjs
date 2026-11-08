@@ -5,7 +5,7 @@
  * Lancer : npm run test:affichage-detecteur
  */
 import { chromium } from 'playwright';
-import { mesurer, candidatsNavigation, aUnRetour } from '../tools/plateformes/verif-affichage-domaine.mjs';
+import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours } from '../tools/plateformes/verif-affichage-domaine.mjs';
 
 const PIEGE = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>p</title>
 <style>body{margin:0;font:16px sans-serif} header{position:relative;top:-30px;height:60px;background:#333;color:#fff}
@@ -52,6 +52,12 @@ await p.setContent(`<!doctype html><title>t</title><div id="liste" style="positi
 const m7 = await p.evaluate(mesurer, true);
 ok('un bouton à faire défiler dans sa liste n\'est pas « caché » (6.11, chat de Javis)', m7.cache === 0, JSON.stringify(m7.cacheEx));
 ok('un bouton sous le cadre de Bee est attribué à « bee »', m6.cache === 1 && m6.parFlottant && m6.parFlottant.bee === 1, JSON.stringify(m6.parFlottant));
+/* 8.11 : la feuille « Installer l'application » qui s'ouvre APRÈS la fermeture par le robot est refermée dès qu'elle apparaît (sinon elle masque toute la page mesurée) */
+await p.setContent('<!doctype html><title>t</title><button id="b">Ok</button>');
+await p.evaluate(fermerFeuilleToujours);
+await p.evaluate(() => setTimeout(() => { const f = document.createElement('div'); f.setAttribute('data-kdmc-installer', 'feuille'); f.style.cssText = 'position:fixed;inset:0;z-index:2147482600;background:#000'; const x = document.createElement('button'); x.setAttribute('aria-label', 'Fermer'); x.onclick = () => f.remove(); f.appendChild(x); document.body.appendChild(f); }, 300));
+await p.waitForTimeout(800);
+ok('la feuille d\'installation ouverte en retard est refermée aussitôt', await p.evaluate(() => !document.querySelector('[data-kdmc-installer="feuille"]')));
 /* 7.11 (pont 1929) : chaque recouvrement par un flottant est NOMMÉ avec ses positions, pas seulement compté (2-3 exemples ne suffisaient pas pour corriger) */
 ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m6.flotEx) && m6.flotEx.length === 1 && /^bee : button#ok .*\[@\d+,\d+ \d+x\d+ sous @/.test(m6.flotEx[0]), JSON.stringify(m6.flotEx));
 { const { bilan } = await import('../tools/plateformes/verif-affichage-domaine.mjs'); const B = bilan([{ app: 'x', ecran: 'iphone-se', flotEx: m6.flotEx }, { app: 'x', ecran: 'portable', flotEx: m6.flotEx }]); ok('le bilan garde chaque recouvrement par écran', B.x.flotEx && B.x.flotEx.length === 2 && /^\[iphone-se\] bee : /.test(B.x.flotEx[0]), JSON.stringify(B.x.flotEx)); }

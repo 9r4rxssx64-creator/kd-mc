@@ -196,6 +196,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
       const moteur = bw && /iphone|tablette/.test(nom) ? bw : b;
       delete opts.defaultBrowserType;
       const ctx = await moteur.newContext({ ...opts });
+      await ctx.addInitScript(fermerFeuilleToujours);
       await lectureSeule(ctx);
       const page = await ctx.newPage();
       let admin = false;
@@ -265,6 +266,13 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
 
 /** Exécuté DANS la page (6.11) : la feuille « 📲 Installer » du domaine s'ouvre d'elle-même une fois par compte et par appareil ; le robot ouvre un
  *  navigateur neuf connecté à chaque passage et la voyait TOUJOURS, couvrant la page (des centaines de faux « cachés »). On la ferme par ✕, comme un visiteur. */
+/* 8.11 (runs 42516577864 / 42517336742, La Détente iPhone paysage : 15-16 « cachés » sous la feuille « Installer l'application ») : la feuille s'ouvre UNE fois par
+   compte et par appareil, 1,5 s après une question au domaine — chez le robot (appareil neuf à chaque écran) elle arrivait APRÈS la fermeture et masquait toute la page.
+   Posé avant le chargement : dès qu'elle apparaît, on la ferme, comme Kevin le fait une fois. On mesure la page, pas une fenêtre d'accueil. */
+export function fermerFeuilleToujours() {
+  const go = () => { const f = document.querySelector('[data-kdmc-installer="feuille"]'); if (!f) return; const x = f.querySelector('button[aria-label="Fermer"]'); if (x) x.click(); else f.remove(); };
+  try { new MutationObserver(go).observe(document.documentElement, { childList: true, subtree: true }); } catch (_) { /* pas d'observateur */ }
+}
 export function fermerFeuilleInstalleur() {
   const f = document.querySelector('[data-kdmc-installer="feuille"]');
   if (!f) return false;

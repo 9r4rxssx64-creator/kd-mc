@@ -154,7 +154,8 @@ export function mesurerServi() {
   }
   /* versions : jamais un texte libre, seulement ce qui ressemble à « v1.2.3 » */
   /* 7.11 (arbre : l'écran du code écrit « Arbre v3.200 » dans #gateVer, le robot disait « visibles 0 ») : un mot court devant le numéro (« Arbre », « Version ») reste une pastille. */
-  const motV = /^(?:\p{L}{1,12}\s+)?(v\d+(?:\.\d+)+)$/iu;
+  /* 8.11 (javis : la pastille propre dit « Bee v1.36 ↻ », le robot lisait « visibles 0 ») : un court symbole après le numéro (↻, ✨, ·) reste une pastille. */
+  const motV = /^(?:\p{L}{1,12}\s+)?(v\d+(?:\.\d+)+)(?:\s*[^\p{L}\p{N}\s]{1,3})?$/iu;
   /* 7.11 (arbre connecté admin : la pastille #ver dit « v3.200 · 411 pers. », le robot lisait « visibles 0 ») : une pastille FIXE peut porter un court complément après le numéro. */
   const motVSuffixe = /^(v\d+(?:\.\d+)+)\s*[·|—–-]\s*.{1,24}$/i;
   const estPastille = (e) => { const t = (e.textContent || '').trim(); if (motV.test(t)) return true; return motVSuffixe.test(t) && getComputedStyle(e).position === 'fixed'; };

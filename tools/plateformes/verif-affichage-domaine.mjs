@@ -271,7 +271,9 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
    Posé avant le chargement : dès qu'elle apparaît, on la ferme, comme Kevin le fait une fois. On mesure la page, pas une fenêtre d'accueil. */
 export function fermerFeuilleToujours() {
   const go = () => { const f = document.querySelector('[data-kdmc-installer="feuille"]'); if (!f) return; const x = f.querySelector('button[aria-label="Fermer"]'); if (x) x.click(); else f.remove(); };
-  try { new MutationObserver(go).observe(document.documentElement, { childList: true, subtree: true }); } catch (_) { /* pas d'observateur */ }
+  /* on observe `document` (toujours là) et pas `document.documentElement` : sous WebKit le script passe AVANT que <html> existe → l'observateur n'était jamais posé (iPhone paysage) */
+  try { new MutationObserver(go).observe(document, { childList: true, subtree: true }); } catch (_) { /* pas d'observateur */ }
+  setInterval(go, 500);   /* filet si l'observateur manque */
 }
 export function fermerFeuilleInstalleur() {
   const f = document.querySelector('[data-kdmc-installer="feuille"]');

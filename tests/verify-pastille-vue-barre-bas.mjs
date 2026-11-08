@@ -185,6 +185,33 @@ const PAGE_VOILE = `<!doctype html><meta charset="utf-8"><meta name="viewport" c
   ok(!R.absent && !R.centreSous, 'écran transparent non cliquable devant le lien : la pastille 📲 ne recouvre pas le centre du lien', R);
   await ctx.close();
 }
+/* I. (8.11, robot d'affichage run 42372743622 : CMCteams iPhone SE, la languette « Vue admin » sur l'onglet du bas ; La Détente paysage, 📲 sur la croix fixe du haut) :
+   AUCUNE place n'est libre (le contenu est couvert de boutons partout) → la pastille prend une place qui ne cache que du CONTENU défilable, jamais un contrôle FIXE. */
+const PAGE_PLEINE = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0}main{display:grid;grid-template-columns:repeat(auto-fill,44px);gap:0;padding:0 0 60px}main button{width:44px;height:44px;border:0;background:#333;color:#fff;padding:0}
+#bas{position:fixed;left:0;right:0;bottom:0;display:flex;height:56px}#bas button{flex:1;border:0;background:#111;color:#fff}
+#x{position:fixed;top:4px;right:4px;width:24px;height:24px;border:0;background:#900;color:#fff;padding:0}</style>
+<main>${'<button>·</button>'.repeat(400)}</main><nav id="bas"><button class="nt">1</button><button class="nt">2</button><button class="nt">3</button><button class="nt">4</button></nav><button id="x">x</button>`;
+for (const [w, h] of [[320, 568], [844, 390]]) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  await p.route('**/__admin/vue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, mode: 'admin' }) }));
+  await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_PLEINE }));
+  await p.goto('https://kdmc.test/');
+  await p.evaluate(() => { document.cookie = 'kdmc_k=1; path=/'; });
+  await p.addScriptTag({ content: SRC });
+  await p.waitForSelector('[data-kdmc-vue]', { timeout: 5000 }).catch(() => {});
+  await p.waitForSelector('[data-kdmc-installer="pastille"]', { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(2000);
+  const R = await p.evaluate(() => {
+    const cache = (b, sel) => { if (!b) return null; const r = b.getBoundingClientRect(); return [...document.querySelectorAll(sel)].filter((t) => { const q = t.getBoundingClientRect(); const ix = Math.max(0, Math.min(q.right, r.right) - Math.max(q.left, r.left)), iy = Math.max(0, Math.min(q.bottom, r.bottom) - Math.max(q.top, r.top)); const cx = q.left + q.width / 2, cy = q.top + q.height / 2; return ix * iy > 0.5 * q.width * q.height || (cx > r.left && cx < r.right && cy > r.top && cy < r.bottom); }).map((t) => t.id || t.className || t.textContent); };
+    const v = document.querySelector('[data-kdmc-vue]'), i = document.querySelector('[data-kdmc-installer="pastille"]');
+    return { vue: cache(v, '#bas button, #x'), installeur: cache(i, '#bas button, #x') };
+  });
+  ok(R.vue && R.vue.length === 0, w + '×' + h + ' : aucune place libre — « Vue admin » ne cache aucun contrôle FIXE (onglet du bas, croix)', R);
+  ok(R.installeur && R.installeur.length === 0, w + '×' + h + ' : aucune place libre — 📲 ne cache aucun contrôle FIXE (onglet du bas, croix)', R);
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

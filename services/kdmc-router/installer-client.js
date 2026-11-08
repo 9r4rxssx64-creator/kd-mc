@@ -92,13 +92,14 @@ export const INSTALLER_JS = String.raw`(function () {
                 /* 6.11 soir (pont 1882 : « Vue admin » sur le champ de saisie du chat de Javis, iPhone SE, le chat occupe toute la hauteur) : aucun endroit libre →
                    LANGUETTE : la pastille se réduit à 44 px (la couronne seule), collée au bord gauche, au premier endroit où elle ne cache plus rien ; sinon en bas à gauche. */
                 var LANG = ['bottom:calc(env(safe-area-inset-bottom,0px) + 84px)', 'top:50%', 'top:calc(env(safe-area-inset-top,0px) + 64px)', 'bottom:calc(env(safe-area-inset-bottom,0px) + 8px)', 'bottom:calc(env(safe-area-inset-bottom,0px) + 140px)'];
-                var restee = false, avantTxt = b.style.cssText;
+                var restee = false, avantTxt = b.style.cssText, moindre = -1;
                 for (var l2 = 0; l2 < LANG.length && !restee; l2++) {
                   ['top', 'bottom', 'left', 'right'].forEach(function (c) { b.style.removeProperty(c); });
                   var kvl = LANG[l2].split(/:(.+)/); b.style.setProperty(kvl[0], kvl[1]); b.style.left = '0';
                   b.style.width = '44px'; b.style.minWidth = '44px'; b.style.padding = '0 0 0 9px'; b.style.overflow = 'hidden'; b.style.whiteSpace = 'nowrap'; b.style.borderRadius = '0 22px 22px 0';
-                  if (!sous()) restee = true;
+                  if (!sous()) restee = true; else if (moindre < 0 && !cacheUnJeu(b.getBoundingClientRect(), b, true)) moindre = l2;
                 }
+                if (!restee && moindre >= 0) { ['top', 'bottom', 'left', 'right'].forEach(function (c) { b.style.removeProperty(c); }); var kvm = LANG[moindre].split(/:(.+)/); b.style.setProperty(kvm[0], kvm[1]); b.style.left = '0'; restee = true; }   /* aucune place libre : celle qui ne cache que du contenu défilable */
                 if (!restee) { ['top', 'bottom', 'left', 'right'].forEach(function (c) { b.style.removeProperty(c); }); b.style.left = '0'; b.style.bottom = 'calc(env(safe-area-inset-bottom,0px) + 8px)'; }   /* nulle part de libre : languette en bas à gauche */
               }
             }
@@ -258,7 +259,11 @@ export const INSTALLER_JS = String.raw`(function () {
        on juge comme le robot, sur la surface réellement couverte, pas sur un simple point. Une grande carte dont un coin est touché n'est pas « cachée ». */
     function controle(n) { var k = 0; while (n && n.nodeType === 1 && k++ < 6) { if (cliquable1(n)) return n; n = n.parentNode; } return null; }
     function cliquable1(n) { var t = n.tagName; if (t === 'BUTTON' || t === 'A' || t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA' || n.getAttribute('role') === 'button' || n.onclick) return true; try { if (getComputedStyle(n).cursor === 'pointer') return true; } catch (e) { /* */ } return false; }
-    function cacheUnJeu(box, moi) {
+    /* 8.11 (robot d'affichage, run 42372743622 : quand AUCUNE place n'est libre, la languette « Vue admin » retombait sur l'onglet du bas de CMCteams, et 📲 sur la croix
+       fixe de La Détente) : un contrôle FIXE (barre, croix, onglet) ne se retrouve jamais en dessous ; un contrôle du CONTENU défile, on peut le dégager. Le repli prend
+       donc la première place qui ne cache aucun contrôle fixe. */
+    function fixe(n) { for (var k3 = 0; n && n.nodeType === 1 && k3 < 14; n = n.parentElement, k3++) { var p3 = getComputedStyle(n).position; if (p3 === 'fixed' || p3 === 'sticky') return true; } return false; }
+    function cacheUnJeu(box, moi, seulFixe) {
       var vus = [], i, j, k;
       for (i = 0; i < 3; i++) for (j = 0; j < 3; j++) {
         var l = document.elementsFromPoint(box.left + box.width * (i + .5) / 3, box.top + box.height * (j + .5) / 3);
@@ -274,7 +279,7 @@ export const INSTALLER_JS = String.raw`(function () {
         var t = vus[i].tagName, champ = t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || vus[i].isContentEditable;
         var ix = Math.max(0, Math.min(q.right, box.right) - Math.max(q.left, box.left)), iy = Math.max(0, Math.min(q.bottom, box.bottom) - Math.max(q.top, box.top));
         var cx = q.left + q.width / 2, cy = q.top + q.height / 2;
-        if (champ || (ix * iy) / (q.width * q.height) > .5 || (cx >= box.left && cx <= box.right && cy >= box.top && cy <= box.bottom)) return true;
+        if ((champ || (ix * iy) / (q.width * q.height) > .5 || (cx >= box.left && cx <= box.right && cy >= box.top && cy <= box.bottom)) && (!seulFixe || champ || fixe(vus[i]))) return true;
       }
       return false;
     }
@@ -286,6 +291,9 @@ export const INSTALLER_JS = String.raw`(function () {
          aucun des six coins n'est libre → on la glisse le long du bord droit, à moitié sortie de l'écran (languette), au premier endroit qui ne cache rien. */
       var BORD = ['top:calc(env(safe-area-inset-top,0px) + 64px)', 'top:25%', 'top:40%', 'top:60%', 'top:75%', 'bottom:calc(env(safe-area-inset-bottom,0px) + 140px)'];
       for (var b2 = 0; b2 < BORD.length; b2++) { pastille.style.cssText = base + BORD[b2] + ';right:-14px;padding:0 20px 0 8px'; if (!couvre()) return; }
+      /* aucune place libre : la première qui ne cache aucun contrôle FIXE (seul du contenu défilable dessous) */
+      var essais = COINS.map(function (c) { return base + c; }).concat(BORD.map(function (c) { return base + c + ';right:-14px;padding:0 20px 0 8px'; }));
+      for (var e5 = 0; e5 < essais.length; e5++) { pastille.style.cssText = essais[e5]; if (!cacheUnJeu(pastille.getBoundingClientRect(), pastille, true)) return; }
       pastille.style.cssText = base + COINS[0];
     }
     /* la page change (menus qui s'ouvrent, barre qui apparaît, défilement) : on remesure 0,4 s après, sans boucle */

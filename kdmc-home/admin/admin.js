@@ -870,7 +870,10 @@
   function peutSupprimer(a) {
     if (!a || !a.uid || a.uid === 'kdmc_admin') return false;
     var t = String(a.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().split(' ');
-    return !(t.indexOf('desarzens') >= 0 && (t.indexOf('kevin') >= 0 || t.indexOf('k') >= 0));
+    var auNomDeKevin = t.indexOf('desarzens') >= 0 && (t.indexOf('kevin') >= 0 || t.indexOf('k') >= 0);
+    /* 8.11 : une fiche au nom de Kevin mais VIDE (0 connexion, 0 appareil, 0 app) est un doublon : supprimable ; avec des données elle reste protégée */
+    var vide = !(a.hits > 0) && !(a.devices && a.devices.length) && !(a.apps && Object.keys(a.apps).length) && !(a.history && a.history.length) && a.verified !== true;
+    return !auNomDeKevin || vide;
   }
   function wireEtat() {
     var list = document.getElementById('list');

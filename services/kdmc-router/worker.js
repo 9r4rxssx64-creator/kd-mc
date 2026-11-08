@@ -5515,7 +5515,9 @@ async function handleAdmin(request, url, env) {
     if (b.confirmer !== true) return J({ ok: false, reason: 'confirmation_requise' }, undefined, 400);
     const acc = await accGet(env, uid);
     if (!acc) return J({ ok: false, reason: 'not_found' });
-    if (uid === CANON_UID || acc.uid === CANON_UID || isAdminName(acc.name)) return J({ ok: false, reason: 'admin_protege' }, undefined, 403);
+    /* 8.11 (Kevin : « efface un compte, j'en ai deux ») : seul l'identité admin (kdmc_admin) est intouchable. Une fiche au NOM de Kevin mais VIDE (0 connexion, 0 appareil, 0 app, jamais vérifiée) est un doublon créé à l'ouverture d'une demande : elle se supprime ; avec la moindre donnée, elle reste protégée. La copie `del:<uid>` garde 30 jours. */
+    const ficheVide = !(acc.hits > 0) && !(acc.devices && acc.devices.length) && !(acc.apps && Object.keys(acc.apps).length) && !(acc.history && acc.history.length) && acc.verified !== true;
+    if (uid === CANON_UID || acc.uid === CANON_UID || (isAdminName(acc.name) && !ficheVide)) return J({ ok: false, reason: 'admin_protege' }, undefined, 403);
     try {
       try { await env.ACCOUNTS.put('del:' + uid, JSON.stringify(acc), { expirationTtl: 30 * 86400 }); } catch { /* la copie est un filet, pas une condition */ }
       await env.ACCOUNTS.delete('acc:' + uid);

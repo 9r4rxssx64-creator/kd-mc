@@ -69,9 +69,12 @@ console.log('\n== 4. Jamais l\'admin ni le compte d\'un autre ==');
 kv.set('acc:kdmc_admin', JSON.stringify({ uid: 'kdmc_admin', name: 'Kevin Desarzens' }));
 r = await adm({ uid: 'kdmc_admin', confirmer: true });
 ok(r.st === 403 && r.j.reason === 'admin_protege' && kv.has('acc:kdmc_admin'), '4. le compte admin ne se supprime pas', r);
-kv.set('acc:kevin-d', JSON.stringify({ uid: 'kevin-d', name: 'Kevin Desarzens' }));
+kv.set('acc:kevin-d', JSON.stringify({ uid: 'kevin-d', name: 'Kevin Desarzens', hits: 3 }));
 r = await adm({ uid: 'kevin-d', confirmer: true });
-ok(r.st === 403 && kv.has('acc:kevin-d'), '4b. un compte au nom de Kevin non plus', r);
+ok(r.st === 403 && kv.has('acc:kevin-d'), '4b. un compte au nom de Kevin AVEC des connexions ne se supprime pas', r);
+kv.set('acc:kevin-vide', JSON.stringify({ uid: 'kevin-vide', name: 'Kevin Desarzens', hits: 0, devices: [], apps: {} }));
+r = await adm({ uid: 'kevin-vide', confirmer: true });
+ok(r.j && r.j.ok === true && !kv.has('acc:kevin-vide') && kv.has('del:kevin-vide') && kv.has('acc:kdmc_admin'), '4b2. un doublon VIDE au nom de Kevin se supprime (copie 30 j gardée, kdmc_admin intact)', r);
 kv.set('acc:marie-x', JSON.stringify({ uid: 'marie-x', name: 'Marie X' })); kv.set('nm:marie x', 'marie-x'); kv.set('acc:paul-y', JSON.stringify({ uid: 'paul-y', name: 'Paul Y' }));
 r = await adm({ uid: 'marie-x', confirmer: true });
 ok(r.j.ok === true && kv.has('acc:paul-y') && !kv.has('acc:marie-x'), '4c. on ne touche qu\'au compte demandé', r.j);
@@ -82,7 +85,7 @@ ok(/supprimer-compte/.test(src) && /Supprimer ce compte/.test(src) && /\/__admin
 const deb = src.indexOf('function peutSupprimer'), fin = src.indexOf('function wireEtat');
 const ctx = {}; vm.createContext(ctx); vm.runInContext(src.slice(deb, fin) + ';this.peutSupprimer = peutSupprimer;', ctx);
 ok(ctx.peutSupprimer({ uid: 'yann', name: 'Yann Lorenzi' }) === true, '5b. un compte ordinaire : bouton proposé');
-ok(ctx.peutSupprimer({ uid: 'kdmc_admin', name: 'x' }) === false && ctx.peutSupprimer({ uid: 'k2', name: 'Kévin DESARZENS' }) === false && ctx.peutSupprimer(null) === false, '5c. admin et nom de Kevin : jamais de bouton');
+ok(ctx.peutSupprimer({ uid: 'kdmc_admin', name: 'x' }) === false && ctx.peutSupprimer({ uid: 'k2', name: 'Kévin DESARZENS', hits: 5 }) === false && ctx.peutSupprimer({ uid: 'k3', name: 'kevin Desarzens', hits: 0 }) === true && ctx.peutSupprimer(null) === false, '5c. admin et nom de Kevin : jamais de bouton');
 
 console.log(`\n${fail ? '❌' : '✅'} compte-supprimer : ${pass} ok, ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

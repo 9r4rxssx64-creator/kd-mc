@@ -5,6 +5,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.211 — un enfant créé reçoit son 2ᵉ parent quand la preuve est dans l'arbre (2026-11-08)
+- Kevin : « quand un enfant est créé / intégré, il faut tout mettre à jour tout seul dans la famille, fiches etc ». Constat : Oscar DIROT (fils d'Émilie PAULIN, dont le seul conjoint est Thomas DIROT) n'avait pas de père, alors que sa sœur Zoé avait Thomas.
+- Maintenant : à l'enregistrement, un enfant créé avec sa MÈRE seule reçoit son PÈRE si la mère n'a qu'UN conjoint homme et qu'il porte le même nom que l'enfant (nom différent de celui de la mère) ; les textes des parents suivent (« un enfant » → « deux enfants, Zoé et Oscar »). Deux candidats, nom différent, père déjà posé : rien n'est deviné.
+- Données : Oscar relié à Thomas DIROT (`ecrire.sh`, relu).
+- Garde `tools/arbre/verify-enfant-complete.mjs` (rouge sur v3.210).
+
 ## Arbre v3.210 — « 🎯 Lire ici » lit aussi la fiche à voix haute (2026-11-08)
 - Kevin : « Lire d'ici n'a pas de sons ; dans Réglages et sur la fiche oui, mais de mauvaise qualité ». Le bouton ne faisait que l'agrandissement. Le 1er appui lit maintenant la fiche de la personne (un 2ᵉ appui pendant la lecture change seulement l'échelle, il ne relance pas la voix). Qualité : la voix douce du domaine est refusée par Google (401, clé supprimée le 7.11) → mission 2088 au Lenovo.
 - Garde `tools/arbre/verify-lire-ici.mjs` étendue (rouge sur v3.209 : 0 lecture).

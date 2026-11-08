@@ -477,6 +477,7 @@
   "tools/arbre/verify-deux-ex.mjs",
   "tools/arbre/verify-domaine.mjs",
   "tools/arbre/verify-doublons-sans-perte.mjs",
+  "tools/arbre/verify-enfant-complete.mjs",
   "tools/arbre/verify-envoi-visible.mjs",
   "tools/arbre/verify-famille-entiere.mjs",
   "tools/arbre/verify-famille-simple.mjs",

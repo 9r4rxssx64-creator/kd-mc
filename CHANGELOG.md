@@ -5,6 +5,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.218 — Desarzens se dit « Dessarzance » (2026-11-08)
+- Kevin : « Dessarzance, phonétique ». `PRONONCIATIONS` : Desarzens → « Dessarzance » (remplace « Dessarzin »). Garde `verify-prononciation.mjs`.
+
 ## Arbre v3.217 — la belle voix démarre vite, et dit « Dessarzin » (2026-11-08)
 - Kevin : « On dit dessarzens · pas de son à part dans le réglage · ou alors très très long ». Cause mesurée : la longue consigne de style était lue À VOIX HAUTE par Gemini (« Bonjour » = 14 s de son) et 3 essais × 25 s = 86 s avant l'échec. Routeur : directive courte terminée par « : » (`DIRECTIVE_GEMINI`), essai coupé à 14 s, 2 essais, cache `gemini2:` (l'ancien son fautif n'est plus servi). Arbre : premier morceau ≤ 170 caractères pour que le son démarre vite ; Desarzens se dit « Dessarzin ».
 - Gardes : `services/kdmc-router/voix-douce.test.mjs`, `verify-voix-douce.mjs`, `verify-prononciation.mjs`.

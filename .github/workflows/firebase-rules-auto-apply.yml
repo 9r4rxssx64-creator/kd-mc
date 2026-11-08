@@ -1,0 +1,64 @@
+name: Firebase Rules auto-apply (marker)
+
+# Applique les règles RTDB quand le MARKER tools/firebase/rules-deploy-request.json
+# change (pattern CLAUDE.md « auto-trigger via push » — zéro clic Kevin, utilisable
+# même quand le dispatch API n'est pas disponible depuis la session Claude Code).
+#
+# ⛔ `main` UNIQUEMENT — décision Kevin du 2026-09-06 (« prudent : tout sauf les règles »).
+# Les règles RTDB commandent les DROITS D'ACCÈS À SES DONNÉES : elles ne doivent jamais
+# être publiées depuis une branche de travail inachevée. Ce workflow écoutait `claude/**`
+# avant cette décision — retiré le 2026-09-06 (leçon #232).
+#
+# ⚠️ ZÉRO CLIC QUAND MÊME : je modifie le marker sur ma branche, le bot d'auto-fusion
+# l'amène dans `main`, et CE push sur `main` déclenche l'application des règles.
+# Kevin n'a rien à cliquer — on passe seulement par la case `main`, comme il l'a demandé.
+#
+# Anti-spam : paths-filtré sur le SEUL marker → ne tourne que quand on le modifie.
+# Sécurité : valeurs du marker validées (whitelist stricte) avant exécution ;
+# le script deploy-rules.cjs vérifie ensuite l'état publié + probes 401 anonymes.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/firebase/rules-deploy-request.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-rules-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Read + validate marker
+        id: marker
+        run: |
+          set -e
+          RS=$(node -e "console.log(require('./tools/firebase/rules-deploy-request.json').rules_state||'hardened')")
+          AS=$(node -e "console.log(require('./tools/firebase/rules-deploy-request.json').apex_state||'hardened')")
+          SL=$(node -e "console.log(require('./tools/firebase/rules-deploy-request.json').shops_lock||'keep')")
+          case "$RS" in hardened|open) ;; *) echo "::error::rules_state invalide: $RS"; exit 1;; esac
+          case "$AS" in hardened|open) ;; *) echo "::error::apex_state invalide: $AS"; exit 1;; esac
+          case "$SL" in keep|on|off) ;; *) echo "::error::shops_lock invalide: $SL"; exit 1;; esac
+          echo "rules_state=$RS" >> $GITHUB_OUTPUT
+          echo "apex_state=$AS" >> $GITHUB_OUTPUT
+          echo "shops_lock=$SL" >> $GITHUB_OUTPUT
+          echo "::notice::Marker : /cmcteams=$RS · /apex+/coffre_vault=$AS · shops=$SL"
+      - name: Publish RTDB rules (REST + verify + probes 401)
+        env:
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+          RULES_STATE: ${{ steps.marker.outputs.rules_state }}
+          APEX_STATE: ${{ steps.marker.outputs.apex_state }}
+          SHOPS_LOCK: ${{ steps.marker.outputs.shops_lock }}
+        run: node tools/firebase/deploy-rules.cjs

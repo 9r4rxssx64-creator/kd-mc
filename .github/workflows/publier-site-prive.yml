@@ -1,0 +1,508 @@
+name: KDMC — Publie le site sur Cloudflare Pages (pour que le dépôt puisse être PRIVÉ)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# POURQUOI CE WORKFLOW EXISTE
+#
+# Kevin 2026-09-15 : « passe tout en privé, que personne ne puisse voir mon code,
+# mes liens, tout ce qui se construit. Seulement les sites restent accessibles. »
+#
+# Le blocage, vérifié et non supposé : **GitHub Pages depuis un dépôt PRIVÉ exige
+# un abonnement payant** (Pro/Team/Enterprise). Le compte de Kevin est en gratuit.
+# Donc passer le dépôt en privé ÉTEINT kd-mc.com — sauf si le site est hébergé
+# ailleurs D'ABORD. C'est ce que fait ce workflow.
+#
+#   AVANT            dépôt PUBLIC ──► GitHub Pages ──► routeur ──► kd-mc.com
+#   APRÈS            dépôt PRIVÉ  ──► CE WORKFLOW ──► Cloudflare Pages ──► routeur ──► kd-mc.com
+#
+# Ce qui part sur Pages n'est PAS le dépôt : c'est un paquet TRIÉ fabriqué par
+# `prepare-secours.mjs --pages` — les applications et rien d'autre. Pas de code
+# serveur, pas de tests, pas de scripts de fabrication, pas de cartes de code
+# source, aucun document de travail (garde `test:documents-travail`). Un visiteur
+# voit le SITE ; il ne voit pas comment il est fait.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# CONFORMITÉ AUX RÈGLES DE KEVIN
+#
+# · « Est-ce que ça produit, teste, déploie ou PUBLIE ce dépôt ? » → oui, c'est
+#   exactement la publication de ce dépôt → sa place est sur GitHub Actions
+#   (règle « chaque automatisation a une destination écrite »).
+# · ZÉRO tâche programmée. Pas de `schedule:`, jamais — c'est le VOLUME de crons
+#   qui avait fait suspendre le compte le 15/08. Ici : un push, une publication.
+# · Le paquet est VÉRIFIÉ après publication (sonde réelle sur les 26 adresses).
+#   Un déploiement « réussi » qui sert des pages vides n'est pas une réussite.
+# ─────────────────────────────────────────────────────────────────────────────
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false      # une publication ne se coupe pas en plein vol
+
+on:
+  # 16.10 (audit extérieur, P0) : le routeur sert ses pages depuis sa COPIE EMBARQUÉE (SOURCE_PAGES = "assets", déployé le 16.10).
+  # L'hébergeur Pages `kdmc-site` (kdmc-site-bj5.pages.dev) servait tout le site SANS compte et ne sert plus à rien : il est
+  # supprimé (workflow `supprimer-projet-pages.yml`, remplacé le 16.10 par `pages-nettoyage.yml`). Plus AUCUNE publication automatique (avant : à chaque signal du coffre
+  # et à chaque envoi sur main ET sur claude/** — d'où « trop de déploiements » pour pouvoir supprimer le projet).
+  # Manuel seulement, et à ne relancer que si on revient sur l'hébergeur (retirer SOURCE_PAGES du wrangler.toml du routeur).
+  workflow_dispatch:
+    inputs:
+      complet:
+        description: "Paquet complet (avec les photos : arbre, chez-lolo, la-détente, cuisine)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publier:
+    # UN SEUL éditeur de la production. Avant la bascule, c'est le coffre (ce dépôt). Après, le
+    # robot de bascule pose la variable PUBLICATION_PAR=public au coffre : le coffre ne publie
+    # plus la production (il fait signe au dépôt public), seulement des APERÇUS de branche.
+    if: >-
+      github.repository != '9r4rxssx64-creator/CMCteams'
+      || vars.PUBLICATION_PAR != 'public'
+      || github.ref_name != 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      # ── Dépôt PUBLIC : CMCteams, Light et les données vivent dans le coffre privé.
+      #    On les récupère ici (lecture seule), pour que le site publié reste IDENTIQUE.
+      #    Dans le coffre lui-même, cette étape ne fait rien. Règles : tools/depot-public/.
+      - name: Récupérer les fichiers privés (CMCteams, Light, données)
+        uses: ./.github/actions/coffre
+        with:
+          cle: ${{ secrets.COFFRE_CLE_LECTURE }}
+
+      # ── Le paquet : les applications, et rien d'autre ──────────────────────
+      - name: Fabriquer le paquet du site (applications seules)
+        shell: bash -eo pipefail {0}
+        run: |
+          if [ "${{ inputs.complet }}" = "false" ]; then
+            node services/kdmc-router/prepare-secours.mjs --pages --leger
+          else
+            node services/kdmc-router/prepare-secours.mjs --pages
+          fi
+          D=services/kdmc-router/pages-upload
+          test -d "$D" || { echo "::error::paquet absent"; exit 1; }
+          echo "paquet : $(find $D -type f | wc -l) fichiers, $(du -sh $D | cut -f1)"
+
+      # ── Garde AVANT publication : rien de privé ne doit partir ─────────────
+      # Publier est irréversible : ce qui est parti a été servi. On contrôle
+      # donc le contenu du paquet ICI, pas après.
+      - name: Garde — aucun document de travail, aucun code serveur dans le paquet
+        shell: bash -eo pipefail {0}
+        run: |
+          D=services/kdmc-router/pages-upload
+          fuite=0
+          md=$(find $D -name '*.md' | wc -l)
+          [ "$md" -eq 0 ] || { echo "::error::$md document(s) Markdown dans le paquet"; fuite=1; }
+          for interdit in "$D/services" "$D/tests" "$D/.github" "$D/.git" "$D/pipeline" "$D/audit"; do
+            [ ! -e "$interdit" ] || { echo "::error::$interdit ne doit jamais être publié"; fuite=1; }
+          done
+          maps=$(find $D -name '*.map' | wc -l)
+          [ "$maps" -eq 0 ] || { echo "::error::$maps carte(s) de code source (.map) — elles exposent tout le source"; fuite=1; }
+          exit $fuite
+
+      - name: Installer wrangler
+        run: npm i -g wrangler@3
+
+      # ── DONNÉES RH NOMINATIVES → le KV du routeur (audit 30.09.2026, P0-3 / R3) ──
+      # boards-gen.js (291 noms + plannings), planning-seed.js, seances-seed.js : le routeur ne les
+      # sert plus qu'à une personne reconnue, depuis SA copie dans le KV (clé fichier:<chemin>).
+      # Déposées ICI, à chaque publication, AVANT le paquet : ainsi le domaine n'est jamais sans
+      # données. La liste vit dans services/kdmc-router/donnees-rh.js (jamais recopiée). Production
+      # seulement (un aperçu de branche ne touche pas aux données servies). 4 écritures KV par
+      # publication (plafond gratuit : 1 000/jour). Vérifié après coup : la taille relue = la taille
+      # du fichier, sinon la publication s'arrête (un planning tronqué ne doit jamais partir).
+      - name: Données RH → KV du routeur (servies derrière la connexion)
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Le journal du job est illisible depuis l'agent (leçon #374) : chaque échec se NOMME dans une annotation.
+          trap 'echo "::error title=Données RH → KV::ARRÊT ligne $LINENO : $BASH_COMMAND"' ERR
+          if [ "${GITHUB_REF_NAME}" != "main" ]; then echo "aperçu de branche : les données RH ne sont pas touchées"; exit 0; fi
+          NS=$(node -e "const t=require('fs').readFileSync('services/kdmc-router/wrangler.toml','utf8');const m=t.match(/binding\s*=\s*\"ACCOUNTS\"\s*\n\s*id\s*=\s*\"([a-f0-9]+)\"/);console.log(m?m[1]:'')")
+          [ -n "$NS" ] || { echo "::error::espace KV ACCOUNTS introuvable dans wrangler.toml"; exit 1; }
+          LISTE=$(node -e "import('./services/kdmc-router/donnees-rh.js').then(m=>console.log(m.DONNEES_RH.map(c=>c+' '+m.cheminDepot(c)+' '+m.cleKV(c.toLowerCase())).join('\n')))" 2>/dev/null)
+          [ -n "$LISTE" ] || { echo "::error::liste des données RH vide (services/kdmc-router/donnees-rh.js)"; exit 1; }
+          echo "espace KV : ${NS:0:6}… · $(printf '%s\n' "$LISTE" | wc -l) fichiers"
+          N=0; PLAFOND=0
+          for LIGNE in $(printf '%s\n' "$LISTE" | tr ' ' '|'); do
+            CHEMIN=${LIGNE%%|*}; RESTE=${LIGNE#*|}; FICHIER=${RESTE%%|*}; CLE=${RESTE#*|}
+            [ -s "$FICHIER" ] || { echo "::error::$FICHIER absent ou vide — les fichiers privés ne sont pas arrivés dans l'espace de travail"; exit 1; }
+            ATTENDU=$(wc -c < "$FICHIER")
+            # LIRE D'ABORD (une lecture ne compte pas dans le plafond d'écritures, 2.10.2026) : la copie KV d'avant est-elle
+            # déjà là, à la même taille ? Alors 0 écriture — une publication sans changement de planning ne touche plus au KV.
+            DEJA=0; if wrangler kv key get --namespace-id="$NS" "$CLE" > /tmp/deja 2>/dev/null; then DEJA=$(wc -c < /tmp/deja); fi
+            if [ "$DEJA" -ge "$ATTENDU" ] && [ "$DEJA" -le $((ATTENDU + 1)) ]; then echo "  ✅ $CLE déjà dans le KV, identique ($ATTENDU octets) : 0 écriture"; N=$((N + 1)); continue; fi
+            if ! SORTIE=$(wrangler kv key put --namespace-id="$NS" "$CLE" --path="$FICHIER" 2>&1); then
+              MSG=$(printf '%s' "$SORTIE" | sed 's/\x1b\[[0-9;]*m//g' | grep -v 'out-of-date\|update available\|npm install\|npx wrangler\|^-*$' | tr '\n' ' ' | cut -c1-1800)
+              # Mesuré le 1.10.2026 à 10h27 UTC (run 36849092448) : « your account has reached the free usage limit
+              # for this operation for today [code: 10048] » — le plafond KV (1 000 écritures/jour, tout le compte)
+              # était DÉJÀ atteint. Ce n'est pas une panne de la publication : le routeur sert alors ces fichiers
+              # depuis l'hébergeur (ils restent dans le paquet tant que l'étape B n'est pas faite). On le DIT, on
+              # continue — un plafond ne doit pas priver 260 personnes de la nouvelle version de l'app.
+              if printf '%s' "$MSG" | grep -q '10048'; then
+                # VIE PRIVÉE D'ABORD (2.10.2026, mesuré : plafond atteint à 1 406 écritures, la publication de 19h31 avait REMIS les
+                # 4 fichiers RH sur l'hébergeur public → sonde-fuite rouge 4/16 jusqu'au soir). Si une copie KV d'avant existe,
+                # elle reste servie derrière la connexion (au pire un planning d'hier jusqu'à minuit) et le fichier NE retourne
+                # PAS dans le paquet Pages. Seul le cas « aucune copie KV » remet le fichier dans le paquet (leçon #376).
+                if [ "$DEJA" -gt 0 ]; then
+                  echo "::warning title=Données RH → KV::plafond KV du jour atteint (code 10048) — $CLE NON mis à jour ; la copie KV d'avant ($DEJA octets, fichier $ATTENDU) reste servie derrière la connexion ; le fichier NE retourne PAS dans le paquet Pages (vie privée d'abord) : relancer la publication après 00h UTC."
+                  PLAFOND=1; continue
+                fi
+                mkdir -p "services/kdmc-router/pages-upload/$(dirname "$FICHIER")" && cp "$FICHIER" "services/kdmc-router/pages-upload/$FICHIER"
+                echo "::warning title=Données RH → KV::plafond KV du jour atteint (code 10048) et AUCUNE copie KV — $CLE NON déposé ; $FICHIER REMIS dans le paquet Pages pour cette publication (l'hébergeur le sert encore en direct, leçon #376) : relancer la publication après 00h UTC."
+                PLAFOND=1; continue
+              fi
+              echo "::error title=Données RH → KV::put $CLE a échoué : $MSG"; exit 1
+            fi
+            if ! wrangler kv key get --namespace-id="$NS" "$CLE" > /tmp/relu 2>/tmp/relu.err; then
+              echo "::error title=Données RH → KV::get $CLE a échoué : $(sed 's/\x1b\[[0-9;]*m//g' /tmp/relu.err | tr '\n' ' ' | cut -c1-1800)"; exit 1
+            fi
+            RELU=$(wc -c < /tmp/relu)
+            if [ "$RELU" -lt "$ATTENDU" ] || [ "$RELU" -gt $((ATTENDU + 1)) ]; then echo "::error::$CLE : relu $RELU octets, attendu $ATTENDU"; exit 1; fi
+            echo "  ✅ $CLE ← $FICHIER ($ATTENDU octets, relu $RELU)"; N=$((N + 1))
+          done
+          # Vérité du paquet, mesurée sur le disque : sans plafond, AUCUN fichier RH ne doit y rester (R3 étape B).
+          RESTANTS=""; for LIGNE in $(printf '%s\n' "$LISTE" | tr ' ' '|'); do RESTE=${LIGNE#*|}; FICHIER=${RESTE%%|*}; [ ! -e "services/kdmc-router/pages-upload/$FICHIER" ] || RESTANTS="$RESTANTS $FICHIER"; done
+          if [ "$PLAFOND" = "1" ]; then
+            if [ -z "$RESTANTS" ]; then echo "::warning title=Données RH::$N fichier(s) à jour dans le KV seulement — plafond KV du jour ; les autres gardent leur copie KV d'avant, AUCUN fichier RH dans le paquet Pages (vie privée d'abord) — relancer la publication après 00h UTC."
+            else echo "::warning title=Données RH::$N fichier(s) déposé(s) seulement — plafond KV du jour et aucune copie KV pour :$RESTANTS → REMIS dans le paquet Pages (l'hébergeur les sert encore en direct, derrière la porte du routeur seulement sur le domaine) — relancer la publication après 00h UTC."; fi
+          else
+            [ -z "$RESTANTS" ] || { echo "::error title=Données RH::déposés dans le KV mais ENCORE dans le paquet Pages :$RESTANTS — prepare-secours --pages doit les exclure"; exit 1; }
+            echo "::notice title=Données RH::$N fichiers nominatifs déposés dans le KV du routeur (taille relue = taille du fichier), servis derrière la connexion — le paquet Pages ne les porte plus (vérifié sur le disque)"
+          fi
+
+      # ── Publication ────────────────────────────────────────────────────────
+      # main            → production (c'est ce que le routeur ira chercher)
+      # claude/**       → aperçu à son propre nom, invisible du domaine
+      - name: Publier sur Cloudflare Pages
+        id: publier
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # ── LE PIÈGE, mesuré le 24.09.2026 ────────────────────────────────
+          # « --production-branch=main » n'agit QU'À LA CRÉATION du projet. Le
+          # nôtre existait déjà (bascule du 19.09). Si sa branche de production
+          # n'est pas « main », alors « --branch=main » publie un APERÇU : la
+          # sonde de l'adresse éphémère est verte (le paquet EST bon), mais
+          # l'adresse STABLE — la seule que le routeur lit — ne bouge pas. Elle
+          # sert encore un vieux paquet. Symptôme vécu : la-detente, chez-lolo
+          # et rotaplan en 404 sur le domaine alors que tout le reste marche.
+          # On DEMANDE donc au projet sa vraie branche de production, on ne la
+          # suppose pas — et on publie DESSUS.
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/kdmc-site"
+          INFOS=$(curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API" || true)
+          PROD_BRANCHE=$(printf '%s' "$INFOS" | node -e "
+            let t='';process.stdin.on('data',d=>t+=d).on('end',()=>{
+              try{const j=JSON.parse(t);if(j.success&&j.result)return console.log(j.result.production_branch||'');}catch(e){}
+              console.log('');});" || true)
+          SOUS_DOMAINE=$(printf '%s' "$INFOS" | node -e "
+            let t='';process.stdin.on('data',d=>t+=d).on('end',()=>{
+              try{const j=JSON.parse(t);if(j.success&&j.result)return console.log(String(j.result.subdomain||'').replace(/\.pages\.dev$/,''));}catch(e){}
+              console.log('');});" || true)
+          # ⚠️ 26.09.2026 : l'API rend « kdmc-site-bj5.pages.dev » COMPLET. Sans le retrait
+          # ci-dessus, on construisait « …pages.dev.pages.dev » : la sonde visait une adresse
+          # inexistante et la garde criait à tort (mesuré au 1er run après la reprise).
+          echo "projet kdmc-site — branche de production : '${PROD_BRANCHE:-inconnue}' · sous-domaine : '${SOUS_DOMAINE:-inconnu}'"
+
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            # Publier SUR la branche de production réelle du projet : c'est la
+            # seule façon que l'adresse stable suive. Si Cloudflare n'a pas
+            # répondu, on retombe sur « main » (comportement d'avant, jamais pire).
+            BRANCHE="${PROD_BRANCHE:-main}"
+          else
+            # nom d'aperçu : lettres, chiffres et tirets seulement (exigence Pages)
+            BRANCHE="apercu-$(echo "${GITHUB_REF_NAME}" | tr -c 'a-zA-Z0-9' '-' | cut -c1-24)"
+          fi
+          echo "branche de publication : $BRANCHE"
+          echo "sous_domaine=$SOUS_DOMAINE" >> "$GITHUB_OUTPUT"
+          wrangler pages project create kdmc-site --production-branch=main 2>/dev/null \
+            || echo "(le projet kdmc-site existe déjà)"
+          wrangler pages deploy services/kdmc-router/pages-upload \
+            --project-name=kdmc-site --branch="$BRANCHE" --commit-dirty=true 2>&1 | tee deploy.log
+          # L'adresse réellement publiée, lue dans la sortie de wrangler (jamais devinée)
+          URL=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' deploy.log | tail -1)
+          [ -n "$URL" ] || { echo "::error::wrangler n'a pas rendu d'adresse — publication non confirmée"; exit 1; }
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "branche=$BRANCHE" >> "$GITHUB_OUTPUT"
+
+      # ── LA GARDE QUI MANQUAIT VRAIMENT (26.09.2026) ────────────────────────
+      # Mesuré ce jour-là, dans UN SEUL journal, à une seconde d'intervalle :
+      #   · adresse ÉPHÉMÈRE du déploiement  → kd-mc.com = 26 502 car. (la page NEUVE)
+      #   · adresse STABLE lue par le routeur → kd-mc.com = 24 961 car. (la VIEILLE)
+      # Et la sonde a conclu « alias de production vérifié ✅ », parce qu'elle regarde le
+      # code HTTP et la taille, jamais si c'est LE paquet qu'on vient d'envoyer. Résultat :
+      # publication « réussie », Kevin sans ses tuiles, et RIEN de rouge pendant 17 minutes.
+      # Le repère __paquet.txt était constant : il ne pouvait pas servir à ça. Il porte
+      # maintenant l'EMPREINTE du contenu (prepare-secours.mjs) — reproductible, sans horloge.
+      # On attend donc que l'adresse stable serve CETTE empreinte. Fail-CLOSED sur les TROIS
+      # issues : elle correspond (on continue), elle diffère (on crie), on n'arrive pas à la
+      # lire (on crie aussi — « pas de réponse » n'est pas « tout va bien »).
+      - name: Attendre que l'adresse STABLE serve LE paquet qu'on vient d'envoyer
+        if: github.ref_name == 'main'
+        shell: bash -eo pipefail {0}
+        run: |
+          ATTENDUE=$(sed -n 's/^empreinte: *//p' services/kdmc-router/pages-upload/__paquet.txt | head -1)
+          [ -n "$ATTENDUE" ] || { echo "::error::le paquet n'a pas d'empreinte — prepare-secours.mjs doit l'écrire dans __paquet.txt"; exit 1; }
+          SD='${{ steps.publier.outputs.sous_domaine }}'
+          if [ -n "$SD" ]; then A="https://$SD.pages.dev"
+          else A="https://$(echo '${{ steps.publier.outputs.url }}' | sed -E 's#^https://##' | cut -d. -f2-)"; fi
+          echo "empreinte envoyée : $ATTENDUE"
+          echo "adresse stable    : $A"
+          SERVIE=''
+          REPERE=''
+          for i in $(seq 1 20); do
+            REPERE=$(curl -sS --max-time 15 "$A/__paquet.txt" 2>/dev/null || true)
+            SERVIE=$(printf '%s' "$REPERE" | sed -n 's/^empreinte: *//p' | head -1)
+            echo "tentative $i : servie = '${SERVIE:-aucune empreinte}'"
+            [ "$SERVIE" = "$ATTENDUE" ] && break
+            sleep 15
+          done
+          if [ "$SERVIE" = "$ATTENDUE" ]; then
+            echo "✅ l'adresse stable sert bien le paquet publié ($ATTENDUE) — le domaine servira la nouvelle version"
+            exit 0
+          fi
+          # Trois issues, et chacune dit LA vérité qui la distingue (leçon du 26.09 : « pas de
+          # réponse » et « réponse d'un paquet trop vieux pour avoir une empreinte » ne sont pas
+          # la même panne, et les confondre envoie chercher au mauvais endroit).
+          if printf '%s' "$REPERE" | grep -q '^paquet-applications-kdmc'; then
+            if [ -z "$SERVIE" ]; then
+              echo "::error::après 5 minutes, $A sert un repère de paquet SANS empreinte : c'est un paquet publié AVANT cette amélioration (26.09.2026). Ce n'est donc pas celui qu'on vient d'envoyer. Relancer cette publication une fois : à partir de la 2e, la comparaison sera exacte."
+              exit 1
+            fi
+          elif [ -z "$SERVIE" ]; then
+            echo "::error::après 5 minutes, $A/__paquet.txt n'est pas lisible comme un repère de paquet (Cloudflare Pages répond la page d'accueil, en 200, pour toute adresse inconnue quand il n'y a pas de 404.html). Impossible de prouver ce que le domaine sert : on ne déclare pas une publication réussie sans cette preuve."
+            exit 1
+          fi
+          if [ -z "$SERVIE" ]; then
+            echo "::error::après 5 minutes, impossible de lire l'empreinte servie par $A."
+          else
+            echo "::error::après 5 minutes, l'adresse stable $A sert encore l'empreinte '$SERVIE' alors qu'on vient de publier '$ATTENDUE'. Le déploiement est bon (adresse éphémère), mais l'alias de production ne l'a pas suivi : kd-mc.com continue de servir l'ANCIENNE version. Vérifier dans Cloudflare Pages que le déploiement $GITHUB_SHA est bien celui de l'environnement « production » du projet kdmc-site."
+          fi
+          exit 1
+
+      # ── Vérification RÉELLE : les 26 adresses sont-elles servies ? ─────────
+      # Le runner a le réseau ouvert (l'agent, non). C'est ici, et seulement ici,
+      # qu'on peut dire « ça marche » sans mentir.
+      - name: Sonder les 26 adresses sur le site publié
+        shell: bash -eo pipefail {0}
+        run: |
+          U='${{ steps.publier.outputs.url }}'
+          echo "Publication : $U"
+          # La propagation d'un déploiement Pages n'est pas instantanée : on RÉESSAIE
+          # au lieu de conclure sur une seule tentative (un « site injoignable » qui
+          # n'est qu'une seconde d'avance ferait accuser à tort la publication).
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$U/" || echo 000)
+            echo "tentative $i : $U → HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 10
+          done
+          set +e
+          node tools/audit/sonde-site-publie.mjs "$U" --racine 2>&1 | tee sonde.log
+          st=${PIPESTATUS[0]}
+          set -e
+          # LA CAUSE DOIT ME REVENIR. Le stockage des journaux CI est injoignable
+          # depuis l'agent (proxy) : les lignes `::error::` deviennent des ANNOTATIONS,
+          # elles, lisibles par l'API. Sans ça je vois du rouge sans savoir pourquoi
+          # — exactement ce que le journal des déploiements existe pour éviter.
+          if [ "$st" != "0" ]; then
+            echo "::error::sonde sortie $st sur $U (2 = rien n'a pu être mesuré : le site n'a pas répondu du tout)"
+            { head -12 sonde.log; echo "…"; tail -30 sonde.log; } | while IFS= read -r l; do echo "::error::$l"; done
+            exit $st
+          fi
+
+          # ── L'ADRESSE DONT LE DOMAINE VA RÉELLEMENT DÉPENDRE ────────────────
+          # Ci-dessus on a sondé l'adresse ÉPHÉMÈRE de ce déploiement
+          # (<hash>.kdmc-site.pages.dev). Ce n'est PAS celle que le routeur ira
+          # chercher : lui pointera sur l'alias stable `kdmc-site.pages.dev`.
+          # Prouver l'une et basculer sur l'autre, c'est vérifier une porte et en
+          # ouvrir une autre. On sonde donc AUSSI l'alias de production — c'est la
+          # seule mesure qui autorise la bascule du domaine.
+          if [ "${GITHUB_REF_NAME}" = "main" ]; then
+            # ⚠️ 23.09.2026 — cette ligne portait « kdmc-site.pages.dev » EN DUR,
+            # alors que le commentaire de l'étape suivante dit exactement le
+            # contraire : Cloudflare a créé le projet sous un AUTRE nom public
+            # (« kdmc-site-bj5 »), parce que le nom simple était pris. On sondait
+            # donc un site qui n'est pas le nôtre, on le déclarait « non conforme »,
+            # et l'étape qui DÉDUIT la vraie adresse stable était sautée — donc la
+            # cause ne revenait jamais. On déduit l'adresse stable de l'adresse
+            # réellement publiée (on retire le préfixe du déploiement), comme fait
+            # l'étape « Vérifier l'adresse STABLE ». Jamais devinée.
+            # L'adresse stable vient du PROJET (Cloudflare l'a dite), sinon on la
+            # déduit de l'adresse publiée. Jamais écrite en dur, jamais devinée.
+            SD='${{ steps.publier.outputs.sous_domaine }}'
+            if [ -n "$SD" ]; then A="https://$SD.pages.dev"
+            else A="https://$(echo "$U" | sed -E 's#^https://##' | cut -d. -f2-)"; fi
+            echo "adresse stable du projet : $A"
+
+            # ── LA GARDE QUI MANQUAIT (24.09.2026) ───────────────────────────
+            # On peut publier parfaitement… à une adresse que le routeur ne lit
+            # pas. C'est exactement ce qui a mis 3 boutiques en 404 pendant que
+            # tout paraissait vert. On compare donc l'adresse qu'on vient de
+            # publier à celle que le routeur va chercher (UPSTREAM_BASE), et on
+            # CRIE si elles diffèrent — au lieu de laisser le domaine servir un
+            # vieux paquet en silence.
+            ATTENDU=$(grep -oE '^UPSTREAM_BASE *= *"[^"]+"' services/kdmc-router/wrangler.toml \
+                      | sed -E 's/.*"(.*)"/\1/' | sed -E 's#/+$##')
+            if [ -n "$ATTENDU" ] && [ "$ATTENDU" != "$A" ]; then
+              echo "::error::Le site est publié sur $A mais le routeur lit $ATTENDU — le domaine sert donc un AUTRE paquet (souvent un vieux). Corrige UPSTREAM_BASE dans services/kdmc-router/wrangler.toml, puis redéploie le routeur."
+              exit 1
+            fi
+            echo "le routeur lit bien cette adresse ($ATTENDU) ✅"
+            for i in 1 2 3 4 5 6; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$A/" || echo 000)
+              echo "alias de production, tentative $i : $A → HTTP $code"
+              [ "$code" = "200" ] && break
+              sleep 10
+            done
+            set +e
+            node tools/audit/sonde-site-publie.mjs "$A" --racine 2>&1 | tee sonde-alias.log
+            sa=${PIPESTATUS[0]}
+            set -e
+            if [ "$sa" != "0" ]; then
+              echo "::error::alias de production $A NON conforme (sortie $sa) — le routeur ne doit PAS basculer dessus"
+              { head -12 sonde-alias.log; echo "…"; tail -30 sonde-alias.log; } | while IFS= read -r l; do echo "::error::$l"; done
+              exit $sa
+            fi
+            echo "alias de production vérifié : $A sert bien les 26 adresses."
+          fi
+          exit 0
+
+      # ── L'ADRESSE STABLE, celle que le routeur utilisera vraiment ──────────
+      # Kevin 2026-09-18, avant de basculer le domaine : la sonde ci-dessus teste
+      # l'adresse À USAGE UNIQUE du déploiement (« e4d3f45a.kdmc-site-bj5.pages.dev »),
+      # qui change à CHAQUE publication. Le routeur, lui, doit pointer sur l'adresse
+      # STABLE du projet. Elle n'est PAS devinable : le récapitulatif annonçait
+      # « kdmc-site.pages.dev » alors que Cloudflare a créé « kdmc-site-bj5 » (le nom
+      # simple était pris). Basculer sur une adresse supposée, c'est éteindre les
+      # 31 adresses du domaine. On la DÉDUIT de l'adresse publiée (on retire le
+      # préfixe du déploiement) et on la SONDE — sans ça, on bascule à l'aveugle.
+      # ── QUE PUBLIE VRAIMENT CE PROJET PAGES ? ─────────────────────────────
+      # Mesuré le 18.09 : l'adresse stable servait package.json, que notre paquet
+      # ne contient PAS. Donc quelque chose d'autre publie dans ce projet. On le
+      # demande à Cloudflare plutôt que de le deviner.
+      - name: Que publie vraiment le projet Pages ? (diagnostic)
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # La réponse part AUSSI dans le récapitulatif du run : un journal se lit
+          # mal à distance, un récapitulatif se lit d'un coup d'œil.
+          exec > >(tee -a "$GITHUB_STEP_SUMMARY") 2>&1
+          echo "### Ce que publie vraiment le projet Pages"
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/kdmc-site"
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API" \
+            | node -e "
+              let t='';process.stdin.on('data',d=>t+=d).on('end',()=>{
+                let j;try{j=JSON.parse(t)}catch(e){console.log('réponse illisible');process.exit(0)}
+                if(!j.success){console.log('Cloudflare a refusé :',JSON.stringify(j.errors||[]).slice(0,200));process.exit(0)}
+                const r=j.result||{};
+                console.log('  projet            :', r.name);
+                console.log('  sous-domaine      :', r.subdomain);
+                console.log('  branche de prod   :', r.production_branch);
+                console.log('  source (git)      :', r.source ? (r.source.type+' → '+JSON.stringify(r.source.config&&r.source.config.repo_name)) : 'AUCUNE (envoi direct uniquement)');
+                const d=r.latest_deployment||{};
+                console.log('  dernier déploiement:', d.id, '| env', d.environment, '| branche', d.deployment_trigger&&d.deployment_trigger.metadata&&d.deployment_trigger.metadata.branch);
+                console.log('  déclenché par     :', d.deployment_trigger&&d.deployment_trigger.type);
+              });"
+
+      # ── SUR QUOI L'ALIAS POINTE-T-IL VRAIMENT ? (26.09.2026) ───────────────
+      # Mesuré ce jour-là : l'adresse stable servait l'ancien paquet 38 MINUTES après une
+      # publication réussie, et un paramètre inédit (donc hors cache) donnait la même
+      # ancienne version — ce n'était donc NI la propagation, NI le cache du bord.
+      # Cloudflare disait pourtant « dernier déploiement : le nôtre, env production ».
+      # Quand deux faits se contredisent, on arrête de supposer et on demande la LISTE
+      # des déploiements avec leurs alias : c'est elle qui dit ce que sert l'adresse stable.
+      - name: Sur quoi l'adresse stable pointe-t-elle ? (liste des déploiements)
+        if: always()
+        shell: bash -eo pipefail {0}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          exec > >(tee -a "$GITHUB_STEP_SUMMARY") 2>&1
+          echo "### Les 8 derniers déploiements du projet kdmc-site"
+          API="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/kdmc-site/deployments?per_page=8"
+          curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$API" | node -e "
+            let t='';process.stdin.on('data',d=>t+=d).on('end',()=>{
+              let j;try{j=JSON.parse(t)}catch(e){console.log('réponse illisible');process.exit(0)}
+              if(!j.success){console.log('Cloudflare a refusé :',JSON.stringify(j.errors||[]).slice(0,300));process.exit(0)}
+              for(const d of (j.result||[])){
+                console.log('  '+String(d.id||'').slice(0,8)
+                  +' | '+String(d.created_on||'').slice(0,19)
+                  +' | env '+String(d.environment||'?').padEnd(10)
+                  +' | branche '+String((d.deployment_trigger&&d.deployment_trigger.metadata&&d.deployment_trigger.metadata.branch)||'?').padEnd(10)
+                  +' | étape '+String((d.latest_stage&&(d.latest_stage.name+':'+d.latest_stage.status))||'?').padEnd(18)
+                  +' | alias '+JSON.stringify(d.aliases||[])
+                  +' | '+String(d.url||''));
+              }
+              console.log('');
+              console.log('Lire ainsi : l\'adresse stable sert le déploiement de PRODUCTION le plus récent dont');
+              console.log('l\'étape vaut deploy:success. Si ce n\'est pas celui de ce run, la cause est ICI.');
+            });"
+
+      - name: Vérifier l'adresse STABLE (celle qu'attend le routeur)
+        id: stable
+        shell: bash -eo pipefail {0}
+        run: |
+          U='${{ steps.publier.outputs.url }}'
+          HOTE=$(echo "$U" | sed -E 's#^https://##')
+          STABLE="https://$(echo "$HOTE" | cut -d. -f2-)"
+          echo "adresse à usage unique : $U"
+          echo "adresse stable déduite : $STABLE"
+          code=000
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$STABLE/" || echo 000)
+            echo "tentative $i : $STABLE → HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 8
+          done
+          if [ "$code" != "200" ]; then
+            echo "::error::l'adresse STABLE $STABLE ne répond pas (HTTP $code) — NE PAS basculer le routeur dessus"
+            exit 1
+          fi
+          set +e
+          node tools/audit/sonde-site-publie.mjs "$STABLE" --racine 2>&1 | tee sonde-stable.log
+          st=${PIPESTATUS[0]}
+          set -e
+          if [ "$st" != "0" ]; then
+            echo "::error::l'adresse stable $STABLE ne sert pas toutes les adresses — bascule interdite"
+            { head -12 sonde-stable.log; echo "…"; tail -30 sonde-stable.log; } | while IFS= read -r l; do echo "::error::$l"; done
+            exit $st
+          fi
+          echo "stable=$STABLE" >> "$GITHUB_OUTPUT"
+          echo "::notice::À mettre dans le routeur : UPSTREAM_BASE=$STABLE et UPSTREAM_PREFIX=\"\""
+
+      - name: Récapitulatif
+        if: always()
+        shell: bash -eo pipefail {0}
+        run: |
+          {
+            echo "### Site publié sur Cloudflare Pages"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| adresse | ${{ steps.publier.outputs.url }} |"
+            echo "| branche | \`${{ steps.publier.outputs.branche }}\` |"
+            echo "| source | \`${GITHUB_REF_NAME}\` |"
+            echo ""
+            if [ "${GITHUB_REF_NAME}" = "main" ]; then
+              echo "C'est la **production**. Pour que kd-mc.com la serve, le routeur doit avoir"
+              echo "\`UPSTREAM_BASE = ${{ steps.stable.outputs.stable }}\` et \`UPSTREAM_PREFIX = \"\"\` (adresse MESURÉE, pas devinée)."
+            else
+              echo "C'est un **aperçu** : kd-mc.com n'y touche pas."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

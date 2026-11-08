@@ -1,0 +1,30 @@
+name: Coffre — état des comptes du domaine (lecture seule)
+
+# 17.10.2026 (Kevin : « Carla n'accède pas à l'arbre… vérifie pour elle et pour tout le monde »). Se connecte comme Kevin (code admin = empreinte,
+# secret) et dit, pour chaque compte qui a un souci, la cause en une phrase. Ne modifie RIEN. À la main / API — jamais de cron.
+
+on:
+  workflow_dispatch:
+    inputs:
+      filtre:
+        description: "Prénom ou nom à regarder (vide = tous les comptes qui ont un souci)"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  etat:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Lire l'état des comptes (porte admin, session de Kevin)
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          FILTRE: ${{ inputs.filtre }}
+        shell: bash -eo pipefail {0}
+        run: node tools/smoke/comptes-etat.mjs "$FILTRE"

@@ -1,0 +1,91 @@
+name: Qui se connecte (lecture réelle du journal)
+
+# Kevin 2026-08-10 : « Carla vient de se connecter, vérifie qu'elle soit bien sur un nouveau
+# compte à elle seule — apparemment elle est sur Laurence. »
+#
+# Outil RÉUTILISABLE (règle « crée un outil pour faire l'impossible ») : depuis l'agent,
+# kd-mc.com est injoignable (egress bloqué) → ce workflow lit le VRAI journal depuis la CI.
+# - Actions des apps  : GET https://admin.kd-mc.com/history      (kdmc-access, Firebase)
+# - Connexions domaine: GET https://kd-mc.com/__admin/domain-log (routeur, KV ACCOUNTS)
+# Auth : x-apex-pin = secret APEX_ADMIN_PIN_SHA256 (jamais journalisé, GitHub masque).
+# LECTURE SEULE — métadonnées uniquement (qui, quand, quelle app, quel appareil) :
+# jamais de contenu privé (cf. skill domain-journal). Dispatch uniquement (anti-spam mails).
+
+on:
+  workflow_dispatch:
+    inputs:
+      noms:
+        description: "Prénoms/noms à chercher (séparés par des virgules)"
+        default: "carla,laurence"
+      app:
+        description: "App à détailler (lingua, cmcteams, …) — vide = toutes"
+        default: "lingua"
+      heures:
+        description: "Fenêtre en heures pour les évènements récents"
+        default: "72"
+
+permissions:
+  contents: read
+
+jobs:
+  lire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lire le journal (actions + connexions)
+        env:
+          PIN_SHA: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          NOMS: ${{ inputs.noms }}
+          APPQ: ${{ inputs.app }}
+          HEURES: ${{ inputs.heures }}
+        shell: bash -euo pipefail {0}
+        run: |
+          curl -m 25 -s "https://admin.kd-mc.com/history" -H "x-apex-pin: $PIN_SHA" -H 'Origin: https://admin.kd-mc.com' -o /tmp/actions.json || echo '{}' > /tmp/actions.json
+          curl -m 25 -s "https://kd-mc.com/__admin/domain-log" -H "x-apex-pin: $PIN_SHA" -H 'Origin: https://admin.kd-mc.com' -o /tmp/conn.json || echo '{}' > /tmp/conn.json
+          node -e '
+            const norm = (s)=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+            const noms = norm(process.env.NOMS).split(",").map(s=>s.trim()).filter(Boolean);
+            const appQ = norm(process.env.APPQ).trim();
+            const winMs = (parseFloat(process.env.HEURES)||72)*3600*1000;
+            const now = Date.now();
+            const fmt = (ts)=>new Date(ts).toISOString().replace("T"," ").slice(0,16)+" UTC";
+            let A={}; try{ A=require("/tmp/actions.json"); }catch(e){}
+            let C={}; try{ C=require("/tmp/conn.json"); }catch(e){}
+            console.log("== ACTIONS DES APPS (admin.kd-mc.com/history) ==");
+            if(!A.ok){ console.log("  !! journal actions NON lisible :", JSON.stringify(A).slice(0,200)); }
+            const people = (A.people||[]);
+            console.log("  personnes:", people.length, "· évènements:", A.totalEvents||0);
+            const matches = people.filter(p=>noms.some(n=>norm(p.name).includes(n)||norm(p.uid).includes(n)));
+            for(const p of matches){
+              console.log("\n  ── FICHE:", p.name, "· uid:", p.uid||p.key, "· évènements:", p.count,
+                "· apps:", (p.appsList||[]).join("/"), "· appareils:", (p.devicesList||[]).join("/"));
+              console.log("     1re activité:", fmt(p.firstSeen), "· dernière:", fmt(p.lastSeen), p.online?"· EN LIGNE":"");
+              for(const r of (p.recent||[]).slice(0,12)){
+                const m=r.meta||{};
+                console.log("     ·", fmt(r.ts), "·", r.app||"?", "·", r.event||"?", "·", r.device||"?",
+                  (m.xp!=null?("· xp "+m.xp+" · série "+(m.serie||0)+" · mots "+(m.mots||0)+" · cours "+(m.cours||"")):""));
+              }
+            }
+            if(!matches.length) console.log("  (aucune fiche ne correspond à:", noms.join(", ")+")");
+            console.log("\n== ACTIVITÉ RÉCENTE "+(appQ?("DE L APP « "+appQ+" »"):"TOUTES APPS")+" (fenêtre "+process.env.HEURES+" h) ==");
+            const rec=[];
+            for(const p of people) for(const r of (p.recent||[]))
+              if(now-r.ts<winMs && (!appQ || norm(r.app)===appQ)) rec.push({name:p.name, uid:p.uid||p.key, ...r});
+            rec.sort((a,b)=>b.ts-a.ts);
+            if(!rec.length) console.log("  (aucun évènement dans la fenêtre)");
+            for(const r of rec.slice(0,40)){
+              const m=r.meta||{};
+              console.log("  ·", fmt(r.ts), "· COMPTE:", r.name, "· uid:", r.uid, "·", r.device||"?",
+                (m.xp!=null?("· xp "+m.xp+" · mots "+(m.mots||0)+" · cours "+(m.cours||"")):""));
+            }
+            console.log("\n== CONNEXIONS DOMAINE (routeur kd-mc.com) ==");
+            if(!C.ok){ console.log("  !! connexions NON lisibles :", JSON.stringify(C).slice(0,200)); }
+            const cp=(C.people||[]);
+            const cm=cp.filter(p=>noms.some(n=>norm(p.name||p.uid).includes(n)));
+            for(const p of cm){
+              console.log("  ──", p.name||p.uid, "·", p.hits||0, "connexions ·",
+                "apps:", Object.keys(p.apps||{}).join("/")||"?", "· appareils:", Object.keys(p.devices||{}).join("/")||"?");
+              for(const h of (p.history||[]).slice(-8).reverse())
+                console.log("     ·", h.ts?fmt(h.ts):"?", "·", h.app||"?", "·", h.device||"?", "·", h.place||"");
+            }
+            if(!cm.length) console.log("  (aucune fiche routeur ne correspond)");
+          ' | tee -a "$GITHUB_STEP_SUMMARY"

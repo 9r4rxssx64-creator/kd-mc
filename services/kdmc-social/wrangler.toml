@@ -1,0 +1,27 @@
+name = "kdmc-social"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+# UN SEUL moyen d'agir sur les réseaux de Kevin, pour TOUS ses projets.
+# Worker ISOLÉ (règle d'isolation) : s'il casse, aucune app du domaine ne casse.
+# Il ne touche ni le routeur, ni Firebase, ni les boutiques.
+#
+# Secrets OPTIONNELS (poussés par .github/workflows/deploy-kdmc-social.yml) :
+#   FB_PAGE_TOKEN / FB_PAGE_ID          → Page Facebook : publier + lire + commentaires
+#   IG_ACCESS_TOKEN / IG_USER_ID        → Instagram Business : idem (même jeton Meta)
+#   TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID → Telegram : publier + lire + messages
+#   TIKTOK_ACCESS_TOKEN                 → TikTok : LECTURE seulement (voir ci-dessous)
+#   YOUTUBE_REFRESH_TOKEN               → YouTube : la vidéo part en CI (ffmpeg)
+# Aucun n'est obligatoire : un réseau sans jeton est déclaré « pas prêt » dans
+# /health et ce qu'on voulait y faire part dans la FILE. Jamais de faux succès.
+#
+# ⚠️ TikTok : la publication directe exige l'audit de TikTok (Content Posting API).
+# Le worker ne prétendra JAMAIS pouvoir publier dessus — un test l'empêche.
+#
+# Auth : tout sauf /health exige une session ADMIN VÉRIFIÉE (Face ID) validée
+# auprès de kd-mc.com/__sso/whoami. Publier au nom de Kevin ne s'ouvre pas.
+
+[[kv_namespaces]]
+binding = "SOCIAL"
+id = "497f7c23dbf14ae4a4be50a461454b92"   # créé le 16.09.2026 — un id KV n'est pas un secret

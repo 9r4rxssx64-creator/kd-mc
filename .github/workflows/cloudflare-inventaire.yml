@@ -1,0 +1,37 @@
+name: Cloudflare — inventaire sécurité du compte (manuel, lecture seule)
+
+# 17.10.2026 (Kevin : « vérifie que tout ce qui est sur Cloudflare, sur mes deux comptes, soit bien sécurisé, confidentiel ;
+# fais le tri »). Lance tools/cloudflare/inventaire-compte.mjs en LECTURE SEULE (aucune requête qui modifie) avec la clé du
+# dépôt. Journal PUBLIC : mode --public → seulement les nombres et les points à traiter, jamais une liste détaillée ni une valeur.
+# Destination : GitHub, dépôt PUBLIC (minutes gratuites), à la main uniquement. Jamais de cron.
+on:
+  workflow_dispatch:
+    inputs:
+      compte:
+        description: "Identifiant du compte Cloudflare (vide = tous ceux que la clé voit)"
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  inventaire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15   # gratuit d'abord : borné
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inventaire (lecture seule, journal public = nombres + points à traiter)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          COMPTE: ${{ inputs.compte }}
+        run: |
+          set -o pipefail
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "::warning::Clé Cloudflare absente du dépôt"; exit 0; fi
+          if [ -n "$COMPTE" ]; then node tools/cloudflare/inventaire-compte.mjs --public --compte "$COMPTE" | tee inventaire.txt
+          else node tools/cloudflare/inventaire-compte.mjs --public | tee inventaire.txt; fi
+          { echo '## Inventaire Cloudflare (lecture seule)'; echo '```'; cat inventaire.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"

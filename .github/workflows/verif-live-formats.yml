@@ -1,0 +1,65 @@
+name: Vérif RÉELLE — 5 formats d’écran, vitesse et hors ligne — CMCteams ET light (connecté en admin, nombres seulement)
+
+# Kevin 22.10.2026 : « Fais faire audit réel +++ à Lenovo — Team et light ». Le Lenovo a mesuré l'ordinateur (pont 284) et a CONFIÉ au robot : les 5 formats d'écran
+# (375, 390, 412, 768, 1200 px), la vitesse (DCL, load, LCP) et le hors-ligne, pour CMCteams ET la light, connecté en admin sur le vrai domaine. Le code admin vient du SECRET
+# (empreinte, jamais écrite ni journalisée). LECTURE seule. AU DÉPÔT PUBLIC (minutes gratuites et illimitées) : un journal public se lit par tous et le planning contient des
+# noms de collègues → des NOMBRES seulement (en annotations), jamais un texte de page ni une capture. À la main seulement, jamais de cron.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verif-live-formats
+  cancel-in-progress: false
+
+jobs:
+  verif:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: 5 formats + vitesse + hors ligne, connecté en admin, sur le vrai domaine — nombres seulement
+        id: robot
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee` (toujours 0) et un robot qui dit « ÉCHEC » ressortirait vert.
+        shell: bash -euo pipefail {0}
+        run: |
+          set +e
+          stdbuf -oL -eL node tests/verif-live-formats.mjs 2>&1 | tee /tmp/verif-formats.log
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Rapport lisible depuis l'agent (annotations, nombres seulement)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/verif-formats.log ] || { echo "::notice title=Vérif Formats::(pas de journal : rien n'a tourné)"; exit 0; }
+          grep -aE '✅|❌|⚠|ℹ️|=== VÉRIF|^   ↳' /tmp/verif-formats.log \
+            | grep -avE 'code admin|pinhash|PIN_HASH' | sed -E 's/[0-9a-f]{16,}/…/g' \
+            | head -96 > /tmp/rap.txt || tail -40 /tmp/verif-formats.log > /tmp/rap.txt
+          split -l 14 -d /tmp/rap.txt /tmp/bl_
+          n=0
+          for f in /tmp/bl_*; do
+            n=$((n+1))
+            msg=$(sed -e 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::notice title=Vérif Formats ${n}::${msg}"
+          done
+          echo "::notice title=Vérif Formats bilan::${n} bloc(s) publiés en annotations"
+
+      - name: Verdict
+        if: always()
+        run: test "${{ steps.robot.outputs.rc }}" = "0"

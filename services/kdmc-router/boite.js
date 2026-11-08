@@ -1,0 +1,721 @@
+/* LA BOÎTE UNIQUE DE L'ADMIN — tous les messages de toutes les apps du domaine, au même endroit, avec réponse directe
+ * (Kevin 3.10.2026 : « Intègre dans la nouvelle fenêtre des messages tous les messages que je peux recevoir de n'importe
+ *  quelle app du domaine sur ma vue admin, pour avoir un visuel permanent, ne rien rater, je peux répondre directement par
+ *  là, j'ai toutes les infos. Va plus loin »).
+ *
+ * PRINCIPE : on ne recopie RIEN. Chaque app garde ses messages là où elle les range ; la boîte les LIT à la demande
+ * (adaptateurs) et les met dans une forme commune. Lire ne coûte pas d'écriture KV (le plafond gratuit de 1 000 écritures
+ * par jour est déjà crevé tous les jours — leçon 394) : les seules écritures sont en D1 (gratuite) ou dans Firebase.
+ *
+ *   lingua    Cercle Lingua (D1)              réponse directe  → message de « Admin KDMC » dans le cercle
+ *   cmcteams  Messages des employés (Firebase) réponse directe  → même fil que la page « Messages employés »
+ *   depots    TOUTE autre app, présente ou future : POST /__boite/deposer (D1)   réponse directe, l'expéditeur la relit
+ *   rotaplan  Demandes de démonstration (KV, lecture)   réponse par e-mail (lien prêt)
+ *   arbre     Corrections de l'arbre (KV, lecture)      lecture + lien vers le journal
+ *   alertes   Nouvelles connexions, nouveaux appareils, anomalies (KV, lecture)  — comptées à part, jamais rouge à tort
+ *
+ * SÉCURITÉ : tout ce qui est /admin est réservé à la session admin PROUVÉE par le domaine (outils.qui), jamais déclarée par
+ * la page. Les écritures exigent une origine du domaine. Le dépôt public est limité (5 par heure et par appareil, 200 par
+ * jour au total, texte 1 000 caractères, champ piège pour les robots, gardé 90 jours).
+ * node services/kdmc-router/boite.test.mjs */
+import { ADMIN, LIMITES as LIM_CERCLE, texteOk, schema as schemaCercle } from './cercle.js';
+import * as activite from './activite.js';
+import { BOUTON_JS } from './boite-bouton.js';
+import { pousserA } from './installer.js';   // 🔔 la réponse de l'admin arrive sur le téléphone, même app fermée
+import { ficheOubliee } from './acc-memo.js';
+
+export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 5000, memoKvMs: 60000 };
+export const FB_URL = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/cmcteams';
+
+export const SOURCES = {
+  lingua:   { nom: 'Lingua',               icone: '🐝', lien: 'https://lingua.kd-mc.com/#admin' },
+  cmcteams: { nom: 'CMCteams · employés',  icone: '📅', lien: 'https://cmcteams.kd-mc.com/tools/messages/' },
+  depots:   { nom: 'Autres apps',          icone: '📨', lien: '' },
+  rotaplan: { nom: 'Rotaplan · demandes',  icone: '🗓️', lien: 'https://kd-mc.com/__demandes' },
+  arbre:    { nom: 'Arbre · corrections',  icone: '🌳', lien: 'https://arbre.kd-mc.com/#journal' },
+  alertes:  { nom: 'Personnes & alertes',   icone: '👥', lien: 'https://kd-mc.com/admin/#journal' },
+};
+/* Les alertes (connexions, appareils) se lisent mais ne font PAS monter le compteur rouge : il y en a des dizaines par jour. */
+export const SOURCES_MESSAGES = ['lingua', 'cmcteams', 'depots', 'rotaplan', 'arbre'];
+
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS boite (id INTEGER PRIMARY KEY AUTOINCREMENT, app TEXT, nom TEXT, texte TEXT, contact TEXT, ip TEXT,
+     suivi TEXT, cree INTEGER, lu INTEGER DEFAULT 0, reponse TEXT, repondu INTEGER, uid TEXT, page TEXT, appareil TEXT, pays TEXT)`,
+  `CREATE INDEX IF NOT EXISTS boite_cree ON boite (cree)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS boite_suivi ON boite (suivi)`,
+  `CREATE TABLE IF NOT EXISTS boite_lu (cle TEXT PRIMARY KEY, ts INTEGER)`,
+  /* CODES À VALIDER (8.10, Kevin : « la connexion inconnue sur le compte de Laurence ne doit plus jamais arriver ») : un compte SANS code au
+     domaine ne s'ouvre plus sur son nom ; le code posé depuis un appareil inconnu attend ici que Kevin l'accepte (empreinte PBKDF2 seulement). */
+  `CREATE TABLE IF NOT EXISTS code_attente (uid TEXT PRIMARY KEY, nom TEXT, rec TEXT, appareil TEXT, lieu TEXT, reseau TEXT, app TEXT, ts INTEGER)`,
+];
+export const CODE_ATTENTE_SCHEMA = SCHEMA[SCHEMA.length - 1];
+/* INSCRIPTIONS « SANS WHATSAPP » À VALIDER (Kevin 10.10 : « Si pas de WhatsApp, validation admin. Au choix ») : le compte est créé
+   (nom + code) mais FERMÉ partout sauf le portail (fiche `attente_admin`) jusqu'à ce que Kevin l'ouvre ici. */
+export const INSCR_ADMIN_SCHEMA = 'CREATE TABLE IF NOT EXISTS inscription_admin (uid TEXT PRIMARY KEY, nom TEXT, appareil TEXT, lieu TEXT, reseau TEXT, app TEXT, ts INTEGER)';
+export async function inscriptionAdminDeposer(db, r) {
+  if (!db) return false;
+  await db.prepare(INSCR_ADMIN_SCHEMA).run();
+  await db.prepare('INSERT OR REPLACE INTO inscription_admin (uid, nom, appareil, lieu, reseau, app, ts) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(propre(r.uid, 80), propre(r.nom, 80), propre(r.appareil, 90), propre(r.lieu, 80), propre(r.reseau, 80), propre(r.app, 60), r.ts || Date.now()).run();
+  return true;
+}
+export async function inscriptionsAdmin(db) {
+  if (!db) return [];
+  await db.prepare(INSCR_ADMIN_SCHEMA).run();
+  const rows = ((await db.prepare('SELECT uid, nom, appareil, lieu, reseau, app, ts FROM inscription_admin ORDER BY ts DESC LIMIT 30').all()).results) || [];
+  return rows.map((r) => ({ uid: r.uid, nom: r.nom || r.uid, appareil: r.appareil || '', lieu: r.lieu || '', reseau: r.reseau || '', app: r.app || '', ts: r.ts }));
+}
+/* Kevin tranche : accepter = le compte s'ouvre (la fiche perd `attente_admin`) ; refuser = il reste fermé (`attente_admin: 'refuse'`). */
+export async function inscriptionAdminDecider(env, db, outils, uid, accepter, now) {
+  if (!db || !env || !env.ACCOUNTS) return { ok: false, reason: 'indisponible' };
+  await db.prepare(INSCR_ADMIN_SCHEMA).run();
+  const r = await db.prepare('SELECT uid, nom, appareil, lieu FROM inscription_admin WHERE uid = ?').bind(uid).first();
+  if (!r) return { ok: false, reason: 'demande_introuvable' };
+  let a = null; try { a = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); } catch { a = null; }
+  if (a) {
+    if (accepter) { delete a.attente_admin; a.valide_admin_at = now; } else { a.attente_admin = 'refuse'; a.refuse_admin_at = now; }
+    await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a));
+    ficheOubliee(env, uid);   /* la décision de l'admin vaut tout de suite dans cet isolat (acc-memo.js) */
+  }
+  await db.prepare('DELETE FROM inscription_admin WHERE uid = ?').bind(uid).run();
+  if (outils && outils.journal) { try { await outils.journal({ ev: accepter ? 'inscription_admin_validee' : 'inscription_admin_refusee', uid, name: r.nom, detail: (accepter ? 'inscription sans WhatsApp ouverte par l\'admin' : 'inscription sans WhatsApp refusée par l\'admin') + ' · ' + (r.appareil || '?') + ' · ' + (r.lieu || '?') }); } catch { /* */ } }
+  return { ok: true, uid, nom: r.nom, accepte: !!accepter, fiche: !!a };
+}
+/* Dépose (ou remplace) la demande de code d'un compte. Appelé par le routeur (/__sso/issue, /__sso/login). */
+export async function codeAttenteDeposer(db, r) {
+  if (!db) return false;
+  await db.prepare(CODE_ATTENTE_SCHEMA).run();
+  await db.prepare('INSERT OR REPLACE INTO code_attente (uid, nom, rec, appareil, lieu, reseau, app, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(propre(r.uid, 80), propre(r.nom, 80), String(r.rec || ''), propre(r.appareil, 90), propre(r.lieu, 80), propre(r.reseau, 80), propre(r.app, 60), r.ts || Date.now()).run();
+  return true;
+}
+export async function codesAttente(db) {
+  if (!db) return [];
+  await db.prepare(CODE_ATTENTE_SCHEMA).run();
+  const rows = ((await db.prepare('SELECT uid, nom, appareil, lieu, reseau, app, ts FROM code_attente ORDER BY ts DESC LIMIT 30').all()).results) || [];
+  return rows.map((r) => ({ uid: r.uid, nom: r.nom || r.uid, appareil: r.appareil || '', lieu: r.lieu || '', reseau: r.reseau || '', app: r.app || '', ts: r.ts }));
+}
+/* Kevin tranche : accepter = le code devient CELUI du compte (cred:<uid>) ; refuser = la demande disparaît. Dans les deux cas, journal. */
+export async function codeDecider(env, db, outils, uid, accepter, now) {
+  if (!db || !env || !env.ACCOUNTS) return { ok: false, reason: 'indisponible' };
+  const r = await db.prepare('SELECT uid, nom, rec, appareil, lieu, reseau FROM code_attente WHERE uid = ?').bind(uid).first();
+  if (!r) return { ok: false, reason: 'demande_introuvable' };
+  if (accepter) {
+    await env.ACCOUNTS.put('cred:' + uid, r.rec);
+    /* « J'ai validé son code et il reste bloqué » (Kevin 16.10) : accepter le CODE d'une personne que l'admin a sous les yeux (nom, appareil, lieu) vaut
+       aussi ouverture du compte — sinon `attente_admin` restait posé, la demande d'inscription avait déjà quitté la file, et la personne ne
+       pouvait plus jamais entrer. Un compte refusé par l'admin puis dont il accepte le code est rouvert : le dernier geste de Kevin gagne. */
+    try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); if (a) { a.code_at = now; delete a.revoked_at_code; if (a.attente_admin) { delete a.attente_admin; a.valide_admin_at = now; } await env.ACCOUNTS.put('acc:' + uid, JSON.stringify(a)); ficheOubliee(env, uid); } } catch { /* fiche illisible : le code vaut quand même */ }
+  }
+  await db.prepare('DELETE FROM code_attente WHERE uid = ?').bind(uid).run();
+  if (accepter) { try { await db.prepare('DELETE FROM inscription_admin WHERE uid = ?').bind(uid).run(); } catch { /* table absente */ } }
+  if (outils && outils.journal) { try { await outils.journal({ ev: accepter ? 'code_valide' : 'code_refuse', uid, name: r.nom, detail: (accepter ? 'code accepté par l\'admin' : 'code refusé par l\'admin') + ' · ' + (r.appareil || '?') + ' · ' + (r.lieu || '?') + ' · ' + (r.reseau || '?') }); } catch { /* */ } }
+  return { ok: true, uid, nom: r.nom, accepte: !!accepter };
+}
+const pret = new WeakSet();
+/* La table existait déjà sans ces colonnes (boîte en ligne depuis le 3.10 au soir) : on les ajoute, une erreur « colonne déjà là » est normale. */
+const COLONNES = ['uid', 'page', 'appareil', 'pays'];
+async function schema(db) {
+  if (pret.has(db)) return;
+  await schemaCercle(db); await db.batch(SCHEMA.map((s) => db.prepare(s)));
+  for (const c of COLONNES) { try { await db.prepare('ALTER TABLE boite ADD COLUMN ' + c + ' TEXT').run(); } catch { /* déjà présente */ } }
+  await db.prepare('CREATE INDEX IF NOT EXISTS boite_uid ON boite (uid, cree)').run();
+  pret.add(db);
+}
+/* « iPhone · Safari », « Windows · Chrome » : de quoi reconnaître l'appareil, rien de plus (pas de User-Agent brut conservé). */
+export function appareilDe(ua) {
+  const u = String(ua || '');
+  const sys = /iPhone|iPad/.test(u) ? 'iPhone' : /Android/.test(u) ? 'Android' : /Windows/.test(u) ? 'Windows' : /Macintosh|Mac OS/.test(u) ? 'Mac' : /Linux/.test(u) ? 'Linux' : 'appareil inconnu';
+  const nav = /Edg\//.test(u) ? 'Edge' : /Firefox|FxiOS/.test(u) ? 'Firefox' : /CriOS|Chrome/.test(u) ? 'Chrome' : /Safari/.test(u) ? 'Safari' : 'navigateur inconnu';
+  return sys + ' · ' + nav;
+}
+const un = async (db, sql, ...p) => db.prepare(sql).bind(...p).first();
+const tous = async (db, sql, ...p) => ((await db.prepare(sql).bind(...p).all()).results) || [];
+const faire = async (db, sql, ...p) => db.prepare(sql).bind(...p).run();
+
+const propre = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000b-\u001f\u007f]+/g, ' ').replace(/[ \t]+/g, ' ').trim().slice(0, n);
+const apercu = (v, n) => propre(v, 4000).replace(/\s+/g, ' ').slice(0, n);
+
+/* Mémo par instance, par source : D1 et Firebase (Lingua, CMCteams, dépôts) 5 s = quasi temps réel, plusieurs onglets ne multiplient pas les lectures ;
+   les sources lues en KV (Rotaplan, Arbre, alertes : jusqu'à 17 lectures chacune) 60 s — le quota gratuit de lectures KV est de 100 000 par jour. */
+const memo = new Map();
+const TTL_SOURCE = { rotaplan: 'memoKvMs', arbre: 'memoKvMs', alertes: 'memoKvMs' };
+async function memoise(cle, now, fn) {
+  const m = memo.get(cle);
+  if (m && now - m.t < LIMITES[TTL_SOURCE[cle] || 'memoMs']) return m.v;
+  const v = await fn(); memo.set(cle, { t: now, v }); return v;
+}
+export function _viderMemo() { memo.clear(); }
+
+/* ── adaptateur : Lingua (D1) ─────────────────────────────────────────────────────────────────────────────── */
+async function lireLingua(db) {
+  const convs = await tous(db, `SELECT m.de AS uid, MAX(m.id) AS dernier, SUM(CASE WHEN m.lu = 0 THEN 1 ELSE 0 END) AS nl
+      FROM messages m WHERE m.a = ? AND m.de != 'systeme' GROUP BY m.de ORDER BY dernier DESC LIMIT ?`, ADMIN, LIMITES.convs);
+  const items = [];
+  for (const c of convs) {
+    const p = await un(db, 'SELECT nom FROM profils WHERE uid = ?', c.uid);
+    const fil = (await tous(db, `SELECT de, type, corps, cree FROM messages WHERE (a = ? AND de = ?) OR (a = ? AND de = ?) ORDER BY id DESC LIMIT ?`,
+      ADMIN, c.uid, c.uid, ADMIN, LIMITES.fil)).reverse().map((m) => ({ moi: m.de === ADMIN, texte: m.corps || (m.type === 'cadeau' ? '🎁 un cadeau' : '…'), ts: m.cree }));
+    const dernierEux = [...fil].reverse().find((m) => !m.moi);
+    items.push({ cle: 'lingua:' + c.uid, source: 'lingua', app: 'lingua.kd-mc.com', de: (p && p.nom) || 'Membre Lingua', ts: fil.length ? fil[fil.length - 1].ts : 0,
+      texte: dernierEux ? dernierEux.texte : fil.length ? fil[fil.length - 1].texte : '', nonLus: c.nl || 0, lu: !c.nl, repondre: 'direct', fil });
+  }
+  return items;
+}
+
+/* ── adaptateur : CMCteams (Firebase) ─────────────────────────────────────────────────────────────────────── */
+async function fb(outils, chemin, methode, corps, requete) {
+  const f = outils.fetch || fetch;
+  let jeton = ''; try { jeton = (outils.fbToken && (await outils.fbToken())) || ''; } catch { jeton = ''; }
+  const q = [requete || '', jeton ? 'auth=' + encodeURIComponent(jeton) : ''].filter(Boolean).join('&');
+  const r = await f(FB_URL + '/' + chemin.split('/').map(encodeURIComponent).join('/') + '.json' + (q ? '?' + q : ''), {
+    method: methode || 'GET', headers: { 'content-type': 'application/json' }, body: corps === undefined ? undefined : JSON.stringify(corps), signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error('firebase ' + r.status);
+  return r.json();
+}
+const liste = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []).filter((x) => x && typeof x === 'object');
+async function lireCmcteams(outils) {
+  const [boite, rep, lus] = await Promise.all([fb(outils, 'cmc_kevin_inbox'), fb(outils, 'cmc_dep_reply').catch(() => null), fb(outils, 'cmc_dep_read').catch(() => null)]);
+  const g = new Map();
+  for (const m of liste(boite)) {
+    const dk = String(m.dkey || m.from || '?' + (m.name || '')).trim() || '?';
+    if (!g.has(dk)) g.set(dk, { dk, nom: m.name || dk, equipe: m.team || '', msgs: [] });
+    const c = g.get(dk); if (m.name) c.nom = m.name; if (m.team) c.equipe = m.team;
+    c.msgs.push({ moi: false, texte: apercu(m.text, 600) + (m.hasImg ? ' 📷' : ''), ts: +m.ts || 0 });
+  }
+  for (const [dk, arr] of Object.entries(rep && typeof rep === 'object' ? rep : {})) {
+    if (!g.has(dk)) g.set(dk, { dk, nom: nomLisibleCmc(dk), equipe: '', msgs: [] });
+    for (const r of liste(arr)) if (r.text) g.get(dk).msgs.push({ moi: true, texte: apercu(r.text, 600), ts: +r.ts || 0 });
+  }
+  const items = [];
+  for (const c of g.values()) {
+    c.msgs.sort((a, b) => a.ts - b.ts);
+    const lu = parseInt((lus && lus[c.dk]) || 0, 10) || 0;
+    const nl = c.msgs.filter((m) => !m.moi && m.ts > lu).length;
+    const dernierEux = [...c.msgs].reverse().find((m) => !m.moi);
+    items.push({ cle: 'cmc:' + c.dk, source: 'cmcteams', app: 'cmcteams.kd-mc.com', de: c.nom + (c.equipe ? ' · ' + c.equipe : ''), ts: c.msgs.length ? c.msgs[c.msgs.length - 1].ts : 0,
+      texte: dernierEux ? dernierEux.texte : (c.msgs.length ? 'Toi : ' + c.msgs[c.msgs.length - 1].texte : ''), nonLus: nl, lu: !nl, repondre: 'direct', fil: c.msgs.slice(-LIMITES.fil) });
+  }
+  return items.sort((a, b) => b.ts - a.ts).slice(0, LIMITES.convs);
+}
+
+/* ── CMCteams : le TRAVAIL de chaque personne (Kevin 4.10 « va lire partout, enregistre tout ») ───────────────────────────
+   Lecture seule en direct dans Firebase, rien n'est recopié : les questions posées à l'IA (`cmc_ia_log`) et les modifications de planning
+   (`cmc_audit`) rejoignent la fiche de la personne (carte par nom). 60 dernières lignes de chaque, 7 jours, questions coupées à 160 caractères. */
+export async function lireTravailCmc(outils, now) {
+  const Q = 'orderBy=' + encodeURIComponent('"$key"') + '&limitToLast=60';
+  const [ia, audit] = await Promise.all([fb(outils, 'cmc_ia_log', 'GET', undefined, Q).catch(() => null), fb(outils, 'cmc_audit', 'GET', undefined, Q).catch(() => null)]);
+  const depuis = now - 7 * 864e5, ev = [];
+  for (const e of liste(ia)) {
+    const ts = +e.ts || 0, nom = propre(e.name, 60);
+    if (ts >= depuis && nom) ev.push({ nom, ts, app: 'cmcteams.kd-mc.com', texte: '💬 Question à l\'IA de CMCteams' + (e.team ? ' (' + propre(e.team, 20) + ')' : '') + ' : ' + apercu(e.q || e.question || '', 160) });
+  }
+  for (const e of liste(audit)) {
+    const ts = +e.ts || 0, nom = propre(e.name, 60);
+    if (ts >= depuis && nom) ev.push({ nom, ts, app: 'cmcteams.kd-mc.com', texte: '📅 Planning modifié' + (e.day ? ' le ' + e.day + '.' + e.month + '.' + e.year : '') + ' : ' + apercu(String(e.old == null ? '∅' : e.old), 40) + ' → ' + apercu(String(e.new == null ? '∅' : e.new), 40) });
+  }
+  return ev;
+}
+
+/* ── adaptateurs KV (lecture seule) + état « lu » en D1 ───────────────────────────────────────────────────── */
+async function luesD1(db, cles) {
+  if (!cles.length) return new Set();
+  const r = await tous(db, `SELECT cle FROM boite_lu WHERE cle IN (${cles.map(() => '?').join(',')})`, ...cles);
+  return new Set(r.map((x) => x.cle));
+}
+async function lireRotaplan(env, db) {
+  if (!env.ACCOUNTS) return [];
+  const idx = JSON.parse((await env.ACCOUNTS.get('demandes:idx')) || '[]').slice(-15).reverse();
+  const out = [];
+  for (const k of idx) { const v = await env.ACCOUNTS.get(k); if (v) { try { out.push({ k, d: JSON.parse(v) }); } catch { /* ligne illisible : ignorée */ } } }
+  const lues = await luesD1(db, out.map((x) => 'demande:' + x.k));
+  return out.map(({ k, d }) => ({ cle: 'demande:' + k, source: 'rotaplan', app: 'rotaplan.kd-mc.com', de: propre((d.prenom || '') + ' ' + (d.nom || ''), 80) || 'Demande', ts: d.ts || 0,
+    texte: apercu([d.etablissement, d.fonction, d.effectif && 'effectif ' + d.effectif, d.rotations].filter(Boolean).join(' · '), 500), contact: propre(d.email, 120),
+    nonLus: lues.has('demande:' + k) ? 0 : 1, lu: lues.has('demande:' + k), repondre: 'mailto',
+    mailto: d.email ? 'mailto:' + encodeURIComponent(d.email).replace(/%40/g, '@') + '?subject=' + encodeURIComponent('Rotaplan — ta demande de démonstration') : '', fil: [] }));
+}
+const nomPropre = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+/* « MORTER_LUDOVIC » (clé de CMCteams : NOM_PRÉNOM) → « Ludovic Morter » ; un nom déjà lisible reste tel quel. */
+export function nomLisibleCmc(cle) {
+  const c = String(cle || '').trim();
+  if (!/^[A-ZÀ-ÖØ-Þ0-9'-]+(_[A-Za-zÀ-ÿ0-9'-]+)+$/.test(c)) return c;
+  const [nom, ...prenoms] = c.split('_');
+  const cap = (m) => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase();
+  return prenoms.map(cap).concat(cap(nom)).join(' ');
+}
+async function lireArbre(env, db) {
+  if (!env.ACCOUNTS) return [];
+  let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('arbre:journal')) || '[]'); } catch { j = []; }
+  /* Ses PROPRES modifications (Kevin 22.10, capture : « Kevin DESARZENS · modification · sa photo ») ne sont pas des messages qu'il reçoit : on ne garde que celles des autres. */
+  const parLui = (e) => { const n = nomPropre(e.par); return n.includes('kevin') && n.includes('desarzens'); };
+  j = (Array.isArray(j) ? j : []).filter((e) => e && e.ts && !parLui(e)).slice(0, 15);
+  const cles = j.map((e) => 'arbre:' + e.ts + '-' + propre(e.id, 20));
+  const lues = await luesD1(db, cles);
+  return j.map((e, i) => ({ cle: cles[i], source: 'arbre', app: 'arbre.kd-mc.com', de: propre(e.par, 60) || 'Un membre de la famille', ts: e.ts,
+    texte: apercu(propre(e.type, 20) + ' · ' + propre(e.qui, 80) + ' — ' + (Array.isArray(e.champs) ? e.champs.slice(0, 3).map((c) => c.c + ' : ' + (c.avant || '∅') + ' → ' + (c.apres || '∅')).join(' · ') : ''), 400),
+    nonLus: lues.has(cles[i]) ? 0 : 1, lu: lues.has(cles[i]), repondre: null, fil: [] }));
+}
+const EV_ALERTES = { nouvelle_connexion: '🆕 Nouvelle connexion', nouvel_inscrit: '🆕 Nouvel inscrit', new_device: '🔐 Nouvel appareil', geo_anomaly: '⚠️ Connexion suspecte',
+  quota_inscriptions_atteint: '🛑 Inscriptions suspendues', admin_login_fail: '🚫 Code admin refusé', matricule_refuse: '🪪 Matricule SBM refusé',
+  pointage_loin: '📍 Pointage loin du casino', inscription_refusee: '🚫 Inscription refusée', demande_chef: '⭐ Demande de changement de chef' };
+/* « TOUTES LES INFOS POSSIBLES » (Kevin 4.10) : une alerte se déplie en lignes lisibles — qui, où, quel appareil, quel réseau, pourquoi. */
+export function infosAlerte(e) {
+  const l = [];
+  if (e.name || e.uid) l.push('👤 ' + (e.name || '?') + (e.uid ? ' (' + e.uid + ')' : ''));
+  if (e.app) l.push('📱 ' + e.app + (e.page || ''));
+  if (e.device) l.push('🖥️ ' + e.device + (e.os && !String(e.device).includes(e.os) ? ' · ' + e.os : ''));
+  if (e.place) l.push('🌍 ' + e.place);
+  if (e.ev === 'geo_anomaly') l.push('↔️ Avant : ' + (e.lieu_precedent || e.pays_precedent || '?') + (e.isp_precedent ? ' · ' + e.isp_precedent + (e.asn_precedent ? ' (AS' + e.asn_precedent + ')' : '') : '') + ' — il y a ' + (e.mins != null ? e.mins : '?') + ' min');
+  if (e.isp) l.push('🛰️ ' + e.isp + (e.asn ? ' (AS' + e.asn + ')' : '') + (e.vpn ? ' · VPN/hébergeur' : ''));
+  if (e.lang || e.tz) l.push('🗣️ ' + [e.lang, e.tz].filter(Boolean).join(' · '));
+  if (e.arrivee) l.push('🚪 Arrivé par : ' + e.arrivee);
+  if (e.ev === 'geo_anomaly') l.push('ℹ️ Même compte vu dans deux pays à moins d\'une heure, par des réseaux ordinaires (ni Relais privé iCloud, ni VPN) : à vérifier.');
+  return l;
+}
+const jourFr = (ts) => (ts ? new Date(ts).toISOString().slice(0, 10) : '?');
+const dureeFr = (ms) => { const m = Math.round((ms || 0) / 60e3); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0'); };
+/* Ce que le domaine sait d'une personne (sa fiche) + ce qu'elle a fait ces 7 jours : de quoi tout lire sur une seule carte. */
+export async function ficheLignes(env, db, uid, now) {
+  const l = [];
+  let acc = null; try { acc = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); } catch { acc = null; }
+  if (acc) {
+    l.push('👤 ' + (acc.name || '?') + ' (' + uid + ')' + (acc.created ? ' · inscrit le ' + jourFr(acc.created) : '') + ' · ' + (acc.hits || 0) + ' session(s) · vu pour la dernière fois ' + jourFr(acc.last_seen));
+    const apps = Object.entries(acc.apps || {}).sort((a, b) => (b[1].ms || 0) - (a[1].ms || 0)).slice(0, 5).map(([h, a]) => h.split('.')[0] + ' ' + (a.sessions || 0) + '× ' + dureeFr(a.ms));
+    if (apps.length) l.push('📱 Apps : ' + apps.join(' · '));
+    if ((acc.devices || []).length) l.push('🖥️ Appareils : ' + acc.devices.join(', '));
+    /* APPAREIL PAR APPAREIL (Kevin 4.10 : « appareil aussi ») : depuis l'historique des sessions de la fiche, ce que chaque appareil a fait — quand, où, par quel opérateur */
+    const A = new Map();
+    for (const h of acc.history || []) {
+      const k = h.dev || h.device; if (!k) continue;
+      const a = A.get(k) || { n: 0, first: h.ts, last: h.ts, lieux: new Set(), isps: new Set(), vpn: false };
+      a.n++; a.first = Math.min(a.first, h.ts); a.last = Math.max(a.last, h.end || h.ts); if (h.place) a.lieux.add(h.place.split(',')[0]); if (h.isp) a.isps.add(h.isp); if (h.vpn) a.vpn = true;
+      A.set(k, a);
+    }
+    const act = new Map((await activite.parAppareil(db, uid, now - 7 * 864e5).catch(() => [])).map((x) => [x.appareil, x]));
+    for (const k of act.keys()) if (!A.has(k)) A.set(k, { n: 0, first: act.get(k).dernier, last: act.get(k).dernier, lieux: new Set(), isps: new Set(), vpn: false });
+    for (const [k, a] of [...A.entries()].sort((x, y) => y[1].last - x[1].last).slice(0, 5)) {
+      l.push('📲 ' + k + ' — ' + (a.n ? a.n + ' session(s), ' : '') + 'du ' + jourFr(a.first) + ' au ' + jourFr(a.last) + (a.lieux.size ? ' · ' + [...a.lieux].slice(0, 3).join(', ') : '') + (a.isps.size ? ' · ' + [...a.isps].slice(0, 2).join(' / ') : '') + (a.vpn ? ' · VPN/hébergeur' : '') + (act.get(k) ? ' · ' + act.get(k).n + ' événement(s) en 7 jours' : ''));
+    }
+    if ((acc.places || []).length) l.push('📍 Lieux : ' + acc.places.slice(-4).join(' | '));
+    if (acc.last_isp) l.push('🛰️ ' + acc.last_isp + (acc.last_net && acc.last_net.asn ? ' (AS' + acc.last_net.asn + ')' : '') + (acc.last_vpn ? ' · VPN/hébergeur' : ''));
+    if (acc.last_lang || acc.last_tz) l.push('🗣️ ' + [acc.last_lang, acc.last_tz].filter(Boolean).join(' · '));
+    if (acc.portee) l.push('🔑 Portée : ' + acc.portee + ((acc.acces || []).length ? ' (' + acc.acces.join(', ') + ')' : ''));
+  }
+  const r = await activite.resume(db, uid, now - 7 * 864e5).catch(() => null);
+  if (r && r.total) {
+    const T = r.parType, n = (k) => T[k] || 0;
+    l.push('📊 7 jours : ' + [n('visite') && n('visite') + ' page(s) consultée(s)', n('question') && n('question') + ' question(s)', n('modif') && n('modif') + ' enregistrement(s)', n('message') + n('contact') && (n('message') + n('contact')) + ' message(s)', n('connexion') && n('connexion') + ' connexion(s)'].filter(Boolean).join(' · '));
+    if (r.pages.length) l.push('🔝 Pages les plus consultées : ' + r.pages.map(([p, c]) => p + ' ×' + c).join(' · '));
+    if (r.derniereQuestion) l.push('❓ Dernière question (' + r.derniereQuestion.app + ') : « ' + r.derniereQuestion.texte + ' »');
+  }
+  return l;
+}
+/* Un lot de personnes à la fois (chaque lot en parallèle) : D1 et KV n'aiment pas 20 lectures simultanées par personne. */
+function parLots(liste, taille, f) {
+  const lots = [];
+  for (let i = 0; i < liste.length; i += taille) lots.push(liste.slice(i, i + taille));
+  return lots.reduce((suite, lot) => suite.then(async (acc) => acc.concat(await Promise.all(lot.map(f)))), Promise.resolve([]));
+}
+/* Une ligne d'activité de la base → un événement du fil de la personne. */
+function evenementActivite(a) {
+  const ou = a.app && a.type !== 'visite' && a.type !== 'connexion' ? ' (' + a.app.split('.')[0] + ')' : '';
+  return { ts: a.ts, texte: (activite.TYPES[a.type] || a.type) + (a.detail ? ' ' + a.detail : '') + ou + (a.appareil ? ' · 📲 ' + activite.appareilCourt(a.appareil) : ''), app: a.app };
+}
+/* LE NOM DU COMPTE, jamais « Inconnu » (Kevin 8.10, capture : « Inconnu — nouvel appareil… compte laurence-saint-polit ») : une alerte
+   enregistrée sans nom porte quand même le compte → on lit SA fiche ; sans fiche, le nom se lit dans l'identifiant lui-même. */
+async function nomDeLaPersonne(env, p) {
+  if (!p.nom && p.uid) { try { const a = JSON.parse((await env.ACCOUNTS.get('acc:' + p.uid)) || 'null'); if (a?.name) p.nom = String(a.name); } catch { /* fiche illisible : on passe à l'identifiant */ } }
+  if (p.nom) return p.nom;
+  if (p.id === 'systeme') return 'Alertes du domaine';
+  return p.uid ? nomDepuisUid(p.uid) : 'Inconnu';
+}
+/* La carte d'UNE personne (son fil, sa fiche, ses alertes non lues) ; null s'il n'y a rien à montrer. */
+async function cartePersonne(env, db, now, marq, p) {
+  if (p.uid) for (const a of await activite.fil(db, p.uid, activite.LIM.fil).catch(() => [])) p.evts.push(evenementActivite(a));
+  if (!p.evts.length) return null;
+  p.evts.sort((a, b) => a.ts - b.ts);
+  const fil = p.evts.slice(-activite.LIM.fil), dernier = fil[fil.length - 1];
+  const lu = marq.get('perso:' + p.id) || 0;
+  const nonLus = p.alertes.filter((e) => e.ts > lu && now - e.ts <= LIMITES.alerteFraicheur).length;
+  const nom = await nomDeLaPersonne(env, p);
+  const fiche = p.uid ? await ficheLignes(env, db, p.uid, now) : [];
+  /* les lignes de la DERNIÈRE alerte (réseau, d'où il venait, pourquoi) s'ajoutent à la fiche, sans répéter « qui » quand la fiche le dit déjà */
+  const derniereAlerte = p.alertes.length ? p.alertes[p.alertes.length - 1].infos.filter((x) => !(fiche.length && x.startsWith('👤'))) : [];
+  return { cle: 'perso:' + p.id, source: 'alertes', app: (dernier.app || 'domaine'), de: nom, ts: dernier.ts, texte: apercu(dernier.texte, 300), perso: true,
+    infos: fiche.concat(derniereAlerte),
+    nonLus, lu: !nonLus, repondre: null, fil: fil.map((e) => ({ moi: false, texte: e.texte, ts: e.ts })) };
+}
+/* UNE CARTE PAR PERSONNE (Kevin 4.10 : « le même compte qui se connecte ne se multiplie pas, il s'ajoute dans sa fiche, remonte dans le fil »).
+   Les alertes du journal (nouvel appareil, changement de pays, nouvel inscrit) et l'activité de la personne (pages, questions, modifications, lieux) sont
+   REGROUPÉES par compte : une seule carte, un fil du plus ancien au plus récent, la dernière activité la fait remonter. Seules les ALERTES comptent en rouge. */
+async function lirePersonnes(env, db, now, outils) {
+  if (!env.ACCOUNTS) return [];
+  let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { j = []; }
+  /* Les changements de pays enregistrés AVANT le 4.10 n'ont pas de réseau noté : impossible de dire si c'était le Relais privé iCloud (c'était le cas de ceux
+     que Kevin a vus) → ils sont écartés. Les nouvelles alertes de ce type ne partent que pour des réseaux ordinaires. */
+  /* Les répétitions (même événement, même appareil, < 30 min) ne font qu'UNE ligne « ×5 », et chaque ligne dit en clair ce qui s'est passé (texteAlerte). */
+  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type] && !((e.ev === 'geo_anomaly') && (e.asn === undefined || e.masque))).slice(0, 120)).slice(0, 80);
+  const P = new Map();
+  const dossier = (id, uid, nom) => { if (!P.has(id)) P.set(id, { id, uid, nom: nom || '', evts: [], alertes: [] }); const p = P.get(id); if (nom && !p.nom) p.nom = nom; return p; };
+  for (const e of j) {
+    const id = e.uid ? 'u:' + e.uid : e.name ? 'n:' + String(e.name).toLowerCase().slice(0, 40) : 'systeme';
+    const p = dossier(id, e.uid || '', e.name || '');
+    const x = e._n > 1 ? ' ×' + e._n + ' (' + e._n + ' fois en ' + Math.max(1, Math.round((e.ts - e._dernier) / 6e4)) + ' min)' : '';
+    const ev = { ts: e.ts, texte: EV_ALERTES[e.ev || e.type] + x + (texteAlerte(e) ? ' — ' + texteAlerte(e) : ''), alerte: true, infos: infosAlerte(e), app: e.app || '' };
+    p.evts.push(ev); p.alertes.push(ev);
+  }
+  /* les deux lectures (comptes actifs, travail dans CMCteams) partent ENSEMBLE : mesuré le 17.10, la source « alertes » prenait 11 s parce que tout s'enchaînait */
+  const [actifs, travail] = await Promise.all([activite.actives(db, now - 3 * 864e5, 20).catch(() => []), outils ? lireTravailCmc(outils, now).catch(() => []) : []]);
+  for (const a of actifs) dossier('u:' + a.uid, a.uid, a.nom).dernier = a.dernier || 0;
+  /* le travail dans CMCteams : une carte par NOM (les identifiants de CMCteams ne sont pas ceux du domaine) */
+  for (const t of travail) { const p = dossier('n:' + t.nom.toLowerCase().slice(0, 40), '', t.nom); p.evts.push({ ts: t.ts, texte: t.texte, app: t.app }); }
+  /* UNE SEULE CARTE PAR PERSONNE, même quand une alerte ne porte que le NOM (8.10, capture de Kevin : « Andrea CASELLA » en alerte
+     « nouvelle connexion » ET « Andrea Casella » en carte de compte) : un dossier « par nom » rejoint le dossier « par compte » du même nom. */
+  const cleNom = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const parNom = new Map();
+  for (const p of P.values()) if (p.uid && p.nom) parNom.set(cleNom(p.nom), p);
+  for (const [id, p] of [...P.entries()]) {
+    if (p.uid || id === 'systeme') continue;
+    const cible = parNom.get(cleNom(p.nom));
+    if (!cible) continue;
+    cible.evts.push(...p.evts); cible.alertes.push(...p.alertes); P.delete(id);
+  }
+  /* Seules les 20 cartes les plus récentes sont rendues : inutile de lire la fiche et le fil de 100 personnes pour n'en garder que 20.
+     On garde les 30 dont le dernier signe de vie CONNU (alerte, activité, travail dans CMCteams) est le plus récent (10 de marge pour l'activité
+     encore non lue). Même résultat qu'avant, 3 fois moins de lectures. */
+  const recence = (p) => p.evts.reduce((m, e) => Math.max(m, e.ts || 0), p.dernier || 0);
+  const retenus = [...P.values()].sort((a, b) => recence(b) - recence(a)).slice(0, 30);
+  const ids = retenus.map((p) => 'perso:' + p.id);
+  const marq = new Map();
+  if (ids.length) for (const r of await tous(db, `SELECT cle, ts FROM boite_lu WHERE cle IN (${ids.map(() => '?').join(',')})`, ...ids)) marq.set(r.cle, r.ts);
+  /* UNE LECTURE PAR PERSONNE, TOUTES EN MÊME TEMPS (par lots de 8) : avant, 20 personnes × 4 lectures s'enchaînaient (≈ 11 s mesurées) */
+  const out = (await parLots(retenus, 8, (p) => cartePersonne(env, db, now, marq, p))).filter(Boolean);
+  return out.sort((a, b) => b.ts - a.ts).slice(0, 20);
+}
+/* « laurence-saint-polit » → « Laurence Saint-Polit (compte laurence-saint-polit) » : lisible, et le compte reste nommé tel quel. */
+export function nomDepuisUid(uid) {
+  const u = String(uid || '').trim();
+  if (!u) return 'Inconnu';
+  /* « prenom-nom-compose » : le 1er mot est le prénom, le reste est le nom (ses traits d'union gardés : saint-polit). */
+  const mots = u.split(/[-_.\s]+/).filter(Boolean);
+  const cap = (m) => m[0].toUpperCase() + m.slice(1);
+  const joli = mots.length >= 2 && mots.every((m) => /^[a-zà-ÿ]+$/i.test(m)) ? cap(mots[0]) + ' ' + mots.slice(1).map(cap).join('-') : '';
+  return joli ? joli + ' (compte ' + u + ')' : 'Compte ' + u;
+}
+/* 6.10 (Kevin, capture « Code admin refusé » ×5 sans texte, bulle vide) : chaque alerte dit en clair ce qui s'est passé, depuis où,
+   et les répétitions (même événement, même appareil, à moins de 30 min d'écart) ne font qu'UNE carte « ×5 ». */
+const GROUPE_MS = 30 * 6e4;
+export function texteAlerte(e) {
+  const base = e.detail || e.text || e.name || (e.ev === 'admin_login_fail' ? 'Un mauvais code admin a été tapé' : '');
+  const ou = [e.app && e.app !== 'domaine' ? 'depuis ' + e.app : '', e.pays ? 'pays ' + e.pays : '', e.uid ? 'compte ' + e.uid : '',
+    e.ip ? 'appareil n° ' + String(e.ip).slice(0, 6) : ''].filter(Boolean).join(' · ');
+  return apercu(base + (base && ou ? ' — ' : '') + ou, 300);
+}
+export function grouperAlertes(liste) {
+  const out = [];
+  for (const e of liste) {
+    const g = out.at(-1);
+    const meme = g && (g.ev || g.type) === (e.ev || e.type) && (g.ip || g.uid || '') === (e.ip || e.uid || '') && (g.app || '') === (e.app || '');
+    if (meme && g._dernier - e.ts <= GROUPE_MS) { g._n++; g._dernier = e.ts; continue; }
+    out.push({ ...e, _n: 1, _dernier: e.ts });
+  }
+  return out;
+}
+async function lireAlertes(env, db, now) {
+  if (!env.ACCOUNTS) return [];
+  let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { j = []; }
+  /* Les changements de pays enregistrés AVANT le 4.10 n'ont pas de réseau noté : impossible de dire si c'était le Relais privé iCloud → écartés. */
+  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type] && !((e.ev === 'geo_anomaly') && (e.asn === undefined || e.masque))).slice(0, 40)).slice(0, 15);
+  const cles = j.map((e) => 'alerte:' + e.ts + '-' + (e.ev || e.type));
+  const lues = await luesD1(db, cles);
+  /* Une alerte de plus de 48 h est lue d'office : elle reste visible (historique) mais ne fait plus de rouge — mesuré par Kevin le 4.10 :
+     14 alertes de 6 jours « non lues » passaient devant ses vrais messages. */
+  return j.map((e, i) => { const vue = lues.has(cles[i]) || now - e.ts > LIMITES.alerteFraicheur;
+    const n = e._n > 1 ? ' ×' + e._n : '';
+    const duree = e._n > 1 ? ' (' + e._n + ' fois en ' + Math.max(1, Math.round((e.ts - e._dernier) / 6e4)) + ' min)' : '';
+    return { cle: cles[i], source: 'alertes', app: e.app || 'domaine', de: EV_ALERTES[e.ev || e.type] + n, ts: e.ts,
+      texte: texteAlerte(e) + duree, infos: infosAlerte(e), nonLus: vue ? 0 : 1, lu: vue, repondre: null, fil: [] }; });
+}
+/* ── adaptateur : dépôts des autres apps (D1) ─────────────────────────────────────────────────────────────── */
+async function lireDepots(db) {
+  const rows = await tous(db, 'SELECT * FROM boite ORDER BY id DESC LIMIT ?', LIMITES.convs);
+  return rows.map((r) => ({ cle: 'depot:' + r.id, source: 'depots', app: r.app + '.kd-mc.com', de: (r.nom || 'Anonyme') + (r.uid ? '' : ' (non connecté)'), ts: r.cree, texte: apercu(r.texte, 600), contact: r.contact || '',
+    nonLus: r.lu ? 0 : 1, lu: !!r.lu, repondre: 'direct',
+    /* « j'ai toutes les infos » : qui (compte), depuis quelle app et quelle page, quel appareil, d'où */
+    infos: [r.uid ? '👤 Compte : ' + (r.nom || '?') + ' (' + r.uid + ')' : '👤 Non connecté', '📱 ' + r.app + '.kd-mc.com' + (r.page || ''), r.appareil ? '🖥️ ' + r.appareil + (r.pays ? ' · ' + r.pays : '') : '', r.contact ? '✉️ ' + r.contact : ''].filter(Boolean),
+    fil: [{ moi: false, texte: apercu(r.texte, 600), ts: r.cree }].concat(r.reponse ? [{ moi: true, texte: apercu(r.reponse, 600), ts: r.repondu || r.cree }] : []) }));
+}
+
+/* ── INSCRIPTIONS EN ATTENTE (Kevin 7.10.2026 : « Je dois voir les inscriptions etc en attente dans le domaine en dessous des messages
+   et dans light. Je débloque de partout où j'ai envie. J'ai une alerte visuelle d'un message ou inscription en attente. ») ──────────
+   MESURÉ avant : CMCteams montrait « 1 code à valider » sur une carte SANS bouton, et la fonction de validation n'était reliée à aucun
+   écran ; une inscription INCOMPLÈTE (sans les renseignements qui la valident seule, v9.927) restait bloquée à la connexion (« En attente
+   de validation par Kevin ») sans que Kevin puisse rien faire. Ici, lues dans CMCteams (Firebase, jeton admin du domaine) :
+     - une fiche (cmc_reg) ni validée ni rattachée à une équipe du planning, créée il y a moins de 60 jours ;
+     - un code d'inscription (cmcteams_secret/codes) encore valable, pas utilisé.
+   Valider = la fiche passe « validée par Kevin » + le code est marqué utilisé. La personne entre à sa prochaine connexion. */
+export const INSCRIPTIONS_JOURS = 60;
+const ID_INSCRIT = /^[A-Za-z0-9_-]{2,40}$/;
+const FB_RACINE = FB_URL.replace(/\/cmcteams$/, '');
+async function fbRacine(outils, chemin, methode, corps) {
+  const f = outils.fetch || fetch;
+  let jeton = ''; try { jeton = (outils.fbToken && (await outils.fbToken())) || ''; } catch { jeton = ''; }
+  const r = await f(FB_RACINE + '/' + chemin.split('/').map(encodeURIComponent).join('/') + '.json' + (jeton ? '?auth=' + encodeURIComponent(jeton) : ''), {
+    method: methode || 'GET', headers: { 'content-type': 'application/json' }, body: corps === undefined ? undefined : JSON.stringify(corps), signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error('firebase ' + r.status);
+  return r.json();
+}
+const valide = (r) => r && (r.verified === true || r.verifiedByAdmin === true);
+/* PURE : la liste des inscriptions en attente (la plus récente d'abord, 30 au plus). */
+export function enAttente(reg, codes, employes, now) {
+  const equipe = new Set(liste(employes).filter((e) => e.id && e.team && e.team !== '?').map((e) => String(e.id)));
+  const R = reg && typeof reg === 'object' ? reg : {}, out = new Map();
+  const nomDe = (x, id) => propre(((x.prenom || '') + ' ' + (x.nom || '')).trim(), 80) || id;
+  for (const [id, r] of Object.entries(R)) {
+    if (!r || typeof r !== 'object' || !ID_INSCRIT.test(id) || valide(r) || r.refuse || equipe.has(id)) continue;
+    const ts = +r.createdAt || 0;
+    if (!ts || now - ts > INSCRIPTIONS_JOURS * 864e5) continue;
+    out.set(id, { id, nom: nomDe(r, id), matricule: propre(r.matricule || '', 10), ts, code: false });
+  }
+  for (const [id, c] of Object.entries(codes && typeof codes === 'object' ? codes : {})) {
+    if (!c || typeof c !== 'object' || c.used || !(+c.expiresAt > now) || !ID_INSCRIT.test(id) || valide(R[id])) continue;
+    const x = out.get(id) || { id, nom: nomDe(c, id), matricule: propre((R[id] && R[id].matricule) || '', 10), ts: +c.createdAt || now, code: true };
+    x.code = true; out.set(id, x);
+  }
+  return [...out.values()].sort((a, b) => b.ts - a.ts).slice(0, 30);
+}
+async function lireInscriptions(outils, now) {
+  const [reg, codes, employes] = await Promise.all([fb(outils, 'cmc_reg'), fbRacine(outils, 'cmcteams_secret/codes').catch(() => null), fb(outils, 'cmc_e').catch(() => null)]);
+  return enAttente(reg, codes, employes, now);
+}
+async function validerInscription(outils, id, now) {
+  if (!ID_INSCRIT.test(id)) return { ok: false, reason: 'inscription_invalide' };
+  const r = await fb(outils, 'cmc_reg/' + id).catch(() => null);
+  if (!r || typeof r !== 'object') return { ok: false, reason: 'inscription_introuvable' };
+  if (!valide(r)) await fb(outils, 'cmc_reg/' + id, 'PATCH', { verified: true, verifiedAt: now, verifiedByAdmin: true, updatedAt: now });
+  await fbRacine(outils, 'cmcteams_secret/codes/' + id, 'PATCH', { used: true, usedAt: now, validatedByAdmin: true }).catch(() => null);
+  memo.delete('inscriptions');
+  return { ok: true, nom: propre(((r.prenom || '') + ' ' + (r.nom || '')).trim(), 80) || id };
+}
+
+/* ── QUI EST EN LIGNE MAINTENANT, dans TOUTES les apps du domaine (Kevin 14.10 : « CMCteams et light en même temps, aussi les autres apps du domaine »).
+ * Aucune requête de plus : chaque app ouverte envoie déjà /__sso/whoami toutes les 60 s ; ce battement est rangé en D1 (gratuite), une ligne par
+ * personne, jamais le KV. Une écriture seulement si le dernier battement a plus de 45 s ou si la personne change d'app (sinon l'UPSERT ne change rien
+ * et ne coûte aucune ligne). « En ligne » = battement de moins de 2 min 30. Lu par l'admin seul (la boîte). */
+export const PRESENCE_MS = 150000, PRESENCE_PAS = 45000;
+const presencePret = new WeakSet();
+async function presenceSchema(db) {
+  if (presencePret.has(db)) return;
+  await db.prepare('CREATE TABLE IF NOT EXISTS presence_domaine (uid TEXT PRIMARY KEY, nom TEXT, app TEXT, ts INTEGER)').run();
+  presencePret.add(db);
+}
+const net1 = (v, n) => propre(String(v == null ? '' : v).replace(/\s+/g, ' '), n);   // une ligne, sans saut de ligne
+/* 16.10 (Kevin, capture : « 1 en ligne maintenant — CI Smoke · apex chat ») : un compte de ROBOT (vérifications du déploiement, uid ci_…)
+   n'est pas une personne — jamais compté présent, jamais écrit. */
+export const estRobot = (uid) => /^ci_/.test(String(uid || ''));
+export async function presenceBattre(db, uid, nom, app, now) {
+  if (!db || !uid || estRobot(uid)) return false;
+  await presenceSchema(db);
+  const r = await db.prepare('INSERT INTO presence_domaine (uid, nom, app, ts) VALUES (?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET nom = excluded.nom, app = excluded.app, ts = excluded.ts WHERE excluded.ts - presence_domaine.ts >= ? OR presence_domaine.app != excluded.app')
+    .bind(propre(uid, 80), net1(nom, 80), net1(app, 60), now, PRESENCE_PAS).run();
+  return !!(r && r.meta && r.meta.changes);
+}
+export async function presenceListe(db, now) {
+  if (!db) return [];
+  await presenceSchema(db);
+  return (await tous(db, 'SELECT uid, nom, app, ts FROM presence_domaine WHERE ts > ? AND uid != ? ORDER BY ts DESC LIMIT 100', now - PRESENCE_MS, ADMIN))
+    .filter((x) => !estRobot(x.uid))
+    .map((x) => ({ uid: propre(x.uid, 80), nom: propre(x.nom, 80) || 'Quelqu\'un', app: propre(x.app, 60), ts: x.ts }));
+}
+
+/* ── la réponse unique ────────────────────────────────────────────────────────────────────────────────────── */
+export async function lireBoite(env, outils, now) {
+  const db = env.CERCLE_DB;
+  if (db) await schema(db);   // idempotent : les tables existent aussi quand on lit sans être passé par la route
+  const essais = {
+    lingua: () => lireLingua(db), cmcteams: () => lireCmcteams(outils), depots: () => lireDepots(db),
+    rotaplan: () => lireRotaplan(env, db), arbre: () => lireArbre(env, db), alertes: () => lirePersonnes(env, db, now, outils),
+  };
+  const noms = Object.keys(essais);
+  /* 17.10 (« connecte-toi réel comme moi » : la lecture de la boîte a pris 11,3 s depuis le robot, le portail l'abandonnait à 15 s) : tout ce qui ne dépend de
+     rien d'autre part EN MÊME TEMPS (avant : les sources en parallèle, PUIS les inscriptions, la présence, les codes… l'un après l'autre → leurs durées
+     s'additionnaient). Chaque étape est chronométrée (`ms`, des nombres seulement) : on mesure où va le temps, on ne l'estime pas. */
+  const T0 = Date.now(), ms = {};
+  const chrono = (nom, p) => { const t = Date.now(); return Promise.resolve(p).finally(() => { ms[nom] = Date.now() - t; }); };
+  const [res, insc, cercle, enLigne, codes, inscrAdmin] = await Promise.all([
+    Promise.allSettled(noms.map((n) => chrono(n, memoise(n, now, essais[n])))),
+    chrono('inscriptions', memoise('inscriptions', now, () => lireInscriptions(outils, now)).then((v) => ({ v }), () => null)),
+    db ? chrono('cercle', un(db, 'SELECT COUNT(*) AS n FROM profils WHERE vu > ? AND uid != ?', now - LIM_CERCLE.enLigneMs, ADMIN).catch(() => null)) : Promise.resolve(null),
+    chrono('presence', presenceListe(db, now).catch(() => [])),
+    chrono('codes', Promise.resolve().then(() => codesAttente(db)).catch(() => [])),
+    chrono('inscriptionsAdmin', Promise.resolve().then(() => inscriptionsAdmin(db)).catch(() => [])),
+  ]);
+  const sources = {}; let messages = [];
+  noms.forEach((n, i) => {
+    const r = res[i];
+    if (r.status === 'fulfilled') { sources[n] = Object.assign({ id: n, etat: 'ok', total: r.value.length, nonLus: r.value.reduce((s, x) => s + (x.nonLus || 0), 0) }, SOURCES[n]); messages = messages.concat(r.value); }
+    else sources[n] = Object.assign({ id: n, etat: 'indisponible', total: 0, nonLus: 0, raison: String(r.reason && r.reason.message || r.reason).slice(0, 80) }, SOURCES[n]);
+  });
+  const rang = (x) => (x.nonLus ? (x.source === 'alertes' ? 1 : 2) : 0);   // les vrais messages non lus d'abord, puis les alertes non lues
+  messages.sort((a, b) => rang(b) - rang(a) || b.ts - a.ts);
+  const nonLus = SOURCES_MESSAGES.reduce((s, n) => s + sources[n].nonLus, 0);
+  const inscriptions = insc ? insc.v : [], inscriptionsEtat = insc ? 'ok' : 'indisponible';
+  const connectesCercle = cercle?.n || 0;
+  const connectes = Math.max(connectesCercle, enLigne.length);
+  return { ok: true, nonLus, nonLusAlertes: sources.alertes.nonLus, connectes, enLigne, sources: Object.values(sources), messages: messages.slice(0, LIMITES.liste),
+    inscriptions, inscriptionsEtat, lienInscriptions: 'https://cmcteams.kd-mc.com/', codes, inscriptionsAdmin: inscrAdmin, maj: now, ms: { total: Date.now() - T0, ...ms } };
+}
+
+/* ── marquer lu / répondre ────────────────────────────────────────────────────────────────────────────────── */
+const CLE_FB = /^[^./$#\[\]\s][^./$#\[\]]{0,119}$/;   // une clé Firebase ne contient ni « / » ni « . » ni « $ # [ ] » : jamais un chemin glissé
+async function marquerLu(env, outils, cle, now) {
+  const db = env.CERCLE_DB; const i = cle.indexOf(':'); const t = cle.slice(0, i), id = cle.slice(i + 1);
+  if (t === 'cmc' && !CLE_FB.test(id)) return false;
+  if (t === 'lingua') await faire(db, 'UPDATE messages SET lu = 1 WHERE a = ? AND de = ?', ADMIN, id);
+  else if (t === 'cmc') await fb(outils, 'cmc_dep_read/' + id, 'PUT', now);
+  else if (t === 'depot') await faire(db, 'UPDATE boite SET lu = 1 WHERE id = ?', +id || 0);
+  else if (['demande', 'arbre', 'alerte', 'perso'].includes(t)) await faire(db, 'INSERT OR REPLACE INTO boite_lu (cle, ts) VALUES (?, ?)', cle.slice(0, 120), now);
+  else return false;
+  memo.clear(); return true;
+}
+async function repondre(env, outils, cle, texte, now) {
+  const db = env.CERCLE_DB; const i = cle.indexOf(':'); const t = cle.slice(0, i), id = cle.slice(i + 1);
+  if (t === 'cmc' && !CLE_FB.test(id)) return { ok: false, reason: 'conversation_invalide' };
+  if (t === 'lingua') {
+    const ck = texteOk(texte, true); if (!ck.ok) return { ok: false, reason: ck.raison };
+    if (!(await un(db, 'SELECT 1 AS o FROM messages WHERE de = ? AND a = ?', id, ADMIN))) return { ok: false, reason: 'conversation_introuvable' };
+    if (await un(db, 'SELECT 1 AS o FROM blocages WHERE qui = ? AND bloque = ?', id, ADMIN)) return { ok: false, reason: 'bloque' };
+    await faire(db, 'INSERT INTO messages (de, a, type, corps, cadeau, cree) VALUES (?, ?, ?, ?, ?, ?)', ADMIN, id, 'texte', ck.texte, null, now);
+    try { await pousserA(env, id, { title: '💬 Message de l\'administrateur', body: apercu(ck.texte, 110), url: 'https://lingua.kd-mc.com/', tag: 'boite-reponse' }); } catch { /* jamais bloquant */ }
+  } else if (t === 'cmc') {
+    const rid = 'r_' + now + '_' + Math.random().toString(36).slice(2, 6);
+    const cur = liste(await fb(outils, 'cmc_dep_reply/' + id).catch(() => null));
+    cur.push({ id: rid, text: texte, ts: now });
+    await fb(outils, 'cmc_dep_reply/' + id, 'PUT', cur.slice(-50));
+  } else if (t === 'depot') {
+    const r = await faire(db, 'UPDATE boite SET reponse = ?, repondu = ? WHERE id = ?', texte, now, +id || 0);
+    if (!r || !r.meta || r.meta.changes !== 1) return { ok: false, reason: 'message_introuvable' };
+    /* 22.10 : la personne est prévenue sur son téléphone (tous ses appareils abonnés), jamais bloquant */
+    try { const dest = await un(db, 'SELECT uid FROM boite WHERE id = ?', +id || 0); if (dest && dest.uid) await pousserA(env, dest.uid, { title: "📬 Réponse de l'administrateur", body: apercu(texte, 110), url: 'https://kd-mc.com/#messages', tag: 'boite-reponse' }); } catch { /* une notification ne casse jamais une réponse */ }
+  } else if (t === 'demande') return { ok: false, reason: 'reponse_par_email' };
+  else return { ok: false, reason: 'pas_de_reponse_directe' };
+  await marquerLu(env, outils, cle, now);
+  return { ok: true };
+}
+
+/* ── le routeur ───────────────────────────────────────────────────────────────────────────────────────────── */
+const ORIGINE_DOMAINE = /^https:\/\/([a-z0-9-]+\.)*kd-mc\.com$/i;
+async function empreinte(txt) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('').slice(0, 24);
+}
+export async function handleBoite(request, url, env, outils) {
+  const origine = request.headers.get('origin') || '';
+  const cors = ORIGINE_DOMAINE.test(origine) ? { 'Access-Control-Allow-Origin': origine, 'Access-Control-Allow-Credentials': 'true', Vary: 'Origin' } : {};
+  const J = (o, st) => new Response(JSON.stringify(o), { status: st || 200, headers: Object.assign({ 'content-type': 'application/json', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' }, cors) });
+  const db = env && env.CERCLE_DB;
+  if (!db) return J({ ok: false, reason: 'boite_indisponible' });
+  const now = (outils.now && outils.now()) || Date.now();
+  const p = url.pathname.replace(/^\/__boite/, '') || '/';
+  const m = request.method;
+  try {
+    if (m === 'OPTIONS') return new Response(null, { status: 204, headers: Object.assign({ 'Access-Control-Allow-Methods': 'GET,POST', 'Access-Control-Allow-Headers': 'content-type,authorization' }, cors) });
+    await schema(db);
+    /* Le bouton « Écrire à l'admin », servi à TOUTES les apps (le routeur l'ajoute à chaque page). */
+    if (p === '/bouton.js' && m === 'GET') return new Response(BOUTON_JS, { status: 200, headers: { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=600', 'x-content-type-options': 'nosniff' } });
+    /* « Ouvrir ma boîte » depuis le bouton de n'importe quelle app : vers la boîte du portail (le bouton ne porte aucune adresse extérieure). */
+    if (p === '/ouvrir' && m === 'GET') return new Response(null, { status: 302, headers: { location: 'https://kd-mc.com/#messages', 'cache-control': 'no-store' } });
+    /* « Mes messages » : ceux du compte connecté (toutes apps) + ceux d'un visiteur non connecté (ses suivis secrets). L'admin est reconnu : le bouton se retire. */
+    if (p === '/mes' && m === 'GET') {
+      const qui = await outils.qui(request).catch(() => null);
+      /* L'admin : pas de « écrire à l'admin », mais SES compteurs (messages non lus + inscriptions en attente) pour la pastille de chaque app. */
+      if (qui && qui.admin) {
+        const bo = await lireBoite(env, outils, now).catch(() => null);
+        return J({ ok: true, admin: true, connecte: true, messages: [], nonLus: (bo && bo.nonLus) || 0, inscriptions: (bo && bo.inscriptions) || [] });
+      }
+      const suivis = String(url.searchParams.get('s') || '').split(',').filter((x) => /^[0-9a-f]{24}$/.test(x)).slice(0, 5);
+      const rows = [];
+      if (qui && qui.uid) rows.push(...await tous(db, 'SELECT app, texte, cree, reponse, repondu FROM boite WHERE uid = ? AND cree > ? ORDER BY id DESC LIMIT 10', qui.uid, now - LIMITES.garde));
+      /* plus de lecture « par suivi » sans compte (3.10) : les anciens messages anonymes ne se relisent plus, l'admin les voit toujours */
+      rows.sort((a, b) => b.cree - a.cree);
+      /* 7.10 (Kevin : « CGU une seule fois par compte, valables dans tout le domaine ; aucune connexion sans accord ») : un compte
+         connecté qui n'a pas accepté les conditions EN COURS les reçoit ici — le bouton de chaque page les montre, une fois. */
+      const cgu = qui && qui.uid && qui.cgu === false && outils.cgu ? Object.assign({ requise: true }, outils.cgu) : null;
+      return J({ ok: true, admin: false, connecte: !!(qui && qui.uid), nom: (qui && qui.nom) || '', cgu, messages: rows.slice(0, 10).map((r) => ({ app: r.app, texte: apercu(r.texte, 600), ts: r.cree, reponse: r.reponse || '', repondu: r.repondu || 0 })) });
+    }
+    /* La réponse relue par l'expéditeur d'un dépôt : seulement avec SON compte (aucune consultation sans compte, Kevin 3.10) et le suivi secret de CE message. */
+    if (p === '/reponse' && m === 'GET') {
+      const qui = await outils.qui(request).catch(() => null);
+      if (!qui || !qui.uid || qui.admin) return J({ ok: false, reason: 'compte_requis' }, 401);
+      const s = propre(url.searchParams.get('suivi'), 40);
+      const r = s.length >= 16 ? await un(db, 'SELECT reponse, repondu FROM boite WHERE suivi = ? AND uid = ?', s, qui.uid) : null;
+      return J(r ? { ok: true, repondu: !!r.reponse, reponse: r.reponse || '', ts: r.repondu || 0 } : { ok: false, reason: 'introuvable' }, r ? 200 : 404);
+    }
+    /* Dépôt : n'importe quelle app du domaine (présente ou future) écrit à l'admin avec UN appel. */
+    if (p === '/deposer' && m === 'POST') {
+      if (!ORIGINE_DOMAINE.test(origine)) return J({ ok: false, reason: 'origine_refusee' }, 403);
+      /* Aucune consultation ni message sans compte (Kevin 3.10) : l'identité vient de la SESSION du domaine, jamais de la page. */
+      const qui = await outils.qui(request).catch(() => null);
+      const connecte = qui && qui.uid && !qui.admin;
+      if (!connecte) return J({ ok: false, reason: 'compte_requis' }, 401);
+      let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'json_illisible' }, 400); }
+      if (propre(b.site, 10)) return J({ ok: true, suivi: 'x'.repeat(24) });                 // champ piège rempli = robot : on ne dit rien
+      const texte = propre(b.texte, LIMITES.texte);
+      if (texte.length < 2) return J({ ok: false, reason: 'message_vide' }, 400);
+      const app = propre(b.app || new URL(origine).hostname.split('.')[0], 30).toLowerCase().replace(/[^a-z0-9-]/g, '') || 'domaine';
+      const ip = await empreinte((request.headers.get('CF-Connecting-IP') || '') + '|boite');
+      if (((await un(db, 'SELECT COUNT(*) AS n FROM boite WHERE ip = ? AND cree > ?', ip, now - 36e5)).n || 0) >= LIMITES.depotHeure) return J({ ok: false, reason: 'trop_de_messages' }, 429);
+      if (((await un(db, 'SELECT COUNT(*) AS n FROM boite WHERE cree > ?', now - 864e5)).n || 0) >= LIMITES.depotJour) return J({ ok: false, reason: 'boite_pleine_aujourd_hui' }, 429);
+      const suivi = [...crypto.getRandomValues(new Uint8Array(12))].map((x) => x.toString(16).padStart(2, '0')).join('');
+      /* L'identité vient de la SESSION du domaine, jamais de la page : une personne connectée ne peut pas écrire sous le nom d'une autre. */
+      const nom = propre(qui.nom, 60) || 'Compte', contact = '';
+      const page = propre(b.page, 120).replace(/^(?!\/)/, '/').slice(0, 120);
+      await faire(db, 'INSERT INTO boite (app, nom, texte, contact, ip, suivi, cree, uid, page, appareil, pays) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        app, nom, texte, contact, ip, suivi, now, qui.uid, page, appareilDe(request.headers.get('user-agent')), propre(request.cf && request.cf.country, 3));
+      await faire(db, 'DELETE FROM boite WHERE cree < ?', now - LIMITES.garde);
+      memo.delete('depots');
+      if (outils.notifier) await outils.notifier('📨 ' + app + ' — ' + nom, texte.slice(0, 140));
+      return J({ ok: true, suivi });
+    }
+    /* Tout le reste : l'admin, prouvé par le domaine. */
+    if (!p.startsWith('/admin')) return J({ ok: false, reason: 'introuvable' }, 404);
+    const qui = await outils.qui(request);
+    if (!qui || !qui.admin) return J({ ok: false, reason: 'admin_requis' }, 401);
+    if (m !== 'GET' && origine && !ORIGINE_DOMAINE.test(origine)) return J({ ok: false, reason: 'origine_refusee' }, 403);
+    if (p === '/admin' && m === 'GET') return J(await lireBoite(env, outils, now));
+    /* L'historique COMPLET d'une personne (fiche + 200 derniers événements) : le bouton « Historique complet » de sa carte. */
+    if (p === '/admin/personne' && m === 'GET') {
+      const uid = propre(url.searchParams.get('uid'), 120);
+      if (!uid) return J({ ok: false, reason: 'uid_requis' }, 400);
+      const evts = await activite.fil(db, uid, 200);
+      return J({ ok: true, uid, infos: await ficheLignes(env, db, uid, now), evenements: evts.map((e) => ({ ts: e.ts, type: e.type, texte: (activite.TYPES[e.type] || e.type) + (e.detail ? ' ' + e.detail : ''), app: e.app, lieu: e.lieu, appareil: e.appareil || '' })).reverse() });
+    }
+    let b = {}; if (m === 'POST') { try { b = await request.json(); } catch { b = {}; } }
+    if (p === '/admin/lu' && m === 'POST') {
+      const cles = (Array.isArray(b.cles) ? b.cles : []).map((c) => propre(c, 120)).filter((c) => c.includes(':')).slice(0, 100);
+      let n = 0; for (const c of cles) { if (await marquerLu(env, outils, c, now).catch(() => false)) n++; }
+      return J({ ok: true, n });
+    }
+    if (p === '/admin/valider' && m === 'POST') {
+      const r = await validerInscription(outils, propre(b.id, 40), now);
+      return J(r, r.ok ? 200 : 400);
+    }
+    /* « 🔐 Codes à valider » : Kevin accepte (le code devient celui du compte) ou refuse (la demande disparaît). */
+    if (p === '/admin/code-valider' && m === 'POST') {
+      const r = await codeDecider(env, db, outils, propre(b.uid, 80), b.accepter === true, now);
+      return J(r, r.ok ? 200 : 400);
+    }
+    /* « 🪪 Inscriptions sans WhatsApp » : Kevin ouvre le compte ou le refuse. */
+    if (p === '/admin/inscription-admin' && m === 'POST') {
+      const r = await inscriptionAdminDecider(env, db, outils, propre(b.uid, 80), b.accepter === true, now);
+      return J(r, r.ok ? 200 : 400);
+    }
+    if (p === '/admin/repondre' && m === 'POST') {
+      const texte = propre(b.texte, LIMITES.reponse);
+      if (texte.length < 1) return J({ ok: false, reason: 'reponse_vide' }, 400);
+      const r = await repondre(env, outils, propre(b.cle, 120), texte, now);
+      return J(r, r.ok ? 200 : 400);
+    }
+    return J({ ok: false, reason: 'introuvable' }, 404);
+  } catch (e) { return J({ ok: false, reason: 'erreur', detail: String(e && e.message || e).slice(0, 120) }, 500); }
+}

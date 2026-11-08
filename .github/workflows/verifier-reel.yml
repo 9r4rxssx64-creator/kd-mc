@@ -1,0 +1,62 @@
+name: Vérifier EN RÉEL — le robot unique (toutes les compétences, connecté en admin, lecture seule)
+
+# Kevin 5.11.2026 : « Intègre toutes les compétences au robot pour faire toutes les vérifications réelles qu'on lui demande. »
+# UN seul workflow, UN registre (tools/plateformes/competences-reel.mjs) : on choisit les vérifications par leur nom (ou un groupe : departs, rapides, toutes).
+# Dépôt PUBLIC = gratuit et illimité. Le code admin vient du SECRET (empreinte, jamais écrite ni journalisée) et part au DOMAINE comme quand Kevin le tape.
+# Un journal public se lit par tous : le lanceur pose SANS_NOMS=1 et masque les noms, e-mails et empreintes. Les compétences « coffre » (captures,
+# ration d'Actions) ne tournent PAS ici : le lanceur les note ⏭ avec la commande à lancer au dépôt privé. À la main seulement, jamais de cron.
+# Lecture : annotations « Réel <nom> » (check-runs/<job>/annotations) et résumé du job. Règle : .claude/rules/verifier-reel.md
+
+on:
+  workflow_dispatch:
+    inputs:
+      verifs:
+        description: "Vérifications, séparées par des virgules : departs-equipes, formats, liens, messages, admin-sans-code, avatars, studio-ia, servi — ou un groupe : departs, rapides, toutes"
+        required: false
+        default: "departs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verifier-reel
+  cancel-in-progress: false
+
+jobs:
+  reel:
+    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 45   # gratuit par défaut (Kevin 30.09) ; chaque compétence a de plus son propre délai maximal
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fichiers privés du coffre (lecture seule) — les scripts de départs lisent CMCteams et la light
+        # Mesuré le 5.11 (run public 42020604585) : sans cette étape tests/verif-live-equipes.mjs n'existe pas au dépôt public (il nomme des chemins privés).
+        uses: ./.github/actions/coffre
+        with:
+          cle: ${{ secrets.COFFRE_CLE_LECTURE }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium et WebKit (Safari)
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium webkit
+
+      - name: Lancer les vérifications choisies — nombres seulement
+        id: robot
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          KDMC_LIEU: public
+          VERIFS: ${{ inputs.verifs }}
+        shell: bash -euo pipefail {0}
+        run: |
+          set +e
+          stdbuf -oL -eL node tools/plateformes/verifier-reel.mjs --verifs "$VERIFS" 2>&1 | tee /tmp/reel.log
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Verdict (aucune vérification rouge)
+        if: always()
+        run: test "${{ steps.robot.outputs.rc }}" = "0"

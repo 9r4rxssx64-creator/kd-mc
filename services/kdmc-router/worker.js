@@ -2647,6 +2647,7 @@ async function handleLingua(request, url, env) {
       const STYLES = {
         prof: "Voix humaine et chaleureuse de professeur de langue : articulation nette, rythme posé et naturel, ton bienveillant, jamais robotique. Prononce le texte dans sa propre langue, avec l'accent d'un locuteur natif.",
         pub: "Voix française naturelle, proche du micro, comme si tu parlais à un ami en face de toi. Ton direct et complice, JAMAIS commercial ni publicitaire. Rythme vif mais pas pressé : tu poses une courte respiration après la première phrase, tu appuies légèrement le mot qui compte, tu finis en descendant, tranquille. Aucune emphase forcée, aucun sourire commercial.",
+        douce: "Voix française douce, chaleureuse et posée, comme on raconte une belle histoire de famille à voix basse, le soir. Débit lent et naturel, courtes respirations entre les phrases, émotion sobre, jamais monocorde ni théâtrale. Les dates et les noms sont dits clairement.",
         calme: "Voix française posée et basse, presque confidentielle. Débit lent, longues respirations, articulation douce. Rassurante, jamais monocorde.",
         energie: "Voix française vive et souriante, énergie franche mais tenue, débit rapide sans jamais manger les fins de mots. Tu donnes envie d'écouter la suite.",
       };
@@ -2714,6 +2715,13 @@ async function handleLingua(request, url, env) {
         if (moteurDemande === 'chirp') return JL({ ok: false, reason: 'chirp_indisponible', cause: diag.cause || 'inconnue' });
       }
       if (gratuitSeul) {
+        /* v3.211 (Kevin 8.11 : « les voix sont trop robotiques, toutes ; je veux des voix douces pour les belles histoires ») : Google Cloud TTS (Chirp) exige une facturation → refusé par Kevin ;
+           pour le style `douce` (les histoires de l'arbre) la voix Gemini du palier gratuit (Aoede, naturelle) passe AVANT MeloTTS (robotique) ; son quota gratuit étant court (quelques appels par minute),
+           un refus / un plafond retombe sur MeloTTS, jamais de silence. Les autres usages (Bee, Lingua…) gardent l'ordre d'avant. */
+        if (style === 'douce') {
+          const gd = await geminiSecours();
+          if (gd) return gd;
+        }
         if (!(await souslePlafond(env, 'gratuite', request, 60, 3600, true))) return (await geminiSecours()) || JL({ ok: false, reason: 'plafond_atteint' });
         const g = await voixGratuiteOuGemini('');
         return g || JL({ ok: false, reason: 'gratuite_indisponible' });

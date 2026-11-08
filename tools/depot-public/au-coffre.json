@@ -522,6 +522,7 @@
   "tools/arbre/verify-valider.mjs",
   "tools/arbre/verify-vignettes-r2.mjs",
   "tools/arbre/verify-visuel-appareils.mjs",
+  "tools/arbre/verify-voix-douce.mjs",
   "tools/arbre/visionneuse-image.mjs",
   "tools/arbre/visite-honnete.mjs",
   "tools/audit/import-noms-manquants.mjs",

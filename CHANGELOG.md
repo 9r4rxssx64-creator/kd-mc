@@ -5,6 +5,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ---
 
 
+## Arbre v3.212 + routeur — voix douce pour les histoires, gratuite (2026-11-08)
+- Kevin : « les voix sont trop robotiques, toutes ; je veux des voix douces pour les belles histoires ». Cause mesurée : Google Cloud TTS (Chirp 3 HD) exige une facturation (refusée par Kevin) → toutes les voix retombaient sur MeloTTS, robotique.
+- Solution gratuite : la voix Gemini (palier gratuit, déjà configurée, voix Aoede) en tête pour le style `i=douce` (consigne « voix douce, chaleureuse, posée, histoire de famille ») ; son quota étant court (4 appels de suite mesurés, puis refus), l'arbre découpe en peu de morceaux (un premier court de ~300 caractères, puis 900) et le routeur retombe sur MeloTTS si Gemini refuse. Cache : une lecture déjà faite ne recompte rien. Bee, Lingua et les autres gardent l'ordre d'avant.
+- Gardes `services/kdmc-router/voix-douce.test.mjs` (`test:voix-douce`, rouge sans le bloc `douce`) et `tools/arbre/verify-voix-douce.mjs` (rouge sur v3.211).
+
 ## Arbre v3.211 — un enfant créé reçoit son 2ᵉ parent quand la preuve est dans l'arbre (2026-11-08)
 - Kevin : « quand un enfant est créé / intégré, il faut tout mettre à jour tout seul dans la famille, fiches etc ». Constat : Oscar DIROT (fils d'Émilie PAULIN, dont le seul conjoint est Thomas DIROT) n'avait pas de père, alors que sa sœur Zoé avait Thomas.
 - Maintenant : à l'enregistrement, un enfant créé avec sa MÈRE seule reçoit son PÈRE si la mère n'a qu'UN conjoint homme et qu'il porte le même nom que l'enfant (nom différent de celui de la mère) ; les textes des parents suivent (« un enfant » → « deux enfants, Zoé et Oscar »). Deux candidats, nom différent, père déjà posé : rien n'est deviné.

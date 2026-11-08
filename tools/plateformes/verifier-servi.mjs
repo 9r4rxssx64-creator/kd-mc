@@ -43,11 +43,19 @@ export function fermerAccueil() {
  *  (jusqu'à 3 fois). Un bouton réellement recouvert par autre chose reste signalé. */
 export async function mesurerSansFeuille(page, tel, r = {}) {
   let m = null;
+  /* 8.11 (CMCteams : la bannière cookies arrive à DOMContentLoaded + 3 s, APRÈS la première fermeture du robot) : accueil et bannière de consentement
+     suivent la même règle que la feuille Installer : fermés avant la mesure, et si l'un s'ouvre pendant la mesure, refermé puis la page remesurée. */
+  const fermer = async () => {
+    let ferme = false;
+    if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; ferme = true; }
+    const acc = await page.evaluate(fermerAccueil).catch(() => ''); if (acc) { r.accueil = r.accueil && r.accueil !== acc ? r.accueil + ' + ' + acc : acc; ferme = true; }
+    if (ferme) await page.waitForTimeout(400);
+    return ferme;
+  };
   for (let i = 0; i < 3; i++) {
-    if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; await page.waitForTimeout(400); }
+    await fermer();
     m = await page.evaluate(mesurer, tel).catch(() => null);
-    if (!(await page.evaluate(fermerFeuilleInstalleur).catch(() => false))) return m;
-    r.installeur = true; await page.waitForTimeout(400);
+    if (!(await fermer())) return m;
   }
   return m;
 }

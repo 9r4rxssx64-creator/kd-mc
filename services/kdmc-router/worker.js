@@ -1842,7 +1842,18 @@ function _wavDepuisPcm(pcm, freq) {
 }
 const GEMINI_TTS_MODELE = 'gemini-2.5-flash-preview-tts';
 const GEMINI_VOIX = { alloy: 'Kore', nova: 'Aoede', shimmer: 'Leda', echo: 'Puck', fable: 'Charon', onyx: 'Orus' };
-async function voixGemini(env, texte, voix, consigne, cleCache, cors) {
+/* v3.213 (Kevin 8.11 : « il y a enfin une belle voix mais elle ne dure pas, on passe trop vite au robot ; garde la belle voix toujours ») : le service gratuit de Google échoue de temps en temps
+   (mesuré : 2 refus sur 8 appels espacés de 12 s) ; pour la voix douce on RÉESSAIE jusqu'à `essais` fois (pause 0,9 s puis 1,8 s) avant d'abandonner. */
+async function voixGemini(env, texte, voix, consigne, cleCache, cors, essais) {
+  const n = Math.max(1, Math.min(4, essais || 1));
+  for (let t = 0; t < n; t++) {
+    if (t) await new Promise((r) => setTimeout(r, 900 * t));
+    const g = await _voixGeminiUnique(env, texte, voix, consigne, cleCache, cors);
+    if (g) return g;
+  }
+  return null;
+}
+async function _voixGeminiUnique(env, texte, voix, consigne, cleCache, cors) {
   try {
     if (!env || !env.GEMINI_API_KEY) return null;
     const rr = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_TTS_MODELE + ':generateContent?key=' + env.GEMINI_API_KEY, {
@@ -2669,7 +2680,7 @@ async function handleLingua(request, url, env) {
          elle rend `null` et l'app retombait sur la voix du téléphone, dès que Google (Chirp) ou OpenAI ne répondait pas. Gemini TTS (palier gratuit,
          déjà configuré, parle toutes ces langues sans qu'on la lui dise) prend le relais : cache du bord d'abord, plafond par appareil, puis
          la voix du téléphone en dernier. Jamais de facture : aucune clé payante n'est touchée. */
-      const geminiSecours = async () => {
+      const geminiSecours = async (essais) => {
         if (!env.GEMINI_API_KEY) return null;
         const gkey = 'ltts:' + (await hashOf('gemini:' + voice + ':' + style + ':' + text));
         try {
@@ -2677,7 +2688,7 @@ async function handleLingua(request, url, env) {
           if (gc) return new Response(gc, { status: 200, headers: Object.assign({ 'content-type': 'audio/wav', 'cache-control': 'public, max-age=31536000, immutable', 'x-voix': 'gemini-gratuite' }, cors) });
         } catch (_) { /* cache best-effort */ }
         if (!(await souslePlafond(env, 'gemini', request, 60, 3600, true))) return null;
-        return await voixGemini(env, text, voice, HD_CONSIGNE, gkey, cors);
+        return await voixGemini(env, text, voice, HD_CONSIGNE, gkey, cors, essais);
       };
       const voixGratuiteOuGemini = async (cleP) => (await voixGratuite(env, text, cleP, cors, url.searchParams.get('l'))) || (await geminiSecours());
       if (moteurDemande === 'gemini') {
@@ -2719,8 +2730,9 @@ async function handleLingua(request, url, env) {
            pour le style `douce` (les histoires de l'arbre) la voix Gemini du palier gratuit (Aoede, naturelle) passe AVANT MeloTTS (robotique) ; son quota gratuit étant court (quelques appels par minute),
            un refus / un plafond retombe sur MeloTTS, jamais de silence. Les autres usages (Bee, Lingua…) gardent l'ordre d'avant. */
         if (style === 'douce') {
-          const gd = await geminiSecours();
-          if (gd) return gd;
+          /* v3.213 : la belle voix ou RIEN d'automatique — jamais MeloTTS (robotique) pour une histoire : en cas d'échec après 3 essais l'arbre attend et réessaie lui-même (`douce_occupee`) */
+          const gd = await geminiSecours(3);
+          return gd || JL({ ok: false, reason: 'douce_occupee' });
         }
         if (!(await souslePlafond(env, 'gratuite', request, 60, 3600, true))) return (await geminiSecours()) || JL({ ok: false, reason: 'plafond_atteint' });
         const g = await voixGratuiteOuGemini('');

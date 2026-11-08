@@ -1,6 +1,6 @@
 /* GARDE — voix « douce » des histoires de l'arbre (Kevin 8.11 : « les voix sont trop robotiques, toutes »).
    1. gratuit=1 + i=douce : la voix Gemini (palier gratuit) est servie EN PREMIER (x-voix gemini-gratuite), MeloTTS n'est pas appelé ;
-   2. Gemini refuse (429) → MeloTTS prend le relais (jamais de silence) ;
+   2. Gemini refuse 3 fois → `douce_occupee`, MeloTTS JAMAIS appelé (Kevin : « garde la belle voix toujours ») ; 6. refus passager puis succès → belle voix servie ;
    3. sans i=douce (Bee, Lingua…) : MeloTTS reste en premier, Gemini n'est pas appelé ;
    4. la consigne envoyée à Gemini dit « douce » ; 5. 2ᵉ lecture identique : servie du cache, 0 appel Gemini.
    SABOTAGE prouvé à la main : retirer le bloc `style === 'douce'` → (1) rougit.
@@ -34,9 +34,19 @@ ok(/douce/i.test(JSON.stringify(geminiAppels[0] || {})), '4. la consigne envoyé
 r = await mod.fetch(req('gratuit=1&l=fr&v=nova&i=douce&t=Il%20etait%20une%20fois'), env);
 ok(r.status === 200 && geminiAppels.length === 1, '5. même lecture : servie du cache, aucun appel de plus', String(geminiAppels.length));
 
+/* 2 : Gemini refuse 3 fois → JAMAIS MeloTTS pour une histoire : `douce_occupee` (l'arbre réessaie lui-même) */
 env = ENV(); geminiAppels = []; melo = 0; geminiStatut = 429;
 r = await mod.fetch(req('gratuit=1&l=fr&v=nova&i=douce&t=Autre%20phrase'), env);
-ok(r.status === 200 && r.headers.get('x-voix') === 'gratuite' && melo === 1, '2. Gemini refuse (429) → MeloTTS prend le relais', JSON.stringify({ x: r.headers.get('x-voix'), melo }));
+let j = await r.json().catch(() => ({}));
+ok(r.status === 200 && j.reason === 'douce_occupee' && melo === 0 && geminiAppels.length === 3, '2. Gemini refuse → 3 essais puis « douce_occupee », MeloTTS jamais appelé', JSON.stringify({ j, melo, g: geminiAppels.length }));
+
+/* 6 : un refus passager puis un succès → la belle voix est servie quand même (réessai côté serveur) */
+env = ENV(); geminiAppels = []; melo = 0; geminiStatut = 429;
+const vraiFetch = globalThis.fetch;
+globalThis.fetch = async (input, init) => { const u = typeof input === 'string' ? input : input.url; if (u.startsWith('https://generativelanguage.googleapis.com/') && geminiAppels.length === 1) { geminiStatut = 200; } return vraiFetch(input, init); };
+r = await mod.fetch(req('gratuit=1&l=fr&v=nova&i=douce&t=Phrase%20avec%20un%20refus%20passager'), env);
+globalThis.fetch = vraiFetch;
+ok(r.status === 200 && r.headers.get('x-voix') === 'gemini-gratuite' && geminiAppels.length === 2 && melo === 0, '6. un refus passager puis succès → belle voix servie (2 essais)', JSON.stringify({ x: r.headers.get('x-voix'), g: geminiAppels.length }));
 
 env = ENV(); geminiAppels = []; melo = 0; geminiStatut = 200;
 r = await mod.fetch(req('gratuit=1&l=fr&v=nova&t=Bonjour'), env);

@@ -20,8 +20,9 @@ const nom = path.basename(process.argv[2] || 'planche.png').replace(/[^A-Za-z0-9
 if (!nom.endsWith('.png')) arreter('le nom de sortie doit finir par .png');
 const OUT = path.join(os.tmpdir(), nom);
 const MOTEUR = fs.readFileSync(path.join(ROOT, 'javis', 'perso3d.js'), 'utf8');
-/* la vraie Bee (v1.3) : ses données (javis/perso3d-reel.js) sont posées AVANT le moteur ; REEL=0 = la Bee faite de formes */
-const DONNEES = process.env.REEL === '0' ? '' : fs.readFileSync(path.join(ROOT, 'javis', 'perso3d-reel.js'), 'utf8');
+/* les vrais personnages (v1.3 Bee, v1.4 Bourricot) : leurs données (javis/perso3d-reel.js, javis/perso3d-reel-ane.js) sont posées AVANT
+   le moteur ; REEL=0 = le personnage fait de formes */
+const DONNEES = process.env.REEL === '0' ? '' : fs.readFileSync(path.join(ROOT, 'javis', PERSO === 'bee' ? 'perso3d-reel.js' : 'perso3d-reel-ane.js'), 'utf8');
 const HUM = (process.argv[4] || 'repos:0.6,joie:0.9,parle:1.3,triste:1,pense:1,surprise:0.5,rire:0.8,coucou:0.7')
   .split(',').map((x) => x.split(':')).map(([h, t]) => [String(h).replace(/[^a-z]/g, ''), Number.parseFloat(t) || 0]);
 const PAGE = '<!doctype html><body style="margin:0;background:#222"><canvas id=c width=420 height=420></canvas>';
@@ -31,7 +32,7 @@ const errs = [];
 p.on('pageerror', (e) => errs.push(String(e.message).slice(0, 120)));
 p.on('console', (m) => { if (m.type() === 'error') errs.push(m.text().slice(0, 120)); });
 await p.setContent(PAGE); if (DONNEES) await p.addScriptTag({ content: DONNEES }); await p.addScriptTag({ content: MOTEUR }); await p.waitForTimeout(500);
-await p.evaluate(() => window.KdmcPerso3D?.attendreReel?.(8000));
+await p.evaluate((n) => { window.KdmcPerso3D?.creer(n)?.liberer(); return window.KdmcPerso3D?.attendreReel?.(8000, n); }, PERSO);
 const res = await p.evaluate(({ HUM, PERSO }) => {
   const P = window.KdmcPerso3D;
   if (!P?.actif()) return { ko: '3D indisponible' };
@@ -41,7 +42,7 @@ const res = await p.evaluate(({ HUM, PERSO }) => {
     const c = document.createElement('canvas'); c.width = c.height = 420; c.style.cssText = 'display:inline-block'; document.body.appendChild(c);
     P.creer(PERSO).dessiner(c.getContext('2d'), 420, h, t, { niveau: 0.7, ouv: 0.6 }, '#fdf7e7');
   });
-  return { ok: 1, stats: P._stats(), reel: P.reel?.() };
+  return { ok: 1, stats: P._stats(), reel: P.reel?.(PERSO) };
 }, { HUM, PERSO });
 console.log(JSON.stringify(res), errs.join('|'));
 await p.screenshot({ path: OUT }); await b.close();

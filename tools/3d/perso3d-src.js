@@ -23,13 +23,15 @@ import {
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { PERSONNAGES, geometrie, poseHumeur, HUMEURS, HUMEUR_REACTION, C } from './personnages-def.mjs';
-import { preparerReel, reelVoulu, reelPret, reelEtat, fabriqueReel, BEE_REEL_PAR_DEFAUT } from './perso3d-reel-src.js';
+import { preparerReel, reelVoulu, reelPret, reelEtat, reelConnu, fabriqueReel, BEE_REEL_PAR_DEFAUT, ANE_REEL_PAR_DEFAUT } from './perso3d-reel-src.js';
 
-const VERSION = '1.3';
+const VERSION = '1.4';
 /* LA VRAIE BEE (v1.3) : le fichier de données perso3d-reel.js (forme, squelette, peau) est posé À CÔTÉ de ce script ; on le demande
    tout de suite, en parallèle (balise <script>, jamais de requête réseau à la main). Tant qu'il n'est pas là — ou s'il ne vient pas —
-   Bee reste la Bee faite de formes simples, sans trou. */
-preparerReel(typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : '');
+   Bee reste la Bee faite de formes simples, sans trou.
+   LE VRAI BOURRICOT (v1.4) : perso3d-reel-ane.js, demandé au PREMIER Bourricot affiché (une page qui ne montre que Bee ne le charge pas). */
+const SRC_MOTEUR = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : '';
+preparerReel(SRC_MOTEUR, 'bee');
 const RAD = Math.PI / 180;
 
 /* LE CADRAGE : le dessin d'origine remplit ~92 % de la hauteur de son carré ; la 3D fait pareil. [centre y, hauteur vue] en m. */
@@ -252,29 +254,31 @@ function creerFormes(nom) {
   return perso;
 }
 
-/* LA VRAIE BEE : son fabricant reçoit les outils partagés (vie du corps, image finale) ; il rend null tant que ses données ne sont pas prêtes. */
+/* LES VRAIS PERSONNAGES : leur fabricant reçoit les outils partagés (vie du corps, image finale) ; il rend null tant que les données ne sont pas prêtes. */
 const creerReel = fabriqueReel({
-  rendu: () => (perdu ? null : rendu), vie, composer, etatNeuf, liste: PERSONNAGES.bee.pieces.map((piece) => ({ piece })),
-  cadre: CADRE.bee, fond: FOND.bee, graine: () => (compteur++) * 13.7,
+  rendu: () => (perdu ? null : rendu), vie, composer, etatNeuf,
+  listes: { bee: PERSONNAGES.bee.pieces.map((piece) => ({ piece })), bourricot: PERSONNAGES.bourricot.pieces.map((piece) => ({ piece })) },
+  cadres: CADRE, fonds: FOND, graine: () => (compteur++) * 13.7,
 });
-let reelCasse = false;
+const reelCasse = { bee: false, bourricot: false };
 
-/* creer('bee') : la VRAIE Bee si elle est voulue et prête ; sinon (données pas encore arrivées, illisibles, WebGL faible, interrupteur
-   coupé) la Bee faite de formes, sans un mot. Le personnage rendu est TOUJOURS le même objet : quand les données arrivent après coup,
-   il passe de lui-même à la vraie Bee à l'image suivante ; si la vraie Bee lâche en route, il repasse aux formes dans la même image. */
-function creerBee() {
+/* creer('bee') / creer('bourricot') : le VRAI personnage s'il est voulu et prêt ; sinon (données pas encore arrivées, illisibles, WebGL
+   faible, interrupteur coupé) le personnage fait de formes, sans un mot. Le personnage rendu est TOUJOURS le même objet : quand les données
+   arrivent après coup, il passe de lui-même au vrai à l'image suivante ; si le vrai lâche en route, il repasse aux formes dans la même image. */
+function creerAvecReel(nom) {
   if (!initialiser()) return null;
+  if (nom !== 'bee') preparerReel(SRC_MOTEUR, nom);         // Bourricot : ses données sont demandées au premier affichage
   let formes = null, reel = null, libre = false;
   const essaiReel = () => {
-    if (reel || reelCasse || libre || !reelVoulu() || !reelPret() || !reelCapable()) return reel;
-    try { reel = creerReel(); } catch (_) { reel = null; reelCasse = true; }
+    if (reel || reelCasse[nom] || libre || !reelVoulu(nom) || !reelPret(nom) || !reelCapable()) return reel;
+    try { reel = creerReel(nom); } catch (_) { reel = null; reelCasse[nom] = true; }
     if (reel && formes) { formes.liberer(); formes = null; }
     return reel;
   };
-  const actif = () => essaiReel() || formes || (formes = creerFormes('bee'));
+  const actif = () => essaiReel() || formes || (formes = creerFormes(nom));
   if (!actif()) return null;
   const px = {
-    nom: 'bee', graine: (compteur++) * 13.7,
+    nom, graine: (compteur++) * 13.7,
     get ok() { return !libre && !!(reel || formes) && (reel ? reel.ok : formes.ok); },
     get reel() { return !!reel; },
     get noeuds() { return actif().noeuds; },
@@ -288,7 +292,7 @@ function creerBee() {
       try { bon = a.dessiner(cx, p, h, t, ctx, fond, masque); } catch (_) { bon = false; }
       if (bon) return true;
       if (perdu || !rendu) return false;                       // contexte WebGL perdu : la marionnette repasse au dessin 2D
-      reelCasse = true; try { reel.liberer(); } catch (_) {} reel = null;   // la vraie Bee lâche : la Bee de formes prend la même image
+      reelCasse[nom] = true; try { reel.liberer(); } catch (_) {} reel = null;   // le vrai personnage lâche : celui de formes prend la même image
       const f = actif(); f.graine = this.graine; return f.dessiner(cx, p, h, t, ctx, fond, masque);
     },
     liberer() { libre = true; if (formes) formes.liberer(); if (reel) reel.liberer(); },
@@ -296,12 +300,12 @@ function creerBee() {
   };
   return px;
 }
-/* WebGL assez solide pour la vraie Bee ? (WebGL2, textures de 2048 px) — sinon les formes, plus légères */
+/* WebGL assez solide pour les vrais personnages ? (WebGL2, textures de 2048 px) — sinon les formes, plus légères */
 function reelCapable() {
   try { const c = rendu.renderer.capabilities; return c.isWebGL2 !== false && c.maxTextureSize >= 2048; } catch (_) { return false; }
 }
 function creer(nom) {
-  if (nom === 'bee') return creerBee();
+  if (reelConnu(nom)) return creerAvecReel(nom);
   return creerFormes(nom);
 }
 
@@ -319,9 +323,10 @@ const API = {
   /* simule la perte du contexte WebGL (le téléphone le reprend quand l'app passe en arrière-plan) : le repli doit suivre */
   _perdreContexte() { if (rendu) rendu.canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })); },
   _pieces(nom) { return PERSONNAGES[nom].pieces.map((p) => p.nom); },
-  /* LA VRAIE BEE : état des données (0 rien · 1 en route · 2 prête · -1 illisible), voulue (interrupteur), et une promesse pour les tests */
-  reel() { return { etat: reelEtat(), voulue: reelVoulu(), parDefaut: BEE_REEL_PAR_DEFAUT, cassee: reelCasse, capable: !!rendu && reelCapable() }; },
-  attendreReel(ms) { return new Promise((ok) => { const t0 = Date.now(); const f = () => { const e = reelEtat(); if (e === 2 || e === -1 || Date.now() - t0 > (ms || 8000)) ok(e); else setTimeout(f, 30); }; f(); }); },
+  /* LES VRAIS PERSONNAGES : état des données (0 rien · 1 en route · 2 prête · -1 illisible), voulu (interrupteur), et une promesse pour les tests.
+     reel() = Bee (appel d'origine) ; reel('bourricot') = Bourricot. */
+  reel(nom) { nom = nom || 'bee'; return { etat: reelEtat(nom), voulue: reelVoulu(nom), parDefaut: nom === 'bee' ? BEE_REEL_PAR_DEFAUT : ANE_REEL_PAR_DEFAUT, cassee: !!reelCasse[nom], capable: !!rendu && reelCapable() }; },
+  attendreReel(ms, nom) { return new Promise((ok) => { const t0 = Date.now(); const f = () => { const e = reelEtat(nom || 'bee'); if (e === 2 || e === -1 || Date.now() - t0 > (ms || 8000)) ok(e); else setTimeout(f, 30); }; f(); }); },
   _creerFormes: creerFormes,
 };
 if (typeof window !== 'undefined') window.KdmcPerso3D = API;

@@ -493,6 +493,7 @@
   "tools/arbre/verify-legendes-photos.mjs",
   "tools/arbre/verify-lien-deux-parents.mjs",
   "tools/arbre/verify-liens-par-nom.mjs",
+  "tools/arbre/verify-lieu-autre-personne.mjs",
   "tools/arbre/verify-lire-ici.mjs",
   "tools/arbre/verify-loupe-direct.mjs",
   "tools/arbre/verify-loupe-ponts.mjs",

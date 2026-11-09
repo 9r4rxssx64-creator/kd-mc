@@ -11,6 +11,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Correctif : chaque adresse a un délai (`SERVI_ADRESSE_MAX_MS`, 4 min par défaut) ; passé ce délai elle est notée en erreur, la page est jetée et la suivante repart d'une page neuve. Quand l'hôte final n'est pas l'hôte demandé, la ligne ajoute « REDIRIGÉ (demandé … · chaîne : hôte/chemin → hôte/chemin) », jamais les paramètres.
 - Garde `tests/verify-verifier-servi.mjs` 2j8 : vert ; rouge sans l'écriture de la redirection. Cause du blocage d'Apex AI et de la redirection d'Apex Chat : non trouvées (la mesure suivante les dira).
 
+## Arbre v3.220 — un lieu corrigé ne passe plus dans la phrase d'une autre personne (2026-11-09)
+- Relecture horaire : Léa corrige le lieu de naissance de Léonard ; la mise à jour automatique des textes recopiait ce lieu dans la fiche de sa femme Marie, dans la phrase qui parlait d'Antoine (« né à Saint-Éloi, dans la Janaillat (Janaillat (Creuse)) »). Dans le texte d'un proche, le « né / décédé » n'est repris que s'il suit directement le prénom cité, sans autre prénom entre les deux. Garde `verify-lieu-autre-personne.mjs` (rouge sur v3.219). La fiche de Marie a été corrigée dans le nuage.
+
 ## Arbre v3.219 — Desarzens se dit « Dessarzanss » (2026-11-09)
 - Kevin : « dessarzanss » (le s final se prononce). `PRONONCIATIONS` : Desarzens → « Dessarzanss ». Garde `verify-prononciation.mjs`.
 

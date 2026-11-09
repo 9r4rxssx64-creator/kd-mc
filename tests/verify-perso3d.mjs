@@ -144,12 +144,22 @@ console.log('B. SANS BOUTON : la 3D s\'allume toute seule, partout');
   chk(regard && regard.regard.x > 0.5, `le regard (--lx posé par l'app quand ton doigt bouge) arrive à la 3D : x = ${regard && regard.regard.x.toFixed(2)}`);
   /* pixels : la zone qui change entre bouche fermée et ouverte est PETITE et au bas du visage */
   const zone = await page.evaluate(() => {
-    const rendre = (ouv, regard) => { const p = KdmcPerso3D.creer('bee'), c = document.createElement('canvas'); c.width = c.height = 300; const x = c.getContext('2d'); p.dessiner(x, 300, 'parle', 1.0, { niveau: 0.5, ouv, regard }, '#ffffff'); p.liberer(); return x.getImageData(0, 0, 300, 300).data; };
+    const rendre = (ouv, regard) => { const p = KdmcPerso3D.creer('bee'); p.graine = 0; /* même graine = même vie du visage : on compare la bouche, pas deux clignements différents */ const c = document.createElement('canvas'); c.width = c.height = 300; const x = c.getContext('2d'); p.dessiner(x, 300, 'parle', 1.0, { niveau: 0.5, ouv, regard }, '#ffffff'); p.liberer(); return x.getImageData(0, 0, 300, 300).data; };
     const box = (a, b) => { let n = 0, x0 = 999, x1 = 0, y0 = 999, y1 = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) > 60) { const k = i / 4, X = k % 300, Y = (k / 300) | 0; n++; x0 = Math.min(x0, X); x1 = Math.max(x1, X); y0 = Math.min(y0, Y); y1 = Math.max(y1, Y); } return { n, x0, x1, y0, y1 }; };
     return { bouche: box(rendre(0, null), rendre(1, null)), regard: box(rendre(0.4, { x: -1, y: 0 }), rendre(0.4, { x: 1, y: 0 })) };
   });
   chk(zone.bouche.n > 60 && zone.bouche.x1 - zone.bouche.x0 < 90 && zone.bouche.y1 - zone.bouche.y0 < 70 && zone.bouche.y0 > 100, `bouche fermée → ouverte : ${zone.bouche.n} points changent, dans une zone de ${zone.bouche.x1 - zone.bouche.x0} × ${zone.bouche.y1 - zone.bouche.y0} px sous les yeux (c'est bien la bouche qui bouge)`);
   chk(zone.regard.n > 400, `regard à gauche → à droite : la tête tourne (${zone.regard.n} points changent)`);
+  /* le SUIVI (v1.1) : antennes et oreilles ne bougent pas en même temps que la tête, elles la suivent avec un petit retard et un rebond (ressort).
+     Mesure : écart entre l'angle réellement posé sur l'antenne et sa pose « théorique » ; quand la tête est secouée par le regard, il dépasse 2× le calme. */
+  const suivi = await page.evaluate(() => {
+    const RAD = Math.PI / 180;
+    const mesure = (agite) => { const p = KdmcPerso3D.creer('bee'); p.graine = 0; const cv = document.createElement('canvas'); cv.width = cv.height = 160; const x = cv.getContext('2d'); let max = 0;
+      for (let i = 0; i < 150; i++) { const t = 20 + i / 60; p.dessiner(x, 160, 'repos', t, { regard: agite ? { x: Math.floor(i / 15) % 2 ? 1 : -1, y: 0 } : null }, '#fff'); const th = KdmcPerso3D._pose('bee', 'antenneG', 'repos', t, {}).r[2]; max = Math.max(max, Math.abs(p.noeuds.antenneG.rotation.z / RAD - th)); }
+      p.liberer(); return max; };
+    return { calme: mesure(false), agite: mesure(true) };
+  });
+  chk(suivi.agite > 1.5 && suivi.agite > 2 * suivi.calme, `les antennes SUIVENT la tête avec retard et rebond (écart ${suivi.agite.toFixed(1)}° quand la tête bouge, ${suivi.calme.toFixed(1)}° au calme)`);
   await ctx.close();
 }
 
@@ -180,12 +190,14 @@ console.log('E. Toutes les humeurs que la marionnette nomme existent en 3D');
   chk(r.absurde.length === 0, r.absurde.length ? 'valeurs absurdes : ' + r.absurde.slice(0, 4).join(', ') : `${r.total} poses calculées, aucune valeur absurde (NaN, taille négative, angle fou)`);
   chk(r.plat.length === 0, r.plat.length ? 'humeurs qui ne changent rien à la pose : ' + r.plat.join(', ') : 'chaque humeur CHANGE vraiment la pose');
   const p = await page.evaluate(() => ({
-    triste: KdmcPerso3D._pose('bee', 'tete', 'triste', 1, {}).r[0], dortYeux: KdmcPerso3D._pose('bee', 'yeux', 'dort', 1, {}).s[1],
-    reposYeux: KdmcPerso3D._pose('bee', 'yeux', 'repos', 1, {}).s[1], rit: KdmcPerso3D._pose('bourricot', 'bouche', 'poke', 1, {}).s[1],
+    triste: KdmcPerso3D._pose('bee', 'tete', 'triste', 1, {}).r[0],
+    /* depuis la v1.1 les yeux se ferment par les PAUPIÈRES (angle en degrés : −78 ouverte … +86 fermée), pas en écrasant l'œil ; on balaie 3 s pour ne pas tomber sur un clignement */
+    dortLid: Math.min(...Array.from({ length: 60 }, (_, i) => KdmcPerso3D._pose('bee', 'paupiereG', 'dort', i * 0.05, {}).r[0])),
+    reposLid: Math.min(...Array.from({ length: 60 }, (_, i) => KdmcPerso3D._pose('bee', 'paupiereG', 'repos', i * 0.05, {}).r[0])), rit: KdmcPerso3D._pose('bourricot', 'bouche', 'poke', 1, {}).s[1],
     oui: KdmcPerso3D._pose('bee', 'tete', 'repos', 1, { regard: { x: 1, y: 0 } }).r[1] - KdmcPerso3D._pose('bee', 'tete', 'repos', 1, { regard: { x: -1, y: 0 } }).r[1],
     voixF: KdmcPerso3D._pose('bee', 'bouche', 'parle', 1, { ouv: 1 }).s[1], voixP: KdmcPerso3D._pose('bee', 'bouche', 'parle', 1, { ouv: 0 }).s[1],
   }));
-  chk(p.triste > 10 && p.dortYeux < 0.1 && p.dortYeux < p.reposYeux, `triste : tête baissée (${p.triste.toFixed(0)}°) · il dort : yeux fermés (${p.dortYeux.toFixed(2)})`);
+  chk(p.triste > 10 && p.dortLid > 80 && p.reposLid < -50, `triste : tête baissée (${p.triste.toFixed(0)}°) · il dort : paupières fermées (${p.dortLid.toFixed(0)}°, toujours) · au repos elles s'ouvrent (${p.reposLid.toFixed(0)}°)`);
   chk(p.voixF - p.voixP > 0.7 && p.oui > 30, `parle : bouche ${p.voixP.toFixed(2)} → ${p.voixF.toFixed(2)} avec la voix · le regard tourne la tête de ${p.oui.toFixed(0)}°`);
   await ctx.close();
 }
@@ -265,8 +277,12 @@ console.log('G. Sobriété');
 {
   const { ctx, page } = await ouvre();
   await toutes3D(page, 5);
-  const st = await page.evaluate(() => { const r = {}; for (const n of KdmcPerso3D.noms) { const p = KdmcPerso3D.creer(n), c = document.createElement('canvas'); c.width = c.height = 256; p.dessiner(c.getContext('2d'), 256, 'repos', 1, {}, '#fff'); r[n] = KdmcPerso3D._stats(); p.liberer(); } return r; });
-  for (const [n, s] of Object.entries(st)) chk(s && s.appels <= 60 && s.triangles <= 30000, `${n} : ${s && s.appels} appels de dessin, ${s && s.triangles} triangles par image (plafonds 60 / 30 000)`);
+  await page.evaluate(() => KdmcPerso3D.attendreReel());   // v1.3 : la vraie Bee (données à côté du moteur) ET la Bee de formes, son repli, sont mesurées
+  const st = await page.evaluate(() => { const r = {}; const un = (cle, p) => { const c = document.createElement('canvas'); c.width = c.height = 256; p.dessiner(c.getContext('2d'), 256, 'repos', 1, {}, '#fff'); r[cle] = KdmcPerso3D._stats(); p.liberer(); };
+    for (const n of KdmcPerso3D.noms) { const p = KdmcPerso3D.creer(n); un(n + (p.reel ? ' (vraie Bee)' : ''), p); }
+    un('bee (formes, repli)', KdmcPerso3D._creerFormes('bee')); return r; });
+  chk(Object.keys(st).some((k) => /vraie Bee/.test(k)), `la vraie Bee est bien celle mesurée (${Object.keys(st).join(', ')})`);
+  for (const [n, s] of Object.entries(st)) chk(s && s.appels <= 140 && s.triangles <= 64000, `${n} : ${s && s.appels} appels de dessin, ${s && s.triangles} triangles par image, ombre + image comprises (plafonds 140 / 64 000 ; v1.2 : DEUX passes, la carte d'ombre puis l'image)`);
   /* hors écran : plus rien ne se dessine */
   await page.evaluate(() => { document.getElementById('ane').style.cssText += ';position:fixed;top:4000px'; });
   await dors(500);

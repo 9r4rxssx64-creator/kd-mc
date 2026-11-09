@@ -37,7 +37,7 @@ export function geometrie(f) {
   else if (f.g === 'capsule') g = new THREE.CapsuleGeometry(f.r, f.l, 8, 16);
   else if (f.g === 'cone') g = new THREE.ConeGeometry(f.r, f.h, 16, 1);
   else if (f.g === 'cyl') g = new THREE.CylinderGeometry(f.r, f.r2 == null ? f.r : f.r2, f.h, f.cotes || 16, 1, !!f.ouvert);
-  else if (f.g === 'tore') g = new THREE.TorusGeometry(f.r, f.t, 10, 32, f.arc || Math.PI * 2);
+  else if (f.g === 'tore') g = new THREE.TorusGeometry(f.r, f.t, f.seg2 || 10, f.seg || 32, f.arc || Math.PI * 2);
   else if (f.g === 'tour') g = new THREE.LatheGeometry(f.profil.map((q) => new THREE.Vector2(q[0], q[1])), 20);
   const m = new THREE.Matrix4().compose(
     new THREE.Vector3(...(f.pos || [0, 0, 0])),
@@ -74,15 +74,33 @@ const cligne = (t) => { const u = ((t % T) + T) % T; for (const c of [1.3, 3.2])
 /* LES YEUX DU DESSIN : grands, presque tout brun foncé et BRILLANTS (un gros reflet en haut, un petit en bas),
    un fin bord blanc, et pour Bee trois cils au coin extérieur. Posés AU RAS de la tête (sx = côté, −1 / +1). */
 const oeil = (x, y, z, r, sx, cils) => [
-  sphere(r * 1.1, { pos: [x, y, z - r * 0.12], ech: [0.92, 1.12, 0.5], rot: [0, sx * 16, 0], c: C.blanc, lisse: true }),
-  sphere(r, { pos: [x, y - r * 0.04, z], ech: [0.9, 1.1, 0.52], rot: [0, sx * 16, 0], c: C.iris, lisse: true }),
-  sphere(r * 0.62, { pos: [x + sx * 0.0, y - r * 0.06, z + r * 0.16], ech: [0.9, 1.08, 0.5], rot: [0, sx * 16, 0], c: C.pupille, lisse: true }),
-  sphere(r * 0.36, { pos: [x + r * 0.3, y + r * 0.36, z + r * 0.42], ech: [1, 1, 0.45], c: C.blanc, lisse: true }),      // le gros reflet
-  sphere(r * 0.16, { pos: [x - r * 0.28, y - r * 0.4, z + r * 0.42], ech: [1, 1, 0.45], c: C.blanc, lisse: true }),     // le petit
+  sphere(r * 1.18, { pos: [x, y, z - r * 0.12], ech: [0.92, 1.1, 0.5], rot: [0, sx * 16, 0], c: C.blanc, lisse: true }),
+  sphere(r * 0.36, { pos: [x + r * 0.3, y + r * 0.36, z + r * 0.46], ech: [1, 1, 0.45], c: C.blanc, lisse: true }),      // le gros reflet (il NE bouge PAS avec le regard : c'est la lumière)
+  sphere(r * 0.16, { pos: [x - r * 0.28, y - r * 0.4, z + r * 0.46], ech: [1, 1, 0.45], c: C.blanc, lisse: true }),     // le petit
   ...(cils ? [0, 1, 2].map((k) => cone(r * 0.16, r * 0.55, { pos: [x + sx * r * (0.62 + k * 0.18), y + r * (0.78 - k * 0.3), z - r * 0.05], rot: [0, 0, -sx * (35 + k * 25)], c: C.cil })) : []),
 ];
+/* l'IRIS et la PUPILLE : une pièce à part par œil, qui glisse sur le blanc (le regard vit : saccades, suit le doigt) */
+const iris = (nomCote, x, y, z, r, sx) => ({
+  nom: 'regard' + nomCote, parent: 'yeux', pivot: [x, y, z],
+  formes: [
+    sphere(r * 0.9, { pos: [0, -r * 0.04, r * 0.14], ech: [0.9, 1.1, 0.52], rot: [0, sx * 16, 0], c: C.iris, lisse: true }),
+    sphere(r * 0.56, { pos: [0, -r * 0.06, r * 0.3], ech: [0.9, 1.08, 0.5], rot: [0, sx * 16, 0], c: C.pupille, lisse: true }),
+  ],
+});
+/* la PAUPIÈRE : un dôme de la couleur de la tête, qui se roule sur l'œil (clignement, sourire plissé, sommeil, étonnement) */
+const paupiere = (nomCote, x, y, z, r, sx, c, cil) => ({
+  nom: 'paupiere' + nomCote, parent: 'tete', pivot: [x, y, z],
+  formes: [sphere(r * 1.32, { pos: [0, 0, -r * 0.08], ech: [0.98, 1.12, 0.8], bande: [0, Math.PI / 2], seg: 16, seg2: 8, rot: [0, sx * 14, 0], c }),
+    /* le trait de cils au bord de la paupière : fermée, elle fait une ligne sombre qui sourit (pas une boule jaune) */
+    tore(r * 1.31, r * 0.085, { pos: [0, 0, -r * 0.08], ech: [0.98, 0.8, 1], rot: [90, 0, 0], arc: Math.PI, seg: 14, seg2: 5, c: cil })],
+  geste: (t) => ({ r: [LID_OUVERT + (1 - cligne(t)) / 0.9 * (LID_FERME - LID_OUVERT), 0, 0] }),   // (fichiers .glb : clignement en boucle ; en direct c'est poseHumeur qui commande)
+});
+export const LID_OUVERT = -78, LID_FERME = 86;   // degrés autour de l'axe X : ouverte (relevée dans la tête) → fermée (sur l'œil)
 /* sourcil : un petit arc fin au-dessus de l'œil */
-const sourcil = (x, y, z, l, sx, c) => tore(l, l * 0.13, { pos: [x, y - l * 0.8, z], arc: Math.PI * 0.5, rot: [-14, sx * 16, 45 - sx * 6], c });
+const sourcil = (nomCote, x, y, z, l, sx, c) => ({
+  nom: 'sourcil' + nomCote, parent: 'tete', pivot: [x, y, z],
+  formes: [tore(l, l * 0.18, { pos: [0, -l * 0.8, 0], arc: Math.PI * 0.5, rot: [-14, sx * 16, 45 - sx * 6], c })],
+});
 /* la bouche OUVERTE du dessin : un grand « D » sombre, la langue rose au fond */
 const sourire = (x, y, z, lg, haut) => [
   sphere(lg, { pos: [x, y, z], bande: [Math.PI / 2, Math.PI / 2], ech: [1, haut || 0.9, 0.3], rot: [-6, 0, 0], c: C.bouche }),
@@ -92,7 +110,7 @@ const sourire = (x, y, z, lg, haut) => [
 const surf = (c, r, x, y) => c[2] + r[2] * Math.sqrt(Math.max(0, 1 - ((x - c[0]) / r[0]) ** 2 - ((y - c[1]) / r[1]) ** 2));
 
 /* tête de Bee : centre et rayons (dans la pièce « tete ») */
-const TB = { c: [0, 0.082, 0], r: [0.112, 0.1, 0.1] };
+const TB = { c: [0, 0.088, 0], r: [0.124, 0.11, 0.108] };
 /* tête de Bourricot */
 const TA = { c: [0, 0.08, 0], r: [0.1, 0.094, 0.092] };
 
@@ -102,12 +120,12 @@ export const PERSONNAGES = {
     pieces: [
       { nom: 'corps', parent: null, pivot: [0, 0, 0],
         formes: [
-          sphere(0.068, { pos: [0, 0.098, 0], ech: [1, 1.12, 0.95], c: C.jaune }),
-          sphere(0.0688, { pos: [0, 0.098, 0], ech: [1, 1.12, 0.95], bande: [1.42, 0.3], c: C.rayure }),
-          sphere(0.0688, { pos: [0, 0.098, 0], ech: [1, 1.12, 0.95], bande: [2.05, 0.32], c: C.rayure }),
-          sphere(0.069, { pos: [0, 0.098, 0], ech: [1, 1.12, 0.95], bande: [2.62, 0.52], c: C.rayure }),
+          sphere(0.068, { pos: [0, 0.098, 0], ech: [0.94, 1.02, 0.92], c: C.jaune }),
+          sphere(0.0688, { pos: [0, 0.098, 0], ech: [0.94, 1.02, 0.92], bande: [1.42, 0.3], c: C.rayure }),
+          sphere(0.0688, { pos: [0, 0.098, 0], ech: [0.94, 1.02, 0.92], bande: [2.05, 0.32], c: C.rayure }),
+          sphere(0.069, { pos: [0, 0.098, 0], ech: [0.94, 1.02, 0.92], bande: [2.62, 0.52], c: C.rayure }),
           /* la collerette DUVETEUSE : une couronne de petites boules */
-          ...Array.from({ length: 30 }, (_, k) => { const a = k / 15 * PI2 + (k >= 15 ? 0.21 : 0), bas = k >= 15; return sphere(bas ? 0.016 : 0.018, { seg: 10, seg2: 8, pos: [(bas ? 0.054 : 0.048) * S(a), (bas ? 0.152 : 0.165) + 0.003 * S(5 * a), (bas ? 0.05 : 0.044) * Math.cos(a)], ech: [1, 0.85, 1], c: C.jauneClair }); }),
+          ...Array.from({ length: 30 }, (_, k) => { const a = k / 15 * PI2 + (k >= 15 ? 0.21 : 0), bas = k >= 15; return sphere(bas ? 0.016 : 0.018, { seg: 8, seg2: 6, pos: [(bas ? 0.054 : 0.048) * S(a), (bas ? 0.152 : 0.165) + 0.003 * S(5 * a), (bas ? 0.05 : 0.044) * Math.cos(a)], ech: [1, 0.85, 1], c: C.jauneClair }); }),
           sphere(0.048, { pos: [0, 0.158, 0], ech: [1.08, 0.38, 1.0], c: C.jauneClair }),
           /* la chaîne et la médaille hexagonale dorée */
           tore(0.034, 0.0018, { pos: [0, 0.152, 0.03], rot: [72, 0, 0], arc: Math.PI, c: C.or, lisse: true }),
@@ -122,7 +140,6 @@ export const PERSONNAGES = {
           ...[-1, 0, 1].map((k) => sphere(0.016, { pos: [k * 0.014, TB.c[1] + TB.r[1] - 0.004 + (k ? 0 : 0.006), 0.012], ech: [0.75, 1.35, 0.75], rot: [10, 0, -k * 28], c: C.jauneMeche })),
           /* joues roses, douces */
           ...[-1, 1].map((sx) => sphere(0.021, { pos: [sx * 0.07, TB.c[1] - 0.03, surf(TB.c, TB.r, sx * 0.07, TB.c[1] - 0.03) - 0.006], ech: [1.3, 0.85, 0.3], rot: [0, sx * 35, 0], c: C.joue, opacite: 0.75 })),
-          ...[-1, 1].map((sx) => sourcil(sx * 0.044, TB.c[1] + 0.05, surf(TB.c, TB.r, sx * 0.044, TB.c[1] + 0.05) - 0.001, 0.012, sx, C.brunBee)),
         ],
         geste: (t) => ({ r: [4 * w(t, 1, 2), 9 * w(t, 1), 5 * w(t, 2, 1)] }) },
       /* la BOUCHE est une pièce à part : elle s'ouvre et se ferme avec la voix (lèvres synchronisées) et rit, s'étonne */
@@ -130,7 +147,10 @@ export const PERSONNAGES = {
         formes: sourire(0, 0, 0, 0.022, 0.95) },
       { nom: 'yeux', parent: 'tete', pivot: [0, TB.c[1] + 0.004, 0],
         formes: [-1, 1].flatMap((sx) => oeil(sx * 0.043, 0, surf(TB.c, TB.r, sx * 0.043, TB.c[1] + 0.004) - 0.006, 0.022, sx, true)),
-        geste: (t) => ({ s: [1, cligne(t), 1] }) },
+        geste: (t, vivant) => ({ s: [1, vivant ? 1 : cligne(t), 1] }) },
+      ...[-1, 1].map((sx) => iris(sx < 0 ? 'G' : 'D', sx * 0.043, 0, surf(TB.c, TB.r, sx * 0.043, TB.c[1] + 0.004) - 0.006, 0.022, sx)),
+      ...[-1, 1].map((sx) => paupiere(sx < 0 ? 'G' : 'D', sx * 0.043, TB.c[1] + 0.004, surf(TB.c, TB.r, sx * 0.043, TB.c[1] + 0.004) - 0.006, 0.022, sx, C.jaune, C.cil)),
+      ...[-1, 1].map((sx) => sourcil(sx < 0 ? 'G' : 'D', sx * 0.044, TB.c[1] + 0.05, surf(TB.c, TB.r, sx * 0.044, TB.c[1] + 0.05) - 0.001, 0.012, sx, C.brunBee)),
       ...['G', 'D'].map((cote, i) => { const sx = i ? 1 : -1; return {
         nom: 'antenne' + cote, parent: 'tete', pivot: [sx * 0.03, TB.c[1] + TB.r[1] - 0.012, 0.005],
         /* la tige COURBE vers l'extérieur et la boule au bout, comme sur le dessin */
@@ -145,13 +165,13 @@ export const PERSONNAGES = {
       ...['G', 'D'].map((cote, i) => { const sx = i ? 1 : -1; return {
         nom: 'bras' + cote, parent: 'corps', pivot: [sx * 0.058, 0.13, 0.012],
         /* petits bras bruns tout ronds, sans doigts (une moufle), comme le dessin */
-        formes: [capsule(0.0145, 0.03, { pos: [sx * 0.014, -0.022, 0], rot: [0, 0, sx * 32], c: C.brunBee }),
-                 sphere(0.0175, { pos: [sx * 0.03, -0.046, 0.004], c: C.brunBee })],
+        formes: [capsule(0.0105, 0.03, { pos: [sx * 0.014, -0.022, 0], rot: [0, 0, sx * 32], c: C.brunBee }),
+                 sphere(0.0205, { pos: [sx * 0.031, -0.047, 0.004], c: C.brunBee })],
         geste: (t) => (i ? { r: [0, 0, 70 * Math.max(0, S(PI2 * t / T)) + 22 * Math.max(0, S(PI2 * t / T)) * w(t, 8)] } : { r: [8 * w(t, 1), 0, -8 * w(t, 2)] }) }; }),
       ...['G', 'D'].map((cote, i) => { const sx = i ? 1 : -1; return {
         nom: 'jambe' + cote, parent: 'corps', pivot: [sx * 0.03, 0.036, 0],
-        formes: [capsule(0.016, 0.018, { pos: [0, -0.014, 0], c: C.brunBee }),
-                 sphere(0.02, { pos: [sx * 0.004, -0.032, 0.01], ech: [1.05, 0.6, 1.45], c: C.brunBee })],
+        formes: [capsule(0.0115, 0.014, { pos: [0, -0.012, 0], c: C.brunBee }),
+                 sphere(0.024, { pos: [sx * 0.005, -0.03, 0.012], ech: [1.05, 0.62, 1.4], c: C.brunBee })],
         geste: (t) => ({ r: [10 * w(t, 2, i * Math.PI), 0, 0] }) }; }),
     ]
   },
@@ -175,7 +195,6 @@ export const PERSONNAGES = {
           /* les narines : deux petites virgules sombres sur le dessus du museau */
           ...[-1, 1].map((sx) => sphere(0.0075, { pos: [sx * 0.022, TA.c[1] - 0.018, 0.1], ech: [1.3, 0.55, 0.5], rot: [20, 0, sx * 25], c: C.narine })),
           ...[-1, 1].map((sx) => sphere(0.018, { pos: [sx * 0.07, TA.c[1] - 0.012, surf(TA.c, TA.r, sx * 0.07, TA.c[1] - 0.012) - 0.006], ech: [1.2, 0.8, 0.3], rot: [0, sx * 38, 0], c: C.joue, opacite: 0.45 })),
-          ...[-1, 1].map((sx) => sourcil(sx * 0.04, TA.c[1] + 0.052, surf(TA.c, TA.r, sx * 0.04, TA.c[1] + 0.052) - 0.001, 0.013, sx, C.sourcilAne)),
           /* la crinière en bataille entre les oreilles, qui retombe sur le front */
           ...[[-0.02, 0.166, 0.03, 35, 1], [0.004, 0.172, 0.034, -8, 1.1], [0.026, 0.164, 0.026, -40, 1], [-0.008, 0.152, 0.064, 30, 0.85], [0.014, 0.15, 0.066, -26, 0.85], [0, 0.164, 0.0, 0, 1.1], [-0.034, 0.152, 0.008, 60, 0.9], [0.036, 0.152, 0.006, -62, 0.9]]
             .map(([x, y, z, a, k]) => sphere(0.019 * k, { pos: [x, y, z], ech: [0.85, 1.3, 0.8], rot: [z > 0.05 ? 55 : 20, 0, a], c: C.criniere })),
@@ -185,7 +204,10 @@ export const PERSONNAGES = {
         formes: sourire(0, 0, 0, 0.027, 0.85) },
       { nom: 'yeux', parent: 'tete', pivot: [0, TA.c[1] + 0.018, 0],
         formes: [-1, 1].flatMap((sx) => oeil(sx * 0.04, 0, surf(TA.c, TA.r, sx * 0.04, TA.c[1] + 0.018) - 0.005, 0.02, sx, false)),
-        geste: (t) => ({ s: [1, cligne(t + 0.7), 1] }) },
+        geste: (t, vivant) => ({ s: [1, vivant ? 1 : cligne(t + 0.7), 1] }) },
+      ...[-1, 1].map((sx) => iris(sx < 0 ? 'G' : 'D', sx * 0.04, 0, surf(TA.c, TA.r, sx * 0.04, TA.c[1] + 0.018) - 0.005, 0.02, sx)),
+      ...[-1, 1].map((sx) => paupiere(sx < 0 ? 'G' : 'D', sx * 0.04, TA.c[1] + 0.018, surf(TA.c, TA.r, sx * 0.04, TA.c[1] + 0.018) - 0.005, 0.02, sx, C.pelage, C.criniere)),
+      ...[-1, 1].map((sx) => sourcil(sx < 0 ? 'G' : 'D', sx * 0.04, TA.c[1] + 0.052, surf(TA.c, TA.r, sx * 0.04, TA.c[1] + 0.052) - 0.001, 0.013, sx, C.sourcilAne)),
       ...['G', 'D'].map((cote, i) => { const sx = i ? 1 : -1; return {
         nom: 'oreille' + cote, parent: 'tete', pivot: [sx * 0.05, TA.c[1] + 0.07, -0.005],
         /* LONGUES oreilles POINTUES en forme de feuille, roses dedans, penchées vers l'extérieur */
@@ -350,20 +372,75 @@ export const HUMEURS = {
     bras: sx > 0 ? { remplace: true, r: [0, 0, 92 + 10 * S(P2 * 2.2 * t)] } : null,
   })[rl],
 };
+/* ---------------------------------------------------------------------------
+   5. LA VIE DU VISAGE (Kevin 7.11 : « mouvements naturels, humains, toutes les mimiques ») — rien ne se répète à l'identique :
+      · clignements IRRÉGULIERS (1,4 à 4,6 s d'écart, de temps en temps un double clignement), en 0,17 s : la paupière descend vite, remonte moins vite ;
+      · regard qui SAUTE d'un point à un autre (saccades de 90 ms) au lieu de flotter ; il suit le doigt quand il y en a un ;
+      · visage = un tableau par humeur : paupière (0 ouverte → 1 fermée), sourcils (hauteur, inclinaison, côté), coin du regard.
+      Tout est déterministe en t (aucun hasard au vol) : même instant = même image, donc testable.
+   ------------------------------------------------------------------------- */
+const hach = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const lisse3 = (k) => { k = Math.min(1, Math.max(0, k)); return k * k * (3 - 2 * k); };
+/* fermeture de la paupière due au clignement : 0 (ouverte) … 1 (fermée) */
+export function clignementVivant(t, graine) {
+  const g = graine || 0, s = Math.floor(t / 3), u = t - s * 3;
+  const e = 0.4 + 2 * hach(s * 3.1 + g), dbl = hach(s * 7.7 + g + 99) < 0.25;
+  const un = (d) => (d < 0 || d > 0.17 ? 0 : d < 0.06 ? lisse3(d / 0.06) : 1 - lisse3((d - 0.06) / 0.11));
+  return Math.max(un(u - e), dbl ? un(u - e - 0.3) : 0);
+}
+/* où il regarde quand personne ne lui montre rien : un point, puis un autre (x, y entre −1 et 1), centré le plus souvent */
+export function regardVivant(t, graine) {
+  const g = graine || 0, dur = 1.6, n = Math.floor(t / dur);
+  const cible = (k) => { const v = hach(k * 5.3 + g); return [v < 0.35 ? 0 : (hach(k * 1.7 + g + 5) - 0.5) * 1.5, v < 0.35 ? 0 : (hach(k * 2.9 + g + 9) - 0.5) * 1.0]; };
+  const dur_k = dur * (0.75 + 0.9 * hach(n * 3.3 + g)), d = t - n * dur;
+  const a = cible(n - 1), b = cible(n), k = lisse3((d - 0.1) / 0.09 * (dur / Math.max(0.5, dur_k)));
+  return { x: a[0] + (b[0] - a[0]) * k, y: a[1] + (b[1] - a[1]) * k };
+}
+/* LE VISAGE DE CHAQUE HUMEUR : lid = fermeture de base de la paupière, ls = côté (−1 gauche, +1 droite) qui se ferme plus, brow = hauteur des sourcils (m),
+   tilt = bout intérieur levé (degrés, + = triste / inquiet, − = en colère), asym = un sourcil plus haut (m), regard = où il regarde de lui-même */
+export const VISAGES = {
+  repos: { lid: 0.06 }, parle: { lid: 0.03, brow: 0.001 }, joie: { lid: 0.34, brow: 0.004 }, fete: { lid: 0.34, brow: 0.004 }, danse: { lid: 0.36, brow: 0.004 },
+  saute: { lid: 0.3, brow: 0.005 }, rire: { lid: 0.78, brow: 0.003 }, triste: { lid: 0.36, brow: -0.001, tilt: 20, regard: [0, -0.7] }, pense: { lid: 0.2, brow: 0.001, asym: 0.0045, tilt: -6, regard: [-0.8, 0.8] },
+  dort: { lid: 1 }, poke: { lid: 0, brow: 0.0075 }, coucou: { lid: 0.1, brow: 0.003, clin: 1 }, salut: { lid: 0.1, brow: 0.003, clin: 1 }, lecture: { lid: 0.42, regard: [0, -0.95] },
+  montre: { lid: 0.04, brow: 0.003 }, secoue: { lid: 0.14, tilt: -10 }, marche: { lid: 0.05 }, vole: { lid: 0.04, brow: 0.002 },
+};
 /* LA POSE D'UNE PIÈCE dans une humeur, à l'instant t (s) : toujours {r, p, s} complets. Rend le geste de base (il ne s'arrête
-   JAMAIS : Kevin « toujours ») + ce que l'humeur y ajoute + le regard (la tête et les yeux suivent ton doigt). */
+   JAMAIS : Kevin « toujours ») + ce que l'humeur y ajoute + le regard (les yeux suivent ton doigt tout de suite, la tête un instant après)
+   + le visage vivant (paupières, sourcils, saccades). ctx.regardTete = le regard LISSÉ pour la tête (la scène le calcule). */
 export function poseHumeur(piece, h, t, ctx) {
   const c = ctx || {};
-  const b = piece.geste ? piece.geste(t) : {};
+  const b = piece.geste ? piece.geste(t, true) : {};
   const rl = role(piece.nom), sx = cote(piece.nom);
   let a = null;
   if (HUMEUR_REACTION[h]) a = REACTIONS[HUMEUR_REACTION[h]](rl, sx, ((t % DUREE_REACTION) + DUREE_REACTION) % DUREE_REACTION / DUREE_REACTION, 1);
   else if (HUMEURS[h]) a = HUMEURS[h](rl, sx, t, { niveau: c.niveau == null ? 0.5 : c.niveau, ouv: c.ouv || 0 });
   const g = combiner(b, a || {}, 1);
-  const rg = c.regard;
-  if (rg) {
-    if (rl === 'tete') { g.r[1] += 22 * rg.x; g.r[0] += -12 * rg.y; }
-    if (rl === 'yeux') { g.p[0] += 0.004 * rg.x; g.p[1] += -0.003 * rg.y; }
+  const vis = VISAGES[h] || VISAGES.repos, graine = c.graine || 0;
+  const rg = c.regard, doigt = !!rg && (Math.abs(rg.x) + Math.abs(rg.y) > 0.02);
+  const propre = vis.regard ? { x: vis.regard[0], y: vis.regard[1] } : regardVivant(t, graine);
+  const oeil = doigt ? rg : propre;                                   // où LES YEUX regardent
+  const rt = doigt ? (c.regardTete || rg) : { x: oeil.x * 0.35, y: oeil.y * 0.3 };   // la tête suit moins, et plus tard
+  if (rl === 'tete') { g.r[1] += 22 * rt.x; g.r[0] += -12 * rt.y; }
+  if (rl === 'yeux') { g.p[0] += 0.004 * rg_x(oeil); g.p[1] += -0.003 * rg_y(oeil); g.s[1] = Math.max(1, g.s[1]); g.s[0] = Math.max(1, g.s[0]); }   // plus de « yeux écrasés » : c'est la paupière qui ferme
+  if (rl === 'regard') {                                              // l'iris glisse sur le blanc : le reflet, lui, reste (c'est la lumière)
+    const r = 0.021, ex = Math.max(-1, Math.min(1, oeil.x)), ey = Math.max(-1, Math.min(1, oeil.y)), conv = sx * -0.05 * r * (1 - Math.abs(ex));   // un peu de louchement vers l'intérieur
+    g.p[0] += 0.28 * r * ex + conv; g.p[1] += 0.24 * r * ey; g.p[2] += -0.04 * r * (Math.abs(ex) + Math.abs(ey));
+  }
+  if (rl === 'paupiere') {
+    const blink = clignementVivant(t + (sx > 0 ? 0.015 : 0), graine);   // l'œil droit suit l'œil gauche de 15 ms : plus vrai qu'ensemble au dixième
+    let base = vis.lid == null ? 0.06 : vis.lid;
+    if (vis.clin) base = sx > 0 ? Math.max(base, 0.9 * Math.min(1, 1.6 * Math.abs(S(P2 * t / 2)))) : base;      // un clin d'œil (l'œil droit)
+    if (h === 'parle') base += 0.05 * (c.niveau == null ? 0.5 : c.niveau) * S(P2 * 3.1 * t);
+    if (c.regard && Math.abs(oeil.y) > 0.3) base = Math.max(0, base + 0.18 * -oeil.y);                              // regarde en haut : paupière plus haute ; en bas : plus basse
+    const ferm = 1 - (1 - Math.min(1, Math.max(0, base))) * (1 - blink);
+    g.r = [LID_OUVERT + ferm * (LID_FERME - LID_OUVERT), 0, 0]; g.p = [0, 0, 0];
+    g.s = [1, 1, 1 - 0.55 * Math.max(0, (ferm - 0.5) / 0.5)];   // fermée, la paupière s'aplatit sur l'œil (une ligne, pas une bosse)
+  }
+  if (rl === 'sourcil') {
+    let hb = (vis.brow || 0) + (vis.asym && sx < 0 ? vis.asym : 0), tilt = vis.tilt || 0;
+    if (h === 'parle') hb += 0.0025 * Math.max(0, S(P2 * 1.3 * t + (sx > 0 ? 0.8 : 0))) * (c.niveau == null ? 0.5 : c.niveau * 1.4);   // il appuie ses mots d'un sourcil
+    g.p = [0, hb, 0]; g.r = [0, 0, -sx * tilt]; g.s = [1, 1, 1];
   }
   return g;
 }
+const rg_x = (o) => Math.max(-1, Math.min(1, o.x)), rg_y = (o) => Math.max(-1, Math.min(1, o.y));

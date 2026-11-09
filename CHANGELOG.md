@@ -11,6 +11,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Correctif : chaque adresse a un délai (`SERVI_ADRESSE_MAX_MS`, 4 min par défaut) ; passé ce délai elle est notée en erreur, la page est jetée et la suivante repart d'une page neuve. Quand l'hôte final n'est pas l'hôte demandé, la ligne ajoute « REDIRIGÉ (demandé … · chaîne : hôte/chemin → hôte/chemin) », jamais les paramètres.
 - Garde `tests/verify-verifier-servi.mjs` 2j8 : vert ; rouge sans l'écriture de la redirection. Cause du blocage d'Apex AI et de la redirection d'Apex Chat : non trouvées (la mesure suivante les dira).
 
+## Arbre v3.219 — Desarzens se dit « Dessarzanss » (2026-11-09)
+- Kevin : « dessarzanss » (le s final se prononce). `PRONONCIATIONS` : Desarzens → « Dessarzanss ». Garde `verify-prononciation.mjs`.
+
 ## Arbre v3.218 — Desarzens se dit « Dessarzance » (2026-11-08)
 - Kevin : « Dessarzance, phonétique ». `PRONONCIATIONS` : Desarzens → « Dessarzance » (remplace « Dessarzin »). Garde `verify-prononciation.mjs`.
 

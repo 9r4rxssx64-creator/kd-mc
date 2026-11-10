@@ -6,6 +6,17 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 
 
+## CMCteams v10.012 + light v1.136 — décembre reproduit à l'identique du PDF : début d'équipe tardif des élèves lu dans le PDF (2026-11-10)
+- Relecture indépendante du PDF (`tests/verify-decembre-pdf-independant.mjs`, 17 contrôles) : 244 personnes de la grille, 7 564 cases identiques ; 29 élèves des 6 groupes de formation identiques ; 49 absents (28 congés, 12 maladie, 9 formation AF) conformes au récapitulatif ; personne en trop ni en moins.
+- 3 élèves (‹employé›, ‹employé›, ‹employé›) avaient des premiers jours faux : 18 élèves sont à l'école jusqu'au 22 et en équipe dès le 23 ; le jour de début (`deb`) est lu dans le PDF par les deux générateurs, les départs ne comptent rien avant, et la formation ne ramène plus un jour d'école hors du mois.
+- Banc de rendu des départs aligné sur la règle de l'appli (DEPL/DEP/SS/PRT = travail) : 216 équipes, 0 anomalie.
+
+## CMCteams v10.011 + light v1.135 — le planning de décembre 2026 (V1) est intégré, avec une ligne d'équipe qui commence tard lue à la bonne colonne (2026-11-10)
+- Kevin a donné `PLANNING_CMC_CCDP_DECEMBRE_2026_V1.pdf` : intégré dans CMCteams ET la light (`tests/fixtures/decembre-2026-v1.pdf`, les deux générateurs, empreintes, `import-noms-manquants`). Mesuré : 293 personnes, 31 jours, 18 paires d'équipes miroir, 39 tableaux de la light ; le seed (CMCteams) et la light ont les 31 mêmes cases pour chacune des 293 personnes (0 écart).
+- Deux défauts du lecteur de PDF de l'appli trouvés et corrigés : (1) un nom écrit en rouge arrivait collé au marqueur `{{REDNAME}}` et la personne était ignorée en silence (FAIVRE R, IMBERT E) ; (2) une ligne d'équipe qui commence au jour 23 (les 3 élèves en formation : MATTERA M, MADRID JJ, CAPIOMONT K) était tassée à gauche, jour 1 — le lecteur place maintenant chaque code dans SA colonne (grille de la page).
+- Les mois de juin à novembre gardent toutes leurs cases ; seuls des détails autour changent (la famille de 30 personnes, les cases de congé/maladie sans famille, et 42 marques de couleur de cellule qui manquaient, uniquement ajoutées, jamais retirées : 40 en août dont 6 « convention » du 24, 1 en septembre, 1 en novembre — mesuré par comparaison avec la version d'avant ; les codes des 198 tableaux d'avant décembre sont identiques). Horaires aménagés : ‹employé› (équipe 10) et ‹employé› (équipe r6) sont repérées en décembre, aucun départ.
+- Garde `test:decembre-v1` (35 contrôles, sabotage rouge).
+
 ## Servi — une adresse bloquée est coupée à 4 min, et une redirection est écrite avec sa chaîne (2026-11-08)
 - Constat (pont-check 2104, run 42520525324) : Apex AI sur l'écran « portable » ne finissait pas et le job entier a été annulé à 20 min ; et sur ce même écran, `apex-chat.kd-mc.com` arrivait sur le portail (hôte `kd-mc.com`) dans 5 passages sur 6 depuis le 7.11 sans que la ligne dise pourquoi.
 - Correctif : chaque adresse a un délai (`SERVI_ADRESSE_MAX_MS`, 4 min par défaut) ; passé ce délai elle est notée en erreur, la page est jetée et la suivante repart d'une page neuve. Quand l'hôte final n'est pas l'hôte demandé, la ligne ajoute « REDIRIGÉ (demandé … · chaîne : hôte/chemin → hôte/chemin) », jamais les paramètres.

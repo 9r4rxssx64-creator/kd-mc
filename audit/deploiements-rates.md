@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 11/11/2026 03:31 UTC
+
+- **Branche** : `main` · **Commit** : `b134c8ad` · **Run** : `42953179694`
+- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/42953179694
+- **Ce que la machine a dit** :
+
+```
+  ✅ 4. preuve fabriquée (contenu changé, ancienne signature) → refusée
+  ✅ 4b. signature inventée → refusée
+  ✅ 4c. preuve de plus de 30 minutes → refusée
+  ✅ 4i. 10 demandes par heure et par connexion, la 11e refusée
+  ✅ 7c. demande sans en-tête Origin → refusée
+tel: envoi WhatsApp refusé 401
+  ✅ 7f. WhatsApp refuse l'envoi → rien n'est écrit, la demande reste « en attente »
+OTP POUR TOUTES LES INSCRIPTIONS — 40 OK / 0 échec(s)
+  ✅ 1. nouveau compte SANS téléphone → refusé (400 telephone_requis), aucune fiche créée
+  ✅ 2. téléphone illisible (« abc ») → refusé
+  ✅ 3. téléphone trop court → refusé
+12 OK / 0 échec(s)
+Tuya multi-host discovery test: 8 passed, 0 failed
+Tuya schedule engine test: 8 passed, 0 failed
+Tuya sign test: 9 passed, 0 failed
+Tuya history/stats test: 15 passed, 0 failed
+Tuya surface sentinel test: 9 passed, 0 failed
+  ✅ 2c. une app le refuse : attente_admin, message clair (17.10 : il dit d'ouvrir le mail de confirmation)
+  ✅ 3. refuser → la fiche reste fermée (refuse)
+  ✅ 3b. l'app le refuse toujours (refuse_admin)
+  ✅ 3c. le portail sait que c'est refusé
+  ✅ 1c. une app le refuse (attente_admin)
+  ✅ 3. pas de refus « tel_requis » : la demande attend Kevin
+14 ok / 0 échec(s)
+Voix Chirp test: 16 passed, 0 failed
+Voix douce test: 6 passed, 0 failed
+Voix MeloTTS langue test: 8 passed, 0 failed
+  const err = new Error(message);
+Error: Cannot find module 'playwright'
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

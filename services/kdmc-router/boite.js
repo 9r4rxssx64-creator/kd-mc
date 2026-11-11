@@ -27,6 +27,10 @@ import { ficheOubliee } from './acc-memo.js';
 export const LIMITES = { alerteFraicheur: 48 * 36e5, liste: 60, fil: 8, convs: 20, depotHeure: 5, depotJour: 200, texte: 1000, reponse: 2000, garde: 90 * 864e5, memoMs: 5000, memoKvMs: 60000 };
 export const FB_URL = 'https://cmcteams-c16ab-default-rtdb.europe-west1.firebasedatabase.app/cmcteams';
 
+/* Comptes que NOS robots créent pour mesurer (liste fermée, copie de tools/smoke/supprimer-compte-test.mjs UID_DE_TEST) :
+   leurs alertes « Nouvel appareil » restent dans le journal après la suppression du compte et inondaient la boîte de Kevin (11.11). */
+export const UID_DE_TEST = /^(?:(?:testparcours-|testmail-|testvitesse-|testdecoupe-|testsecours-|testrapide-|testlot-|testlecture-|testfinal-|testcache-|testpass-|testsecurite-|testinscription-|temps-reel|parcours-robot)[a-z0-9-]*|ci_smoke|marie-curie)$/;
+export const estCompteDeTest = (uid) => UID_DE_TEST.test(String(uid || '').toLowerCase());
 export const SOURCES = {
   lingua:   { nom: 'Lingua',               icone: '🐝', lien: 'https://lingua.kd-mc.com/#admin' },
   cmcteams: { nom: 'CMCteams · employés',  icone: '📅', lien: 'https://cmcteams.kd-mc.com/tools/messages/' },
@@ -355,7 +359,7 @@ async function lirePersonnes(env, db, now, outils) {
   /* Les changements de pays enregistrés AVANT le 4.10 n'ont pas de réseau noté : impossible de dire si c'était le Relais privé iCloud (c'était le cas de ceux
      que Kevin a vus) → ils sont écartés. Les nouvelles alertes de ce type ne partent que pour des réseaux ordinaires. */
   /* Les répétitions (même événement, même appareil, < 30 min) ne font qu'UNE ligne « ×5 », et chaque ligne dit en clair ce qui s'est passé (texteAlerte). */
-  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type] && !((e.ev === 'geo_anomaly') && (e.asn === undefined || e.masque))).slice(0, 120)).slice(0, 80);
+  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type] && !estCompteDeTest(e.uid) && !((e.ev === 'geo_anomaly') && (e.asn === undefined || e.masque))).slice(0, 120)).slice(0, 80);
   const P = new Map();
   const dossier = (id, uid, nom) => { if (!P.has(id)) P.set(id, { id, uid, nom: nom || '', evts: [], alertes: [] }); const p = P.get(id); if (nom && !p.nom) p.nom = nom; return p; };
   for (const e of j) {
@@ -426,7 +430,7 @@ async function lireAlertes(env, db, now) {
   if (!env.ACCOUNTS) return [];
   let j = []; try { j = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]'); } catch { j = []; }
   /* Les changements de pays enregistrés AVANT le 4.10 n'ont pas de réseau noté : impossible de dire si c'était le Relais privé iCloud → écartés. */
-  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type] && !((e.ev === 'geo_anomaly') && (e.asn === undefined || e.masque))).slice(0, 40)).slice(0, 15);
+  j = grouperAlertes((Array.isArray(j) ? j : []).filter((e) => e && e.ts && EV_ALERTES[e.ev || e.type] && !estCompteDeTest(e.uid) && !((e.ev === 'geo_anomaly') && (e.asn === undefined || e.masque))).slice(0, 40)).slice(0, 15);
   const cles = j.map((e) => 'alerte:' + e.ts + '-' + (e.ev || e.type));
   const lues = await luesD1(db, cles);
   /* Une alerte de plus de 48 h est lue d'office : elle reste visible (historique) mais ne fait plus de rouge — mesuré par Kevin le 4.10 :

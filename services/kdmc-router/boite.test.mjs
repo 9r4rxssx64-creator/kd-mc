@@ -6,7 +6,7 @@
  * node services/kdmc-router/boite.test.mjs */
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
-import { handleBoite, lireBoite, LIMITES, SOURCES, SOURCES_MESSAGES, _viderMemo, appareilDe, texteAlerte, grouperAlertes, nomDepuisUid } from './boite.js';
+import { handleBoite, lireBoite, LIMITES, SOURCES, SOURCES_MESSAGES, _viderMemo, appareilDe, texteAlerte, grouperAlertes, nomDepuisUid, estCompteDeTest, UID_DE_TEST } from './boite.js';
 import { BOUTON_JS } from './boite-bouton.js';
 import mod, { injecterBouton, BOUTON_TAG } from './worker.js';
 import { ADMIN, schema as schemaCercle } from './cercle.js';
@@ -375,6 +375,25 @@ ok(/fbToken: async/.test(W) && /mintShopsAdminIdToken\(env\)/.test(W), '9b. le r
   ok(lues.length <= 30, '12j. 60 personnes en alerte : au plus 30 fiches lues (et non 60)', lues.length);
   ok(JSON.stringify(cartes.map((x) => x.cle)) === JSON.stringify(attendu), '12k. et les 20 cartes rendues sont les 20 plus récentes, dans l\'ordre', cartes.map((x) => x.cle).slice(0, 4));
   kv.set('aud:log', sauve); _viderMemo();
+}
+
+
+/* 6z. (Kevin 11.11, capture : « Temps Reel… Nouvel appareil » x5) les alertes des comptes de TEST des robots n'entrent JAMAIS dans la boîte */
+{
+  const sauveZ = kv.get('aud:log');
+  kv.set('aud:log', JSON.stringify([
+    { ts: T - 1000, ev: 'new_device', uid: 'temps-reelaqrndf', name: 'Temps ReelAqrndf', detail: 'iOS · Des Moines' },
+    { ts: T - 2000, ev: 'new_device', uid: 'temps-reelchjgha', name: 'Temps ReelChjgha', detail: 'iOS · Cheyenne' },
+    { ts: T - 3000, ev: 'new_device', uid: 'zoe-durand', name: 'Zoé Durand', detail: 'iPhone · Nice' }]));
+  _viderMemo();
+  const bz = await boite();
+  const dz = JSON.stringify(bz);
+  ok(!/temps-reel|Temps Reel/i.test(dz), '6z. aucune alerte d\'un compte de test (Temps Reel…) dans la boîte', dz.slice(0, 120));
+  ok(bz.messages.some((x) => /zoe-durand/.test(x.cle || '')), '6z2. l\'alerte d\'une vraie personne reste visible');
+  ok(estCompteDeTest('temps-reelaqrndf') && estCompteDeTest('parcours-robot-x') && !estCompteDeTest('zoe-durand') && !estCompteDeTest('kdmc_admin') && !estCompteDeTest(''), '6z3. estCompteDeTest : tests oui, vraies personnes et admin non');
+  const cop = readFileSync(new URL('../../tools/smoke/supprimer-compte-test.mjs', import.meta.url), 'utf8').match(/const UID_DE_TEST = (\/.*?\/);/);
+  ok(cop && cop[1] === UID_DE_TEST.toString(), '6z4. la liste de la boîte est identique à celle de l\'outil de suppression');
+  kv.set('aud:log', sauveZ); _viderMemo();
 }
 
 console.log(`\n${pass} OK · ${fail} échec(s)`);

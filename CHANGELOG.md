@@ -6,6 +6,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 
 
+## v3.222 — 2026-11-11
+- Tiroir privé : chaque information a « 🔊 Écouter » (lit le texte privé à voix haute) et « ✏️ Corriger » (modifie le texte, repasse à « à valider »). Rien ne devient public sans « 🌍 Rendre public ». Garde : tools/arbre/verify-prive-ecouter.mjs.
+- Plus d'« accord » ni de courrier pour les mineurs (Kevin 11.11) : tout est public dans la famille d'office, seul le sensible reste privé côté admin. Un texte « texte préparé » devient public automatiquement le jour des 18 ans (date de naissance complète). Alerte « 🎂 anniversaire du jour » pour tous les écrans (fermable pour la journée) + calendrier des 60 prochains jours au clic. Garde : tools/arbre/verify-majeur-anniv.mjs.
+
 ## CMCteams v10.013 + light v1.137 — 9 élèves en formation de décembre remis dans leur vraie équipe (2026-11-11)
 - Le PDF de décembre imprime chaque élève en formation deux fois (ligne d'équipe, puis ligne de groupe sous une autre équipe) : le lecteur laissait la seconde écraser la première. 9 élèves avaient donc les horaires et les départs d'une autre équipe dès le 23 décembre ; corrigés (‹employé›, ‹employé›, ‹employé›, ‹employé›, ‹employé›, ‹employé›, MADRID JJ, MATTERA M, CAPIOMONT K).
 - Les 18 élèves : formation (départs vendredi/samedi) jusqu'au 22, équipe d'origine avec départs dès le 23 ; CMCteams = light case par case. Nouvelles gardes : rythme des jours 24-31 = majorité de l'équipe ; fins d'équipe attendues = 18.

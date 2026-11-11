@@ -9,12 +9,13 @@ const { chromium } = createRequire(new URL('../package.json', import.meta.url).p
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m); } };
 /* ── le script dans un vrai navigateur ── */
 const wav = (() => { const n = 2400, b = Buffer.alloc(44 + n * 2); b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVEfmt ', 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(24000, 24); b.writeUInt32LE(48000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(n * 2, 40); return b; })();
-let mode = 'ok'; const appels = []; const echecs = new Set();
+let mode = 'ok'; const appels = []; const echecs = new Set(); const lents = new Set();
 const srv = http.createServer((q, r) => {
   const u = new URL(q.url, 'http://x');
   if (u.pathname === '/__voix/partout.js') { r.writeHead(200, { 'content-type': 'application/javascript' }); return r.end(M.SCRIPT_JS || ('(' + M.partoutVoix.toString() + ')();')); }
   if (u.pathname === '/__voix/choisir') { r.writeHead(200, { 'content-type': 'text/html' }); return r.end(M.pageChoisir()); }
   if (u.pathname === '/__voix/catalogue') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end(JSON.stringify({ ok: true, voix: [{ id: 'gemini-aoede', nom: 'Aoede', genre: 'f', licence: 'Google' }, { id: 'piper-tom', nom: 'Piper · Tom', genre: 'h', licence: 'AGPL' }, { id: 'kokoro-ff-siwis', nom: 'Kokoro', genre: 'f', licence: 'Apache' }] })); }
+  if (u.pathname === '/__lingua/tts' && lents.has(u.searchParams.get('v'))) { appels.push(u.searchParams.get('v') + '|' + u.searchParams.get('l') + '|' + u.searchParams.get('t')); return; }   // ne répond jamais
   if (u.pathname === '/__lingua/tts') { appels.push(u.searchParams.get('v') + '|' + u.searchParams.get('l') + '|' + u.searchParams.get('t')); if (mode === 'panne' || echecs.has(u.searchParams.get('v'))) { r.writeHead(200, { 'content-type': 'application/json' }); return r.end('{"ok":false}'); } r.writeHead(200, { 'content-type': 'audio/wav' }); return r.end(wav); }
   r.writeHead(200, { 'content-type': 'text/html' });
   r.end('<!doctype html><title>t</title>' + (u.searchParams.get('retrait') ? '<meta name="kdmc-voix" content="off">' : '') + '<script>window.log=[];var o=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=function(u){window.log.push("origine");};</script><script src="/__voix/partout.js"></script>');
@@ -76,6 +77,17 @@ const dire = (p) => p.evaluate(() => new Promise((ok) => { const u = new SpeechS
   const r = await p.evaluate(async () => { const x = await fetch('/__lingua/tts?gratuit=1&l=fr&v=onyx&t=Bonjour'); return { ct: x.headers.get('content-type'), corps: (await x.text()).slice(0, 20) }; });
   ok(/json/.test(r.ct) && /ok/.test(r.corps), 'TOUTE la liste en échec : la demande d\'origine de l\'app part et reçoit sa propre réponse (l\'app gère son repli comme avant)');
   await ctx.close();
+}
+
+
+{
+  /* une voix qui TRAÎNE (ne répond jamais) ne bloque pas la liste : délai, puis la suivante */
+  mode = 'ok'; echecs.clear(); lents.clear(); lents.add('nova'); appels.length = 0;
+  const ctx = await b.newContext(); await ctx.addCookies([{ name: 'kdmc_voix', value: 'gemini.nova_gemini.alloy', url: base }]); await ctx.addInitScript(() => { window.__kdmcVoixDelai = 1200; });
+  const p = await ctx.newPage(); await p.goto(base + '/'); const t0 = Date.now(); const r = await dire(p);
+  ok(!r.delai && r.ev.join() === 'start,end' && Date.now() - t0 < 4000, 'une voix qui traîne (aucune réponse) est abandonnée après le délai, la suivante parle : ' + (Date.now() - t0) + ' ms');
+  ok(appels.some((a) => a.startsWith('nova|')) && appels.some((a) => a.startsWith('alloy|')), 'nova a été essayée, puis alloy');
+  lents.clear(); await ctx.close();
 }
 
 /* la page « Choisir mes voix » : ne propose que les voix qui marchent, essaie une voix, retient le choix */

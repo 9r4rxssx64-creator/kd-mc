@@ -48,9 +48,15 @@ export function partoutVoix() {
       if (cur) out.push(cur);
       return out.map(function (x) { return x.slice(0, 300); });
     }
-    function gemini(texte, lang, param) {
-      return of('/__lingua/tts?gratuit=1&l=' + encodeURIComponent(lang) + '&i=douce&v=' + encodeURIComponent(param) + '&t=' + encodeURIComponent(texte), { credentials: 'omit' })
-        .then(function (r) { var ct = r.headers.get('content-type') || ''; if (!r.ok || !/audio/i.test(ct)) throw new Error('voix_indisponible'); return r.blob(); });
+    function gemini(texte, lang, param) {   // une voix qui TRAÎNE est une voix en échec : passé le délai (15 s), on abandonne et la suivante prend le relais
+      var ac = typeof AbortController === 'function' ? new AbortController() : null, fini = false;
+      var delai = window.__kdmcVoixDelai || 15000;
+      return new Promise(function (ok, ko) {
+        var to = setTimeout(function () { if (!fini) { fini = true; if (ac) { try { ac.abort(); } catch (e) { /* déjà fini */ } } ko(new Error('delai_voix')); } }, delai);
+        of('/__lingua/tts?gratuit=1&l=' + encodeURIComponent(lang) + '&i=douce&v=' + encodeURIComponent(param) + '&t=' + encodeURIComponent(texte), { credentials: 'omit', signal: ac ? ac.signal : undefined })
+          .then(function (r) { var ct = r.headers.get('content-type') || ''; if (!r.ok || !/audio/i.test(ct)) throw new Error('voix_indisponible'); return r.blob(); })
+          .then(function (b) { if (!fini) { fini = true; clearTimeout(to); ok(b); } }, function (e) { if (!fini) { fini = true; clearTimeout(to); ko(e); } });
+      });
     }
     function piper(texte, param) {
       return new Promise(function (ok, ko) {

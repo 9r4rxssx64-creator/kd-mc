@@ -20,6 +20,7 @@ import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret,
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
 import { handleVoix } from './voix.js';   // 🎙️ Studio Voix : bibliothèque de voix clonées + porte d'intégration (Kevin 29.10)
+import { catalogue as catalogueVoix } from './voix-catalogue.js';
 import * as cptD1 from './compteurs-d1.js';
 /* Toute notification de MESSAGE ouvre la boîte unique (réponse directe), pas l'app d'origine — Kevin 4.10 : « temps réel partout ». */
 const URL_MESSAGES = 'https://kd-mc.com/#messages';
@@ -710,6 +711,11 @@ const ROUTEUR = {
     // SSO transverse (session unique + CGU). Même origine par sous-domaine.
     if (url.pathname.startsWith('/__sso/')) return handleSso(request, url, env, ctx);
     // 🎙️ Studio Voix (Kevin 29.10) : admin prouvé, ou tout compte du domaine quand l'outil est coché « Ouvert à tous » (voir voix.js).
+    /* Catalogue commun des voix (Kevin 11.11) : liste publique, sans secret, lue par toutes les apps ; filtré selon KDMC_COMMERCIALISE. */
+    if (url.pathname === '/__voix/catalogue' && request.method === 'GET') {
+      const q = url.searchParams;
+      return new Response(JSON.stringify(Object.assign({ ok: true }, catalogueVoix(env, { langue: q.get('langue') || '', genre: q.get('genre') || '', etat: q.get('etat') || '' }))), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=300', 'access-control-allow-origin': '*' } });
+    }
     if (url.pathname.startsWith('/__voix/')) {
       const adm = await adminSession(request, env);
       const ouvert = (await chargerOutilsOuverts(env)).indexOf('voix') >= 0;

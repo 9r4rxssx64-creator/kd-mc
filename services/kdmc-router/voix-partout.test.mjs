@@ -17,6 +17,7 @@ ok(!/default-src[^;]*\*/.test(mot.headers.get('content-security-policy')), 'la C
 const ch = await get('/__voix/choisir');
 ok(ch.status === 200 && /Choisir mes voix/.test(await ch.text()), 'la page « Choisir mes voix » est servie');
 ok((await get('/__voix/partout.js', { method: 'POST' })) === null, 'seul GET est servi');
+ok(M.DEFAUT.length === 10 && M.DEFAUT.every((c) => Object.values(M.CHOIX).includes(c) && M.NOMS[c]) && new Set(M.DEFAUT).size === 10, 'l\'ordre de secours par défaut couvre les 10 voix, une fois chacune');
 ok(Object.keys(M.CHOIX).length === 10 && Object.values(M.CHOIX).every((v) => /^(gemini|piper)\.[a-z0-9]+$/.test(v)), 'les choix valides sont une liste fermée moteur.param');
 
 /* ── pose du script ── */

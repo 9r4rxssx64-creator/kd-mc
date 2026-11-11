@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   servi:
-    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    runs-on: ubuntu-24.04   # interrupteur Lenovo (garde test:runner-interrupteur)
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

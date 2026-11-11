@@ -12,7 +12,7 @@ const wav = (() => { const n = 2400, b = Buffer.alloc(44 + n * 2); b.write('RIFF
 let mode = 'ok'; const appels = [];
 const srv = http.createServer((q, r) => {
   const u = new URL(q.url, 'http://x');
-  if (u.pathname === '/__voix/partout.js') { r.writeHead(200, { 'content-type': 'application/javascript' }); return r.end('(' + M.partoutVoix.toString() + ')();'); }
+  if (u.pathname === '/__voix/partout.js') { r.writeHead(200, { 'content-type': 'application/javascript' }); return r.end(M.SCRIPT_JS || ('(' + M.partoutVoix.toString() + ')();')); }
   if (u.pathname === '/__lingua/tts') { appels.push(u.searchParams.get('v') + '|' + u.searchParams.get('l') + '|' + u.searchParams.get('t')); if (mode === 'panne') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end('{"ok":false}'); } r.writeHead(200, { 'content-type': 'audio/wav' }); return r.end(wav); }
   r.writeHead(200, { 'content-type': 'text/html' });
   r.end('<!doctype html><title>t</title>' + (u.searchParams.get('retrait') ? '<meta name="kdmc-voix" content="off">' : '') + '<script>window.log=[];var o=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=function(u){window.log.push("origine");};</script><script src="/__voix/partout.js"></script>');

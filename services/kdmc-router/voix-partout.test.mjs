@@ -9,6 +9,7 @@ const get = (p, init) => M.handleVoixPartout(new Request('https://kd-mc.com' + p
 const js = await get('/__voix/partout.js');
 ok(js && js.status === 200 && /javascript/.test(js.headers.get('content-type')), 'le script est servi en JavaScript');
 const jsT = await js.text();
+ok(/^\(function\(\)\{var __name=function\(f\)\{return f\};/.test(jsT), 'le script servi définit l\'aide __name (sinon « __name is not defined » dans la page, mesuré en ligne)');
 ok(/kdmc_voix/.test(jsT) && !/(?:api[_-]?key|secret|token)\s*[:=]/i.test(jsT), 'le script lit le cookie de choix et ne contient aucun secret');
 const mot = await get('/__voix/moteur');
 ok(mot.status === 200 && /frame-ancestors https:\/\/kd-mc\.com/.test(mot.headers.get('content-security-policy')) && /script-src[^;]*cdn\.jsdelivr\.net/.test(mot.headers.get('content-security-policy')), 'le cadre du moteur a sa propre CSP (jsDelivr seulement, pas d\'autre site d\'embarquement)');

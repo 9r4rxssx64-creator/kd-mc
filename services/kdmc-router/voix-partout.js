@@ -141,11 +141,15 @@ export function pageChoisir() {
     + 'fetch("/__voix/catalogue?langue=fr").then(function(r){return r.json()}).then(function(j){window.__v=(j.voix||[]).filter(function(v){return CH[v.id]});dessiner(window.__v);}).catch(function(){M.textContent="La liste des voix ne répond pas."});})();</script></body></html>';
 }
 
+/* ⚠ `toString()` rend le code APRÈS le paquetage de wrangler (esbuild « keep_names ») : il y ajoute des appels `__name(f, "f")` dont l'aide n'existe que dans le Worker → ReferenceError dans
+   la page (mesuré en ligne le 11.11 : « __name is not defined » sur le portail). Même remède que Bee et le bouton ✉️ : on la définit en tête du script servi. */
+export const SCRIPT_JS = '(function(){var __name=function(f){return f};(' + partoutVoix.toString() + ')();})();';
+
 export async function handleVoixPartout(request, url, env) {
   const p = url.pathname;
   if (request.method !== 'GET') return null;
   if (p === '/__voix/partout.js') {
-    return new Response('(' + partoutVoix.toString() + ')();', { status: 200, headers: { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+    return new Response(SCRIPT_JS, { status: 200, headers: { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'public, max-age=300' } });
   }
   if (p === '/__voix/moteur') {
     return new Response(pageMoteur(), { status: 200, headers: { 'content-type': 'text/html; charset=utf-8', 'content-security-policy': CSP_MOTEUR, 'x-frame-options': 'SAMEORIGIN', 'cache-control': 'public, max-age=300' } });

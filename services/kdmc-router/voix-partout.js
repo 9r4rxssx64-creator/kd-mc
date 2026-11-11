@@ -123,7 +123,27 @@ export function partoutVoix() {
       var of = window.fetch.bind(window), chaine = fabrique(liste, { fetch: of });
       var ss = window.speechSynthesis;
       var jeton = 0, audio = null, urls = [], enCours = false, dernier = '';
-      function nettoyer() { if (audio) { try { audio.pause(); } catch (e) { /* fini */ } audio = null; } urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* fini */ } }); urls = []; enCours = false; }
+      var webCtx = null, source = null;
+      function jouerAudio(blob, u, enRoute, j) {
+        return new Promise(function (ok, ko) {
+          var a = new Audio(), url = URL.createObjectURL(blob); urls.push(url); audio = a;
+          if (typeof u.volume === 'number') a.volume = Math.max(0, Math.min(1, u.volume));
+          a.onended = ok; a.onerror = function () { ko(new Error('media')); }; a.src = url;
+          a.play().then(function () { if (j === jeton) enRoute(); }).catch(ko);
+        });
+      }
+      function jouerWeb(blob, enRoute, j) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return Promise.reject(new Error('pas_de_webaudio'));
+        webCtx = webCtx || new AC();
+        return blob.arrayBuffer().then(function (buf) { return new Promise(function (ok, ko) { webCtx.decodeAudioData(buf, ok, ko); }); }).then(function (decode) {
+          return new Promise(function (ok) {
+            if (j !== jeton) return ok();
+            var s = webCtx.createBufferSource(); s.buffer = decode; s.connect(webCtx.destination); source = s; s.onended = ok; enRoute(); s.start();
+          });
+        });
+      }
+      function nettoyer() { if (source) { try { source.onended = null; source.stop(); } catch (e) { /* fini */ } source = null; } if (audio) { try { audio.pause(); } catch (e) { /* fini */ } audio = null; } urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* fini */ } }); urls = []; enCours = false; }
       function evt(u, type) { try { u.dispatchEvent(new Event(type)); } catch (e) { /* l'app n'écoute pas */ } }
       function annonce(cle) {   // un petit rappel, 3 s, seulement quand une voix du domaine PARLE ET que ce n'est pas la n°1 (secours) : la voix a changé toute seule
         if (cle === dernier) return; var premiere = !dernier; dernier = cle;
@@ -147,15 +167,16 @@ export function partoutVoix() {
           chaine(t, u.lang).then(function (r) {
             if (j !== jeton) return;
             annonce(r.cle);
-            var blobs = r.blobs, i = 0; audio = new Audio();
-            if (typeof u.volume === 'number') audio.volume = Math.max(0, Math.min(1, u.volume));
+            var i = 0, debut = false;
+            function enRoute() { if (!debut) { debut = true; evt(u, 'start'); } }
             function suite() {
               if (j !== jeton) return;
-              if (i >= blobs.length) { nettoyer(); evt(u, 'end'); return; }
-              var url = URL.createObjectURL(blobs[i++]); urls.push(url); audio.src = url;
-              audio.play().then(function () { if (i === 1) evt(u, 'start'); }).catch(function () { if (j === jeton) { nettoyer(); orig(u); } });
+              if (i >= r.blobs.length) { nettoyer(); evt(u, 'end'); return; }
+              var bl = r.blobs[i++];
+              /* 1) <audio> sur un blob (l'iPhone ne le coupe pas avec l'interrupteur muet) ; 2) si la CSP de la page refuse le media blob: (portail), Web Audio, qui n'est pas soumis à `media-src` */
+              jouerAudio(bl, u, enRoute, j).catch(function () { return j === jeton ? jouerWeb(bl, enRoute, j) : undefined; })
+                .then(suite, function () { if (j === jeton) { nettoyer(); if (!debut) orig(u); else evt(u, 'end'); } });
             }
-            audio.onended = suite; audio.onerror = function () { if (j === jeton) { nettoyer(); orig(u); } };
             suite();
           }).catch(function () { if (j === jeton) { nettoyer(); orig(u); } });   // toute la liste a échoué : la voix de l'app prend le relais
         };

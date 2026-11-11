@@ -17,7 +17,7 @@ const srv = http.createServer((q, r) => {
   if (u.pathname === '/__voix/catalogue') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end(JSON.stringify({ ok: true, voix: [{ id: 'gemini-aoede', nom: 'Aoede', genre: 'f', licence: 'Google' }, { id: 'piper-tom', nom: 'Piper · Tom', genre: 'h', licence: 'AGPL' }, { id: 'kokoro-ff-siwis', nom: 'Kokoro', genre: 'f', licence: 'Apache' }] })); }
   if (u.pathname === '/__lingua/tts' && lents.has(u.searchParams.get('v'))) { appels.push(u.searchParams.get('v') + '|' + u.searchParams.get('l') + '|' + u.searchParams.get('t')); return; }   // ne répond jamais
   if (u.pathname === '/__lingua/tts') { appels.push(u.searchParams.get('v') + '|' + u.searchParams.get('l') + '|' + u.searchParams.get('t')); if (mode === 'panne' || echecs.has(u.searchParams.get('v'))) { r.writeHead(200, { 'content-type': 'application/json' }); return r.end('{"ok":false}'); } r.writeHead(200, { 'content-type': 'audio/wav' }); return r.end(wav); }
-  r.writeHead(200, { 'content-type': 'text/html' });
+  r.writeHead(200, Object.assign({ 'content-type': 'text/html' }, u.searchParams.get('csp') ? { 'content-security-policy': "media-src 'none'" } : {}));
   r.end('<!doctype html><title>t</title>' + (u.searchParams.get('retrait') ? '<meta name="kdmc-voix" content="off">' : '') + '<script>window.log=[];var o=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=function(u){window.log.push("origine");};</script><script src="/__voix/partout.js"></script>');
 });
 await new Promise((r) => srv.listen(0, r)); const base = 'http://localhost:' + srv.address().port;
@@ -88,6 +88,18 @@ const dire = (p) => p.evaluate(() => new Promise((ok) => { const u = new SpeechS
   ok(!r.delai && r.ev.join() === 'start,end' && Date.now() - t0 < 4000, 'une voix qui traîne (aucune réponse) est abandonnée après le délai, la suivante parle : ' + (Date.now() - t0) + ' ms');
   ok(appels.some((a) => a.startsWith('nova|')) && appels.some((a) => a.startsWith('alloy|')), 'nova a été essayée, puis alloy');
   lents.clear(); await ctx.close();
+}
+
+
+{
+  /* la CSP du portail interdit le media blob: → le son passe par Web Audio (mesuré en réel sur kd-mc.com) */
+  mode = 'ok'; echecs.clear(); lents.clear(); appels.length = 0;
+  const { ctx, p } = await page('gemini.nova', '?csp=1');
+  const bloque = []; p.on('console', (m) => { if (/Content Security Policy/i.test(m.text())) bloque.push(m.text().slice(0, 60)); });
+  await p.reload(); const r = await dire(p);
+  ok(!r.delai && r.ev.join() === 'start,end' && r.log.length === 0, 'CSP qui refuse le media blob : la voix choisie parle quand même (Web Audio), start/end rendus, la voix d\'app ne parle pas (' + r.ev.join() + ', origine ' + r.log.length + ')');
+  ok(appels.length >= 1 && appels[0].startsWith('nova|'), 'c\'est bien la voix choisie qui a été demandée');
+  await ctx.close();
 }
 
 /* la page « Choisir mes voix » : ne propose que les voix qui marchent, essaie une voix, retient le choix */

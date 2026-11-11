@@ -6,6 +6,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 
 
+## CMCteams v10.013 + light v1.137 — 9 élèves en formation de décembre remis dans leur vraie équipe (2026-11-11)
+- Le PDF de décembre imprime chaque élève en formation deux fois (ligne d'équipe, puis ligne de groupe sous une autre équipe) : le lecteur laissait la seconde écraser la première. 9 élèves avaient donc les horaires et les départs d'une autre équipe dès le 23 décembre ; corrigés (‹employé›, ‹employé›, ‹employé›, ‹employé›, ‹employé›, ‹employé›, MADRID JJ, MATTERA M, CAPIOMONT K).
+- Les 18 élèves : formation (départs vendredi/samedi) jusqu'au 22, équipe d'origine avec départs dès le 23 ; CMCteams = light case par case. Nouvelles gardes : rythme des jours 24-31 = majorité de l'équipe ; fins d'équipe attendues = 18.
+
 ## CMCteams v10.012 + light v1.136 — décembre reproduit à l'identique du PDF : début d'équipe tardif des élèves lu dans le PDF (2026-11-10)
 - Relecture indépendante du PDF (`tests/verify-decembre-pdf-independant.mjs`, 17 contrôles) : 244 personnes de la grille, 7 564 cases identiques ; 29 élèves des 6 groupes de formation identiques ; 49 absents (28 congés, 12 maladie, 9 formation AF) conformes au récapitulatif ; personne en trop ni en moins.
 - 3 élèves (‹employé›, ‹employé›, ‹employé›) avaient des premiers jours faux : 18 élèves sont à l'école jusqu'au 22 et en équipe dès le 23 ; le jour de début (`deb`) est lu dans le PDF par les deux générateurs, les départs ne comptent rien avant, et la formation ne ramène plus un jour d'école hors du mois.

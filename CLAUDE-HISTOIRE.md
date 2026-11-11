@@ -12607,3 +12607,8 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 - Jamais : le code dans un journal (`audLog`), dans le pont, dans un message ; jamais pour le compte de l'administrateur (Face ID / code admin). Bee n'a pas ces portes.
 - Fiche admin : 4 rubriques repliables (🪪 Identité · 📈 Activité · 🔐 Droits · 🔑 Code), l'essentiel sur la ligne fermée (nom · dernière connexion · connexions · état du code) ; un code affiché s'efface de l'écran après 30 s.
 - Code : `services/kdmc-router/codes-comptes.js` + routes `/__admin/code-poser`, `/__admin/code-voir`, `/__sso/code/oublie`, `/__sso/code/reinit` (worker.js) ; écran `kdmc-home/admin/admin.js` ; bouton `kdmc-home/kdmc-portal.js`. Règle courte : `.claude/rules/codes-comptes.md`. Gardes : `npm run test:codes-comptes` (SABOTAGE=signature|credv|unique|journal rouge) et `npm run test:codes-comptes-ecran` (Chromium 375 px, SABOTAGE=1|oublie rouge).
+
+
+### 🎙 RÈGLE ABSOLUE — VOIX COMMUNES : TOUT EST PROPOSÉ TANT QUE RIEN N'EST VENDU, CHAQUE VOIX PORTE SA LICENCE (Kevin 2026-11-11, ABSOLUE, TOUTES LES BRANCHES)
+**« Ajoute tout tant que rien n'est commercialisé, quand ça le sera je te dirai et on changera. Il faut un large choix gratuit et non commercialisable pour le moment. »** — Kevin 2026-11-11, après « Cherche toutes les voix gratuites que tu peux, les mieux possibles ».
+Catalogue commun `services/kdmc-router/voix-catalogue.js` (35 voix), route publique `GET /__voix/catalogue`, sélecteur `tools/shared/voix-choix.js`, interrupteur `KDMC_COMMERCIALISE=1` (ne rend alors que les voix `commercial === true`). Licences lues sur les fiches Hugging Face le 11.11 (17 modèles). Voir `.claude/rules/voix-communes.md`, leçon 902, garde `test:voix-catalogue`. Remplace la décision du pont 2190.

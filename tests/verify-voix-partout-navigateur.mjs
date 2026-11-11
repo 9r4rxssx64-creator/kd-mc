@@ -13,6 +13,8 @@ let mode = 'ok'; const appels = [];
 const srv = http.createServer((q, r) => {
   const u = new URL(q.url, 'http://x');
   if (u.pathname === '/__voix/partout.js') { r.writeHead(200, { 'content-type': 'application/javascript' }); return r.end(M.SCRIPT_JS || ('(' + M.partoutVoix.toString() + ')();')); }
+  if (u.pathname === '/__voix/choisir') { r.writeHead(200, { 'content-type': 'text/html' }); return r.end(M.pageChoisir()); }
+  if (u.pathname === '/__voix/catalogue') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end(JSON.stringify({ ok: true, voix: [{ id: 'gemini-aoede', nom: 'Aoede', genre: 'f', licence: 'Google' }, { id: 'piper-tom', nom: 'Piper · Tom', genre: 'h', licence: 'AGPL' }, { id: 'kokoro-ff-siwis', nom: 'Kokoro', genre: 'f', licence: 'Apache' }] })); }
   if (u.pathname === '/__lingua/tts') { appels.push(u.searchParams.get('v') + '|' + u.searchParams.get('l') + '|' + u.searchParams.get('t')); if (mode === 'panne') { r.writeHead(200, { 'content-type': 'application/json' }); return r.end('{"ok":false}'); } r.writeHead(200, { 'content-type': 'audio/wav' }); return r.end(wav); }
   r.writeHead(200, { 'content-type': 'text/html' });
   r.end('<!doctype html><title>t</title>' + (u.searchParams.get('retrait') ? '<meta name="kdmc-voix" content="off">' : '') + '<script>window.log=[];var o=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=function(u){window.log.push("origine");};</script><script src="/__voix/partout.js"></script>');
@@ -37,5 +39,18 @@ r = await essai('gemini.nova', '?retrait=1');
 ok(r.log.length === 1 && appels.length === 0, 'une page qui se retire (<meta name="kdmc-voix" content="off">) garde sa voix');
 r = await essai('piper.<script>', '');
 ok(r.log.length === 1 && appels.length === 0, 'un cookie truqué est ignoré');
+/* la page « Choisir mes voix » : ne propose que les voix qui marchent, essaie une voix, retient le choix */
+{
+  mode = 'ok'; appels.length = 0;
+  const ctx = await b.newContext(); const p = await ctx.newPage(); await p.goto(base + '/__voix/choisir'); await p.waitForSelector('#l li');
+  const noms = await p.$$eval('#l li .nom', (x) => x.map((e) => e.firstChild.textContent));
+  ok(noms.join() === 'Aoede,Piper · Tom', 'la page ne propose que les voix qui marchent (pas Kokoro) : ' + noms.join());
+  await p.locator('#l li').first().getByRole('button', { name: /Écouter/ }).click(); await p.waitForTimeout(1500);
+  ok(appels.length >= 1 && appels[0].startsWith('nova|fr|'), 'Écouter essaie la voix choisie sans la poser : ' + appels.join(' ; ').slice(0, 60));
+  ok(!(await ctx.cookies()).some((c) => c.name === 'kdmc_voix'), 'écouter ne pose aucun choix');
+  const hauteurs = await p.$$eval('#l button', (x) => x.map((e) => Math.min(e.offsetHeight, e.offsetWidth)));
+  ok(hauteurs.every((h) => h >= 44), 'tous les boutons se touchent au doigt (≥ 44 px) : ' + Math.min(...hauteurs));
+  await ctx.close();
+}
 await b.close(); srv.close();
 console.log(`${pass} ok / ${fail} échec(s)`); process.exit(fail ? 1 : 0);

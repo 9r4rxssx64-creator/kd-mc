@@ -71,9 +71,9 @@ export function partoutVoix() {
   function installer() {
     try {
       if (window.__kdmcVoix) return;
+      if (window.__kdmcVoixTest) { window.kdmcVoixFabrique = fabrique; }   // la page « Choisir mes voix » essaie une voix sans la poser (AVANT le retrait : cette page se retire elle-même)
       var meta = document.querySelector('meta[name="kdmc-voix"]');
       if (meta && /^(off|non|0)$/i.test(meta.getAttribute('content') || '')) return;
-      if (window.__kdmcVoixTest) { window.kdmcVoixFabrique = fabrique; }   // la page « Choisir mes voix » essaie une voix sans la poser
       var m = (document.cookie.match(/(?:^|;\s*)kdmc_voix=((?:gemini|piper)\.[a-z0-9]{1,12})(?:;|$)/) || [])[1];
       if (!m) return;                                                          // aucun choix : on ne change RIEN
       var ss = window.speechSynthesis;

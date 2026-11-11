@@ -21,6 +21,7 @@ import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTe
 import * as activite from './activite.js';
 import { handleVoix } from './voix.js';   // 🎙️ Studio Voix : bibliothèque de voix clonées + porte d'intégration (Kevin 29.10)
 import { catalogue as catalogueVoix } from './voix-catalogue.js';
+import { handleVoixPartout, VOIX_TAG } from './voix-partout.js';   // 🎙️ la voix choisie parle dans tout le domaine (Kevin 11.11)
 import * as cptD1 from './compteurs-d1.js';
 /* Toute notification de MESSAGE ouvre la boîte unique (réponse directe), pas l'app d'origine — Kevin 4.10 : « temps réel partout ». */
 const URL_MESSAGES = 'https://kd-mc.com/#messages';
@@ -711,6 +712,8 @@ const ROUTEUR = {
     // SSO transverse (session unique + CGU). Même origine par sous-domaine.
     if (url.pathname.startsWith('/__sso/')) return handleSso(request, url, env, ctx);
     // 🎙️ Studio Voix (Kevin 29.10) : admin prouvé, ou tout compte du domaine quand l'outil est coché « Ouvert à tous » (voir voix.js).
+    /* La couche commune des voix (script, cadre du moteur, page « Choisir mes voix ») : coquilles publiques, sans secret, avant la porte du Studio. */
+    { const rv = await handleVoixPartout(request, url, env); if (rv) return rv; }
     /* Catalogue commun des voix (Kevin 11.11) : liste publique, sans secret, lue par toutes les apps ; filtré selon KDMC_COMMERCIALISE. */
     if (url.pathname === '/__voix/catalogue' && request.method === 'GET') {
       const q = url.searchParams;
@@ -1053,7 +1056,7 @@ const ROUTEUR = {
     /* ✉️ LE BOUTON « ÉCRIRE À L'ADMIN » sur toute page HTML de toute app (Kevin 3.10 : « toutes les apps du domaine doivent pouvoir contacter l'admin
        depuis leur compte »). Posé ICI, dans la couche partagée : la prochaine adresse l'a sans qu'on y pense. */
     if (request.method === 'GET' && res.status === 200 && /text\/html/i.test(outHeaders.get('content-type') || '') && host !== 'admin.kd-mc.com') {
-      return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }), String(env && env.BEE_PARTOUT) === '0' ? '' : PARTOUT_TAG, { hote: host, dest: request.headers.get('sec-fetch-dest') || '', nonce: String(env && env.BEE_PARTOUT) !== '0' && marqueurKevin(request) ? nonceBee() : '' });
+      return injecterBouton(new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders }), String(env && env.BEE_PARTOUT) === '0' ? '' : PARTOUT_TAG, { voix: String(env && env.VOIX_PARTOUT) === '0' ? '' : VOIX_TAG, hote: host, dest: request.headers.get('sec-fetch-dest') || '', nonce: String(env && env.BEE_PARTOUT) !== '0' && marqueurKevin(request) ? nonceBee() : '' });
     }
     return new Response(res.body, { status: res.status, statusText: res.statusText, headers: outHeaders });
   },
@@ -1202,7 +1205,7 @@ export async function injecterBouton(res, extra, opts) {
     }
     const h = new Headers(res.headers); h.delete('content-length');
     if ((nonce || nonceI) && cspEntete !== cspOrig) { h.set('content-security-policy', cspEntete); h.set('cache-control', 'no-store'); h.delete('etag'); }   // une page personnalisée par réponse ne se met pas en cache
-    const ajout = BOUTON_TAG + INSTALLER_TAG + (extra || '');
+    const ajout = BOUTON_TAG + INSTALLER_TAG + String((opts && opts.voix) || '') + (extra || '');
     const avecNonce = (tag) => (nonce ? tag.replace('<script ', '<script nonce="' + nonce + '" ') : tag);
     let ajoutBee = (extra || '') ? avecNonce(extra) : '';
     if (typeof HTMLRewriter !== 'undefined') {

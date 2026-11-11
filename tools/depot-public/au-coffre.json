@@ -500,6 +500,7 @@
   "tools/arbre/verify-loupe-direct.mjs",
   "tools/arbre/verify-loupe-ponts.mjs",
   "tools/arbre/verify-metier-notes.mjs",
+  "tools/arbre/verify-modifs-admin.mjs",
   "tools/arbre/verify-navigation.mjs",
   "tools/arbre/verify-nouvelle-personne.mjs",
   "tools/arbre/verify-ordi-recouvrement.mjs",

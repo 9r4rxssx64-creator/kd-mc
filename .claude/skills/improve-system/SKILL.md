@@ -9,7 +9,7 @@ description: >
 
 # /improve-system — relire pour s'améliorer
 
-1. `node tools/memory/improve-system.mjs` (ajouter `--json` pour une sortie lisible par un autre outil).
+1. `node tools/memory/improve-system.mjs --travail` (0 jeton : lit ses messages ET les sorties d'outils ; `--json` pour un autre outil ; `--memoriser` garde 3-5 lignes génériques en mémoire compacte). Règle d'économie : `.claude/rules/economie-jetons.md`.
 2. Lire le rapport : **thème répété + règle existante = un défaut d'APPLICATION** (je relis la règle avant de répondre) ; **thème répété sans règle = règle à PROPOSER** ; **corrections** (« déjà », « encore », « je t'ai dit ») = erreurs précises à noter en leçon.
 3. Proposer à Kevin, en français simple, les 1 à 3 changements utiles. Seulement après son accord : écrire la règle (`CLAUDE-HISTOIRE.md` + `npm run claude-md:index`) ou la leçon (`node tools/docs/lecon-suivante.mjs`).
 4. Ne rien envoyer hors de la session : le rapport contient des phrases de Kevin, il reste local (jamais dans le dépôt public, jamais au pont en entier).

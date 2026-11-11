@@ -293,7 +293,7 @@
       "maj": "2026-11-11",
       "attend_kevin": null,
       "attend_session": "javis-bee : test:fiches-privees ROUGE 8 fois sur 12 sur main (mesuré 27.09) : « ce qu'un vieux téléphone republie est rangé au privé par l'appareil de l'admin » — il rend test:ci rouge pour tout le monde",
-      "note": "DÉCEMBRE 2026 V1 reproduit à l'identique du PDF : CMCteams v10.012 + light v1.136, 244 personnes / 7 564 cases identiques, 18 élèves école→équipe dès le 23 lus dans le PDF (garde test:decembre-pdf-independant) ; PR #5612"
+      "note": "11.11 : règle import→Lenovo compare, garde par personne décembre, mission pont 2231"
     },
     "secrets-guard": {
       "titre": "Garde anti-fuite de secrets (branche annexe de domaine-audit)",

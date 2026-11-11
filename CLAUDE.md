@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 251 règles — le texte de Kevin, une par une
+## 📜 Les 252 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1092,6 +1092,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🔑 RÈGLE ABSOLUE — CODES DES COMPTES : L'ADMIN VOIT / POSE / RÉINITIALISE DANS LA FICHE ; LA PERSONNE A UNE SEULE OPTION, « CODE OUBLIÉ ? » PAR E-MAIL (Kevin 2026-11-08, ABSOLUE)
 **« Code posé par l'admin, relisible »** (choix de Kevin le 7.11 entre deux options) puis, le 8.11 : **« côté personnes : une seule option, Code oublié ? »**, **« je veux tout le visuel dans […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-codes-des-comptes-ladmin-voit-pose-réinitialise-dans-la-fiche-la-personne-a-une-seule-option-code-oublié-par-e-mail-kevin-2026-11-08-absolue)
+
+### 📋 RÈGLE ABSOLUE — À CHAQUE IMPORT DE PLANNING, LE LENOVO VÉRIFIE EN RÉEL ET COMPARE AVEC L'IMPORT (Kevin 2026-11-11, ABSOLUE, CMCTEAMS ET LIGHT, TOUTES LES BRANCHES)
+**« Vérifie que tout le monde ait le bon algorithme avec sa ligne de départ et fais vérifier en réel par la branche du Lenovo toutes les informations, tout ce que tu as fait, pour qu'il compare […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-à-chaque-import-de-planning-le-lenovo-vérifie-en-réel-et-compare-avec-limport-kevin-2026-11-11-absolue-cmcteams-et-light-toutes-les-branches)
 
 ---
 

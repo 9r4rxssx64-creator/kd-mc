@@ -1,6 +1,8 @@
 /* Catalogue commun des voix (Kevin 11.11) : tout est proposé tant que rien n'est commercialisé ; KDMC_COMMERCIALISE=1 ne garde que le sûr.
    SABOTAGE=1 : le filtre commercial est ignoré → ce test doit devenir rouge.  node services/kdmc-router/voix-catalogue.test.mjs */
+import fs from 'node:fs';
 import mod from './worker.js';
+const require_fs = (p) => fs.existsSync(new URL('../../' + p, import.meta.url));
 import { CATALOGUE, catalogue } from './voix-catalogue.js';
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m); } };
 const saboteur = process.env.SABOTAGE === '1';
@@ -10,6 +12,8 @@ const ids = CATALOGUE.map((v) => v.id);
 ok(new Set(ids).size === ids.length, 'identifiants uniques');
 ok(CATALOGUE.every((v) => v.licence && typeof v.gratuit === 'boolean' && 'commercial' in v && ['actif', 'a_brancher', 'a_ecouter'].indexOf(v.etat) >= 0 && v.langues.length), 'chaque voix a licence, gratuit, commercial et état');
 ok(CATALOGUE.filter((v) => v.moteur === 'moulin').length === 12, 'les 12 voix Moulin y sont');
+ok(CATALOGUE.filter((v) => v.moteur === 'supertonic').length === 10 && CATALOGUE.filter((v) => v.moteur === 'supertonic' && v.genre === 'h').length === 5, 'Supertonic : 5 femmes + 5 hommes');
+ok(CATALOGUE.filter((v) => v.echantillon && /^livrables\/voix\/echantillons\//.test(v.echantillon)).every((v) => require_fs(v.echantillon)), 'chaque échantillon annoncé existe dans le dépôt');
 ok(CATALOGUE.filter((v) => v.commercial === false).length >= 6, 'les voix non commerciales sont bien étiquetées (Voxtral, MMS, XTTS, ElevenLabs, UPMC, Tom)');
 ok(CATALOGUE.every((v) => !/^(kokoro|supertonic|piper-siwis)/.test(v.id) || v.commercial === true), 'les licences ouvertes sont marquées autorisées');
 

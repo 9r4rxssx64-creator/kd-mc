@@ -66,6 +66,9 @@ ok('un bouton sous le cadre de Bee est attribué à « bee »', m6.cache === 1 &
   const ma = await p.evaluate(mesurer, true); ok('un bouton de la page sous la barre fixe du bas, page qui défile : pas compté caché', ma.cache === 0, JSON.stringify(ma.cacheEx));
   await p.setContent(`<!doctype html><title>t</title><body style="margin:0;height:${H0}px;overflow:hidden"><button id="coince" style="position:absolute;top:${H0 - 50}px;left:0;width:120px;height:44px">Admin</button>${barre}`);
   const mb = await p.evaluate(mesurer, true); ok('le même bouton quand la page ne peut PAS défiler : caché', mb.cache === 1, JSON.stringify(mb.cacheEx));
+  ok('… et le robot dit POURQUOI (le visiteur ne peut pas faire défiler)', /ne peut pas faire défiler/.test(mb.cacheEx[0] || ''), mb.cacheEx[0]);
+  await p.setContent(`<!doctype html><title>t</title><body style="margin:0"><div style="height:${H0 - 50}px"></div><button id="flux2" style="display:block;width:120px;height:44px">Admin</button><div style="height:900px"></div>${barre}<div id="voile" style="position:fixed;left:0;right:0;top:120px;height:${H0 - 300}px;background:#333">voile</div>`);
+  const md2 = await p.evaluate(mesurer, true); ok('recouvert par un AUTRE élément fixe après défilement : caché, et le robot NOMME cet élément et la distance défilée', md2.cache === 1 && /après défilement \(\d+ px\) : bouton @\d+,\d+ sous div#voile/.test(md2.cacheEx[0] || ''), JSON.stringify([md2.cacheEx, md2.aDefilerEx, md2.toast, H0]));
   await p.setContent(`<!doctype html><title>t</title><body style="margin:0"><div style="height:2000px"></div><button id="fixe" style="position:fixed;bottom:8px;right:8px;width:52px;height:44px">+</button>${barre}`);
   const mc = await p.evaluate(mesurer, true); ok('un bouton FIXE sous la barre fixe (cas #fab) : toujours caché, même si la page défile', mc.cache === 1, JSON.stringify(mc.cacheEx)); }
 await p.setContent('<!doctype html><title>t</title><button id="b">Ok</button>');

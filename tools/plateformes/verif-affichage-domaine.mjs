@@ -70,14 +70,19 @@ export function mesurer(tel) {
     try { oh = getComputedStyle(document.documentElement).overflowY; ob = document.body ? getComputedStyle(document.body).overflowY : ''; } catch (_) { /* style illisible */ }
     return !/(hidden|clip)/.test(oh + ' ' + ob) && se.scrollHeight > se.clientHeight + 2;
   };
+  let apresDefilement = '';
   const encoreRecouvertApresDefilement = (e) => {
-    if (!defilable(e)) return true;
+    apresDefilement = '';
+    if (!defilable(e)) { apresDefilement = ' · le visiteur ne peut pas faire défiler ce contrôle'; return true; }
     const se = document.scrollingElement || document.documentElement; const avant = [[se, se.scrollTop, se.scrollLeft]];
     for (let a = e.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) avant.push([a, a.scrollTop, a.scrollLeft]);
     try { e.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); } catch (_) { try { e.scrollIntoView(); } catch (_2) { /* pas de défilement */ } }
     const r2 = e.getBoundingClientRect(); const x2 = r2.left + r2.width / 2, y2 = r2.top + r2.height / 2;
     const d2 = (x2 >= 0 && y2 >= 0 && x2 < W && y2 < H) ? document.elementFromPoint(x2, y2) : null;
     const encore = !d2 || (d2 !== e && !e.contains(d2) && !d2.contains(e));
+    /* 12.11 soir (CMCteams iPhone : « encore caché après défilement » sans dire PAR QUI ni où le bouton s'est retrouvé) : le robot garde le nom, la position et
+       le rectangle de ce qui recouvre APRÈS le défilement, et de combien la page a bougé — sans cela on ne sait pas si c'est une barre, un flottant ou une page figée. */
+    apresDefilement = encore ? ' · après défilement (' + Math.round(se.scrollTop - avant[0][1]) + ' px) : bouton @' + Math.round(r2.left) + ',' + Math.round(r2.top) + ' ' + (d2 ? 'sous ' + court(d2) + '{' + (() => { try { return getComputedStyle(d2).position; } catch (_) { return '?'; } })() + ' ← ' + court(d2.parentElement) + '} @' + (() => { const q = d2.getBoundingClientRect(); return Math.round(q.left) + ',' + Math.round(q.top) + ' ' + Math.round(q.width) + 'x' + Math.round(q.height); })() : 'hors écran') : '';
     for (const [n, t, l] of avant) { n.scrollTop = t; n.scrollLeft = l; }
     return encore;
   };
@@ -108,9 +113,10 @@ export function mesurer(tel) {
       else { let cs = {}; try { cs = getComputedStyle(dessus); } catch (_) { /* style illisible */ }
         /* 12.11 : une barre fixe de l'app (pas un flottant du domaine) qui ne recouvre plus le contrôle une fois celui-ci défilé au centre = « à faire défiler » */
         const flottantDomaine = (dessus.tagName === 'IFRAME' && /\/__javis\/cadre/.test(dessus.getAttribute('src') || '')) || (dessus.closest && dessus.closest('#javis-root,.bee-companion,[data-kdmc-pastille],[data-kdmc-vue],button[aria-label*="Installer l\'application"],button[aria-label="Activer les notifications"]'));
+        apresDefilement = '';
         if (!flottantDomaine && fixe(dessus) && !encoreRecouvertApresDefilement(e)) { aDefiler.push(court(e) + ' (sous ' + court(dessus) + ' au repos)'); continue; }
         const qui = court(dessus) + '{' + (cs.position || '?') + (cs.zIndex && cs.zIndex !== 'auto' ? ' z' + cs.zIndex : '') + ' "' + String(dessus.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 18) + '" ← ' + court(dessus.parentElement) + '}';
-        caches.push(court(e) + (e.id || (typeof e.className === 'string' && e.className) ? '' : ' (dans ' + court(e.parentElement) + ')') + ' ⟵ sous ' + qui + rects(e, dessus));   /* 6.11 : un bouton sans nom est situé par son parent */
+        caches.push(court(e) + (e.id || (typeof e.className === 'string' && e.className) ? '' : ' (dans ' + court(e.parentElement) + ')') + ' ⟵ sous ' + qui + rects(e, dessus) + apresDefilement);   /* 6.11 : un bouton sans nom est situé par son parent */
         /* 6.11 (Kevin : « la pastille Javis Bee Lingua ne cache jamais rien ») : QUI, parmi les éléments flottants du domaine, recouvre le contrôle */
         const fl = (dessus.tagName === 'IFRAME' && /\/__javis\/cadre/.test(dessus.getAttribute('src') || '')) || (dessus.closest && dessus.closest('#javis-root,.bee-companion')) ? 'bee'
           : dessus.closest && dessus.closest('[data-kdmc-pastille]') ? 'portail' : dessus.closest && dessus.closest('[data-kdmc-vue]') ? 'vue-admin'

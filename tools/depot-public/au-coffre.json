@@ -351,6 +351,7 @@
   "tests/verify-light-invite.mjs",
   "tests/verify-light-live-pdf.mjs",
   "tests/verify-light-relire-apres-jeton.mjs",
+  "tests/verify-light-rouge-app-sans-meta.mjs",
   "tests/verify-light-rouge-cadres.mjs",
   "tests/verify-light-rouge-eleves.mjs",
   "tests/verify-light-version-ecrans.mjs",

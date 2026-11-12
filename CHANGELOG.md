@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Light v1.143 — une case rouge du PDF reste rouge même quand la copie locale de l'app ne la connaît pas (2026-11-12)
+- Relevé du Lenovo (pont 2393, navigateur de Kevin) : ‹employé›, 20 novembre, `16/22"` — rouge dans le PDF et dans CMCteams (seed.meta `fg:red`, aucune surcharge dans `cmc_ov_meta`), mais comptée non rouge par la light (159 contre 160). Cause : `buildBoardsFromState` reprenait les marques du PDF (`modh`, `conv`) seulement pour les personnes ABSENTES de l'app ; pour celles que l'app connaît, il ne lisait que `cmc_ov_meta`. Corrigé : les marques du PDF sont ajoutées à celles de l'app (l'app ne fournit que les codes). CMCteams inchangé.
+- Garde `test:light-rouge-app-sans-meta` (vrai Chromium, rouge sur v1.142 : `liveModh:false`), câblé dans `test:ci`.
+
 ## Light v1.142 — les cadres (Pit Boss, Superviseurs) gardent l'écriture rouge et la convention du PDF dans la light (2026-11-12)
 - Relevé du Lenovo (pont 2357, novembre) : light 155 cases rouges, CMCteams 160. Cause : la passe d'import qui fusionne les plannings des cadres (`fusionnerTableaux`, `_cadres-fusion.mjs`) écrivait les codes mais perdait les marques `fg:'red'` (horaire modifié) et `bg:'CONV'` (convention) ; les tableaux « -cadres » de la light n'avaient donc ni `modh` ni `conv`. Corrigé à la source (`personneTableau`), données regénérées (P00003 j2, P00004 j2, P00015 j3-j4 de novembre) ; light = CMCteams sur tous les mois (160 / 503 / 21 / 492 / 37 / 128, convention 450 en août). CMCteams inchangé.
 - Garde `test:light-rouge-cadres` (17 contrôles, vrai Chromium + données, rouge sous `SABOTAGE=1` : « CMCteams 160 = light 156 »), câblé dans `test:ci`. La 5ᵉ case comptée par le Lenovo (‹employé›, jour 20) n'est pas reproductible ici : la donnée est rouge ; à remesurer après mise en ligne.

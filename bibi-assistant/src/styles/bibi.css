@@ -1,0 +1,95 @@
+/* Bibi : couleurs de la charte (miel, noir doux, crème, orange doré) et animations. */
+.bibi { display: inline-block; line-height: 0; }
+.bibi svg { overflow: visible; display: block; }
+.bibi-btn { background: none; border: 0; padding: 0; margin: 0; cursor: pointer; border-radius: 50%; line-height: 0; }
+.bibi-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+
+.bibi .ombre { fill: rgba(43, 42, 51, .14); transform-box: fill-box; transform-origin: center; }
+.bibi .corps, .bibi .visage { fill: #ffc93c; stroke: #2b2a33; stroke-width: 3; }
+.bibi .visage { fill: #ffd45e; }
+.bibi .rayure { fill: #2b2a33; }
+.bibi .dard { fill: #2b2a33; }
+.bibi .bras ellipse { fill: #ffd45e; stroke: #2b2a33; stroke-width: 2.5; }
+.bibi .jambes path { stroke: #2b2a33; stroke-width: 4; stroke-linecap: round; fill: none; }
+.bibi .aile ellipse { fill: rgba(190, 228, 255, .72); stroke: #86bfe6; stroke-width: 2.5; }
+.bibi .antenne path { stroke: #2b2a33; stroke-width: 3.5; stroke-linecap: round; fill: none; }
+.bibi .antenne circle { fill: #f59e0b; stroke: #2b2a33; stroke-width: 2.5; }
+.bibi .joue { fill: #ff9eaa; opacity: .55; }
+.bibi .blanc { fill: #fff; stroke: #2b2a33; stroke-width: 2.5; }
+.bibi .noir { fill: #2b2a33; }
+.bibi .reflet { fill: #fff; }
+.bibi .sourcil { stroke: #2b2a33; stroke-width: 3; stroke-linecap: round; }
+.bibi .fermes path, .bibi .croix path { stroke: #2b2a33; stroke-width: 3.5; stroke-linecap: round; fill: none; }
+.bibi .bouche { stroke: #2b2a33; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; transform-box: fill-box; transform-origin: center; }
+.bibi .bouche.parle, .bibi .bouche.o { fill: #8a2b2b; }
+.bibi .bouche.joie { fill: #8a2b2b; }
+.bibi .onde-ecoute circle { fill: none; stroke: #f59e0b; stroke-width: 3; opacity: .6; transform-box: fill-box; transform-origin: center; }
+.bibi .sons path { fill: none; stroke: #f59e0b; stroke-width: 3.5; stroke-linecap: round; }
+.bibi .bulle circle { fill: #fff; stroke: #2b2a33; stroke-width: 2.5; }
+.bibi .zzz text { font: 700 18px system-ui, sans-serif; fill: #6b6a76; }
+.bibi .alerte circle { fill: #ef4444; stroke: #2b2a33; stroke-width: 2.5; }
+.bibi .alerte text { font: 800 20px system-ui, sans-serif; fill: #fff; }
+.bibi .larme { fill: #7dd3fc; stroke: #2b2a33; stroke-width: 1.5; }
+
+[data-theme="dark"] .bibi .ombre { fill: rgba(0, 0, 0, .35); }
+
+/* --- animations (désactivées quand l'utilisateur choisit « sans animation ») --- */
+html[data-anim="full"] .bibi .flotte { animation: b-flotte 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+html[data-anim="full"] .bibi .ombre { animation: b-ombre 3.2s ease-in-out infinite; }
+html[data-anim="full"] .bibi .aile { animation: b-battre .28s ease-in-out infinite alternate; transform-box: fill-box; }
+html[data-anim="full"] .bibi .aile.gauche { transform-origin: 100% 85%; }
+html[data-anim="full"] .bibi .aile.droite { transform-origin: 0% 85%; animation-direction: alternate-reverse; }
+html[data-anim="full"] .bibi .oeil { animation: b-cligne 4.6s infinite; transform-box: fill-box; transform-origin: center; }
+html[data-anim="full"] .bibi .antenne { animation: b-antenne 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+html[data-anim="reduced"] .bibi .aile { animation: b-battre 1.2s ease-in-out infinite alternate; transform-box: fill-box; }
+html[data-anim="reduced"] .bibi .aile.gauche { transform-origin: 100% 85%; }
+html[data-anim="reduced"] .bibi .aile.droite { transform-origin: 0% 85%; animation-direction: alternate-reverse; }
+
+html[data-anim="full"] .bibi[data-state="waiting"] .pupille { animation: b-regard 3.4s ease-in-out infinite; }
+html[data-anim="full"] .bibi[data-state="waiting"] .flotte { animation-duration: 4.4s; }
+html[data-anim="full"] .bibi[data-state="listening"] .antenne { animation: b-ecoute .7s ease-in-out infinite alternate; }
+html[data-anim="full"] .bibi[data-state="listening"] .onde-ecoute circle { animation: b-onde 1.4s ease-out infinite; }
+html[data-anim="full"] .bibi[data-state="listening"] .onde-ecoute .deux { animation-delay: .7s; }
+.bibi[data-state="thinking"] .pupille { transform: translate(5px, -5px); }
+html[data-anim="full"] .bibi[data-state="thinking"] .tete { animation: b-pense 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 90%; }
+html[data-anim="full"] .bibi[data-state="thinking"] .bulle circle { animation: b-points 1.2s ease-in-out infinite; }
+html[data-anim="full"] .bibi[data-state="thinking"] .bulle circle:nth-child(2) { animation-delay: .2s; }
+html[data-anim="full"] .bibi[data-state="thinking"] .bulle circle:nth-child(3) { animation-delay: .4s; }
+html[data-anim="full"] .bibi[data-state="speaking"] .bouche.parle { animation: b-parle .26s ease-in-out infinite alternate; }
+html[data-anim="full"] .bibi[data-state="speaking"] .sons path { animation: b-sons 1s ease-in-out infinite; }
+html[data-anim="full"] .bibi[data-state="happy"] .flotte { animation: b-saute .7s ease-in-out infinite; }
+html[data-anim="full"] .bibi[data-state="happy"] .aile { animation-duration: .1s; }
+html[data-anim="full"] .bibi[data-state="happy"] .bras.gauche { animation: b-salue .5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+html[data-anim="full"] .bibi[data-state="surprised"] .flotte { animation: b-sursaut .5s ease-out 1; }
+html[data-anim="full"] .bibi[data-state="surprised"] .antenne { animation: b-antenne-haut .4s ease-out 1 forwards; }
+.bibi[data-state="sad"] .antenne { transform: rotate(0) translateY(6px); }
+.bibi[data-state="sad"] .antenne path { transform: translateY(4px); }
+html[data-anim="full"] .bibi[data-state="sad"] .flotte { animation-duration: 5.5s; }
+html[data-anim="full"] .bibi[data-state="sad"] .larme { animation: b-larme 2.2s ease-in infinite; }
+html[data-anim="full"] .bibi[data-state="error"] .flotte { animation: b-secoue .5s ease-in-out 2; }
+html[data-anim="full"] .bibi[data-state="sleep"] .flotte { animation: b-respire 4.6s ease-in-out infinite; }
+html[data-anim="full"] .bibi[data-state="sleep"] .aile { animation: none; }
+html[data-anim="full"] .bibi[data-state="sleep"] .zzz text { animation: b-zzz 2.4s ease-in-out infinite; }
+html[data-anim="full"] .bibi[data-state="sleep"] .oeil { animation: none; }
+html[data-anim="reduced"] .bibi[data-state="sleep"] .aile, html[data-anim="off"] .bibi[data-state="sleep"] .aile { animation: none; }
+
+@keyframes b-flotte { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+@keyframes b-ombre { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.82); opacity: .7; } }
+@keyframes b-battre { from { transform: rotate(-14deg); } to { transform: rotate(10deg); } }
+@keyframes b-cligne { 0%,94%,100% { transform: scaleY(1); } 96.5% { transform: scaleY(.08); } }
+@keyframes b-antenne { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(4deg); } }
+@keyframes b-ecoute { from { transform: rotate(-9deg) scaleY(1.12); } to { transform: rotate(9deg) scaleY(1.12); } }
+@keyframes b-onde { from { transform: scale(.85); opacity: .7; } to { transform: scale(1.35); opacity: 0; } }
+@keyframes b-regard { 0%,100% { transform: translateX(-4px); } 50% { transform: translateX(4px); } }
+@keyframes b-pense { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg); } }
+@keyframes b-points { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes b-parle { from { transform: scaleY(.35); } to { transform: scaleY(1.15); } }
+@keyframes b-sons { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+@keyframes b-saute { 0%,100% { transform: translateY(0); } 40% { transform: translateY(-16px); } }
+@keyframes b-salue { from { transform: rotate(0); } to { transform: rotate(-38deg); } }
+@keyframes b-sursaut { 0% { transform: translateY(0); } 35% { transform: translateY(-22px); } 100% { transform: translateY(0); } }
+@keyframes b-antenne-haut { to { transform: scaleY(1.2); } }
+@keyframes b-larme { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
+@keyframes b-secoue { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes b-respire { 0%,100% { transform: scale(1); } 50% { transform: scale(1.025) translateY(2px); } }
+@keyframes b-zzz { 0% { transform: translate(0, 6px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate(6px, -8px); opacity: 0; } }

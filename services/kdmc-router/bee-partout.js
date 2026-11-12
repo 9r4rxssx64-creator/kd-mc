@@ -92,8 +92,8 @@ export function partout() {
         var r = rs[i], w = Math.min(boite.r, r.right) - Math.max(boite.l, r.left), h = Math.min(boite.b, r.bottom) - Math.max(boite.t, r.top);
         if (w <= 2 || h <= 2) continue;
         if (r.poids >= 100) { n += 100; continue; }                // un coin d'un bouton FIXE suffit : un doigt tombe dessus
-        var cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;  // un contrôle du contenu est caché si son centre ou plus de la moitié est dessous
-        if ((cx > boite.l && cx < boite.r && cy > boite.t && cy < boite.b) || w * h > 0.5 * (r.right - r.left) * (r.bottom - r.top)) n += 1;
+        var cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;  // un contrôle du contenu est caché si son centre ou plus du cinquième est dessous (12.11, pont 2344 : « plus de la moitié » laissait 12 px de Bee sur un bouton de CMCteams)
+        if ((cx > boite.l && cx < boite.r && cy > boite.t && cy < boite.b) || w * h > 0.2 * (r.right - r.left) * (r.bottom - r.top)) n += 1;
       }
       return n;
     }
@@ -115,6 +115,7 @@ export function partout() {
       var visA = place.range ? 30 : 92, lA = place.cote === 'right' ? W - (place.range ? 0 : 8) - visA : (place.range ? 0 : 8);
       var actuelle = recouvre({ l: lA, r: lA + visA, t: H - place.bas - 92, b: H - place.bas }, rs);
       if (actuelle === 0) return;                                  // déjà libre : on ne bouge pas (pas de saut inutile)
+      if (note >= actuelle) return;                                // aucune place meilleure que celle-ci (page dense) : on ne saute pas pour rien
       if (meilleure.cote !== place.cote || meilleure.bas !== place.bas || !!meilleure.range !== !!place.range) { place = meilleure; taille(); }
     }
     function replacer() { choisirPlace(); setTimeout(choisirPlace, 1200); setTimeout(choisirPlace, 3500); setTimeout(choisirPlace, 8000); veiller(); }
@@ -124,7 +125,9 @@ export function partout() {
     function veiller() {
       if (veille) return;
       veille = setInterval(function () { if (!document.hidden) choisirPlace(); }, 4000);
-      window.addEventListener('scroll', function () { discret(true); clearTimeout(defile); defile = setTimeout(function () { discret(false); choisirPlace(); }, 700); }, true);
+      /* 12.11 (pont 2344, robot Servi : un bouton défilé sous le cadre) : le défilement se termine → Bee se replace 350 ms plus tard (avant : 700 ms) ; PAS sur « scrollend » : un défilement d'un coup le déclenche aussitôt et Bee ne s'effacerait plus (garde « pendant le défilement, Bee s'efface ») */
+      var fini = function () { clearTimeout(defile); discret(false); choisirPlace(); };
+      window.addEventListener('scroll', function () { discret(true); clearTimeout(defile); defile = setTimeout(fini, 350); }, true);
       /* 6.11 (Kevin : « ne cache jamais rien ») : un contrôle qui ARRIVE (Apex AI sur tablette : bouton principal sous le rond entre deux veilles de 4 s) → replacement 0,3 s après le changement de la page */
       /* 7.11 (robot d'affichage, run 42370404742 : sur CMCteams en paysage, « 👑 Vue admin » s'est DÉPLACÉE sous le rond) : une pastille du domaine qui change de place
          ne change que son style — l'observateur des ajouts ne le voyait pas, il fallait attendre la veille de 4 s. On suit aussi le style des pastilles du domaine. */

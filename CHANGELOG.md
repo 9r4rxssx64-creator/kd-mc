@@ -81,6 +81,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Arbre v3.219 — Desarzens se dit « Dessarzanss » (2026-11-09)
 - Kevin : « dessarzanss » (le s final se prononce). `PRONONCIATIONS` : Desarzens → « Dessarzanss ». Garde `verify-prononciation.mjs`.
 
+## Bee v1.38 / marionnette v2.7 — Bee et Bourricot en peluches style Pixar (2026-11-12)
+- Kevin : « le même visuel que l'image, toujours une marionnette, personnage des plus mignon ». Nouvelles images `lingua/bee/v3/rig/base.webp` et `lingua/donkey/v3/rig/base.webp` ; `tools/javis/marionnette.js` v2.7 (copie `lingua/marionnette.js`, embarqué dans `javis-widget.js` + `arbre/` + `javis/`, `javis/sw.js` = `javis-v1.38`) : squelettes `bee/v3` / `donkey/v3` (ailes en deux lobes, bras bornés). Garde `test:marionnette` 105/0.
+
+## Bee v1.37 — chat façon maquette « Bibi » : 4 pastilles, bouton rond orange (2026-11-12)
+- `tools/javis/javis-widget.js` (copies `arbre/` et `javis/`, `javis/sw.js` = `javis-v1.37`) : pastilles « Me poser une question / Avoir une idée / Aide technique / Juste papoter 😊 », accueil et champ de saisie de la maquette, envoi rond orange. Vaut pour Bee et Bourricot. Dessin 3D neuf : non fait. Gardes `test:javis-bee`, `verify-bee-comportements`.
+
 ## Arbre v3.218 — Desarzens se dit « Dessarzance » (2026-11-08)
 - Kevin : « Dessarzance, phonétique ». `PRONONCIATIONS` : Desarzens → « Dessarzance » (remplace « Dessarzin »). Garde `verify-prononciation.mjs`.
 

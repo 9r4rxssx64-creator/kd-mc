@@ -462,10 +462,10 @@
       "sujet": "Bee (mascotte Lingua) comme assistant de Kevin : widget, app installable javis.kd-mc.com, voix + lip-sync",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-11-06",
+      "maj": "2026-11-12",
       "attend_kevin": "Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",
-      "note": "Bee v1.31 : corps ne se fige plus au repos, ?fps=1"
+      "note": "Bee v1.38 / marionnette v2.7 : peluches Pixar, 105 contrôles verts, prêt, attend fusionne"
     },
     "ld-config-printify": {
       "titre": "La Détente — config worker Printify (branche écrite par un workflow)",

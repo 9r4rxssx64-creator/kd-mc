@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dist-server/
+.env
+*.db
+*.db-journal
+data/
+coverage/
+test-results/
+bibi-assistant.zip
+
+# Le fichier de versions est livré avec Bibi (installation reproductible : npm ci). Le .gitignore racine l'ignore sinon.
+!package-lock.json

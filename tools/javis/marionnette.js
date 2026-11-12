@@ -35,7 +35,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.6';
+  var VERSION = '2.7';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -113,37 +113,38 @@
      Mesuré à la main sur la planche 1024 × 1024 (30.10). */
   SQUELETTES['bee/v3'] = {
     os: [
-      { id: 'antG', parent: 'tete', a: [446, 168], trace: [[446, 168], [402, 112], [346, 84], [304, 88]], r: 30, f: 22, cote: -1, sens: 'haut', type: 'antenne' },
-      { id: 'antD', parent: 'tete', a: [586, 166], trace: [[586, 166], [630, 104], [690, 82], [732, 88]], r: 30, f: 22, cote: 1, sens: 'haut', type: 'antenne' },
-      { id: 'aileG', parent: 'tete', a: [250, 500], trace: [[250, 500], [180, 492], [108, 470]], r: 62, f: 26, cote: -1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-20, 20] },
-      { id: 'aileD', parent: 'tete', a: [786, 500], trace: [[786, 500], [858, 492], [926, 470]], r: 62, f: 26, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-20, 20] },
-      { id: 'brasG', parent: 'corps', a: [318, 702], trace: [[318, 702], [286, 782], [252, 862]], r: 46, f: 24, cote: -1, sens: 'bas', type: 'bras' },
-      { id: 'brasD', parent: 'corps', a: [712, 702], trace: [[712, 702], [750, 782], [790, 862]], r: 46, f: 24, cote: 1, sens: 'bas', type: 'bras' },
-      { id: 'jambeG', parent: 'corps', a: [398, 900], trace: [[398, 900], [376, 950]], r: 44, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
-      { id: 'jambeD', parent: 'corps', a: [632, 900], trace: [[632, 900], [656, 950]], r: 44, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
-      { id: 'oeilG', parent: 'visage', a: [390, 402], ellipse: [390, 402, 70, 64], f: 22, type: 'oeil', cote: -1 },
-      { id: 'oeilD', parent: 'visage', a: [642, 402], ellipse: [642, 402, 68, 64], f: 22, type: 'oeil', cote: 1 },
-      { id: 'machoire', parent: 'visage', a: [518, 512], ellipse: [518, 538, 60, 24], f: 18, type: 'machoire', amp: 0.024 },
-      { id: 'visage', parent: 'tete', a: [516, 470], ellipse: [516, 470, 215, 150], f: 40, type: 'visage' },
-      { id: 'tete', parent: 'corps', a: [515, 650], ellipse: [515, 410, 285, 275], f: 34, type: 'tete' },
-      { id: 'corps', parent: null, a: [515, 935], ellipse: [515, 790, 225, 170], f: 40, type: 'corps' }
+      { id: 'antG', parent: 'tete', a: [435, 180], trace: [[435, 180], [405, 120], [370, 80], [320, 62]], r: 28, f: 22, cote: -1, sens: 'haut', type: 'antenne' },
+      { id: 'antD', parent: 'tete', a: [590, 185], trace: [[590, 185], [625, 120], [670, 85], [712, 68]], r: 28, f: 22, cote: 1, sens: 'haut', type: 'antenne' },
+      { id: 'aileG', parent: 'tete', a: [300, 540], trace: [[255, 490], [225, 462], [177, 400]], r: 40, f: 20, cote: -1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'aileD', parent: 'tete', a: [725, 540], trace: [[770, 490], [800, 462], [848, 400]], r: 40, f: 20, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'aileDb', parent: 'tete', a: [790, 545], trace: [[800, 520], [835, 585], [855, 665]], r: 32, f: 16, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'brasG', parent: 'corps', a: [300, 620], trace: [[300, 620], [268, 700], [262, 780]], r: 48, f: 24, cote: -1, sens: 'bas', type: 'bras' },
+      { id: 'brasD', parent: 'corps', a: [735, 625], trace: [[735, 625], [760, 700], [752, 780]], r: 48, f: 24, cote: 1, sens: 'bas', type: 'bras', bornes: [-8, 14] },
+      { id: 'jambeG', parent: 'corps', a: [420, 880], trace: [[420, 880], [405, 945], [395, 975]], r: 50, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
+      { id: 'jambeD', parent: 'corps', a: [600, 880], trace: [[600, 880], [610, 940], [625, 975]], r: 50, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
+      { id: 'oeilG', parent: 'visage', a: [398, 375], ellipse: [398, 375, 58, 55], f: 18, type: 'oeil', cote: -1 },
+      { id: 'oeilD', parent: 'visage', a: [628, 377], ellipse: [628, 377, 60, 55], f: 18, type: 'oeil', cote: 1 },
+      { id: 'machoire', parent: 'visage', a: [512, 440], ellipse: [512, 462, 50, 20], f: 18, type: 'machoire', amp: 0.024 },
+      { id: 'visage', parent: 'tete', a: [510, 380], ellipse: [510, 400, 200, 140], f: 40, type: 'visage' },
+      { id: 'tete', parent: 'corps', a: [512, 550], ellipse: [510, 345, 225, 210], f: 34, type: 'tete' },
+      { id: 'corps', parent: null, a: [512, 935], ellipse: [512, 770, 200, 180], f: 40, type: 'corps' }
     ]
   };
   SQUELETTES['donkey/v3'] = {
     os: [
-      { id: 'oreilleG', parent: 'tete', a: [346, 288], trace: [[346, 288], [304, 176], [264, 62]], r: 56, f: 26, cote: -1, sens: 'haut', type: 'oreille' },
-      { id: 'oreilleD', parent: 'tete', a: [680, 288], trace: [[680, 288], [724, 176], [764, 62]], r: 56, f: 26, cote: 1, sens: 'haut', type: 'oreille' },
-      { id: 'meche', parent: 'tete', a: [516, 215], trace: [[516, 215], [516, 112]], r: 76, f: 22, cote: 0, sens: 'haut', type: 'meche' },
-      { id: 'brasG', parent: 'corps', a: [396, 748], trace: [[396, 748], [406, 836]], r: 30, f: 40, cote: -1, sens: 'bas', type: 'bras' },
-      { id: 'brasD', parent: 'corps', a: [632, 748], trace: [[632, 748], [622, 836]], r: 30, f: 40, cote: 1, sens: 'bas', type: 'bras' },
-      { id: 'jambeG', parent: 'corps', a: [430, 872], trace: [[430, 872], [436, 950]], r: 48, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
-      { id: 'jambeD', parent: 'corps', a: [598, 872], trace: [[598, 872], [600, 950]], r: 48, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
-      { id: 'oeilG', parent: 'visage', a: [416, 490], ellipse: [416, 490, 56, 62], f: 18, type: 'oeil', cote: -1 },
-      { id: 'oeilD', parent: 'visage', a: [630, 490], ellipse: [630, 490, 58, 62], f: 18, type: 'oeil', cote: 1 },
-      { id: 'machoire', parent: 'visage', a: [520, 672], ellipse: [520, 706, 104, 42], f: 22, type: 'machoire', amp: 0.028 },
-      { id: 'visage', parent: 'tete', a: [520, 525], ellipse: [520, 525, 195, 185], f: 40, type: 'visage' },
-      { id: 'tete', parent: 'corps', a: [519, 720], ellipse: [519, 455, 215, 255], f: 34, type: 'tete' },
-      { id: 'corps', parent: null, a: [515, 960], ellipse: [515, 850, 168, 135], f: 40, type: 'corps' }
+      { id: 'oreilleG', parent: 'tete', a: [330, 285], trace: [[330, 285], [282, 190], [236, 90]], r: 60, f: 26, cote: -1, sens: 'haut', type: 'oreille' },
+      { id: 'oreilleD', parent: 'tete', a: [685, 285], trace: [[685, 285], [740, 190], [790, 85]], r: 60, f: 26, cote: 1, sens: 'haut', type: 'oreille' },
+      { id: 'meche', parent: 'tete', a: [490, 290], trace: [[490, 290], [490, 210], [500, 140]], r: 70, f: 22, cote: 0, sens: 'haut', type: 'meche' },
+      { id: 'brasG', parent: 'corps', a: [335, 690], trace: [[335, 690], [312, 760], [306, 820]], r: 40, f: 30, cote: -1, sens: 'bas', type: 'bras' },
+      { id: 'brasD', parent: 'corps', a: [690, 690], trace: [[690, 690], [706, 760], [692, 830]], r: 40, f: 30, cote: 1, sens: 'bas', type: 'bras' },
+      { id: 'jambeG', parent: 'corps', a: [425, 880], trace: [[425, 880], [418, 930], [418, 965]], r: 55, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
+      { id: 'jambeD', parent: 'corps', a: [590, 880], trace: [[590, 880], [590, 930], [585, 965]], r: 55, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
+      { id: 'oeilG', parent: 'visage', a: [373, 455], ellipse: [373, 455, 52, 56], f: 16, type: 'oeil', cote: -1 },
+      { id: 'oeilD', parent: 'visage', a: [602, 452], ellipse: [602, 452, 55, 58], f: 16, type: 'oeil', cote: 1 },
+      { id: 'machoire', parent: 'visage', a: [495, 548], ellipse: [495, 598, 85, 36], f: 22, type: 'machoire', amp: 0.028 },
+      { id: 'visage', parent: 'tete', a: [495, 480], ellipse: [495, 500, 170, 140], f: 40, type: 'visage' },
+      { id: 'tete', parent: 'corps', a: [500, 650], ellipse: [500, 440, 238, 232], f: 34, type: 'tete' },
+      { id: 'corps', parent: null, a: [510, 900], ellipse: [510, 800, 170, 130], f: 40, type: 'corps' }
     ]
   };
   /* LES 12 IMAGES FIXES de Lingua (salut, fête, lecture, doigt levé — pour chaque dessin) :

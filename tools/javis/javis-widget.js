@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.36';
+  var JAVIS_VER = 'v1.38';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -459,6 +459,7 @@
       '#javis-input::placeholder{color:#b8a57c}' +
       '#javis-send,#javis-mic{flex:0 0 44px;height:44px;border-radius:12px;border:0;background:linear-gradient(135deg,#f6b73c,#ffd75e);' +
       'color:#241905;font-size:18px;font-weight:700;cursor:pointer}' +
+      '#javis-send{border-radius:50%;background:linear-gradient(135deg,#ff9f1c,#ffb84d)}' +
       '#javis-mic.on{background:linear-gradient(135deg,#c8506a,#e2748f)}' +
       '@media (min-width:480px){#javis-panel{right:16px}}' +
       /* ---- MODE APP (javis/index.html) : plein écran, le personnage en grand ----
@@ -475,6 +476,11 @@
       '.javis-chips button{min-height:44px;padding:0 14px;border-radius:22px;border:1px solid rgba(246,183,60,.55);background:rgba(246,183,60,.08);' +
       'color:#f6c35c;font:600 15px -apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer}' +
       '.javis-chips button:active{transform:scale(.97)}' +
+      /* LES 4 BOUTONS D'ACCUEIL (Kevin 12.11, image de Bibi : « Me poser une question · Avoir une idée · Aide technique · Juste papoter ») :
+         une par ligne, en pilule claire, comme sur sa maquette */
+      '.javis-chips .javis-causer{flex:1 0 100%;display:flex;align-items:center;gap:10px;justify-content:flex-start;padding:0 18px;border-radius:24px;' +
+      'border:1px solid rgba(246,183,60,.7);background:rgba(246,183,60,.12);color:#f7efd9;font-weight:500}' +
+      '.javis-chips .javis-causer .javis-ic{font-size:18px;line-height:1}' +
       /* dans l'app, la bulle du toucher sort de BEE (en haut, queue vers elle), plus en bas à droite où elle
          ressemblait à un message de Kevin (audit externe 02.10, capture 12-app-375-toucher-bee) */
       'body.javis-app .javis-bubble{right:16px;left:16px;bottom:auto;top:calc(env(safe-area-inset-top) + min(56vw,270px) + 6px);' +
@@ -1983,7 +1989,7 @@
     if (h.indexOf('lingua') === 0) return { nom: 'Lingua', quoi: 'Ma maison ! On révise un peu ?' };
     if (h.indexOf('cmcteams') === 0) return { nom: 'tes plannings', quoi: 'Je te dis quand tu travailles et avec qui. Demande-moi !' };
     if (h.indexOf('apex') === 0) return { nom: 'Apex', quoi: 'Je cherche, je lis tes apps et je te prépare des actions à confirmer.' };
-    return { nom: 'ton domaine', quoi: 'Demande-moi ce que tu veux, ou touche « Ce que tu sais faire ».' };
+    return { nom: 'ton domaine', quoi: 'Je suis contente de te revoir ! Que veux-tu faire aujourd\'hui ? ✨' };
   }
 
   function salut() {
@@ -2101,7 +2107,7 @@
       '<button id="javis-3d" type="button" aria-label="Me voir en 3D, en réalité augmentée">\uD83E\uDDF8 3D</button>' +
       '<button id="javis-ver" type="button" aria-label="Version de Bee, toucher pour mettre à jour">Bee ' + JAVIS_VER + ' \u21BB</button></div>' +
       '<div id="javis-msgs" role="log" aria-live="polite" aria-label="Conversation"></div>' +
-      '<form id="javis-form"><textarea id="javis-input" aria-label="Ta question" placeholder="Demande-moi n\'importe quoi…" rows="1" maxlength="2000"></textarea>' +
+      '<form id="javis-form"><textarea id="javis-input" aria-label="Ta question" placeholder="Écris-moi quelque chose…" rows="1" maxlength="2000"></textarea>' +
       '<button id="javis-mic" type="button" aria-label="Dicter" aria-pressed="false">🎙</button>' +
       '<button id="javis-send" type="submit" aria-label="Envoyer">➤</button></form>' +
       '</div>';
@@ -2490,16 +2496,24 @@
   var CHIPS_ARBRE = [['🔎 Ce qui manque', 'Fais le bilan de l\'arbre : qu\'est-ce qui manque dans les fiches ?'], ['➕ Ajouter une info', 'Je veux ajouter une info (téléphone, e-mail, adresse…) à une fiche de l\'arbre. Demande-moi pour qui.'],
     ['🔗 Relier un proche', 'Je veux relier ou ajouter un proche dans l\'arbre. Demande-moi qui et comment il est lié.'], ['🧰 Ce que tu sais faire', 'Qu\'est-ce que tu sais faire ? Dis-moi tout simplement.'], ['🩺 Tester Bee', '@diagnostic']];
   var CHIPS_DEFAUT = [['🗓 Ma semaine', 'Je travaille quand cette semaine ?'], ['☀️ La météo', 'Quel temps fait-il ?'], ['🧰 Ce que tu sais faire', 'Qu\'est-ce que tu sais faire ? Dis-moi tout simplement.'], ['🧸 En 3D', 'Montre-toi en 3D'], ['🩺 Tester Bee', '@diagnostic']];
+  /* Image de « Bibi » envoyée par Kevin le 12.11 : quatre façons de commencer, une phrase déjà écrite pour chacune. Le 3ᵉ élément est l'icône. */
+  var CHIPS_CAUSER = [['Me poser une question', 'J\'ai une question à te poser. Dis-moi « je t\'écoute » et attends ma question.', '💬'],
+    ['Avoir une idée', 'Donne-moi UNE idée pour aujourd\'hui, courte, que je peux faire tout de suite.', '💡'],
+    ['Aide technique', 'J\'ai un souci technique (une app du domaine ou mon iPhone). Demande-moi ce qui ne va pas.', '⚙️'],
+    ['Juste papoter 😊', 'Juste papoter : parle-moi simplement et pose-moi une question sur ma journée.', '❤️']];
   function suggestions(root) {
     var list = root.querySelector('#javis-msgs');
     if (!list || list.querySelector('.javis-chips') || list.querySelector('.javis-bub.me')) return;
     var box = document.createElement('div');
     box.className = 'javis-chips'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', 'Suggestions');
     var app = PAGE_CTX && PAGE_CTX.app ? PAGE_CTX.app : '';
-    (app === 'arbre' ? CHIPS_ARBRE : CHIPS_DEFAUT)
+    /* dans l'arbre, les boutons sont ceux de l'arbre ; ailleurs, d'abord les 4 « causer » de la maquette de Kevin, puis les raccourcis */
+    (app === 'arbre' ? CHIPS_ARBRE : CHIPS_CAUSER.concat(CHIPS_DEFAUT))
       .forEach(function (s) {
         var b = document.createElement('button');
-        b.type = 'button'; b.textContent = s[0];
+        b.type = 'button';
+        if (s[2]) { b.className = 'javis-causer'; var ic = document.createElement('span'); ic.className = 'javis-ic'; ic.setAttribute('aria-hidden', 'true'); ic.textContent = s[2]; b.appendChild(ic); b.appendChild(document.createTextNode(s[0])); }
+        else b.textContent = s[0];
         b.addEventListener('click', function () { box.remove(); vibrate(10); if (s[1] === '@diagnostic') { addBubble(root, 'user', '🩺 Tester Bee'); diagnostiquer(root); } else askJavis(root, s[1]); });
         box.appendChild(b);
       });
@@ -2757,7 +2771,7 @@
 (function () {
   'use strict';
   if (typeof window === 'undefined' || window.KdmcMarionnette) return;
-  var VERSION = '2.6';
+  var VERSION = '2.7';
   /* D'où vient CE script : le moteur 3D (perso3d.js) est posé juste à côté, au même endroit — que la marionnette soit
      chargée seule (Lingua : lingua/marionnette.js) ou embarquée dans le widget (n'importe quelle page du domaine). */
   var SRC_ICI = '';
@@ -2835,37 +2849,38 @@
      Mesuré à la main sur la planche 1024 × 1024 (30.10). */
   SQUELETTES['bee/v3'] = {
     os: [
-      { id: 'antG', parent: 'tete', a: [446, 168], trace: [[446, 168], [402, 112], [346, 84], [304, 88]], r: 30, f: 22, cote: -1, sens: 'haut', type: 'antenne' },
-      { id: 'antD', parent: 'tete', a: [586, 166], trace: [[586, 166], [630, 104], [690, 82], [732, 88]], r: 30, f: 22, cote: 1, sens: 'haut', type: 'antenne' },
-      { id: 'aileG', parent: 'tete', a: [250, 500], trace: [[250, 500], [180, 492], [108, 470]], r: 62, f: 26, cote: -1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-20, 20] },
-      { id: 'aileD', parent: 'tete', a: [786, 500], trace: [[786, 500], [858, 492], [926, 470]], r: 62, f: 26, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-20, 20] },
-      { id: 'brasG', parent: 'corps', a: [318, 702], trace: [[318, 702], [286, 782], [252, 862]], r: 46, f: 24, cote: -1, sens: 'bas', type: 'bras' },
-      { id: 'brasD', parent: 'corps', a: [712, 702], trace: [[712, 702], [750, 782], [790, 862]], r: 46, f: 24, cote: 1, sens: 'bas', type: 'bras' },
-      { id: 'jambeG', parent: 'corps', a: [398, 900], trace: [[398, 900], [376, 950]], r: 44, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
-      { id: 'jambeD', parent: 'corps', a: [632, 900], trace: [[632, 900], [656, 950]], r: 44, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
-      { id: 'oeilG', parent: 'visage', a: [390, 402], ellipse: [390, 402, 70, 64], f: 22, type: 'oeil', cote: -1 },
-      { id: 'oeilD', parent: 'visage', a: [642, 402], ellipse: [642, 402, 68, 64], f: 22, type: 'oeil', cote: 1 },
-      { id: 'machoire', parent: 'visage', a: [518, 512], ellipse: [518, 538, 60, 24], f: 18, type: 'machoire', amp: 0.024 },
-      { id: 'visage', parent: 'tete', a: [516, 470], ellipse: [516, 470, 215, 150], f: 40, type: 'visage' },
-      { id: 'tete', parent: 'corps', a: [515, 650], ellipse: [515, 410, 285, 275], f: 34, type: 'tete' },
-      { id: 'corps', parent: null, a: [515, 935], ellipse: [515, 790, 225, 170], f: 40, type: 'corps' }
+      { id: 'antG', parent: 'tete', a: [435, 180], trace: [[435, 180], [405, 120], [370, 80], [320, 62]], r: 28, f: 22, cote: -1, sens: 'haut', type: 'antenne' },
+      { id: 'antD', parent: 'tete', a: [590, 185], trace: [[590, 185], [625, 120], [670, 85], [712, 68]], r: 28, f: 22, cote: 1, sens: 'haut', type: 'antenne' },
+      { id: 'aileG', parent: 'tete', a: [300, 540], trace: [[255, 490], [225, 462], [177, 400]], r: 40, f: 20, cote: -1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'aileD', parent: 'tete', a: [725, 540], trace: [[770, 490], [800, 462], [848, 400]], r: 40, f: 20, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'aileDb', parent: 'tete', a: [790, 545], trace: [[800, 520], [835, 585], [855, 665]], r: 32, f: 16, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'brasG', parent: 'corps', a: [300, 620], trace: [[300, 620], [268, 700], [262, 780]], r: 48, f: 24, cote: -1, sens: 'bas', type: 'bras' },
+      { id: 'brasD', parent: 'corps', a: [735, 625], trace: [[735, 625], [760, 700], [752, 780]], r: 48, f: 24, cote: 1, sens: 'bas', type: 'bras', bornes: [-8, 14] },
+      { id: 'jambeG', parent: 'corps', a: [420, 880], trace: [[420, 880], [405, 945], [395, 975]], r: 50, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
+      { id: 'jambeD', parent: 'corps', a: [600, 880], trace: [[600, 880], [610, 940], [625, 975]], r: 50, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
+      { id: 'oeilG', parent: 'visage', a: [398, 375], ellipse: [398, 375, 58, 55], f: 18, type: 'oeil', cote: -1 },
+      { id: 'oeilD', parent: 'visage', a: [628, 377], ellipse: [628, 377, 60, 55], f: 18, type: 'oeil', cote: 1 },
+      { id: 'machoire', parent: 'visage', a: [512, 440], ellipse: [512, 462, 50, 20], f: 18, type: 'machoire', amp: 0.024 },
+      { id: 'visage', parent: 'tete', a: [510, 380], ellipse: [510, 400, 200, 140], f: 40, type: 'visage' },
+      { id: 'tete', parent: 'corps', a: [512, 550], ellipse: [510, 345, 225, 210], f: 34, type: 'tete' },
+      { id: 'corps', parent: null, a: [512, 935], ellipse: [512, 770, 200, 180], f: 40, type: 'corps' }
     ]
   };
   SQUELETTES['donkey/v3'] = {
     os: [
-      { id: 'oreilleG', parent: 'tete', a: [346, 288], trace: [[346, 288], [304, 176], [264, 62]], r: 56, f: 26, cote: -1, sens: 'haut', type: 'oreille' },
-      { id: 'oreilleD', parent: 'tete', a: [680, 288], trace: [[680, 288], [724, 176], [764, 62]], r: 56, f: 26, cote: 1, sens: 'haut', type: 'oreille' },
-      { id: 'meche', parent: 'tete', a: [516, 215], trace: [[516, 215], [516, 112]], r: 76, f: 22, cote: 0, sens: 'haut', type: 'meche' },
-      { id: 'brasG', parent: 'corps', a: [396, 748], trace: [[396, 748], [406, 836]], r: 30, f: 40, cote: -1, sens: 'bas', type: 'bras' },
-      { id: 'brasD', parent: 'corps', a: [632, 748], trace: [[632, 748], [622, 836]], r: 30, f: 40, cote: 1, sens: 'bas', type: 'bras' },
-      { id: 'jambeG', parent: 'corps', a: [430, 872], trace: [[430, 872], [436, 950]], r: 48, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
-      { id: 'jambeD', parent: 'corps', a: [598, 872], trace: [[598, 872], [600, 950]], r: 48, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
-      { id: 'oeilG', parent: 'visage', a: [416, 490], ellipse: [416, 490, 56, 62], f: 18, type: 'oeil', cote: -1 },
-      { id: 'oeilD', parent: 'visage', a: [630, 490], ellipse: [630, 490, 58, 62], f: 18, type: 'oeil', cote: 1 },
-      { id: 'machoire', parent: 'visage', a: [520, 672], ellipse: [520, 706, 104, 42], f: 22, type: 'machoire', amp: 0.028 },
-      { id: 'visage', parent: 'tete', a: [520, 525], ellipse: [520, 525, 195, 185], f: 40, type: 'visage' },
-      { id: 'tete', parent: 'corps', a: [519, 720], ellipse: [519, 455, 215, 255], f: 34, type: 'tete' },
-      { id: 'corps', parent: null, a: [515, 960], ellipse: [515, 850, 168, 135], f: 40, type: 'corps' }
+      { id: 'oreilleG', parent: 'tete', a: [330, 285], trace: [[330, 285], [282, 190], [236, 90]], r: 60, f: 26, cote: -1, sens: 'haut', type: 'oreille' },
+      { id: 'oreilleD', parent: 'tete', a: [685, 285], trace: [[685, 285], [740, 190], [790, 85]], r: 60, f: 26, cote: 1, sens: 'haut', type: 'oreille' },
+      { id: 'meche', parent: 'tete', a: [490, 290], trace: [[490, 290], [490, 210], [500, 140]], r: 70, f: 22, cote: 0, sens: 'haut', type: 'meche' },
+      { id: 'brasG', parent: 'corps', a: [335, 690], trace: [[335, 690], [312, 760], [306, 820]], r: 40, f: 30, cote: -1, sens: 'bas', type: 'bras' },
+      { id: 'brasD', parent: 'corps', a: [690, 690], trace: [[690, 690], [706, 760], [692, 830]], r: 40, f: 30, cote: 1, sens: 'bas', type: 'bras' },
+      { id: 'jambeG', parent: 'corps', a: [425, 880], trace: [[425, 880], [418, 930], [418, 965]], r: 55, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
+      { id: 'jambeD', parent: 'corps', a: [590, 880], trace: [[590, 880], [590, 930], [585, 965]], r: 55, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
+      { id: 'oeilG', parent: 'visage', a: [373, 455], ellipse: [373, 455, 52, 56], f: 16, type: 'oeil', cote: -1 },
+      { id: 'oeilD', parent: 'visage', a: [602, 452], ellipse: [602, 452, 55, 58], f: 16, type: 'oeil', cote: 1 },
+      { id: 'machoire', parent: 'visage', a: [495, 548], ellipse: [495, 598, 85, 36], f: 22, type: 'machoire', amp: 0.028 },
+      { id: 'visage', parent: 'tete', a: [495, 480], ellipse: [495, 500, 170, 140], f: 40, type: 'visage' },
+      { id: 'tete', parent: 'corps', a: [500, 650], ellipse: [500, 440, 238, 232], f: 34, type: 'tete' },
+      { id: 'corps', parent: null, a: [510, 900], ellipse: [510, 800, 170, 130], f: 40, type: 'corps' }
     ]
   };
   /* LES 12 IMAGES FIXES de Lingua (salut, fête, lecture, doigt levé — pour chaque dessin) :

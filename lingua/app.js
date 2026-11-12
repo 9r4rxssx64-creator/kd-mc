@@ -2,7 +2,7 @@
    Vanilla JS, 0 dépendance. Auteur : KDMC. */
 (function(){
 "use strict";
-var APP_VER="v2.142.17";
+var APP_VER="v2.142.18";
 /* La version doit etre LISIBLE DE DEHORS. Tout ce fichier vit dans une IIFE : APP_VER n'a
    donc jamais ete une variable globale, et la seule etiquette qui l'affiche (.ver) vit sur
    l'ecran Profil. Resultat mesure le 17/09 : l'audit LIVE du domaine ne pouvait PAS dire
@@ -916,7 +916,11 @@ function _voixCloudKO(raison){ _ttsEchecs++; if(raison) _ttsRaison=raison;
                  : _ttsRaison==="lent"  ? "la connexion est trop lente"
                  : _ttsRaison==="media" ? "le son n'a pas pu être lu"
                  : "elle ne répond pas";
-    toast("🔈 La belle voix : "+pourquoi+" — je passe sur « Voix du téléphone (hors-ligne) », la seule qui marche sans réseau. Touche l'écran puis réessaie, ou choisis-la pour de bon dans Profil → Voix."); } }
+    var msg="🔈 La belle voix : "+pourquoi+" — je passe sur « Voix du téléphone (hors-ligne) », la seule qui marche sans réseau. Touche l'écran puis réessaie, ou choisis-la pour de bon dans Profil → Voix.";
+    /* 12.11 (test:lingua-voix rouge sur main, mesuré) : ce message EFFAÇAIT celui, plus utile, qui venait de dire « ton téléphone n'a pas de voix
+       de cette langue » (un message chasse l'autre). Il attend désormais que le premier ait été lu. */
+    var reste=2600-(Date.now()-_voixManquanteT);
+    if(reste>0) setTimeout(function(){ toast(msg); },reste); else toast(msg); } }
 /* 🇲🇨 Le monégasque : AUCUN moteur de synthèse au monde ne le parle. Louis Notari ayant bâti
    son écriture sur le français, on écrit la prononciation « à la française » (mc-voix.js) et
    on la fait dire par une voix française — l'élève lit la VRAIE orthographe à l'écran.
@@ -967,7 +971,7 @@ function speak(text){ if(!S.sound||!text)return; text=texteADire(text); var vid=
    Cause : si le téléphone n'a AUCUNE voix installée pour la langue étudiée, le navigateur
    lisait le mot étranger avec la voix FRANÇAISE par défaut — accent faux, mot méconnaissable,
    et rien ne le disait. On préfère désormais le dire et proposer la solution. */
-var _voixManquante={};
+var _voixManquante={}, _voixManquanteT=0;
 function _webSpeak(text){ if(!S.sound||!text)return; try{ var u=new SpeechSynthesisUtterance(text); u.lang=COURSES[S.course]?COURSES[S.course].ttsLang:"fr-FR"; u.rate=.92; u.volume=1;
   /* 8.11 (Kevin : « il ne dicte pas tous les mots d'office, je dois appuyer sur le haut-parleur ») : Safari rend souvent une liste de voix
      VIDE tant qu'elle n'est pas chargée (surtout au 1er mot après l'ouverture) ; on concluait « aucune voix de cette langue » et on se TAISAIT.
@@ -977,7 +981,7 @@ function _webSpeak(text){ if(!S.sound||!text)return; try{ var u=new SpeechSynthe
   var best=vs.filter(function(v){return /premium|enhanced|siri|natural/i.test(v.name);})[0] || vs.filter(function(v){return v.localService;})[0] || vs[0];
   if(best){ u.voice=best; _wsSpeak(u); return; }
   /* aucune voix de cette langue sur l'appareil : on ne massacre PAS le mot avec un autre accent */
-  if(!_voixManquante[base]){ _voixManquante[base]=1;
+  if(!_voixManquante[base]){ _voixManquante[base]=1; _voixManquanteT=Date.now();
     var nom=(COURSES[S.course]&&COURSES[S.course].nom)||"cette langue";
     toast("🔇 Ton téléphone n'a pas de voix « "+nom+" » — le mot serait mal prononcé. Réglages iPhone → Accessibilité → Contenu énoncé → Voix.");
   } }catch(e){} }
@@ -3613,10 +3617,11 @@ function vTabbar(){ var t=el("div","tabbar"); [["home","🏠","Accueil"],["revie
      dans la barre (règle du domaine : une sortie toujours visible ; [data-kdmc-retour] → le routeur ne pose plus la sienne). */
   var po=el("a","tab tab-portail"); po.href="https://kd-mc.com/"; po.setAttribute("data-kdmc-retour",""); po.setAttribute("aria-label","Retour au portail kd-mc.com"); po.innerHTML='<span>🚪</span><i>Portail</i>'; t.appendChild(po);
   /* 18.10 (Kevin : « la bulle de version est mal placée » ; vu en réel, run 39081547542 : posée AU-DESSUS de la barre, elle flottait sur le
-     texte de l'accueil) : la version vit DANS la barre, en petit, coin haut gauche — toucher = forcer la mise à jour, comme la bulle.
+     texte de l'accueil) : la version vit DANS la barre, en petit, coin haut gauche — simple étiquette (12.11 : plus de bouton, voir plus bas).
      La bulle flottante du domaine s'efface tant que celle-ci est visible (data-own-badge=".tab-ver"). */
-  var tv=el("button","tab-ver"); tv.type="button"; tv.textContent=APP_VER; tv.setAttribute("aria-label","Version "+APP_VER+" — toucher pour forcer la mise à jour");
-  tv.onclick=function(e){ e.stopPropagation(); if(typeof window.kdmcForceUpdate==="function"){ if(confirm("Lingua "+APP_VER+"\n\nForcer la mise à jour maintenant ?")) window.kdmcForceUpdate(); } else toast("Lingua "+APP_VER); };
+  /* 12.11 (pont 2356, robot Servi iPhone 13 : « button.tab-ver < 44 px ») : l'étiquette n'est plus un bouton. Un bouton de 44 px à cet endroit
+     volerait les touches de « Accueil » ; la mise à jour forcée reste dans Profil (« 🔄 Mettre à jour l'app ») et se fait seule au retour dans l'app. */
+  var tv=el("span","tab-ver"); tv.textContent=APP_VER; tv.setAttribute("role","img"); tv.setAttribute("aria-label","Version "+APP_VER);
   t.appendChild(tv);
   return t; }
 

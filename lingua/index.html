@@ -513,7 +513,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 @media (max-width:359px){.tab i{font-size:9px}.tab span{font-size:19px}}
 .tab.active{color:var(--green-tx)}
 .tab-portail{text-decoration:none}
-.tab-ver{position:absolute;top:0;left:6px;padding:0 3px;font:600 8px/1.1 ui-monospace,Menlo,monospace;color:var(--tx2);opacity:.7;background:none;border:0;min-height:0}
+.tab-ver{position:absolute;top:0;left:6px;padding:0 3px;font:600 8px/1.1 ui-monospace,Menlo,monospace;color:var(--tx2);opacity:.7;pointer-events:none}
 
 /* ---- Traducteur ---- */
 .tr-bar{margin-bottom:10px}
@@ -1016,7 +1016,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .voix-charge{animation:voixCharge .9s ease-in-out infinite;outline:2px solid #7fd3a8;outline-offset:2px;cursor:progress}
 @media (prefers-reduced-motion:reduce){.voix-charge{animation:none}}
 .tb-cercle{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0}
-/* 24.10 (mission 958 du Lenovo : « éléments cliquables < 44 px ») : zones de toucher de 44 px pour les contrôles de Lingua (puces du coach, micro du traducteur, boutons de voix, achat, liste déroulante). Exceptions voulues : l'étiquette de version de la barre (.tab-ver, 9 px de haut — la grossir volerait des touches à « Accueil ») et les cases à cocher, dont l'étiquette entière est la cible. */
+/* 24.10 (mission 958 du Lenovo : « éléments cliquables < 44 px ») : zones de toucher de 44 px pour les contrôles de Lingua (puces du coach, micro du traducteur, boutons de voix, achat, liste déroulante). L'étiquette de version de la barre (.tab-ver) n'est plus un bouton depuis la v2.142.18. Exception voulue : les cases à cocher, dont l'étiquette entière est la cible. */
 .coach-chip{min-height:44px}
 .tr-mic{width:44px;height:44px}
 .btn-buy,.vpick{min-height:44px}
@@ -1030,27 +1030,27 @@ select{min-height:44px}
 </head>
 <body>
 <div id="app"></div>
-<script src="data.js?v=v2.142.17"></script>
-<script src="histoires-langues.js?v=v2.142.17"></script>
-<script src="mc-voix.js?v=v2.142.17"></script>
-<script src="sources-langues.js?v=v2.142.17"></script>
-<script src="data-mc.js?v=v2.142.17"></script>
-<script src="data-lsf.js?v=v2.142.17"></script>
-<script src="translit.js?v=v2.142.17"></script>
+<script src="data.js?v=v2.142.18"></script>
+<script src="histoires-langues.js?v=v2.142.18"></script>
+<script src="mc-voix.js?v=v2.142.18"></script>
+<script src="sources-langues.js?v=v2.142.18"></script>
+<script src="data-mc.js?v=v2.142.18"></script>
+<script src="data-lsf.js?v=v2.142.18"></script>
+<script src="translit.js?v=v2.142.18"></script>
 <!-- La marionnette (3.10) : tout le corps de Bee et de Bourricot bouge (oreilles, antennes, bras, jambes, queue).
      Source : tools/javis/marionnette.js, recopiée ici par npm run sync:javis (la même que dans Bee). -->
 <!-- 8.11 (Kevin : « la marionnette est très moche ») : dans Lingua Bee reste le dessin animé 2D (ailes, visage souriant) ; le modèle 3D, plus raide et sans ailes lisibles, n'est plus chargé ici. Un seul interrupteur : retirer cette ligne. -->
 <script>window.KDMC_PERSO3D=false;</script>
-<script src="marionnette.js?v=v2.142.17"></script>
+<script src="marionnette.js?v=v2.142.18"></script>
 <script>
 /* Icône iOS = la mascotte Bee 🐝 (création originale KDMC) */
 (function(){try{
   var l=document.createElement("link");l.rel="apple-touch-icon";l.sizes="512x512";l.href="bee/icon-512.png";document.head.appendChild(l);
 }catch(e){}})();
 </script>
-<script src="app.js?v=v2.142.17"></script>
+<script src="app.js?v=v2.142.18"></script>
 <!-- Bulle de version (Kevin 9.10) — SITE seulement : dans l'app iPhone (Capacitor) les fichiers sont embarqués et les mises à jour
      passent par l'App Store, la bulle n'y servirait à rien (garde test:ios-config + test:bulles-partout). -->
-<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "lingua", "data-own-badge": ".tab-ver", "data-au-dessus": ".tabbar", "data-version": "v2.142.17", "data-version-global": "LINGUA_VER", "data-auto-update": "false", "data-color": "#7fd3a8"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
+<script>(function(){if(window.Capacitor)return;var s=document.createElement("script");s.src='/CMCteams/tools/shared/version-badge-pwa.js';s.defer=true;var a={"data-project": "lingua", "data-own-badge": ".tab-ver", "data-au-dessus": ".tabbar", "data-version": "v2.142.18", "data-version-global": "LINGUA_VER", "data-auto-update": "false", "data-color": "#7fd3a8"};for(var k in a)s.setAttribute(k,a[k]);document.body.appendChild(s);})();</script>
 </body>
 </html>

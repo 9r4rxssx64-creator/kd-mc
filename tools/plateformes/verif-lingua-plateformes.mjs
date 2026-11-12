@@ -138,9 +138,9 @@ async function scenarioA(moteur, ap) {
     const t = await texte(p); const act = await actif(p);
     if (!a || !act || t.length < 30) muets.push(ONGLETS[i]); else vus.add(t.slice(0, 160));
     if ((await largeur()) > 2) debordent.push(ONGLETS[i]);
-    /* zones de toucher < 44 px (mission 958 du Lenovo) : exceptions voulues = l'étiquette de version de la barre (.tab-ver) et les cases à cocher (leur étiquette entière est la cible) */
+    /* zones de toucher < 44 px (mission 958 du Lenovo) : exception voulue = les cases à cocher (leur étiquette entière est la cible) ; l'étiquette de version n'est plus un bouton (v2.142.18) */
     const petites = await p.evaluate(() => { const o = []; document.querySelectorAll('a[href],button,select,textarea,input:not([type=checkbox]),[role=button],.tab').forEach((e) => { const q = e.getBoundingClientRect(), st = getComputedStyle(e);
-      if (!q.width || !q.height || st.visibility === 'hidden' || st.display === 'none' || st.pointerEvents === 'none' || e.classList.contains('tab-ver')) return; if (Math.min(q.width, q.height) < 43.5) o.push((e.tagName + '.' + (typeof e.className === 'string' ? e.className.split(' ')[0] : '') + ' ' + Math.round(q.width) + 'x' + Math.round(q.height))); }); return o; }).catch(() => []);
+      if (!q.width || !q.height || st.visibility === 'hidden' || st.display === 'none' || st.pointerEvents === 'none' ) return; if (Math.min(q.width, q.height) < 43.5) o.push((e.tagName + '.' + (typeof e.className === 'string' ? e.className.split(' ')[0] : '') + ' ' + Math.round(q.width) + 'x' + Math.round(q.height))); }); return o; }).catch(() => []);
     petites.forEach((x) => { if (!petitesCibles.includes(ONGLETS[i] + ':' + x)) petitesCibles.push(ONGLETS[i] + ':' + x); });
   }
   out.muets = muets; out.distincts = vus.size; out.debordent = debordent; out.petitesCibles = petitesCibles;

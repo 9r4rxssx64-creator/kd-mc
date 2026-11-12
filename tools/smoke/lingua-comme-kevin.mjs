@@ -397,8 +397,18 @@ try {
     }, VOIX).catch(() => []);
     const bonnes = rv.filter((x) => x.st === 200 && x.octets > 1000 && /google-chirp3hd|gemini-gratuite|gratuite|openai|^$/.test(x.voix || ''));
     const moteurs = {}; for (const x of rv) { const k = x.voix || (x.octets > 1000 ? 'standard' : 'AUCUN(' + x.raison + ')'); moteurs[k] = (moteurs[k] || 0) + 1; }
-    chk(rv.length === VOIX.length && bonnes.length === VOIX.length, `voix : ${bonnes.length}/${VOIX.length} langues rendent un vrai son sur le domaine (moteurs : ${JSON.stringify(moteurs)})`,
-      rv.filter((x) => !(x.st === 200 && x.octets > 1000)).map((x) => x.l + ':' + (x.raison || x.st)).join(' '));
+    /* 12.11 (tâche 106, mesuré) : AUCUN moteur gratuit du domaine ne parle pl, ru, uk, cs (MeloTTS = fr, en, es, zh ; Google Chirp exige une
+       facturation = refusé ; palier gratuit de Gemini = quelques phrases par minute). Exiger 13/13 ici restait rouge pour toujours sans rien
+       apprendre. Ce qui doit rester VRAI : (1) fr et en ont toujours un son gratuit ; (2) pour les autres, un son OU un refus propre et rapide
+       (200 + raison) — c'est lui qui fait basculer l'app sur la voix du téléphone, jamais de silence ni d'erreur. */
+    const SURES = ['fr-FR', 'en-US'];
+    const RAISONS = /^(gratuite_indisponible|plafond_atteint)$/;
+    const sonOk = (x) => x.st === 200 && x.octets > 1000 && /google-chirp3hd|gemini-gratuite|gratuite|openai|^$/.test(x.voix || '');
+    const refusPropre = (x) => x.st === 200 && !x.octets && RAISONS.test(x.raison || '');
+    const casses = rv.filter((x) => SURES.includes(x.l) ? !sonOk(x) : !(sonOk(x) || refusPropre(x)));
+    const replis = rv.filter((x) => !sonOk(x) && refusPropre(x)).map((x) => x.l);
+    chk(rv.length === VOIX.length && casses.length === 0, `voix gratuite : ${bonnes.length}/${VOIX.length} langues rendent un vrai son sur le domaine, ${replis.length} basculent proprement sur la voix du téléphone${replis.length ? ' (' + replis.join(' ') + ')' : ''} (moteurs : ${JSON.stringify(moteurs)})`,
+      casses.map((x) => x.l + ':' + (x.raison || x.st)).join(' '));
   }
 
   /* 9b. compte jetable : coach, réouvertures (service worker), hors-ligne, largeurs 375 / 390 px */

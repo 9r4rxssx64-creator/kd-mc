@@ -62,6 +62,51 @@ export async function handleDelegue(request, env, deps) {
   return rep({ ok: true, provider: r.provider, model: r.model, domain, text: r.text, appels_aujourdhui: n });
 }
 
+/* ═══ LES YEUX DU DOMAINE (Kevin 12.11.2026 : « tu as plusieurs IA gratuites… tout auto »). POST /delegue/vision { image_base64, mime, consigne? } : une image (registre scanné,
+   acte manuscrit) devient du TEXTE, lu par Gemini au palier GRATUIT avec la clé DU DOMAINE (secret GEMINI_API_KEY déjà posé) : plus aucune clé sur le Lenovo. Même jeton, même
+   plafond par jour que /delegue (1 écriture + 1 lecture D1 par appel). Images d'actes PUBLICS seulement (la session appelante l'écrit dans sa consigne ; la file refuse les vivants). */
+export const VISION_TYPES = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1 };
+export const VISION_MAX_B64 = 5000000;
+export const VISION_MODELE = 'gemini-2.0-flash';
+const VISION_CONSIGNE = 'Transcris FIDÈLEMENT tout le texte de ce document d\'état civil ou d\'archives (imprimé ou manuscrit), ligne par ligne, sans rien inventer. Pour un acte : date, lieu, noms, prénoms, âges, professions, parents, déclarants, mentions en marge, numéro d\'acte. Un mot illisible s\'écrit [illisible] ; un doute s\'écrit avec [?].';
+
+export async function handleVision(request, env, deps) {
+  if (request.method !== 'POST') return non(405, 'methode', 'POST seulement');
+  const a = await authentifier(request, env);
+  if (a instanceof Response) return a;
+  const { hash, ligne } = a;
+  let c;
+  try { c = await request.json(); } catch (_) { return non(400, 'json', 'corps JSON invalide'); }
+  const b64 = String(c && c.image_base64 || ''), mime = String(c && c.mime || '').toLowerCase(), consigne = String(c && c.consigne || VISION_CONSIGNE).trim();
+  if (!VISION_TYPES[mime]) return non(400, 'mime', 'mime : image/jpeg, image/png ou image/webp');
+  if (!b64 || !/^[A-Za-z0-9+/=\s]+$/.test(b64)) return non(400, 'image', 'image_base64 requis (base64 pur)');
+  if (b64.length > VISION_MAX_B64) return non(413, 'trop_gros', 'image : 5 Mo de base64 au plus');
+  if (consigne.length < 5 || consigne.length > 1500) return non(400, 'consigne', 'consigne : 5 à 1 500 caractères');
+  if (SECRET.test(consigne)) return non(422, 'secret', 'le texte ressemble à un secret — refusé');
+  if (!env.GEMINI_API_KEY) return non(503, 'pas_de_cle', 'le domaine n\'a pas de clé Gemini');
+  const jour = new Date().toISOString().slice(0, 10);
+  let n = 0;
+  try {
+    const u = await env.DELEGUE.prepare('INSERT INTO usage (jour, hash, n, car) VALUES (?, ?, 1, ?) ON CONFLICT(jour, hash) DO UPDATE SET n = n + 1, car = car + ? RETURNING n').bind(jour, hash, consigne.length, consigne.length).first();
+    n = (u && u.n) || 0;
+  } catch (e) { return non(503, 'base', String(e && e.message).slice(0, 120)); }
+  if (n > (ligne.plafond_jour || 300)) return non(429, 'plafond_jour', 'plafond de ' + (ligne.plafond_jour || 300) + ' appels pour aujourd\'hui atteint');
+  const appel = (deps && deps.fetch) || fetch;
+  let g;
+  try {
+    g = await appel('https://generativelanguage.googleapis.com/v1beta/models/' + VISION_MODELE + ':generateContent', {
+      method: 'POST', signal: AbortSignal.timeout(25000),
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+      body: JSON.stringify({ contents: [{ parts: [{ text: consigne }, { inline_data: { mime_type: mime, data: b64.replace(/\s+/g, '') } }] }], generationConfig: { temperature: 0, maxOutputTokens: 4000 } }),
+    });
+  } catch (e) { return non(503, 'vision', 'Gemini injoignable : ' + String(e && e.message).slice(0, 100)); }
+  if (!g.ok) return non(g.status === 429 ? 429 : 503, 'vision', 'Gemini HTTP ' + g.status);
+  const j = await g.json().catch(() => ({}));
+  const texte = ((((j.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || '').join('\n').trim();
+  if (!texte) return non(503, 'vision_vide', 'rien de lu');
+  return rep({ ok: true, model: VISION_MODELE, text: texte, appels_aujourdhui: n });
+}
+
 /* ═══ LA FILE DE TRAVAUX (Kevin 29.10.2026 : « toutes les branches puissent déléguer… même piloter le Lenovo, des recherches en parallèle sur d'autres pages en
    autonomie, et faire remonter les résultats à tes branches »). Une branche DÉPOSE un travail (`pour` = « lenovo », « nuage »…), l'agent gratuit du Lenovo
    (tools/delegue/agent.mjs : navigateur ISOLÉ, IA gratuite, aucune session de Kevin) le PREND, l'exécute et RENDS le résultat ; n'importe quelle branche le relit.

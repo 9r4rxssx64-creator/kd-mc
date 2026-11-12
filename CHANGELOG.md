@@ -6,6 +6,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 
 
+## Robots gratuits — capteur d'images (2026-11-12)
+- Nouveau `tools/delegue/capteur.mjs` : ouvre une page d'archives publique (AD06, AD93, AD18, Tarn, Davel) dans un Chromium neuf et dépose l'image du registre pour `vision.mjs`. Recette d'arbre-pc : attente de la page « Calcul en cours », arrêt au premier vrai captcha (jamais contourné), 1 requête à la fois, 100 images au plus. Garde `tests/delegue-capteur.test.mjs` (4 groupes de vérifications). Essai réel : une page AD18 captée. Règles `delegue-gratuit.md` et `arbre-infos-privees.md` mises à jour (seuls les mineurs sont en privé).
+
 ## v3.223 — 2026-11-12
 - Dans chaque fiche, les actes officiels, les documents et les sources sont rangés tout seuls : par type (🍼 naissance, 💧 baptême, 💍 mariage, ⚖️ divorce, 🪦 décès, 🎖 militaire, 🏘 recensement, 📰 journaux et jugements, puis le reste), et dans chaque type du plus ancien au plus récent (année lue dans le titre). Le type est repéré par le mot qui apparaît en premier dans le titre. Les titres de rubrique n'apparaissent qu'à partir de deux types différents. L'ordre enregistré ne change pas : seul l'affichage est trié, donc aperçu, suppression et synchronisation gardent les bons numéros.
 

@@ -125,7 +125,10 @@ export function mesurer(tel) {
         /* 7.11 (pont 1929 : « le robot n'imprime que 2-3 exemples par app, je ne peux pas désigner l'élément sans deviner ») : CHAQUE recouvrement par un flottant du domaine est gardé, avec ses positions */
         if (fl !== 'autre' && flotEx.length < 40) flotEx.push(fl + ' : ' + caches[caches.length - 1]); }
     }
-    if (tel && (r.width < 44 || r.height < 44) && e.tagName !== 'INPUT' && e.tagName !== 'TEXTAREA' && e.tagName !== 'SELECT') petits.push(court(e));
+    /* 12.11 (passe Servi : worldmonitor « petit 57 », tous des div.leaflet-marker-icon) : une épingle de carte n'est pas un bouton de l'app, elle suit l'échelle de la carte —
+       pas comptée « < 44 px » (comme elle n'est pas comptée « cachée », plus haut) ; les commandes de la carte (zoom, couches) restent comptées. */
+    const epingle = e.closest && e.closest('.leaflet-marker-pane, .leaflet-tile-pane, .leaflet-overlay-pane, .maplibregl-canvas-container, .leaflet-marker-icon');
+    if (tel && !epingle && (r.width < 44 || r.height < 44) && e.tagName !== 'INPUT' && e.tagName !== 'TEXTAREA' && e.tagName !== 'SELECT') petits.push(court(e));
   }
   /* haut coupé : un élément visible qui porte du texte ou une image, dont le haut est AU-DESSUS de l'écran alors que la page est tout en haut */
   const haut = [];

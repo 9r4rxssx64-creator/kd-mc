@@ -90,6 +90,10 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   await p.setContent(`<!doctype html><title>t</title><div style="height:2000px"></div><button id="ok" style="position:absolute;top:500px;left:300px;width:60px;height:50px">Ok</button><iframe src="/__javis/cadre" style="position:fixed;top:480px;left:290px;width:92px;height:92px;border:0;z-index:2147483000"></iframe>`);
   const mc = await p.evaluate(mesurer, true);
   ok('l\'abeille garde la règle stricte : un bouton sous elle est caché même si la page défile', mc.cache === 1 && mc.parFlottant && mc.parFlottant.bee === 1 && mc.aDefiler === 0, JSON.stringify([mc.cache, mc.parFlottant, mc.aDefiler])); }
+/* 12.11 (passe Servi iPhone 13 : worldmonitor « petit 57 » = 57 épingles Leaflet) : une épingle de carte n'est pas une cible < 44 px ; un petit bouton de l'app et une commande de la carte le restent */
+{ await p.setContent('<!doctype html><title>t</title><div class="leaflet-container" style="position:relative;width:390px;height:400px"><div class="leaflet-marker-pane"><div class="leaflet-marker-icon leaflet-zoom-animated" tabindex="0" role="button" style="position:absolute;left:100px;top:100px;width:25px;height:41px" onclick="void 0"></div><div class="leaflet-marker-icon" role="button" style="position:absolute;left:200px;top:150px;width:25px;height:41px"></div></div><div class="leaflet-control-container"><a href="#" class="leaflet-control-zoom-in" style="position:absolute;left:10px;top:10px;width:30px;height:30px;display:block">+</a></div></div><button id="mini" style="width:30px;height:30px">x</button>');
+  const mm = await p.evaluate(mesurer, true);
+  ok('les épingles de carte ne comptent pas « < 44 px » ; la commande de zoom et le petit bouton de l\'app, si', mm.petit === 2 && !mm.petitEx.some((x) => /marker/.test(x)) && mm.petitEx.some((x) => /leaflet-control-zo/.test(x)) && mm.petitEx.some((x) => /button#mini/.test(x)), JSON.stringify([mm.petit, mm.petitEx])); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

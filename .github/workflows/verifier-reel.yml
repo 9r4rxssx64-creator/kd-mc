@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   reel:
-    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    runs-on: ubuntu-24.04   # interrupteur Lenovo (garde test:runner-interrupteur)
     timeout-minutes: 45   # gratuit par défaut (Kevin 30.09) ; chaque compétence a de plus son propre délai maximal
     steps:
       - uses: actions/checkout@v4

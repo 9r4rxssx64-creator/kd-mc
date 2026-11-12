@@ -38,7 +38,7 @@ permissions:
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     steps:
       - uses: actions/checkout@v4
@@ -68,13 +68,14 @@ jobs:
           KDMC_BUDGET_ROBOTS_PCT: ${{ vars.KDMC_BUDGET_ROBOTS_PCT || '' }}
         run: node tools/ci/budget-requetes.mjs
       - name: Install Playwright + Chromium
+        timeout-minutes: 10
         run: |
           # 11/09/2026 : ce workflow échouait à CETTE étape à chaque exécution (5 runs d'affilée,
           # dont celles lancées après chaque fusion) — même cause que audit-live.yml le 05/09 :
           # le package.json de la racine fait planter npm (résolution des peer deps). Avec
           # --legacy-peer-deps, l'installation passe ; la version reste celle des devDependencies.
           npm i --no-save --no-audit --no-fund --legacy-peer-deps playwright@1.56.0
-          npx playwright install --with-deps chromium
+          bash tools/ci/installer-navigateurs.sh "npx playwright" chromium
       - name: KDMC SSO E2E (vrai Chromium)
         if: steps.budget.outputs.ok == 'true'
         run: node tools/kdmc-sso-e2e/run.mjs

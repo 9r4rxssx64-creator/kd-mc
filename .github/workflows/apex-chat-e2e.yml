@@ -37,7 +37,7 @@ permissions:
 jobs:
   e2e:
     name: Smoke tests Playwright
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30   # gratuit par défaut (Kevin 30.09) : un job sans borne tourne 6 h et brûle le quota
     # Attend ~2 min après le push pour laisser GitHub Pages déployer
     steps:

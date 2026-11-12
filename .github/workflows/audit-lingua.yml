@@ -44,7 +44,7 @@ concurrency:
 
 jobs:
   audit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Borne de temps : 16 langues + 12 voix, ~10 min quand tout va bien. Sans borne,
     # GitHub laisse tourner SIX HEURES — six heures de quota brûlées pour rien.
     timeout-minutes: 30

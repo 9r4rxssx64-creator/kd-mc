@@ -22,7 +22,7 @@ jobs:
       matrix:
         moteur: [chromium, webkit, firefox]
     name: plateformes (${{ matrix.moteur }})
-    runs-on: ubuntu-latest   # interrupteur Lenovo (garde test:runner-interrupteur)
+    runs-on: ubuntu-24.04   # interrupteur Lenovo (garde test:runner-interrupteur)
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4

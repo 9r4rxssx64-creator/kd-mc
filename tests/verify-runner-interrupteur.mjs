@@ -23,6 +23,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 
 const DOSSIER = '.github/workflows';
 const EXPR = "runs-on: ${{ vars.KDMC_RUNNER || 'ubuntu-latest' }}";
+const EXPR_2404 = "runs-on: ${{ vars.KDMC_RUNNER || 'ubuntu-24.04' }}";
 const EXCEPTIONS_DOCKER = new Set(['semgrep.yml']);
 
 let ok = 0, ko = 0;
@@ -35,7 +36,10 @@ let bascules = 0, macos = 0;
 for (const f of fichiers) {
   const s = readFileSync(`${DOSSIER}/${f}`, 'utf8');
   const enDur = (s.match(/^\s*runs-on:\s*ubuntu-[a-z0-9.-]+\s*$/gm) || []).length;
-  const avecExpr = s.includes(EXPR);
+  const avecExpr = s.includes(EXPR) || s.includes(EXPR_2404);
+  /* 12.11.2026 (leçon 918) : Playwright ne sait pas installer ses navigateurs sur Ubuntu 26.04 (« does not support chromium on ubuntu26.04-x64 ») ;
+     un robot qui installe un navigateur est donc épinglé sur 24.04, jamais sur « latest ». */
+  if (/playwright install|installer-navigateurs/.test(s) && s.includes(EXPR)) dis(false, `${f} installe un navigateur sur « ubuntu-latest » (26.04 : Playwright refuse) → épingler 'ubuntu-24.04'`);
   if (/runs-on:.*macos/.test(s)) { macos++; continue; }
   if (EXCEPTIONS_DOCKER.has(f)) {
     dis(enDur > 0 && !avecExpr, `${f} reste sur la machine GitHub (Docker) — exception assumée`);

@@ -32,7 +32,7 @@ concurrency:
 
 jobs:
   mesure:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10   # gratuit par défaut (Kevin 30.09) : deux pages à ouvrir, pas plus
     steps:
       - uses: actions/checkout@v4

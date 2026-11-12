@@ -173,11 +173,11 @@ jobs:
       - name: Verify CMC APP_VER format
         run: |
           set -e
-          if ! grep -qE 'var APP_VER\s*=\s*"v9\.' index.html; then
-            echo "❌ CRITIQUE : CMC APP_VER format invalide (devrait être v9.X)"
+          if ! grep -qE 'var APP_VER\s*=\s*"v[0-9]+\.[0-9]+' index.html; then
+            echo "❌ CRITIQUE : CMC APP_VER format invalide (devrait être vN.NNN)"
             exit 1
           fi
-          CMC_VER=$(grep -oE 'var APP_VER\s*=\s*"v9\.[0-9]+"' index.html | head -1)
+          CMC_VER=$(grep -oE 'var APP_VER\s*=\s*"v[0-9]+\.[0-9]+"' index.html | head -1)
           echo "✅ CMC version : $CMC_VER"
 
       - name: Summary

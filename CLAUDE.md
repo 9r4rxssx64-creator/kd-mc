@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 252 règles — le texte de Kevin, une par une
+## 📜 Les 253 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1096,6 +1096,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 📋 RÈGLE ABSOLUE — À CHAQUE IMPORT DE PLANNING, LE LENOVO VÉRIFIE EN RÉEL ET COMPARE AVEC L'IMPORT (Kevin 2026-11-11, ABSOLUE, CMCTEAMS ET LIGHT, TOUTES LES BRANCHES)
 **« Vérifie que tout le monde ait le bon algorithme avec sa ligne de départ et fais vérifier en réel par la branche du Lenovo toutes les informations, tout ce que tu as fait, pour qu'il compare […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-à-chaque-import-de-planning-le-lenovo-vérifie-en-réel-et-compare-avec-limport-kevin-2026-11-11-absolue-cmcteams-et-light-toutes-les-branches)
+
+### 🏷️ RÈGLE ABSOLUE — UN SEUL NOM PAR BRANCHE, LE MÊME PARTOUT : PONT, TÉLÉPHONE, MESSAGES (Kevin 2026-11-12, ABSOLUE, TOUTES LES BRANCHES)
+**« Trop souvent, il y a des branches qui me disent de relancer des sessions d'ordinateur, mais elles n'ont jamais le même nom. Mettez-vous toutes d'accord et note et donne un nom sur mon […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-un-seul-nom-par-branche-le-même-partout-pont-téléphone-messages-kevin-2026-11-12-absolue-toutes-les-branches)
 
 ---
 

@@ -57,11 +57,12 @@ const DONNES = {
   'cloud-installer': 'session_01HGawPYgJFGpAHzNH7oDnou', 'javis-bee': 'session_01DZmfQmJnTJYthtRvSBBn5P', 'apex-cloud': 'session_01AYqnsKgbPf6FYBEonVFwtx',
   'arbre-cloud': 'session_01FsMqxbm4xoe2neziok5k6K', 'cloud-poste-recherche': 'session_017GoCrf8h8KxG2VZBbzkxXC', 'cmcteams-pdf': 'session_012J818cpkmcrt23Tfera1bg',
   'studio-crea': 'session_01StKmUgVQDaNKxJJCWca3pz', 'robots-ia': 'session_01QWRpftGLY726bWqxNS5n1b', 'pc-config': 'session_018h8NZU2FhDTbtxKErS1U6W',
-  'arbre-pc': 'session_018h8NZTzsLjhMHk3E3NMB5m', 'pc-connecteurs': 'session_018h8NZU9yXwMdpfCwwEUj8c', 'meta': 'session_01LoK7J3LQkTKFkwE2fasGyt',
+  'arbre-pc': 'session_018h8NZS1PoFxjjhPxxN1TSj', 'pc-connecteurs': 'session_018h8NZU9yXwMdpfCwwEUj8c', 'meta': 'session_01LoK7J3LQkTKFkwE2fasGyt',
   'detente': 'session_01Jmp9cPUNiNrRHN4Cui3anM', 'poolpilot': 'session_01X3SAC5TiWFbkS3riw3Tq7N', 'free-apis': 'session_01DxPyb3aRBmVwAR2Dpzu1zy', 'divers': 'session_018eY7LuofoZ6AfjCQwbwJqk',
   'pc-voix': 'session_018h8NZSdGnyecPP8TjT3Q2e', 'pont-check': 'session_01KYuwpjHWSBYAQUyLJP6SFX'   /* 5.11 : sessions Lenovo VIVANTES (les anciennes sont archivées) + liste lue sur l\'app */
 };
-const SANS_ID = ['lingua-cloud', 'commerce-cloud', 'table-pilot', 'pont-point', 'moulin-mobile', 'sdb-mezzanine', 'clayscore-cloud'];
+/* 12.11 (Kevin : « un seul nom par branche ») : lingua-cloud, commerce-cloud, pont-point et clayscore-cloud ont une session vivante (lue par list_sessions), elles ont maintenant leur lien */
+const SANS_ID = ['table-pilot', 'moulin-mobile', 'sdb-mezzanine'];
 if (J) {
   const B = J.branches || [];
   const noms = B.map((b) => b.branche);
@@ -142,7 +143,8 @@ async function navigateur() {
   await page.goto(BASE + '/admin/', { waitUntil: 'load' }); await page.waitForTimeout(1500);
   const scan = () => page.evaluate(() => {
     const A = [...document.querySelectorAll('a')];
-    const vides = A.filter((a) => /^(#|javascript:.*)?$/i.test((a.getAttribute('href') || '').trim())).map((a) => (a.id || a.className || 'a') + ' « ' + a.textContent.trim().slice(0, 30) + ' »');
+    /* 12.11 : un lien CACHÉ (attribut hidden) qui ne reçoit son adresse qu'au moment où il s'affiche (« 📞 Appeler », fiche › Code, depuis le 8.11) n'est pas un lien mort : on ne juge que ce que Kevin peut toucher */
+    const vides = A.filter((a) => !a.hidden && /^(#|javascript:.*)?$/i.test((a.getAttribute('href') || '').trim())).map((a) => (a.id || a.className || 'a') + ' « ' + a.textContent.trim().slice(0, 30) + ' »');
     const ids = new Set([...document.querySelectorAll('[id]')].map((e) => e.id));
     const SEC = ['personnes', 'messages', 'commerce', 'apps', 'ia', 'couts', 'reglages'];
     const cibles = [...A.map((a) => a.getAttribute('href') || ''), ...[...document.querySelectorAll('[data-va]')].map((e) => e.getAttribute('data-va'))]

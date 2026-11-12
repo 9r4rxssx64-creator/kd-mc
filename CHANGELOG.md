@@ -26,6 +26,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 
 
+## Règle — chercher toutes les infos de chaque personne (2026-11-12)
+- Kevin 12.11 (soir) : on cherche tout ce qui est public et officiel pour CHAQUE personne, vivants, mineurs et futurs compris ; limites inchangées (jamais adresse/téléphone/e-mail/réseau social, rien de privé en texte public, mineur = privé, aucun robot ne se connecte). Ajouté à `.claude/rules/arbre-relecture-horaire.md` ; diffusé par le pont (n° 2384).
+
 ## v3.224 — 2026-11-12
 - La pastille « 👥 en ligne » (admin) a maintenant une zone de toucher d'au moins 44 px sur toutes les vues (elle faisait 28 à 30 px) : demande de pont-check, mesure Servi iPhone 13 du 12.11 (règle v3.162 « cibles ≥ 44 px »).
 

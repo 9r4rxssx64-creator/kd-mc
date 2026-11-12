@@ -59,6 +59,15 @@ ok('un bouton sous le cadre de Bee est attribué à « bee »', m6.cache === 1 &
   ok('le débordement est nommé (élément + positions), la liste qui défile ne l\'est pas', md.deborde > 0 && md.debordeEx.length === 1 && /div#large/.test(md.debordeEx[0]), JSON.stringify(md.debordeEx));
   await p.setViewportSize(vp); }
 /* 8.11 : la feuille « Installer l'application » qui s'ouvre APRÈS la fermeture par le robot est refermée dès qu'elle apparaît (sinon elle masque toute la page mesurée) */
+/* 12.11 (CMCteams) : un bouton de la page sous la barre FIXE du bas se dégage en défilant → pas « caché » ; s'il n'y a pas assez de page dessous, ou s'il est fixe lui-même → caché */
+{ const barre = '<nav style="position:fixed;left:0;right:0;bottom:0;height:60px;background:#000"><span>barre</span></nav>';
+  const H0 = await p.evaluate(() => innerHeight);
+  await p.setContent(`<!doctype html><title>t</title><body style="margin:0"><div style="height:${H0 - 50}px"></div><button id="flux" style="display:block;width:120px;height:44px">Admin</button><div style="height:600px"></div>${barre}`);
+  const ma = await p.evaluate(mesurer, true); ok('un bouton de la page sous la barre fixe du bas, page qui défile : pas compté caché', ma.cache === 0, JSON.stringify(ma.cacheEx));
+  await p.setContent(`<!doctype html><title>t</title><body style="margin:0;height:${H0}px;overflow:hidden"><button id="coince" style="position:absolute;top:${H0 - 50}px;left:0;width:120px;height:44px">Admin</button>${barre}`);
+  const mb = await p.evaluate(mesurer, true); ok('le même bouton quand la page ne peut PAS défiler : caché', mb.cache === 1, JSON.stringify(mb.cacheEx));
+  await p.setContent(`<!doctype html><title>t</title><body style="margin:0"><div style="height:2000px"></div><button id="fixe" style="position:fixed;bottom:8px;right:8px;width:52px;height:44px">+</button>${barre}`);
+  const mc = await p.evaluate(mesurer, true); ok('un bouton FIXE sous la barre fixe (cas #fab) : toujours caché, même si la page défile', mc.cache === 1, JSON.stringify(mc.cacheEx)); }
 await p.setContent('<!doctype html><title>t</title><button id="b">Ok</button>');
 await p.evaluate(fermerFeuilleToujours);
 await p.evaluate(() => setTimeout(() => { const f = document.createElement('div'); f.setAttribute('data-kdmc-installer', 'feuille'); f.style.cssText = 'position:fixed;inset:0;z-index:2147482600;background:#000'; const x = document.createElement('button'); x.setAttribute('aria-label', 'Fermer'); x.onclick = () => f.remove(); f.appendChild(x); document.body.appendChild(f); }, 300));

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Light v1.139 — les 29 élèves de formation gardent leur écriture rouge du PDF (2026-11-12)
+- Mesure du Lenovo (pont 2307 / 2316, décembre) : CMCteams 503 cases en écriture rouge, la light 385 ; les 118 manquantes = jours de formation des élèves de l'équipe c. Les DONNÉES étaient identiques (503 = 503 dans `planning-seed.js` et `boards-gen.js`, 0 personne en écart) : le défaut était l'AFFICHAGE de la light.
+- Deux causes : (1) le tableau « Formation <JEU> » repartait de zéro et ne reportait ni `modh` ni `conv` ; (2) la ligne grisée de l'élève dans son équipe remplaçait le style de la case par celui du code. Les deux corrigées (`tools/departs/index.html`). CMCteams inchangé.
+- Garde `test:light-rouge-eleves` (+ `-sabotage`, dans `test:ci`) : 136 tableaux, 1 880 cases marquées lues dans un vrai Chromium (1 071 → 1 430 écritures rouges rendues), 392 jours rouges de 79 élèves tous retrouvés à l'écran ; rouge sans le correctif (359 jours manquants), vert avec.
+
 ## Planning — un seul import des PDF pour CMCteams et la light (2026-11-12)
 - `tools/shared/_mois-import.mjs` (porte unique, liste des 6 mois) et `tools/shared/_gen-planning.mjs` (écrit `planning-seed.js` ET `boards-gen.js` de la même passe) ; `_gen-seed.mjs` et `_gen-boards.mjs` deviennent de simples portes d'entrée ; `_crosscheck.mjs` contrôle les 6 mois. Garde `npm run test:un-seul-import`. Aucune case, équipe ni départ ne change (leçon 925).
 

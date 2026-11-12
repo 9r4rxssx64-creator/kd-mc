@@ -350,6 +350,7 @@
   "tests/verify-light-invite.mjs",
   "tests/verify-light-live-pdf.mjs",
   "tests/verify-light-relire-apres-jeton.mjs",
+  "tests/verify-light-rouge-eleves.mjs",
   "tests/verify-lingua-contenu-local.mjs",
   "tests/verify-lingua-maj.mjs",
   "tests/verify-lingua-reactivite.mjs",

@@ -27,7 +27,7 @@ concurrency:
 jobs:
   servi:
     runs-on: ubuntu-24.04   # interrupteur Lenovo (garde test:runner-interrupteur)
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -38,13 +38,31 @@ jobs:
       - name: Installer Chromium et WebKit (Safari)
         run: |
           npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
-          ./node_modules/.bin/playwright install --with-deps chromium webkit
+          # 12.11 : `--with-deps` restait 20 min sur le miroir apt muet (run 43056126562). On télécharge
+          # chaque moteur avec un délai, puis on n'installe les bibliothèques système (apt, borné) que
+          # si le moteur ne démarre pas tel quel. Un moteur absent est dit, jamais attendu sans fin.
+          lancer() { node -e "(async()=>{const p=require('playwright');try{const b=await p['$1'].launch();await b.close();process.exit(0);}catch(e){console.error(String(e.message).split('\n')[0].slice(0,200));process.exit(1);}})()" 2>/tmp/lance.log; }
+          OK=""
+          for moteur in chromium webkit; do
+            for essai in 1 2; do
+              if timeout 240 ./node_modules/.bin/playwright install "$moteur" > "/tmp/dl-$moteur.log" 2>&1; then break; fi
+              echo "::warning title=Servi::téléchargement $moteur essai $essai en échec : $(tail -n 2 "/tmp/dl-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
+            done
+            if ! lancer "$moteur"; then
+              echo "::warning title=Servi::$moteur ne démarre pas tel quel ($(cut -c1-160 /tmp/lance.log)) : bibliothèques système (6 min au plus)"
+              sudo timeout -k 20 360 env "PATH=$PATH" ./node_modules/.bin/playwright install-deps "$moteur" > "/tmp/deps-$moteur.log" 2>&1 || echo "::warning title=Servi::bibliothèques $moteur incomplètes : $(tail -n 2 "/tmp/deps-$moteur.log" | tr '\n' ' ' | cut -c1-250)"
+            fi
+            if lancer "$moteur"; then OK="${OK:+$OK,}$moteur"; else echo "::warning title=Servi::$moteur ne se lance pas : $(cut -c1-200 /tmp/lance.log)"; fi
+          done
+          echo "::notice title=Servi::moteurs qui se lancent : $OK"
+          case ",$OK," in *,chromium,*) ;; *) echo "::error title=Servi::Chromium ne se lance pas"; exit 1;; esac
+          case ",$OK," in *,webkit,*) echo "WEBKIT_OK=1" >> "$GITHUB_ENV";; esac
 
       - name: Lire les pages servies — nombres et sélecteurs seulement
         id: robot
         env:
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
-          WEBKIT: "1"
+          WEBKIT: ${{ env.WEBKIT_OK }}
           URLS: ${{ inputs.urls }}
           SERVI_ECRANS: ${{ inputs.ecrans }}
         shell: bash -euo pipefail {0}

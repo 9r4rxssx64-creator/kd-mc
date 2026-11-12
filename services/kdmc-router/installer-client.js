@@ -316,7 +316,13 @@ export const INSTALLER_JS = String.raw`(function () {
       var b = el('button', 'width:100%;min-height:50px;border-radius:13px;border:0;font:700 16px/1 -apple-system,sans-serif;cursor:pointer;background:' + (fait ? '#2a3a22' : OR) + ';color:' + (fait ? '#9fd08a' : NOIR), bouton);
       b.type = 'button'; if (fait) b.disabled = true; else b.onclick = onclick; l.appendChild(b); return l;
     }
-    function fermer() { if (feuille) { feuille.remove(); feuille = null; } if (fond) { fond.remove(); fond = null; } majPastille(); }
+    /* 12.11 (capture iPhone de Kevin : l'abeille posée SUR le texte de la feuille, « Notifica… » illisible) : tant que la feuille est ouverte, l'abeille s'efface ;
+       elle revient à la fermeture. On ne touche qu'à la visibilité, et on remet la valeur d'avant. */
+    function abeille(cachee) {
+      try { var l = document.querySelectorAll('iframe[src*="/__javis/cadre"],#javis-root,.bee-companion');
+        for (var i = 0; i < l.length; i++) { var e = l[i]; if (cachee) { if (e.__kdmcVis === undefined) e.__kdmcVis = e.style.visibility || ''; e.style.visibility = 'hidden'; } else if (e.__kdmcVis !== undefined) { e.style.visibility = e.__kdmcVis; delete e.__kdmcVis; } } } catch (_) { /* jamais bloquant */ }
+    }
+    function fermer() { if (feuille) { feuille.remove(); feuille = null; } if (fond) { fond.remove(); fond = null; } abeille(false); majPastille(); }
     function ouvrir() {
       fermer();
       fond = el('div', 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2147482500'); fond.onclick = fermer;
@@ -339,6 +345,25 @@ export const INSTALLER_JS = String.raw`(function () {
       }, false));
       if (IOS && !INSTALLEE && !installeeMaintenant && !PROPRES_NOTIFS) {
         feuille.appendChild(ligne('Notifications', "Sur iPhone, d'abord installer l'application (étape au-dessus), puis l'ouvrir depuis l'écran d'accueil : le bouton d'activation apparaîtra tout seul.", "🔔 Après l'installation", function () {}, true));
+      } else if (PUSH_OK && IOS && etatNotifs() === 'denied') {
+        /* 12.11 (Kevin, iPhone : « impossible d'activer les notifs alors que tous les paramètres sont ok ») : sur iPhone la permission appartient à l'app ouverte
+           depuis SON icône ; une page ouverte depuis une AUTRE app installée (portail → light) est une autre adresse : Apple y répond « refusé » sans rien demander.
+           L'ancien texte (« le cadenas près de l'adresse ») n'existe pas sur iPhone. Or les notifications du domaine suivent le COMPTE : si un appareil du compte est
+           déjà abonné, tout arrive déjà → on le dit (et on propose le test) au lieu d'un bouton qui ne peut pas marcher. */
+        var li = ligne('Notifications', "Je regarde si ton compte les reçoit déjà…", '…', function () {}, true);
+        var aideI = li.children[1], btnI = li.children[2]; feuille.appendChild(li);
+        var sansAbo = function () {
+          aideI.textContent = "Sur iPhone, elles s'activent seulement dans l'application ouverte depuis son icône de l'écran d'accueil. Ferme cette page, ouvre l'application par son icône, touche 🔔 puis « Activer ». Si c'est déjà le cas : Réglages de l'iPhone › Notifications › le nom de l'application › Autoriser.";
+          btnI.textContent = "🔔 À activer depuis l'icône de l'écran d'accueil";
+        };
+        api('/__push/moi').then(function (r) {
+          var n = r && r.ok ? (Number(r.appareils) || 0) : 0;
+          if (!feuille || !li.parentNode) return;
+          if (n < 1) return sansAbo();
+          aideI.textContent = '✅ Déjà actives sur ton compte (' + n + ' appareil' + (n > 1 ? 's' : '') + ") : les messages et alertes de cette application t'arrivent déjà. Rien à régler ici.";
+          btnI.textContent = '🔔 Envoie-moi une notification de test'; btnI.disabled = false; btnI.style.background = OR; btnI.style.color = NOIR;
+          btnI.onclick = function () { msg.textContent = '…'; api('/__push/test', {}).then(function (t) { msg.textContent = t && t.ok ? '✅ Envoyée : elle arrive dans quelques secondes (même écran éteint).' : (t && t.reason === 'trop_vite' ? 'Une vient de partir : attends 15 secondes.' : 'Pas envoyée (' + ((t && (t.reason || t.raison)) || 'erreur') + ').'); }); };
+        }).catch(sansAbo);
       } else if (PUSH_OK) {
         var etat = etatNotifs();
         var aideN = etat === 'granted' ? 'Autorisées : tu reçois messages, appels et alertes, même application fermée et écran éteint.'
@@ -348,7 +373,7 @@ export const INSTALLER_JS = String.raw`(function () {
           msg.textContent = '…';
           activerNotifs().then(function (r) {
             if (r.ok) { msg.textContent = '✅ Notifications activées.'; ouvrir(); }
-            else msg.textContent = { refusee: 'Refusées : réglages du site pour les autoriser.', ignoree: "Tu n'as pas répondu : touche de nouveau le bouton.", ios_installer_d_abord: "Installe d'abord l'application sur l'écran d'accueil.", connexion_requise: "Connecte-toi d'abord (portail kd-mc.com), puis réessaie.", service_notifs_absent: 'Service de notifications indisponible : réessaie plus tard.', non_supporte: "Ce navigateur ne sait pas recevoir de notifications." }[r.raison] || ('Impossible pour le moment (' + (r.detail || r.raison) + ').');
+            else msg.textContent = { refusee: IOS ? "Refusées par l'iPhone : Réglages › Notifications › le nom de l'application › Autoriser." : 'Refusées : réglages du site pour les autoriser.', ignoree: "Tu n'as pas répondu : touche de nouveau le bouton.", ios_installer_d_abord: "Installe d'abord l'application sur l'écran d'accueil.", connexion_requise: "Connecte-toi d'abord (portail kd-mc.com), puis réessaie.", service_notifs_absent: 'Service de notifications indisponible : réessaie plus tard.', non_supporte: "Ce navigateur ne sait pas recevoir de notifications." }[r.raison] || ('Impossible pour le moment (' + (r.detail || r.raison) + ').');
           });
         }, etat === 'granted'));
         if (etat === 'granted') {
@@ -360,6 +385,7 @@ export const INSTALLER_JS = String.raw`(function () {
         feuille.appendChild(el('div', 'font:14px/1.45 -apple-system,sans-serif;color:#cfd8cc;margin:0 0 12px', "Les notifications d'Apex Chat se règlent dans l'application (Réglages)."));
       }
       feuille.appendChild(msg);
+      abeille(true);
       document.body.appendChild(fond); document.body.appendChild(feuille);
     }
     function guideIOS() {

@@ -15,6 +15,7 @@ function serveur(js) {
     if (q.url === '/__push/cle') return json({ ok: true, cle: 'BPcle_publique_test-AAAA' });
     if (q.url === '/__push/abonner') return json({ ok: true, actif: true });
     if (q.url === '/__push/test') return json({ ok: true, envoyes: 1 });
+    if (q.url === '/__push/moi') return json({ ok: true, appareils: q.headers.cookie && /abos=(\d+)/.test(q.headers.cookie) ? Number(RegExp.$1) : 0 });
     if (q.url === '/__admin/vue' && q.method === 'GET') {   /* l'état VRAI, comme le routeur : admin expiré → 403 */
       const ck = q.headers.cookie || '';
       if (/admin_expire=1/.test(ck)) { r.writeHead(403, { 'content-type': 'application/json' }); return r.end(JSON.stringify({ ok: false, reason: 'admin_requis' })); }
@@ -128,6 +129,33 @@ async function suite(js, etiquette) {
     rec(/Activées/.test(t) && /Envoie-moi une notification de test/.test(t), etiquette + ' D4. « ✅ Activées » + bouton de test', t.slice(0, 160));
     await p.click('button:has-text("notification de test")'); await p.waitForTimeout(400);
     rec(appels.some((a) => a.startsWith('POST /__push/test')) && /Envoyée/.test(await texte(p)), etiquette + ' D5. le test part au domaine et le dit');
+    await ctx.close();
+  });
+  /* D' — iPhone, permission « refusée » sans question (capture de Kevin 12.11 : light ouverte depuis l'app du portail, « impossible d'activer ») */
+  for (const abos of [2, 0]) await essai(js, async (nav, base) => {
+    const ctx = await nav.newContext({ userAgent: UA_IOS_SAFARI, viewport: { width: 390, height: 780 }, hasTouch: true, isMobile: true });
+    await ctx.addCookies([{ name: 'abos', value: String(abos), url: base }]); const p = await ctx.newPage();
+    await p.addInitScript(() => {
+      Object.defineProperty(navigator, 'standalone', { value: true }); window.PushManager = window.PushManager || function () {};
+      Object.defineProperty(Notification, 'permission', { get: () => 'denied' }); Notification.requestPermission = () => { window.__demandes = (window.__demandes || 0) + 1; return Promise.resolve('denied'); };
+      const reg = { pushManager: { getSubscription: () => Promise.resolve(null), subscribe: () => Promise.reject(new Error('refus')) } };
+      Object.defineProperty(navigator, 'serviceWorker', { value: { getRegistration: () => Promise.resolve(reg), register: () => Promise.resolve(reg), ready: Promise.resolve(reg) } });
+      addEventListener('DOMContentLoaded', () => { const b = document.createElement('div'); b.className = 'bee-companion'; b.style.cssText = 'position:fixed;right:8px;bottom:200px;width:80px;height:80px;z-index:2147483000;background:gold'; document.body.appendChild(b); });
+    });
+    appels.length = 0; await p.goto(base + '/'); await p.waitForTimeout(1800);
+    if (!(await texte(p))) { await p.click('[data-kdmc-installer="pastille"]').catch(() => {}); await p.waitForTimeout(600); }
+    const t = await texte(p);
+    rec(!/cadenas/.test(t), etiquette + ` D'${abos}a. iPhone refusé : plus jamais « le cadenas près de l'adresse »`, t.slice(0, 140));
+    if (abos) {
+      rec(/Déjà actives sur ton compte \(2 appareils\)/.test(t) && /notification de test/.test(t) && !/Activer les notifications/.test(t), etiquette + " D'2b. le compte a déjà 2 appareils abonnés : « ✅ Déjà actives », bouton de test, plus de bouton « Activer » qui ne peut pas marcher", t.slice(0, 200));
+      await p.click('button:has-text("notification de test")'); await p.waitForTimeout(400);
+      rec(appels.some((a) => a.startsWith('POST /__push/test')) && /Envoyée/.test(await texte(p)) && !(await p.evaluate(() => window.__demandes)), etiquette + " D'2c. le test part au domaine, sans redemander une permission qu'Apple refuse");
+    } else {
+      rec(/icône de l'écran d'accueil/.test(t) && /Réglages de l'iPhone › Notifications/.test(t) && (await p.evaluate(() => [...document.querySelectorAll('[data-kdmc-installer="feuille"] button')].some((b) => /icône/.test(b.textContent) && b.disabled))), etiquette + " D'0b. aucun appareil abonné : la marche à suivre vraie pour iPhone, bouton inactif", t.slice(0, 200));
+    }
+    rec((await p.evaluate(() => getComputedStyle(document.querySelector('.bee-companion')).visibility)) === 'hidden', etiquette + ` D'${abos}d. l'abeille s'efface tant que la feuille est ouverte`);
+    await p.click('[data-kdmc-installer="feuille"] button[aria-label="Fermer"]'); await p.waitForTimeout(300);
+    rec((await p.evaluate(() => getComputedStyle(document.querySelector('.bee-companion')).visibility)) === 'visible', etiquette + ` D'${abos}e. … et revient à la fermeture`);
     await ctx.close();
   });
   /* F — l'app est DÉJÀ installée sur cet appareil : dans le navigateur, plus aucun visuel d'installation (Kevin 23.10) */

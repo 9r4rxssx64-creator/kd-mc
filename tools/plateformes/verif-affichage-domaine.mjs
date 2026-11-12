@@ -79,7 +79,10 @@ export function mesurer(tel) {
     try { e.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); } catch (_) { try { e.scrollIntoView(); } catch (_2) { /* pas de défilement */ } }
     const r2 = e.getBoundingClientRect(); const x2 = r2.left + r2.width / 2, y2 = r2.top + r2.height / 2;
     const d2 = (x2 >= 0 && y2 >= 0 && x2 < W && y2 < H) ? document.elementFromPoint(x2, y2) : null;
-    const encore = !d2 || (d2 !== e && !e.contains(d2) && !d2.contains(e));
+    /* 12.11 nuit (pont 2344, Bee v1.38) : juste après un défilement INSTANTANÉ, le cadre de Bee n'a pas encore eu ses 350 ms pour se replacer ailleurs (bee-partout.js, défilement fini → re-place) ;
+       le voir « par-dessus » à cet instant n'est pas un contrôle caché. Au repos, Bee est jugé strictement (plus bas) et `tests/verify-bee-defilement.mjs` prouve son replacement. */
+    const estBee = (n) => !!n && ((n.tagName === 'IFRAME' && /\/__javis\/cadre/.test(n.getAttribute('src') || '')) || !!(n.closest && n.closest('#javis-root,.bee-companion')));
+    const encore = !d2 || (d2 !== e && !e.contains(d2) && !d2.contains(e) && !estBee(d2));
     /* 12.11 soir (CMCteams iPhone : « encore caché après défilement » sans dire PAR QUI ni où le bouton s'est retrouvé) : le robot garde le nom, la position et
        le rectangle de ce qui recouvre APRÈS le défilement, et de combien la page a bougé — sans cela on ne sait pas si c'est une barre, un flottant ou une page figée. */
     apresDefilement = encore ? ' · après défilement (' + Math.round(se.scrollTop - avant[0][1]) + ' px) : bouton @' + Math.round(r2.left) + ',' + Math.round(r2.top) + ' ' + (d2 ? 'sous ' + court(d2) + '{' + (() => { try { return getComputedStyle(d2).position; } catch (_) { return '?'; } })() + ' ← ' + court(d2.parentElement) + '} @' + (() => { const q = d2.getBoundingClientRect(); return Math.round(q.left) + ',' + Math.round(q.top) + ' ' + Math.round(q.width) + 'x' + Math.round(q.height); })() : 'hors écran') : '';

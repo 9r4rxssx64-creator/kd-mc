@@ -65,7 +65,7 @@ body{
     var(--bg);
   background-attachment:fixed;
   color:var(--text);min-height:100vh;min-height:100dvh;line-height:1.55;
-  padding:max(40px,env(safe-area-inset-top)) 18px calc(56px + env(safe-area-inset-bottom));
+  padding:max(60px,calc(60px + env(safe-area-inset-top))) 18px calc(56px + env(safe-area-inset-bottom));   /* 12.11 (Servi iPhone 13 : 1er texte sous la pastille « ← Portail », bas 52 px) : le contenu commence sous elle */
   -webkit-font-smoothing:antialiased;
 }
 .wrap{max-width:var(--maxw);margin:0 auto}
@@ -184,7 +184,7 @@ footer a:hover{color:var(--gold)}
   .stats{grid-template-columns:repeat(4,1fr);max-width:none}
 }
 @media (min-width:880px){
-  body{padding:max(56px,env(safe-area-inset-top)) 24px calc(72px + env(safe-area-inset-bottom))}
+  body{padding:max(60px,calc(60px + env(safe-area-inset-top))) 24px calc(72px + env(safe-area-inset-bottom))}
 }
 
 /* A11Y */
@@ -328,6 +328,6 @@ a:focus-visible,.card:focus-visible,button:focus-visible{outline:2px solid var(-
   </nav>
 </footer>
 </div>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-shops" data-version="v1.0.5" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-shops" data-version="v1.0.6" data-color="#c9a227" defer></script>
 </body>
 </html>

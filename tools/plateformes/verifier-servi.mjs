@@ -17,7 +17,7 @@ export { fermerFeuilleInstalleur };
    un écran plein cadre (fixe, ≥ 90 % de la fenêtre) qui porte un bouton « Plus tard / Fermer / Continuer / Compris / Commencer / OK » est un accueil ou une
    boîte de dialogue, pas un défaut : on touche ce bouton une fois avant de mesurer. Exécuté DANS la page. */
 export function fermerAccueil() {
-  const W = innerWidth, H = innerHeight; const mots = /^(plus tard|fermer|continuer|ok|d.accord|compris|j.ai compris|commencer|passer|ignorer|non merci)$/i;
+  const W = innerWidth, H = innerHeight; const mots = /^(plus tard|fermer|continuer|ok|d.accord|compris|j.ai compris|commencer|passer|ignorer|non merci|ouvrir le livre|ouvrir|entrer)$/i;   /* 12.11 : la couverture du livre de cuisine (cloud-poste-recherche 2361) */
   for (const d of document.querySelectorAll('body *')) {
     const st = getComputedStyle(d); if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden') continue;
     const r = d.getBoundingClientRect(); if (r.width < W * 0.9 || r.height < H * 0.9) continue;

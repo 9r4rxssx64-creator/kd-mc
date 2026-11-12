@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Light v1.142 — les cadres (Pit Boss, Superviseurs) gardent l'écriture rouge et la convention du PDF dans la light (2026-11-12)
+- Relevé du Lenovo (pont 2357, novembre) : light 155 cases rouges, CMCteams 160. Cause : la passe d'import qui fusionne les plannings des cadres (`fusionnerTableaux`, `_cadres-fusion.mjs`) écrivait les codes mais perdait les marques `fg:'red'` (horaire modifié) et `bg:'CONV'` (convention) ; les tableaux « -cadres » de la light n'avaient donc ni `modh` ni `conv`. Corrigé à la source (`personneTableau`), données regénérées (P00003 j2, P00004 j2, P00015 j3-j4 de novembre) ; light = CMCteams sur tous les mois (160 / 503 / 21 / 492 / 37 / 128, convention 450 en août). CMCteams inchangé.
+- Garde `test:light-rouge-cadres` (17 contrôles, vrai Chromium + données, rouge sous `SABOTAGE=1` : « CMCteams 160 = light 156 »), câblé dans `test:ci`. La 5ᵉ case comptée par le Lenovo (‹employé›, jour 20) n'est pas reproductible ici : la donnée est rouge ; à remesurer après mise en ligne.
+
 ## Light v1.141 — la version est écrite aussi sur l'écran de connexion et sur la fiche SBM (2026-11-12)
 - Relevé de pont-check (pont 2345) : la pastille de version `#ver` de la light est cachée (« sous div »). Cause : l'écran de connexion (`#depGate`, z-index 99999) et la fiche SBM (`#depFiche`, 99998) recouvrent la pastille du bas tant qu'ils sont ouverts. Corrigé dans `tools/departs/index.html` : « Version vX » s'écrit dans ces deux écrans (classe `dep-ver-ecran`). CMCteams inchangé. Garde `test:light-version-ecrans` (vrai Chromium, rouge sous `SABOTAGE=1`).
 

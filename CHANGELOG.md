@@ -6,6 +6,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 
 
+## Règle — mails en dernier recours (2026-11-12)
+- Kevin 12.11 : les mails ne partent que si aucune autre voie n'existe (archives en ligne, actes à l'écran, robots gratuits, pont d'abord). Ajouté à `.claude/rules/arbre-relecture-horaire.md` ; diffusé aux sessions par le pont (n° 2281).
+
 ## Robots gratuits — capteur d'images (2026-11-12)
 - Nouveau `tools/delegue/capteur.mjs` : ouvre une page d'archives publique (AD06, AD93, AD18, Tarn, Davel) dans un Chromium neuf et dépose l'image du registre pour `vision.mjs`. Recette d'arbre-pc : attente de la page « Calcul en cours », arrêt au premier vrai captcha (jamais contourné), 1 requête à la fois, 100 images au plus. Garde `tests/delegue-capteur.test.mjs` (4 groupes de vérifications). Essai réel : une page AD18 captée. Règles `delegue-gratuit.md` et `arbre-infos-privees.md` mises à jour (seuls les mineurs sont en privé).
 

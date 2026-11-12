@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.3 -->
+<!-- v1.0.4 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -33,7 +33,7 @@
   #q{width:100%;padding:14px 15px;border-radius:13px;border:1px solid var(--line);background:#0a120c;color:var(--txt);font-size:16px;margin-bottom:8px}
   #q:focus{outline:none;border-color:rgba(232,184,48,.55)}
   .filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:6px}
-  .chip{border:1px solid var(--line);background:var(--card2);color:var(--mut);border-radius:999px;padding:7px 13px;font-size:12.5px;cursor:pointer;min-height:38px}
+  .chip{border:1px solid var(--line);background:var(--card2);color:var(--mut);border-radius:999px;padding:7px 13px;font-size:12.5px;cursor:pointer;min-height:44px}
   .chip.on{background:rgba(232,184,48,.16);color:var(--gold);border-color:rgba(232,184,48,.5);font-weight:700}
   .chip:active{transform:scale(.96)}
   #count{color:var(--mut);font-size:12.5px;margin:6px 2px 16px}
@@ -88,7 +88,7 @@
   <p id="count"></p>
   <div id="cats"></div>
   <div id="empty">🔎 Aucun outil pour ce filtre.</div>
-  <footer>KDMC · lanceur IA curé · <span id="v">v1.0.3</span></footer>
+  <footer>KDMC · lanceur IA curé · <span id="v">v1.0.4</span></footer>
 </div>
 <script>
 /* Catalogue curé (affiches Kevin 2026-07-05).
@@ -212,7 +212,7 @@ document.getElementById("filters").addEventListener("click",function(e){
 });
 render("");
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-ia" data-version="v1.0.3" data-own-badge="#v" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-ia" data-version="v1.0.4" data-own-badge="#v" data-color="#c9a227" defer></script>
 <script>/* 6.11 tâche 108 : MAJ forcée tôt — le service worker prend la main dès son installation, la page se recharge une fois au changement */(function(){try{if(!("serviceWorker" in navigator))return;var rl=false;navigator.serviceWorker.addEventListener("controllerchange",function(){if(rl||!sessionStorage.getItem("kdmc-sw-vu"))return;rl=true;location.reload();});navigator.serviceWorker.register("sw.js").then(function(r){sessionStorage.setItem("kdmc-sw-vu","1");try{r.update();}catch(e){}}).catch(function(){});}catch(e){}})();</script>
 </body>
 </html>

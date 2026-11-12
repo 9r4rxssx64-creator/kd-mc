@@ -7,7 +7,7 @@ function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.p
    Network-first (toujours la dernière version) + repli hors-ligne du shell.
    Ne cache JAMAIS : autre origine (Firebase/identitytoolkit — reads/writes live),
    requêtes non-GET, ni les URLs de MAJ forcée (?_v= / _force_upd_). */
-var CACHE_VERSION = 'kdmc-kdmc-ia-v1.0.3';
+var CACHE_VERSION = 'kdmc-kdmc-ia-v1.0.4';
 var SHELL = ['./', './index.html'];
 
 self.addEventListener('install', function (e) {

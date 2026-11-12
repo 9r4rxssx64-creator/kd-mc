@@ -19,6 +19,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 
 
+## v3.224 — 2026-11-12
+- La pastille « 👥 en ligne » (admin) a maintenant une zone de toucher d'au moins 44 px sur toutes les vues (elle faisait 28 à 30 px) : demande de pont-check, mesure Servi iPhone 13 du 12.11 (règle v3.162 « cibles ≥ 44 px »).
+
 ## Règle — mails en dernier recours (2026-11-12)
 - Kevin 12.11 : les mails ne partent que si aucune autre voie n'existe (archives en ligne, actes à l'écran, robots gratuits, pont d'abord). Ajouté à `.claude/rules/arbre-relecture-horaire.md` ; diffusé aux sessions par le pont (n° 2281).
 

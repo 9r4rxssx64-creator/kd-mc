@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Light v1.140 — les lignes « en formation » du tableau d'équipe gardent l'écriture rouge du PDF (2026-11-12)
+- Mesure du Lenovo (pont 2331, décembre) après v1.139 : c7 9 cases rouges (CMCteams 15), c9 20 (40), c11 19 (39) — 46 cases. Données identiques (503 = 503) ; défaut d'AFFICHAGE : la ligne « 🎓 En formation » des élèves hors rotation (`b.eleves`) ne portait ni l'écriture rouge ni le fond convention, et ses cases n'avaient pas `data-nm`/`data-d`.
+- Corrigé dans `tools/departs/index.html` ; ces cases restent non modifiables (pas de `data-act`). CMCteams inchangé. Garde `test:light-rouge-eleves` étendu (17 équipes, 55 élèves, 266 jours) : rouge sans le correctif, vert avec.
+
 ## Light v1.139 — les 29 élèves de formation gardent leur écriture rouge du PDF (2026-11-12)
 - Mesure du Lenovo (pont 2307 / 2316, décembre) : CMCteams 503 cases en écriture rouge, la light 385 ; les 118 manquantes = jours de formation des élèves de l'équipe c. Les DONNÉES étaient identiques (503 = 503 dans `planning-seed.js` et `boards-gen.js`, 0 personne en écart) : le défaut était l'AFFICHAGE de la light.
 - Deux causes : (1) le tableau « Formation <JEU> » repartait de zéro et ne reportait ni `modh` ni `conv` ; (2) la ligne grisée de l'élève dans son équipe remplaçait le style de la case par celui du code. Les deux corrigées (`tools/departs/index.html`). CMCteams inchangé.

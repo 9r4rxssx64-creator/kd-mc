@@ -4,6 +4,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Light v1.141 — la version est écrite aussi sur l'écran de connexion et sur la fiche SBM (2026-11-12)
+- Relevé de pont-check (pont 2345) : la pastille de version `#ver` de la light est cachée (« sous div »). Cause : l'écran de connexion (`#depGate`, z-index 99999) et la fiche SBM (`#depFiche`, 99998) recouvrent la pastille du bas tant qu'ils sont ouverts. Corrigé dans `tools/departs/index.html` : « Version vX » s'écrit dans ces deux écrans (classe `dep-ver-ecran`). CMCteams inchangé. Garde `test:light-version-ecrans` (vrai Chromium, rouge sous `SABOTAGE=1`).
+
 ## Light v1.140 — les lignes « en formation » du tableau d'équipe gardent l'écriture rouge du PDF (2026-11-12)
 - Mesure du Lenovo (pont 2331, décembre) après v1.139 : c7 9 cases rouges (CMCteams 15), c9 20 (40), c11 19 (39) — 46 cases. Données identiques (503 = 503) ; défaut d'AFFICHAGE : la ligne « 🎓 En formation » des élèves hors rotation (`b.eleves`) ne portait ni l'écriture rouge ni le fond convention, et ses cases n'avaient pas `data-nm`/`data-d`.
 - Corrigé dans `tools/departs/index.html` ; ces cases restent non modifiables (pas de `data-act`). CMCteams inchangé. Garde `test:light-rouge-eleves` étendu (17 équipes, 55 élèves, 266 jours) : rouge sans le correctif, vert avec.

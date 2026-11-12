@@ -248,10 +248,9 @@
    "role": "S'occupe de l'application Lingua.",
    "lieu": "cloud",
    "reveillable": false,
-   "session_id": "session_01CnghT4j1G1tbKe2qS8LTcv",
-   "groupe": "cloud",
-   "url_session": "https://claude.ai/code/session_01CnghT4j1G1tbKe2qS8LTcv",
-   "titre_telephone": "🦉 lingua-cloud · Lingua, langues et voix · cloud"
+   "session_id": null,
+   "groupe": "sans-session",
+   "url_session": null
   },
   {
    "branche": "commerce-cloud",
@@ -322,6 +321,18 @@
    "session_id": null,
    "groupe": "sans-session",
    "url_session": null
+  },
+  {
+   "branche": "mascotte-3d",
+   "icone": "🧸",
+   "nom_clair": "Mascottes 3D",
+   "role": "Mascottes 3D de Bee et de Bourricot.",
+   "lieu": "cloud",
+   "reveillable": true,
+   "session_id": "session_01CnghT4j1G1tbKe2qS8LTcv",
+   "groupe": "cloud",
+   "url_session": "https://claude.ai/code/session_01CnghT4j1G1tbKe2qS8LTcv",
+   "titre_telephone": "🧸 mascotte-3d · mascottes 3D Bee et Bourricot · cloud"
   }
  ]
 }

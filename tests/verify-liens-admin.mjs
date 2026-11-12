@@ -62,7 +62,7 @@ const DONNES = {
   'pc-voix': 'session_018h8NZSdGnyecPP8TjT3Q2e', 'pont-check': 'session_01KYuwpjHWSBYAQUyLJP6SFX'   /* 5.11 : sessions Lenovo VIVANTES (les anciennes sont archivées) + liste lue sur l\'app */
 };
 /* 12.11 (Kevin : « un seul nom par branche ») : lingua-cloud, commerce-cloud, pont-point et clayscore-cloud ont une session vivante (lue par list_sessions), elles ont maintenant leur lien */
-const SANS_ID = ['table-pilot', 'moulin-mobile', 'sdb-mezzanine'];
+const SANS_ID = ['lingua-cloud', 'table-pilot', 'moulin-mobile', 'sdb-mezzanine'];   /* 12.11 soir : la session prise pour lingua-cloud était celle de mascotte-3d (pont 2338) */
 if (J) {
   const B = J.branches || [];
   const noms = B.map((b) => b.branche);

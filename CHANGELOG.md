@@ -93,6 +93,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Maintenant : on centre le COUPLE (la personne et son conjoint dessiné à côté) ; les niveaux ×0,6 · ×0,85 · ×1,2 ne dépassent jamais ce que le couple occupe en largeur (sur iPhone : ×0,6 et ×0,85) ; la personne se pose en haut de la zone libre, au-dessus du bandeau, pour qu'on voie aussi ses enfants.
 - Garde `tools/arbre/verify-lire-ici.mjs` étendue (couple sur iPhone 390 et iPad ; rouge sur v3.215 : 8 échecs).
 
+## Créa Studio v9.22.15 — les confirmations s'affichent dans la page, plus de fenêtre native (2026-11-12)
+- **Pourquoi** : la fenêtre native du navigateur (« Effacer ? ») gèle le pilotage automatique par pc-config et s'affiche mal sur iPhone.
+- **Fait** : `askConfirm()` = une carte dans la page (message, « Annuler » / bouton d'action, boutons de 46 px, Échap et toucher le fond = annuler). Les 8 confirmations du Studio y passent : effacer une création, « Tout effacer », oublier un cercle, supprimer un mini-moi, retirer (Photo, Vidéo, Animation), tout retirer (Montage auto).
+- **Garde** : `npm run test:crea-confirmer` 15 OK (aucun `confirm(` natif, rien d'effacé avant OK, 0 fenêtre native) ; rouge sur v9.22.13 (5 échecs, `CREA_DIR=<ancien dossier>`). Tests `crea-gallery` et `crea-selection` adaptés à la carte.
 ## Créa Studio v9.22.14 — sur ordinateur, « Prendre une photo » ouvre la caméra en direct (2026-11-08)
 - **Demande de Kevin** : « Oui caméra direct auto » (sur ordinateur, « Prendre une photo » ouvrait un sélecteur de fichiers).
 - **Fait** : sur ordinateur, les boutons « Prendre une photo » / « Filmer » / « Me prendre en photo » (Photo, Vidéo, Vidéo IA, Magie, Mini-moi) ouvrent l'écran Caméra et la démarrent seuls ; la photo (ou le film) retourne directement dans l'outil d'où l'on vient, la caméra s'éteint. Sur téléphone, rien ne change (caméra du système) ; si la caméra est refusée, « 📂 Importer » reste sur l'écran Caméra. Aucune fonction retirée.

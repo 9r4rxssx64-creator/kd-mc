@@ -239,6 +239,17 @@
     transition:opacity .25s,transform .25s;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+  /* ---------- CONFIRMATION DANS LA PAGE (remplace la fenêtre native) ---------- */
+  #askBox{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+    padding:20px;background:rgba(0,0,0,.6)}
+  #askBox .askCard{width:100%;max-width:340px;background:var(--bg2);border:1px solid var(--line);
+    border-radius:18px;padding:18px 16px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+  #askBox .askMsg{font-size:15px;line-height:1.45;white-space:pre-line;margin-bottom:14px}
+  #askBox .askBtns{display:flex;gap:10px}
+  #askBox button{flex:1;min-height:46px;border-radius:14px;font-size:15px;font-weight:700;
+    background:var(--card2);border:1px solid var(--line);color:var(--txt)}
+  #askBox button.askOk{background:var(--grad);color:#1a1200;border-color:transparent}
+
   /* ---------- MODAL / SHEET ---------- */
   /* ---------- 💳 BANDEAU « IA en pause » + écran de recharge ---------- */
   /* dans le flux (body = flex column) → aucun chevauchement, aucun calcul */
@@ -1224,7 +1235,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.22.14';
+var APP_VER='v9.22.15';
 document.getElementById('vbadge').textContent=APP_VER;
 /* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
 function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}
@@ -1236,6 +1247,30 @@ var _toastT;
 function toast(msg,ms){
   var t=$('toast');t.textContent=msg;t.classList.add('show');
   clearTimeout(_toastT);_toastT=setTimeout(function(){t.classList.remove('show')},ms||2000);
+}
+/* Confirmation DANS la page (jamais la fenêtre native du navigateur : il fige le pilotage automatique
+   et les tests, et sur iPhone il affiche l'adresse du site). Rend une promesse :
+   true = « oui », false = « annuler », fond touché ou Échap. */
+function askConfirm(msg,okLabel){
+  return new Promise(function(done){
+    var old=document.getElementById('askBox');if(old)old.remove();
+    var w=document.createElement('div');w.id='askBox';w.setAttribute('role','alertdialog');
+    w.setAttribute('aria-modal','true');
+    var card=document.createElement('div');card.className='askCard';
+    var m=document.createElement('div');m.className='askMsg';m.textContent=msg;
+    var row=document.createElement('div');row.className='askBtns';
+    var no=document.createElement('button');no.type='button';no.id='askNo';no.textContent='Annuler';
+    var ok=document.createElement('button');ok.type='button';ok.id='askOk';ok.className='askOk';
+    ok.textContent=okLabel||'Oui';
+    row.appendChild(no);row.appendChild(ok);card.appendChild(m);card.appendChild(row);w.appendChild(card);
+    function fin(v){document.removeEventListener('keydown',key,true);w.remove();done(v);}
+    function key(e){if(e.key==='Escape'){e.preventDefault();fin(false);}}
+    no.onclick=function(){fin(false);};ok.onclick=function(){fin(true);};
+    w.onclick=function(e){if(e.target===w)fin(false);};
+    document.addEventListener('keydown',key,true);
+    document.body.appendChild(w);
+    try{no.focus();}catch(e){}
+  });
 }
 function clamp(v,a,b){return v<a?a:v>b?b:v}
 /* ---- Moteur son partagé ----------------------------------------------
@@ -1817,15 +1852,19 @@ var Mine=(function(){
     w.querySelector('#mineClose').onclick=close;
     w.querySelector('#mineShare').onclick=function(){shareOrSave(it.blob,name,it.label||'Ma création');};
     w.querySelector('#mineDel').onclick=function(){
-      if(!confirm('Effacer « '+(it.label||'cette création')+' » ?'))return;
-      del(it.id).then(function(){close();refresh();toast('Effacé',1400);});
+      askConfirm('Effacer « '+(it.label||'cette création')+' » ?','Effacer').then(function(ok){
+        if(!ok)return;
+        del(it.id).then(function(){close();refresh();toast('Effacé',1400);});
+      });
     };
     w.onclick=function(e){if(e.target===w)close();};
   }
   function clearAll(){
-    if(!confirm('Effacer TOUTES tes créations ? C\'est définitif.'))return;
-    tx('readwrite').then(function(st){st.clear();}).then(function(){refresh();toast('Galerie vidée',1600);})
-      .catch(function(){toast('Impossible d\'effacer');});
+    askConfirm('Effacer TOUTES tes créations ? C\'est définitif.','Tout effacer').then(function(ok){
+      if(!ok)return;
+      tx('readwrite').then(function(st){st.clear();}).then(function(){refresh();toast('Galerie vidée',1600);})
+        .catch(function(){toast('Impossible d\'effacer');});
+    });
   }
   function setSeeAll(v){seeAll=!!v;refresh();}
   return {save:save,refresh:refresh,clearAll:clearAll,list:list,setSeeAll:setSeeAll,
@@ -2837,8 +2876,8 @@ var Fam=(function(){
       box.querySelectorAll('[data-cer]').forEach(function(b){
         b.onclick=function(){if(b.dataset.cer!==e.famille)basculer(b.dataset.cer);};});
       box.querySelectorAll('[data-oub]').forEach(function(b){
-        b.onclick=function(){if(confirm('Oublier le cercle « '+b.dataset.oub+' » sur ce téléphone ?'))
-          oublier(b.dataset.oub);};});
+        b.onclick=function(){askConfirm('Oublier le cercle « '+b.dataset.oub+' » sur ce téléphone ?','Oublier').then(function(ok){
+          if(ok)oublier(b.dataset.oub);});};});
     }
   }
   /* Envoie la dernière création faite dans l'app (photo, vidéo, morceau) */
@@ -3766,7 +3805,9 @@ var Photo=(function(){
     /* --- retirer la photo (Kevin : « comme l'enlever ») --- */
     clear:function(){
       if(!loaded){toast('Aucune photo ouverte');return;}
-      if(!confirm('Retirer cette photo de l\'écran ?\n\nCe qui a déjà été enregistré dans « Mes créas » n\'est pas touché.'))return;
+      askConfirm('Retirer cette photo de l\'écran ?\n\nCe qui a déjà été enregistré dans « Mes créas » n\'est pas touché.','Retirer').then(function(ok){if(ok)Photo._vider();});
+    },
+    _vider:function(){
       loaded=false;texts=[];overlays=[];selOverlay=-1;setBrush(null);
       adj=defaultAdjust();curPreset='orig';fx='none';fxAmt=65;exportRatio=0;
       if(selCv){selReady().clearRect(0,0,selCv.width,selCv.height);selDirty=true;selNb=0;}
@@ -4555,7 +4596,9 @@ var Vid=(function(){
        aussi la mémoire du téléphone (URL de la vidéo et de la musique). */
     clear:function(){
       if(!loaded){toast('Aucune vidéo ouverte');return;}
-      if(!confirm('Retirer cette vidéo de l\'écran ?\n\nCe qui a déjà été enregistré dans « Mes créas » n\'est pas touché.'))return;
+      askConfirm('Retirer cette vidéo de l\'écran ?\n\nCe qui a déjà été enregistré dans « Mes créas » n\'est pas touché.','Retirer').then(function(ok){if(ok)Vid._vider();});
+    },
+    _vider:function(){
       try{vel.pause();}catch(e){}
       playing=false;loaded=false;
       if(vel.src){try{URL.revokeObjectURL(vel.src);}catch(e){}vel.removeAttribute('src');vel.load();}
@@ -5310,7 +5353,10 @@ var Auto=(function(){
     },
     clear:function(){
       if(occupe){toast('Attends la fin du montage');return;}
-      if(clips.length&&!confirm('Retirer toutes les vidéos du montage auto ?\n\nCe qui est déjà dans « Mes créas » n\'est pas touché.'))return;
+      if(!clips.length){Auto._vider();return;}
+      askConfirm('Retirer toutes les vidéos du montage auto ?\n\nCe qui est déjà dans « Mes créas » n\'est pas touché.','Tout retirer').then(function(ok){if(ok)Auto._vider();});
+    },
+    _vider:function(){
       clips.forEach(function(c){try{URL.revokeObjectURL(c.url);}catch(e){}});
       clips=[];
       if(musique&&musique.url){try{URL.revokeObjectURL(musique.url);}catch(e){}}
@@ -5587,7 +5633,9 @@ var Anim=(function(){
     /* Retirer le dessin / l'image importée (Kevin : « comme l'enlever ») */
     clear:function(){
       if(!frames.length){toast('Rien à retirer');return;}
-      if(!confirm('Tout retirer et repartir à zéro ?\n\nCe qui a déjà été enregistré dans « Mes créas » n\'est pas touché.'))return;
+      askConfirm('Tout retirer et repartir à zéro ?\n\nCe qui a déjà été enregistré dans « Mes créas » n\'est pas touché.','Tout retirer').then(function(ok){if(ok)Anim._vider();});
+    },
+    _vider:function(){
       if(playing){clearInterval(playT);playing=false;$('animPlayIc').textContent='▶';}
       frames=[];cur=0;undoStack=[];
       cx.clearRect(0,0,W,H);
@@ -7166,8 +7214,10 @@ var Mini=(function(){
     im.src=p.img;
   }
   function supprimer(nom){
-    if(!confirm('Supprimer le mini-moi « '+nom+' » ?'))return;
-    ecrirePersos(persos().filter(function(p){return p.nom!==nom;}));peindrePersos();
+    askConfirm('Supprimer le mini-moi « '+nom+' » ?','Supprimer').then(function(ok){
+      if(!ok)return;
+      ecrirePersos(persos().filter(function(p){return p.nom!==nom;}));peindrePersos();
+    });
   }
   function peindrePersos(){
     var c=$('miniPersos');if(!c)return;
@@ -7472,6 +7522,6 @@ catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)
 <script src="avatar-persos.js" defer></script>
 <script src="avatar-studio.js" defer></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.14" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.15" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
 </body>
 </html>

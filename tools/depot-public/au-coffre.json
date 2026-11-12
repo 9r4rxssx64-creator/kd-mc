@@ -288,6 +288,7 @@
   "tests/verify-connexion-tout-le-monde.mjs",
   "tests/verify-couleurs-parite.mjs",
   "tests/verify-crea-comptes.mjs",
+  "tests/verify-crea-confirmer.mjs",
   "tests/verify-creer-invite-page.mjs",
   "tests/verify-cuisine-boutons.mjs",
   "tests/verify-dashboard-reconnu-domaine.mjs",

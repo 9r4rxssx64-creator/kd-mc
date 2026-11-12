@@ -206,7 +206,7 @@ const apresVide = await partSel(0, 0, 1, 1);
 chk(apresVide.total === 0, '« Tout enlever » vide bien la sélection');
 
 /* ---------- 8 : retirer la photo / la vidéo / le dessin ---------- */
-await page.click('#photoRemove'); await page.waitForTimeout(500);
+await page.click('#photoRemove'); await page.click('#askOk'); await page.waitForTimeout(500); // confirmation = carte dans la page (v9.22.15)
 const photoVide = await page.evaluate(() => ({
   empty: !document.getElementById('photoEmpty').classList.contains('hidden'),
   canvas: document.getElementById('photoCanvas').classList.contains('hidden'),
@@ -221,7 +221,7 @@ const avantCreas = await page.evaluate(async () => (await window.Mine.list()).le
 await page.click('#animSave'); await page.waitForTimeout(900);
 const apresCreas = await page.evaluate(async () => (await window.Mine.list()).length);
 chk(apresCreas === avantCreas + 1, `« Enregistrer » range vraiment le dessin dans « Mes créas » (${avantCreas} → ${apresCreas})`);
-await page.click('#animRemove'); await page.waitForTimeout(500);
+await page.click('#animRemove'); await page.click('#askOk'); await page.waitForTimeout(500); // confirmation = carte dans la page (v9.22.15)
 const animVide = await page.evaluate(() => !document.getElementById('animEmpty').classList.contains('hidden'));
 chk(animVide, 'retirer le dessin ramène à l\'écran de départ du Cartoon');
 

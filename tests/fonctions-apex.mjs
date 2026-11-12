@@ -252,7 +252,12 @@ try {
       const dgA = conn >= 0 ? '' : JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => ({ ice: K._activeCall && K._activeCall.peerConn && K._activeCall.peerConn.iceConnectionState, conn: K._activeCall && K._activeCall.peerConn && K._activeCall.peerConn.connectionState, diag: K._callDiag ? { cand: K._callDiag.localCand, dist: K._callDiag.remoteCand, etats: (K._callDiag.states || K._callDiag.events || []).slice(-6) } : null, turn: !!(K._iceCache && K._iceCache.turn) }))))).slice(0, 700);
       noter('Appel : connexion média établie', conn >= 0, conn >= 0 ? 'décroché → connecté en ' + sec(Date.now() - t0) : 'jamais connecté en 30 s · CHRONO ' + JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => (window.__callTl || []).slice(0, 18))))).slice(0, 1100) + ' · ' + dgA.slice(0, 40) + ' · WS ' + JSON.stringify(await Promise.all([A, B].map((x) => ev(x.p, () => ({ rs: K.ws && K.ws.readyState, conv: K.viewData && K.viewData.id && K.viewData.id.slice(0, 6), call: !!K._activeCall, st: document.getElementById('call-status') && document.getElementById('call-status').textContent, log: (window.__wsLog || []).filter((l) => /webrtc|call/.test(l)).reduce((o, l) => { const k = l.split('>')[0]; o[k] = (o[k] || 0) + 1; return o; }, {}), remote: K._callDiag && K._callDiag.remoteAdded, errAjout: K._callDiag && K._callDiag.remoteAddErr, pre: (K._preAnswerCandidates || []).length }))))) + ' · console ' + JSON.stringify(journal).slice(0, 900));
       if (conn >= 0) {
-        const typ = await ev(A.p, async () => { const st = await K._activeCall.peerConn.getStats(); let t = ''; st.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') { const l = st.get(r.localCandidateId); t = l && l.candidateType; } }); return t; });
+        /* 12.11 (run 43300878645) : la connexion s'était établie en 0,6 s et le relevé, fait au même instant, a rendu un type VIDE (paire de candidats pas encore marquée « nominated ») ; le relevé suivant, même durée, rendait « relay ». On relit jusqu'à 10 fois (500 ms) tant que le type est vide ; un type non vide (host, srflx) reste un vrai KO. */
+        let typ = '';
+        for (let essai = 0; essai < 10 && !typ; essai++) {
+          if (essai) await A.p.waitForTimeout(500);
+          typ = await ev(A.p, async () => { const st = await K._activeCall.peerConn.getStats(); let t = ''; st.forEach((r) => { if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') { const l = st.get(r.localCandidateId); t = l && l.candidateType; } }); return t; });
+        }
         noter('Appel : chemin utilisé (relais TURN = fiable entre réseaux différents)', typ === 'relay', 'type de candidat : ' + String(typ));
       }
       await ev(A.p, () => K._endCall()); await ev(B.p, () => K._endCall());
@@ -355,7 +360,16 @@ try {
   noter('ROBOT', false, 'ERREUR : ' + String(e && e.message).slice(0, 200));
 } finally {
   if (navigateur) await navigateur.close().catch(() => {});
-  for (const u of uids) if (u) { const d = await post(H, '/__admin/compte-supprimer', { uid: u, confirmer: true }).catch(() => ({ j: {} })); noter('Nettoyage : compte du domaine ' + u.slice(0, 14), d.j && d.j.ok === true, 'ligne Apex Chat à retirer : kdmc_' + u + (d.j && d.j.ok === true ? '' : ' · réponse du domaine : HTTP ' + (d.http || '?') + ' ' + JSON.stringify(d.j || {}).slice(0, 140))); }
+  /* 12.11 (run 43218577681 et 43302499959) : le nettoyage a répondu « not_found » à un compte tout juste créé, DEUX fois, et les deux fois le routeur du domaine était redéployé pendant le run (pushes 12:27/12:36 puis 20:36/20:45). Un redéploiement laisse le registre un instant muet : on redemande jusqu'à 4 fois (5 s) avant de compter un KO. Une réponse autre que not_found (admin_protege, 503…) n'est jamais rejouée. */
+  for (const u of uids) if (u) {
+    let d = { j: {} };
+    for (let essai = 1; essai <= 4; essai++) {
+      d = await post(H, '/__admin/compte-supprimer', { uid: u, confirmer: true }).catch(() => ({ j: {} }));
+      if (!(d.j && d.j.reason === 'not_found')) break;
+      if (essai < 4) await new Promise((r) => setTimeout(r, 5000));
+    }
+    noter('Nettoyage : compte du domaine ' + u.slice(0, 14), d.j && d.j.ok === true, 'ligne Apex Chat à retirer : kdmc_' + u + (d.j && d.j.ok === true ? '' : ' · réponse du domaine : HTTP ' + (d.http || '?') + ' ' + JSON.stringify(d.j || {}).slice(0, 140)));
+  }
   const ko = RES.filter((r) => r.ok === false), ok = RES.filter((r) => r.ok === true), nt = RES.filter((r) => r.ok === null);
   const lignes = RES.map((r) => `${r.ok === true ? '✅' : r.ok === false ? '❌' : '➖'} ${r.nom} — ${r.detail}`);
   for (const r of ko) annot('error', 'KO : ' + r.nom.slice(0, 70), String(r.detail).slice(0, 3500));

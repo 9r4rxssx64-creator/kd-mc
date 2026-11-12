@@ -11,7 +11,7 @@ export function regles(wf, js) {
   return {
     'workflow : à la main seulement (workflow_dispatch, jamais de cron ni de push)': /workflow_dispatch:/.test(w) && !/schedule:/.test(w) && !/^\s+(push|pull_request):/m.test(w),
     'workflow : le code admin vient du secret, par env': /KDMC_ADMIN_PIN_SHA256:\s*\$\{\{\s*secrets\.APEX_ADMIN_PIN_SHA256\s*\}\}/.test(w) && !/run:[^\n]*\$\{\{\s*secrets\./.test(w),
-    'robot : les comptes de test sont supprimés dans un finally': /finally \{[^]{0,400}?for \(const u of uids\) if \(u\) \{ const d = await post\(H, '\/__admin\/compte-supprimer'/.test(js),
+    'robot : les comptes de test sont supprimés dans un finally': /finally \{[^]{0,1000}?for \(const u of uids\) if \(u\) \{[^]{0,900}?await post\(H, '\/__admin\/compte-supprimer'/.test(js),
     'robot : les comptes s\'appellent « Temps Reel… »': /const noms = \['A', 'B', 'C'\]\.map\(\(x\) => 'Temps Reel' \+ x/.test(js),
     'robot : le code et le jeton ne sont jamais écrits au journal': !/(noter|annot)\([^)]*\$\{(codes|hash|d\.token)/.test(js),
     'robot : aucune route admin hors liste (login, compte-invite, compte-supprimer)': [...js.matchAll(/'(\/__admin\/[a-z-]+)'/g)].every((m) => ['/__admin/login', '/__admin/compte-invite', '/__admin/compte-supprimer'].includes(m[1])),

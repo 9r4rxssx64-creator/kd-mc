@@ -136,3 +136,26 @@ test('chaque rubrique de rangement a sa grille (aucune tuile perdue)', async () 
   assert.ok(secs.length >= 5, 'rubriques lues : ' + secs.join(','));
   for (const s of secs) assert.ok(t.includes('id="tuiles-' + s + '"'), 'aucune grille id="tuiles-' + s + '" : ses tuiles disparaîtraient');
 });
+
+/* 12.11 (capture de Kevin, page Personnes : « kevin Desarzens » deux fois, prénoms sans majuscule, pastilles flottantes sur le bas du contenu) */
+test('liste « fermer des apps » : deux comptes au même nom se distinguent, les noms prennent leur majuscule', () => {
+  const { blocLot, nomBeau } = require('../kdmc-home/admin/admin.js');
+  assert.equal(nomBeau('jonathan Landau'), 'Jonathan Landau');
+  assert.equal(nomBeau('Laurence Saint-polit'), 'Laurence Saint-Polit');
+  assert.equal(nomBeau('KEVIN DESARZENS'), 'KEVIN DESARZENS', 'un nom déjà en capitales n\'est pas touché');
+  assert.equal(nomBeau('u11804'), 'u11804', 'un identifiant n\'est pas un nom');
+  const html = blocLot([{ uid: 'kevin-desarzens', name: 'kevin Desarzens' }, { uid: 'desarzens-kevin', name: 'Kévin DESARZENS' }, { uid: 'julien-sirio', name: 'Julien Sirio' }, { uid: 'kdmc_admin', name: 'Kevin' }]);
+  assert.ok(/Kevin Desarzens <span[^>]*data-doublon="1"[^>]*>· compte kevin-desarzens</.test(html), 'le 1er doublon montre son identifiant');
+  assert.ok(/data-doublon="1"[^>]*>· compte desarzens-kevin</.test(html), 'le 2e aussi (accents et casse ignorés pour comparer)');
+  assert.equal((html.match(/data-doublon/g) || []).length, 2, 'une personne seule de son nom n\'a pas d\'identifiant affiché');
+  assert.ok(!/kdmc_admin/.test(html), 'le compte admin n\'est jamais dans la liste');
+});
+test('page admin : une réserve en bas, pour que le contenu remonte au-dessus des pastilles flottantes', async () => {
+  const { readFileSync } = await import('node:fs');
+  const h = readFileSync(new URL('../kdmc-home/admin/index.html', import.meta.url), 'utf8');
+  const m = /body\{padding-bottom:calc\((\d+)px \+ env\(safe-area-inset-bottom/.exec(h);
+  assert.ok(m && Number(m[1]) >= 150, 'réserve basse absente ou trop petite');
+  const bv = (/data-version="v(\d+\.\d+\.\d+)"/.exec(h) || [])[1];
+  for (const f of ['admin.js', 'commerce.js', 'tableau.js', 'tableau.css']) assert.ok(h.includes(f + '?v=' + bv), f + ' n\'est pas servi à la version de la pastille (' + bv + ') : un iPhone garderait l\'ancien fichier');
+});
+

@@ -129,7 +129,7 @@
     return '<h2 class="cat">🌐 Toutes mes apps du domaine</h2><div class="grid">'
       + tuiles.join('') + '</div>';
   }
-  if (typeof module === 'object' && module && module.exports) module.exports = { hub: hub };
+  if (typeof module === 'object' && module && module.exports) module.exports = { hub: hub, nomBeau: nomBeau, cleNom: cleNom, blocLot: function (comptes, apps) { APPS_LISTE = apps || ['cmc', 'arbre']; return blocLot(comptes); } };
 
   function kvp(k, v, va) { return '<div' + (va ? ' data-va="' + esc(va) + '"' : '') + '><span>' + k + '</span><br>' + v + '</div>'; }
   /* ---- Présence : qui est connecté, combien, cliquable → fiche ---- */
@@ -613,17 +613,23 @@
     });
   }
   /* ---- Fermer / rouvrir des apps à UNE ou PLUSIEURS personnes d'un coup (Kevin 13.10 : « pour une seule personne comme plusieurs ») ---- */
+  /* PURES : nom affiché avec ses majuscules (un mot tout en minuscules prend la sienne ; le reste n'est pas touché) ; clé de comparaison de deux noms */
+  function nomBeau(n) { return String(n || '').replace(/(^|[\s'’-])([a-zà-ÿ])([a-zà-ÿ]*)(?=$|[\s'’-])/g, function (m, a, b, c) { return a + b.toUpperCase() + c; }); }
+  function cleNom(n) { return String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
   function blocLot(accounts) {
     if (!APPS_LISTE.length || !accounts || !accounts.length) return '';
     var apps = APPS_LISTE.filter(function (x) { return x !== 'portail'; });
     var pers = accounts.filter(function (a) { return a && a.uid && a.uid !== 'kdmc_admin'; }).sort(function (x, y) { return String(x.name || x.uid).localeCompare(String(y.name || y.uid), 'fr'); });
+    /* 12.11 (capture de Kevin : « kevin Desarzens » DEUX fois, impossible de savoir lequel cocher) : deux comptes qui portent le même nom affichent leur identifiant ;
+       et un prénom saisi sans majuscule (« jonathan ») s'affiche avec la sienne — l'affichage seulement, la fiche n'est pas touchée. */
+    var compte = {}; pers.forEach(function (a) { var k = cleNom(a.name || a.uid); compte[k] = (compte[k] || 0) + 1; });
     return '<details class="fermgen" id="fermlot">'
       + '<summary>🚫 Fermer ou rouvrir des applications à une ou plusieurs personnes</summary>'
       + '<div class="accbody"><div class="d">1) Coche les applications · 2) Coche les personnes · 3) Ferme ou rouvre. On ajoute (ou on retire) seulement ces apps : le reste de leurs réglages ne bouge pas.</div>'
       + '<div class="chips">' + apps.map(function (x) { return chip('lot', 'lotapp', x, false); }).join('') + '</div>'
       + '<input class="search" id="lot-q" placeholder="🔎 Chercher une personne…" autocomplete="off" autocapitalize="off">'
       + '<div id="lot-pers" style="max-height:260px;overflow:auto;-webkit-overflow-scrolling:touch">'
-      + pers.map(function (a) { var id = 'lotp-' + a.uid; return '<label class="chipacc" for="' + esc(id) + '" data-nom="' + esc(String(a.name || a.uid).toLowerCase()) + '" style="display:flex;margin:4px 0"><input type="checkbox" id="' + esc(id) + '" data-grp="lotpers" data-uid="' + esc(a.uid) + '"> ' + esc(a.name || a.uid) + '</label>'; }).join('')
+      + pers.map(function (a) { var id = 'lotp-' + a.uid; return '<label class="chipacc" for="' + esc(id) + '" data-nom="' + esc(String(a.name || a.uid).toLowerCase()) + '" style="display:flex;margin:4px 0"><input type="checkbox" id="' + esc(id) + '" data-grp="lotpers" data-uid="' + esc(a.uid) + '"> ' + esc(nomBeau(a.name || a.uid)) + (compte[cleNom(a.name || a.uid)] > 1 ? ' <span class="d" data-doublon="1" style="margin-left:6px">· compte ' + esc(a.uid) + '</span>' : '') + '</label>'; }).join('')
       + '</div>'
       + '<div><button class="savacc" id="lot-fermer" type="button">🚫 Fermer ces apps à ces personnes</button> <button class="savacc" id="lot-rouvrir" type="button">✅ Rouvrir</button></div>'
       + '<span class="accmsg" id="lot-msg"></span></div></details>';

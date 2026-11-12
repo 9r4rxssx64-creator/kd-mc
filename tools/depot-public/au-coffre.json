@@ -422,6 +422,7 @@
   "tests/verify-sw-lie-fi.mjs",
   "tests/verify-sw-navigation.mjs",
   "tests/verify-tel-invite-portail.mjs",
+  "tests/verify-un-seul-import.mjs",
   "tests/verify-validation-par-mail-docs.mjs",
   "tests/verify-verifier-reel.mjs",
   "tests/verify-visibilite-roles.mjs",
@@ -554,10 +555,12 @@
   "tools/shared/_ajouter-cadres.mjs",
   "tools/shared/_cadres-fusion.mjs",
   "tools/shared/_empreintes-donnees.mjs",
+  "tools/shared/_gen-planning.mjs",
   "tools/shared/_gen-seances.mjs",
   "tools/shared/_gen-seed.mjs",
   "tools/shared/_gen-stabilite.mjs",
   "tools/shared/_json-stable.mjs",
+  "tools/shared/_mois-import.mjs",
   "tools/smoke/session-kevin.mjs"
  ]
 }

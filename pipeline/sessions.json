@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-11-11",
+  "maj": "2026-11-12",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -290,10 +290,10 @@
       "sujet": "fidelite-pdf",
       "surfaces": [],
       "etat": "Décembre 2026 V1 intégré (v10.012/v1.136) ; 11.11 : 9 élèves de formation remis dans leur équipe (v10.013/v1.137) ; light v1.138 (professeurs sans départ, relevé par le Lenovo), en cours de livraison",
-      "maj": "2026-11-11",
+      "maj": "2026-11-12",
       "attend_kevin": null,
       "attend_session": "javis-bee : test:fiches-privees ROUGE 8 fois sur 12 sur main (mesuré 27.09) : « ce qu'un vieux téléphone republie est rangé au privé par l'appareil de l'admin » — il rend test:ci rouge pour tout le monde",
-      "note": "11.11 : règle import→Lenovo compare, garde par personne décembre, mission pont 2231"
+      "note": "12.11 nuit : import unique CMCteams = light (leçon 925, test:un-seul-import) ; Lenovo 2287 sans réponse chiffrée"
     },
     "secrets-guard": {
       "titre": "Garde anti-fuite de secrets (branche annexe de domaine-audit)",

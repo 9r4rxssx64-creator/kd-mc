@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Planning — un seul import des PDF pour CMCteams et la light (2026-11-12)
+- `tools/shared/_mois-import.mjs` (porte unique, liste des 6 mois) et `tools/shared/_gen-planning.mjs` (écrit `planning-seed.js` ET `boards-gen.js` de la même passe) ; `_gen-seed.mjs` et `_gen-boards.mjs` deviennent de simples portes d'entrée ; `_crosscheck.mjs` contrôle les 6 mois. Garde `npm run test:un-seul-import`. Aucune case, équipe ni départ ne change (leçon 925).
+
+
 
 
 ## Règle — mails en dernier recours (2026-11-12)

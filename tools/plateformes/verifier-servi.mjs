@@ -263,6 +263,8 @@ export function chaineRedirections(rep) {
   }
   return out.join(' → ');
 }
+/* 12.11 (apex-cloud 2139 : « que la mesure note les NOMS des paramètres de l'URL finale (return, _ssob) pour confirmer le détour de connexion ») : les noms seulement, jamais les valeurs. */
+export function nomsParametres(u) { try { return [...new Set([...new URL(u).searchParams.keys()])].slice(0, 8); } catch (_) { return []; } }
 export function hoteDemande(a) { try { return new URL(/^https?:/i.test(a) ? a : 'https://' + a).hostname; } catch (_) { return ''; } }
 /* 8.11 (Servi 42520525324 annulé à 20 min : Apex AI portable ne finissait pas) : une adresse qui ne finit pas ne bloque plus tout le job — au bout de `ms` elle est notée en erreur et on passe à la suivante. */
 export async function avecLimite(fn, ms, msg = 'délai dépassé pour cette adresse') {
@@ -272,8 +274,8 @@ export async function avecLimite(fn, ms, msg = 'délai dépassé pour cette adre
 }
 /* 8.11 : la ligne du journal est une fonction (testable) ; « petit N » NOMME les cibles < 44 px (sélecteurs, sans texte), comme « cache » nomme les boutons recouverts. */
 export function ligneServi(a, nom, r) {
-  const redir = r.redirige ? ` · REDIRIGÉ (demandé ${r.redirige}${r.chaine ? ' · chaîne : ' + r.chaine : ''})` : '';
-  return `${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'}${r.accueil ? ' · accueil fermé ' + r.accueil : ''} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.petit && r.petitEx && r.petitEx.length ? ' [' + r.petitEx.slice(0, 3).join(' | ') + ']' : ''} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}${redir}`;
+  const redir = r.redirige ? ` · REDIRIGÉ (demandé ${r.redirige}${r.chaine ? ' · chaîne : ' + r.chaine : ''}${r.parametres && r.parametres.length ? ' · paramètres : ' + r.parametres.join(', ') : ''})` : '';
+  return `${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'}${r.accueil ? ' · accueil fermé ' + r.accueil : ''} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''}${r.aDefiler ? ' · à défiler ' + r.aDefiler + ' [' + (r.aDefilerEx || []).join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.petit && r.petitEx && r.petitEx.length ? ' [' + r.petitEx.slice(0, 3).join(' | ') + ']' : ''} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}${redir}`;
 }
 export async function verifierServi({ adresses, hash = '', journal = console.log }) {
   const b = await chromium.launch({ headless: true });
@@ -300,7 +302,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           await avecLimite(async () => {
           const rep = await ouvrirAvecReprise(page, a, r, enCours);
           r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
-          { const dem = hoteDemande(a); if (dem && r.hoteFinal !== dem) { r.redirige = dem; r.chaine = chaineRedirections(rep); } }
+          { const dem = hoteDemande(a); if (dem && r.hoteFinal !== dem) { r.redirige = dem; r.chaine = chaineRedirections(rep); r.parametres = nomsParametres(page.url()); } }
           await page.waitForTimeout(4500); r.demarrage = await attendreFinSplash(page); await page.evaluate(() => window.scrollTo(0, 0));
           r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
           r.accueil = await page.evaluate(fermerAccueil).catch(() => ''); if (r.accueil) await page.waitForTimeout(500);
@@ -318,7 +320,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           /* 6.11 (Kevin : « creuse toujours pour savoir ») : Servi comptait « cache 4 » sur kit.kd-mc.com sans dire QUI cache QUOI, et ne le comptait pas
              « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré
              (dépôt public) — et un bouton recouvert compte comme un défaut. */
-          if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), haut: m.haut, deborde: m.deborde, petit: m.petit, petitEx: sansTexte(m.petitEx || []), js: m.js });
+          if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), aDefiler: m.aDefiler, aDefilerEx: sansTexte(m.aDefilerEx || []), haut: m.haut, deborde: m.deborde, petit: m.petit, petitEx: sansTexte(m.petitEx || []), js: m.js });
           /* 7.11 : Apex Chat, écrans d'administration (portrait étroit et portable seulement : 13 vues x 5 écrans ferait trop long) */
           if (r.hoteFinal === 'apex-chat.kd-mc.com' && (nom === 'iphone-13' || nom === 'portable')) {
             const adm = await mesurerVuesAdminApexChat(page, tel);

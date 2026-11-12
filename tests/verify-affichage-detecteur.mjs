@@ -67,6 +67,17 @@ ok('la feuille d\'installation ouverte en retard est refermée aussitôt', await
 /* 7.11 (pont 1929) : chaque recouvrement par un flottant est NOMMÉ avec ses positions, pas seulement compté (2-3 exemples ne suffisaient pas pour corriger) */
 ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m6.flotEx) && m6.flotEx.length === 1 && /^bee : button#ok .*\[@\d+,\d+ \d+x\d+ sous @/.test(m6.flotEx[0]), JSON.stringify(m6.flotEx));
 { const { bilan } = await import('../tools/plateformes/verif-affichage-domaine.mjs'); const B = bilan([{ app: 'x', ecran: 'iphone-se', flotEx: m6.flotEx }, { app: 'x', ecran: 'portable', flotEx: m6.flotEx }]); ok('le bilan garde chaque recouvrement par écran', B.x.flotEx && B.x.flotEx.length === 2 && /^\[iphone-se\] bee : /.test(B.x.flotEx[0]), JSON.stringify(B.x.flotEx)); }
+/* 12.11 (cmcteams-pdf, pont 2125 : barre « J'arrive » de la light et barre du bas de CMCteams comptées « cachées » alors qu'elles sont sous le pli) : un contrôle sous une barre FIXE de l'app,
+   atteignable au défilement, est « à faire défiler », pas caché ; s'il reste recouvert (page qui ne défile pas) il est caché ; l'abeille garde la règle stricte (Kevin 6.11 : elle ne cache jamais rien). */
+{ const BARRE = (style, filler = 2000) => `<!doctype html><title>t</title><style>body{margin:0}${style}</style><div style="height:${filler}px"></div><button id="bas" style="position:absolute;top:800px;left:20px;width:120px;height:50px">J'arrive</button><div id="barre" style="position:fixed;bottom:0;left:0;right:0;height:80px;background:#333"><span>barre</span></div>`;
+  await p.setContent(BARRE('')); const ma = await p.evaluate(mesurer, true); const sy = await p.evaluate(() => scrollY);
+  ok('barre fixe de l\'app : le bouton sous le pli est « à faire défiler », pas caché ; défilement remis à 0', ma.cache === 0 && ma.aDefiler === 1 && /^button#bas \(sous div#barre au repos\)/.test(ma.aDefilerEx[0]) && sy === 0, JSON.stringify([ma.cache, ma.aDefilerEx, sy]));
+  await p.setContent(BARRE('html,body{overflow:hidden}')); const mb = await p.evaluate(mesurer, true);
+  await p.setContent(BARRE('', 0)); const mb2 = await p.evaluate(mesurer, true);
+  ok('page que le visiteur ne peut pas faire défiler (overflow caché, ou rien sous le pli) : le bouton sous la barre reste caché', mb.cache === 1 && mb.aDefiler === 0 && /button#bas/.test(mb.cacheEx[0]) && mb2.cache === 1 && mb2.aDefiler === 0, JSON.stringify([mb.cache, mb.cacheEx, mb2.cache]));
+  await p.setContent(`<!doctype html><title>t</title><div style="height:2000px"></div><button id="ok" style="position:absolute;top:500px;left:300px;width:60px;height:50px">Ok</button><iframe src="/__javis/cadre" style="position:fixed;top:480px;left:290px;width:92px;height:92px;border:0;z-index:2147483000"></iframe>`);
+  const mc = await p.evaluate(mesurer, true);
+  ok('l\'abeille garde la règle stricte : un bouton sous elle est caché même si la page défile', mc.cache === 1 && mc.parFlottant && mc.parFlottant.bee === 1 && mc.aDefiler === 0, JSON.stringify([mc.cache, mc.parFlottant, mc.aDefiler])); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

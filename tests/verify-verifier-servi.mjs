@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, nomsParametres, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -157,6 +157,10 @@ const limite = await (async () => {
 const ligneRedir = ligneServi('https://apex-chat.kd-mc.com/', 'portable', { statut: 200, hoteFinal: 'kd-mc.com', redirige: 'apex-chat.kd-mc.com', chaine: limite.chaine });
 const ligneDirecte = ligneServi('https://apex-chat.kd-mc.com/', 'iphone-13', { statut: 200, hoteFinal: 'apex-chat.kd-mc.com' });
 ok('2j8. adresse bloquée coupée au délai ; redirection écrite avec sa chaîne (sans paramètres) ; pas de mention quand l\'hôte est celui demandé', /délai dépassé pour cette adresse/.test(limite.coupe || '') && limite.rapide === 'fini' && limite.ms < 3000 && limite.chaine === 'apex-chat.kd-mc.com/ → kd-mc.com/' && limite.dem === 'apex-chat.kd-mc.com' && limite.dem2 === 'apex-chat.kd-mc.com' && /REDIRIGÉ \(demandé apex-chat\.kd-mc\.com · chaîne : apex-chat\.kd-mc\.com\/ → kd-mc\.com\/\)/.test(ligneRedir) && !/REDIRIGÉ/.test(ligneDirecte) && !/return=/.test(ligneRedir), JSON.stringify(limite));
+/* 2j9 (12.11, apex-cloud 2139) : la ligne REDIRIGÉ porte les NOMS des paramètres de l'URL finale (return, _ssob), jamais les valeurs ; « à défiler N » nomme les contrôles sous le pli (pont 2125). */
+{ const noms = nomsParametres('https://kd-mc.com/?return=https%3A%2F%2Fapex-chat.kd-mc.com%2F&_ssob=abc&return=y');
+  const l = ligneServi('https://apex-chat.kd-mc.com/', 'portable', { statut: 200, hoteFinal: 'kd-mc.com', redirige: 'apex-chat.kd-mc.com', chaine: 'apex-chat.kd-mc.com/ → kd-mc.com/', parametres: noms, cache: 0, aDefiler: 1, aDefilerEx: ['button#bas (sous div#barre au repos)'] });
+  ok('2j9. REDIRIGÉ nomme les paramètres (noms seuls, dédoublonnés) ; « à défiler » nommé dans la ligne', noms.join(',') === 'return,_ssob' && nomsParametres('pas une url').length === 0 && /paramètres : return, _ssob\)/.test(l) && !/abc|apex-chat\.kd-mc\.com%2F/.test(l) && /· à défiler 1 \[button#bas \(sous div#barre au repos\)\]/.test(l), l.slice(-260)); }
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

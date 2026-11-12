@@ -58,7 +58,29 @@ export function mesurer(tel) {
   };
   const cliquables = [...document.querySelectorAll('a[href], button, [role="button"], input:not([type="hidden"]), select, textarea, [onclick], summary')]
     .filter(visible);
-  const caches = [], petits = [], toasts = [], parFlottant = {}, flotEx = [];
+  const caches = [], petits = [], toasts = [], parFlottant = {}, flotEx = [], aDefiler = [];
+  /* 12.11 (cmcteams-pdf, pont 2125 : la barre « J'arrive » de la light et la barre du bas de CMCteams étaient comptées « cachées » alors qu'elles sont SOUS LE PLI,
+     atteignables au défilement) : un contrôle recouvert par une barre FIXE ou COLLANTE de l'app est d'abord amené au centre de l'écran ; s'il n'y est plus recouvert,
+     il est « à faire défiler », pas caché ; s'il l'est encore (page qui ne défile pas, dernier bouton sans marge sous la barre), il est caché. Le défilement est remis
+     tel quel ensuite. Les flottants du domaine (abeille, « Vue admin », pastille, installeur) gardent la règle stricte : ils ne recouvrent jamais rien (Kevin 6.11). */
+  const fixe = (n) => { for (let a = n; a && a !== document.body && a !== document.documentElement; a = a.parentElement) { let ps = ''; try { ps = getComputedStyle(a).position; } catch (_) { /* style illisible */ } if (ps === 'fixed' || ps === 'sticky') return true; } return false; };
+  const defilable = (e) => {   /* le VISITEUR peut-il faire défiler ce contrôle ? (scrollIntoView déplacerait même un corps overflow:hidden : ce n'est pas un défilement du visiteur) */
+    for (let a = e.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) { let o = ''; try { o = getComputedStyle(a).overflowY; } catch (_) { /* style illisible */ } if (/(auto|scroll)/.test(o) && a.scrollHeight > a.clientHeight + 2) return true; }
+    const se = document.scrollingElement || document.documentElement; let oh = '', ob = '';
+    try { oh = getComputedStyle(document.documentElement).overflowY; ob = document.body ? getComputedStyle(document.body).overflowY : ''; } catch (_) { /* style illisible */ }
+    return !/(hidden|clip)/.test(oh + ' ' + ob) && se.scrollHeight > se.clientHeight + 2;
+  };
+  const encoreRecouvertApresDefilement = (e) => {
+    if (!defilable(e)) return true;
+    const se = document.scrollingElement || document.documentElement; const avant = [[se, se.scrollTop, se.scrollLeft]];
+    for (let a = e.parentElement; a && a !== document.body && a !== document.documentElement; a = a.parentElement) avant.push([a, a.scrollTop, a.scrollLeft]);
+    try { e.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' }); } catch (_) { try { e.scrollIntoView(); } catch (_2) { /* pas de défilement */ } }
+    const r2 = e.getBoundingClientRect(); const x2 = r2.left + r2.width / 2, y2 = r2.top + r2.height / 2;
+    const d2 = (x2 >= 0 && y2 >= 0 && x2 < W && y2 < H) ? document.elementFromPoint(x2, y2) : null;
+    const encore = !d2 || (d2 !== e && !e.contains(d2) && !d2.contains(e));
+    for (const [n, t, l] of avant) { n.scrollTop = t; n.scrollLeft = l; }
+    return encore;
+  };
   for (const e of cliquables) {
     const r = e.getBoundingClientRect();
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -84,6 +106,9 @@ export function mesurer(tel) {
       else if (ephemere) toasts.push(court(e));
       /* 30.10 : dire QUI recouvre (position, z-index, début du texte, parent) — « sous div » ne permettait pas de savoir quel élément du routeur ou de la page cache le bouton */
       else { let cs = {}; try { cs = getComputedStyle(dessus); } catch (_) { /* style illisible */ }
+        /* 12.11 : une barre fixe de l'app (pas un flottant du domaine) qui ne recouvre plus le contrôle une fois celui-ci défilé au centre = « à faire défiler » */
+        const flottantDomaine = (dessus.tagName === 'IFRAME' && /\/__javis\/cadre/.test(dessus.getAttribute('src') || '')) || (dessus.closest && dessus.closest('#javis-root,.bee-companion,[data-kdmc-pastille],[data-kdmc-vue],button[aria-label*="Installer l\'application"],button[aria-label="Activer les notifications"]'));
+        if (!flottantDomaine && fixe(dessus) && !encoreRecouvertApresDefilement(e)) { aDefiler.push(court(e) + ' (sous ' + court(dessus) + ' au repos)'); continue; }
         const qui = court(dessus) + '{' + (cs.position || '?') + (cs.zIndex && cs.zIndex !== 'auto' ? ' z' + cs.zIndex : '') + ' "' + String(dessus.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 18) + '" ← ' + court(dessus.parentElement) + '}';
         caches.push(court(e) + (e.id || (typeof e.className === 'string' && e.className) ? '' : ' (dans ' + court(e.parentElement) + ')') + ' ⟵ sous ' + qui + rects(e, dessus));   /* 6.11 : un bouton sans nom est situé par son parent */
         /* 6.11 (Kevin : « la pastille Javis Bee Lingua ne cache jamais rien ») : QUI, parmi les éléments flottants du domaine, recouvre le contrôle */
@@ -119,7 +144,7 @@ export function mesurer(tel) {
   const largeur = Math.max(document.documentElement.scrollWidth, document.body ? document.body.scrollWidth : 0);
   return {
     titre: !!document.title,
-    cache: caches.length, cacheEx: caches.slice(0, 4), parFlottant, flotEx, toast: toasts.length,
+    cache: caches.length, cacheEx: caches.slice(0, 4), parFlottant, flotEx, toast: toasts.length, aDefiler: aDefiler.length, aDefilerEx: aDefiler.slice(0, 4),
     haut: haut.length, hautEx: haut.slice(0, 3),
     /* sur téléphone, Chrome/Safari ÉLARGISSENT la page pour faire tenir un contenu trop large (innerWidth grossit, la page se dézoome) :
        on compare donc à la largeur de l'ÉCRAN, pas à innerWidth. */
@@ -268,6 +293,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
         const pb = m ? [m.cache && `${m.cache} caché(s)`, m.haut && `haut coupé ×${m.haut}`, tel && m.encoche && 'haut sous l\'encoche iPhone', m.deborde && `déborde +${m.deborde}px`, tel && m.petit && `${m.petit} < 44px`, js.length && `${js.length} err JS`].filter(Boolean) : [err || 'échec'];
         journal(`${pb.length ? '❌' : '✅'} ${h} · ${nom} · HTTP ${st} · ${ligne.ms} ms${pb.length ? ' · ' + pb.join(' · ') : ''}`);
         if (m && m.cache) journal('   ↳ caché : ' + m.cacheEx.join(' | '));
+        if (m && m.aDefiler) journal('   ↳ à faire défiler (pas caché) : ' + m.aDefilerEx.join(' | '));
         if (m && m.haut) journal('   ↳ haut : ' + m.hautEx.join(' | '));
         if (m && m.deborde && m.debordeEx && m.debordeEx.length) journal('   ↳ déborde : ' + m.debordeEx.join(' | '));
         if (js.length) journal('   ↳ js : ' + [...new Set(js)].slice(0, 2).join(' | '));

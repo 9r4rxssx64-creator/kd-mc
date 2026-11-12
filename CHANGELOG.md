@@ -6,6 +6,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 
 
+## v3.223 — 2026-11-12
+- Dans chaque fiche, les actes officiels, les documents et les sources sont rangés tout seuls : par type (🍼 naissance, 💧 baptême, 💍 mariage, ⚖️ divorce, 🪦 décès, 🎖 militaire, 🏘 recensement, 📰 journaux et jugements, puis le reste), et dans chaque type du plus ancien au plus récent (année lue dans le titre). Le type est repéré par le mot qui apparaît en premier dans le titre. Les titres de rubrique n'apparaissent qu'à partir de deux types différents. L'ordre enregistré ne change pas : seul l'affichage est trié, donc aperçu, suppression et synchronisation gardent les bons numéros.
+
 ## v3.222 — 2026-11-11
 - Tiroir privé : chaque information a « 🔊 Écouter » (lit le texte privé à voix haute) et « ✏️ Corriger » (modifie le texte, repasse à « à valider »). Rien ne devient public sans « 🌍 Rendre public ». Garde : tools/arbre/verify-prive-ecouter.mjs.
 - Plus d'« accord » ni de courrier pour les mineurs (Kevin 11.11) : tout est public dans la famille d'office, seul le sensible reste privé côté admin. Un texte « texte préparé » devient public automatiquement le jour des 18 ans (date de naissance complète). Alerte « 🎂 anniversaire du jour » pour tous les écrans (fermable pour la journée) + calendrier des 60 prochains jours au clic. Garde : tools/arbre/verify-majeur-anniv.mjs.

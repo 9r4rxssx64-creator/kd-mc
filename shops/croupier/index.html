@@ -144,6 +144,7 @@ header.tete{border-bottom:1px solid var(--bord);padding:var(--e16) 0;padding-top
 footer{border-top:1px solid var(--bord);margin-top:var(--e64);padding:var(--e32) 0 var(--e48);font-size:var(--t14);color:var(--texte3)}
 footer nav{display:flex;flex-wrap:wrap;gap:var(--e8) var(--e24);margin-top:var(--e16)}
 footer nav a{min-height:44px;display:inline-flex;align-items:center;color:var(--texte2)}
+#kdmc-version-badge{position:fixed;left:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 64px);z-index:2147483646;padding:5px 10px;border-radius:12px;border:1px solid #8A6A1F88;background:#fffffff0;color:#8A6A1F;font:700 11px/1 "SF Mono",Menlo,monospace;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.18);pointer-events:none}
 </style>
 </head>
 <body>
@@ -377,7 +378,8 @@ footer nav a{min-height:44px;display:inline-flex;align-items:center;color:var(--
       <a href="https://shops.kd-mc.com/legal/mentions.html">Mentions légales</a>
       <a href="https://shops.kd-mc.com/legal/confidentialite.html">Confidentialité</a>
     </nav>
-    <p style="margin:var(--e8) 0 0;font-size:var(--t14);opacity:.75">Version <span class="version-site" data-app-ver="v1.0.0">v1.0.0</span></p>
+    <!-- 12.11 (robot Servi, pont 2346 : version seulement dans le pied de page, jamais visible sans défiler) : pastille FIXE en CSS pur (la page n'accepte aucun script), à la place de la pastille partagée du domaine (bas gauche), même identifiant pour que Bee et les boutons du domaine l'évitent -->
+    <span id="kdmc-version-badge" class="version-site" data-app-ver="v1.0.1" aria-label="Version v1.0.1">v1.0.1</span>
   </div>
 </footer>
 

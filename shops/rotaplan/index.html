@@ -269,6 +269,7 @@ footer nav a{min-height:44px;display:inline-flex;align-items:center}
   .barre-fixe{display:block}
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 }
+#kdmc-version-badge{position:fixed;left:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 64px);z-index:2147483646;padding:5px 10px;border-radius:12px;border:1px solid #8B5CF688;background:#fffffff0;color:#8B5CF6;font:700 11px/1 "SF Mono",Menlo,monospace;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.18);pointer-events:none}
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
@@ -531,7 +532,8 @@ footer nav a{min-height:44px;display:inline-flex;align-items:center}
       <a href="https://shops.kd-mc.com/legal/cgv.html">Conditions de vente</a>
       <a href="https://shops.kd-mc.com/legal/confidentialite.html">Confidentialité</a>
     </nav>
-    <p style="margin:var(--e8) 0 0;font-size:var(--t14);opacity:.75">Version <span class="version-site" data-app-ver="v1.0.1">v1.0.1</span></p>
+    <!-- 12.11 (robot Servi, pont 2346 : version seulement dans le pied de page, jamais visible sans défiler) : pastille FIXE en CSS pur (la page n'accepte aucun script), à la place de la pastille partagée du domaine (bas gauche), même identifiant pour que Bee et les boutons du domaine l'évitent -->
+    <span id="kdmc-version-badge" class="version-site" data-app-ver="v1.0.2" aria-label="Version v1.0.2">v1.0.2</span>
   </div>
 </footer>
 

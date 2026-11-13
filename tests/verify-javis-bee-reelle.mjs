@@ -96,7 +96,14 @@ try { candidats.unshift((await import('ffmpeg-static')).default); } catch (_) {}
 try { const m = await import('@ffmpeg-installer/ffmpeg'); candidats.push((m.default || m).path); } catch (_) {}
 const FFMPEG = candidats.filter(Boolean).find(ffmpegUtilisable) || null;
 const TRANSCODE = !sonde.h264 && sonde.vp9 && !!FFMPEG;
-const VIDEO_TESTABLE = sonde.h264 || TRANSCODE;
+/* 13.11.2026 (Bee « Bibi » v1.39, javis-bee) : le widget ne pose PLUS de couche vidéo pour une mascotte au dessin
+   v3 (`art3: true` — les anciennes vidéos montrent l'ancien dessin). Le robot public attendait quand même
+   `.javis-vid` et tombait en « Timeout 30000ms » à chaque passage (rouge depuis le 8.11). On lit donc le
+   widget : tant que Bee est en `art3`, les contrôles VIDÉO sont « sans objet » (dits dans R.na), jamais verts
+   par défaut ; le jour où une vidéo revient pour Bee, ils se rallument seuls. */
+const BEE_SANS_VIDEO = /id:\s*'bee'[^\n]*\n?[^\n]*art3:\s*true/.test(
+  fs.readFileSync(join(ROOT, 'tools/javis/javis-widget.js'), 'utf8'));
+const VIDEO_TESTABLE = (sonde.h264 || TRANSCODE) && !BEE_SANS_VIDEO;
 if (sonde.h264) chk(true, 'ce navigateur lit le H.264 : les vrais fichiers sont joués tels quels');
 else if (TRANSCODE) chk(true, 'ce navigateur ne lit pas le H.264 → les VRAIES images de Bee sont rejouées en VP9 (ffmpeg)');
 else R.na.push('la lecture vidéo n\'a PAS pu être éprouvée ici (ni H.264 ni ffmpeg complet) — '
@@ -582,8 +589,10 @@ if (FFMPEG) {
       oeil: r ? getComputedStyle(r).getPropertyValue('--ll-t').trim() : '' };
   });
   chk(avant.pastilles === 2, `deux personnages proposés dans le panneau (${avant.pastilles} pastille(s))`);
-  chk(avant.masc === 'bee' && avant.ailes === 2,
-    `au départ c'est Bee, avec ses 2 ailes (${avant.masc}, ${avant.ailes} pièce(s))`);
+  /* 13.11.2026 (Bibi, v1.39) : Bee est UNE seule image animée par le squelette `bee/v3` (`pieces: []`) ; les 2 ailes en
+     pièces séparées étaient l'ancien dessin. On vérifie donc le vrai dessin de départ, pas un nombre de pièces. */
+  chk(avant.masc === 'bee' && /\/bee\/(v3\/)?rig\/base\.webp$/.test(String(avant.src)) && avant.ailes === 0,
+    `au départ c'est Bee, son dessin d'une seule image (${avant.masc}, ${String(avant.src).replace('https://lingua.kd-mc.com/', '')}, ${avant.ailes} pièce(s))`);
 
   await page.evaluate(() => {
     const b = document.querySelector('#javis-masc .javis-mpick[data-masc="donkey"]');
@@ -601,7 +610,7 @@ if (FFMPEG) {
       anime: r ? r.className : '' };
   });
   chk(apres.masc === 'donkey', `un doigt suffit : on passe à l'âne (${apres.masc})`);
-  chk(!!apres.src && apres.src !== avant.src && /\/donkey\/rig\/base\.webp$/.test(apres.src),
+  chk(!!apres.src && apres.src !== avant.src && /\/donkey\/(v3\/)?rig\/base\.webp$/.test(apres.src),
     `c'est VRAIMENT son dessin qui s'affiche (${String(apres.src).replace('https://lingua.kd-mc.com/', '')})`);
   chk(apres.ailes === 0, `l'âne n'a pas d'ailes : aucune image fantôme chargée (${apres.ailes} pièce(s))`);
   chk(apres.oeil && apres.oeil !== avant.oeil,
@@ -829,8 +838,14 @@ if (FFMPEG) {
   await page.waitForFunction(() => window.KdmcMarionnette && KdmcMarionnette.etat().some((e) => e.p3d), null, { timeout: 25000 }).catch(() => {});
   const e3 = await page.evaluate(() => ({ etat: KdmcMarionnette.etat(), moteur: KdmcMarionnette.moteur3D(), veut: KdmcMarionnette.prefere3D(),
     classe: document.querySelector('#javis-launcher .bee-rig').className, video: document.querySelectorAll('#javis-launcher .javis-vid').length }));
-  chk(e3.veut && e3.moteur === 2 && e3.etat.some((e) => e.p3d), `la petite fenêtre est en 3D SANS bouton (moteur ${e3.moteur}, ${e3.etat.filter((e) => e.p3d).length} personnage(s) en 3D)`);
-  chk(/p3d-on/.test(e3.classe) && !/\bvid\b/.test(e3.classe), `elle porte p3d-on et jamais .vid (${e3.classe})`);
+  /* 13.11.2026 : depuis le 30.10 le dessin v3 (Bibi) EST le personnage — la marionnette l'anime, le modèle 3D maison ne le remplace plus
+     (marionnette.js `monter3D` : « /v3 → return »). La petite fenêtre est donc animée (mrn-on), SANS bouton, sans modèle 3D ni vidéo. */
+  chk(e3.veut && !e3.etat.some((e) => e.p3d), `le dessin v3 n'est pas remplacé par le modèle 3D (moteur ${e3.moteur}, ${e3.etat.filter((e) => e.p3d).length} personnage(s) en 3D)`);
+  /* Le moteur 3D (three.js) ne se charge pas toujours dans la machine de test (réseau coupé) : le contrôle ci-dessus ne suffirait pas à rougir
+     si la règle sautait. On vérifie donc aussi la règle elle-même dans le code servi. */
+  chk(/function monter3D[\s\S]{0,600}\/v3\(:\|\$\)\/\.test\(etat\.nom\)\)\s*return/.test(fs.readFileSync(join(ROOT, 'tools/javis/marionnette.js'), 'utf8')),
+    'la règle « un dessin v3 n\'est jamais remplacé par le modèle 3D » est dans la marionnette');
+  chk(/mrn-on/.test(e3.classe) && !/p3d-on/.test(e3.classe) && !/\bvid\b/.test(e3.classe), `la petite fenêtre est animée par la marionnette, jamais .vid (${e3.classe})`);
   chk(e3.video === 0 && mp4Demandes === 0, `la vidéo n'est même pas chargée en 3D (${e3.video} balise, ${mp4Demandes} fichier mp4 demandé)`);
   const px = await page.evaluate(() => { const c = document.querySelector('#javis-launcher .mrn-canvas'); const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let jaune = 0; for (let i = 0; i < x.length; i += 4) if (x[i] > 220 && x[i + 1] > 150 && x[i + 1] < 215 && x[i + 2] < 90) jaune++; return { jaune, n: x.length / 4, w: c.width }; });
   chk(px.jaune > px.n * 0.03, `le canvas contient bien Bee en 3D (jaune d'abeille : ${(100 * px.jaune / px.n).toFixed(1)} % des points)`);

@@ -7,25 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 13/11/2026 15:32 UTC
-
-- **Branche** : `main` · **Commit** : `a930d6fd` · **Run** : `43453285879`
-- **Ce qui a lâché** : deploy › Déploiement du routeur (+ custom domains kd-mc.com)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/43453285879
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m# 16.10 (run public 38961876371) : envoi réussi, puis « Internal authentication error: internal server error [code: 10500] »^[[0m
-^[[36;1m  if [ "$essai" -ge 3 ] || ! grep -qiE 'internal server error|code: 10500|internal authentication error|HTTP 5[0-9][0-9]' deploy.log; then^[[0m
-^[[36;1m    echo "::error title=wrangler deploy::$(tail -c 1500 deploy.log | tr '\n\r' '  ' | sed 's/%/%25/g')"^[[0m
-^[[36;1m    echo "::error::wrangler n'a PAS appliqué UPSTREAM_BASE — les variables du wrangler.toml ne sont pas parties, la bascule ne peut pas prendre"^[[0m
-  Please update to the latest version to prevent critical errors.
-^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/workers/scripts/kdmc-router/assets-upload-session) failed.^[[0m
-  An unknown error has occurred. If this error persists, please file a report in workers-sdk (^[[4mhttps://github.com/cloudflare/workers-sdk/issues^[[0m) or reach out to your account team. [code: 10013]
-##[error]  ⛅️ wrangler 3.114.17 (update available 4.161.0) ------------------------------------------------  ^[[33m▲ ^[[43;33m[^[[43;30mWARNING^[[43;33m]^[[0m ^[[1mThe version of Wrangler you are using is now out-of-date.^[[0m    Please update to the latest version to prevent critical errors.   Run `npm install --save-dev wrangler@4` to update to the latest version.   After installation, run Wrangler with `npx wrangler`.   ^[[33m▲ ^[[43;33m[^[[43;30mWARNING^[[43;33m]^[[0m ^[[1mProcessing wrangler.toml configuration:^[[0m      - "unsafe" fields are experimental and may change or break at any time.   🌀 Building list of assets... 🌀 Starting asset upload...  ^[[31m✘ ^[[41;31m[^[[41;97mERROR^[[41;31m]^[[0m ^[[1mA request to the Cloudflare API (/accounts/***/workers/scripts/kdmc-router/assets-upload-session) failed.^[[0m    An unknown error has occurred. If this error persists, please file a report in workers-sdk (^[[4mhttps://github.com/cloudflare/workers-sdk/issues^[[0m) or reach out to your account team. [code: 10013]      If you think this is a bug, please open an issue at: ^[[4mhttps://github.com/cloudflare/workers-sdk/issues/new/choose^[[0m    Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md 🪵  Logs were written to "/home/runner/.config/.wrangler/logs/wrangler-2026-11-13_15-32-10_290.log"
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -547,4 +528,17 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
+##[error]Process completed with exit code 1.
 ```

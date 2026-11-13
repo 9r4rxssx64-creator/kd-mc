@@ -56,6 +56,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Règle — chercher toutes les infos de chaque personne (2026-11-12)
 - Kevin 12.11 (soir) : on cherche tout ce qui est public et officiel pour CHAQUE personne, vivants, mineurs et futurs compris ; limites inchangées (jamais adresse/téléphone/e-mail/réseau social, rien de privé en texte public, mineur = privé, aucun robot ne se connecte). Ajouté à `.claude/rules/arbre-relecture-horaire.md` ; diffusé par le pont (n° 2384).
 
+## v3.226 — 2026-11-13
+- **Vue d'ensemble de l'arbre : plus aucune famille sans nom** (Kevin : « il manque des familles dans l'affichage »). Une étiquette de famille n'était posée que pour 3 personnes du même nom proches les unes des autres : une famille de 3 personnes ou plus éparpillée en petits groupes de 2 n'en avait aucune. Elle reçoit maintenant une étiquette sur chacun de ses groupes de 2. Les familles de 1 ou 2 personnes restent sans étiquette (trop petites), et deux étiquettes qui se chevauchent gardent la plus grosse.
+
 ## v3.225 — 2026-11-13
 - **Fiche : les grands-parents apparaissent dans « Famille »** (Kevin : « pourquoi il manque ses grands-parents »). Sous le père et la mère, la fiche affiche maintenant le grand-père et la grand-mère, côté paternel puis maternel, avec le même bouton pour les ouvrir. Aucune donnée ne change.
 

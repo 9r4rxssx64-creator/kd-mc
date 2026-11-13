@@ -85,6 +85,9 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Arbre v3.219 — Desarzens se dit « Dessarzanss » (2026-11-09)
 - Kevin : « dessarzanss » (le s final se prononce). `PRONONCIATIONS` : Desarzens → « Dessarzanss ». Garde `verify-prononciation.mjs`.
 
+## Bee v1.39 — Bee « Bibi » : nouvelle image + squelette refait (2026-11-13, prêt, pas encore en ligne)
+- Kevin : « Je veux le même visuel que l'image » (Bibi). `lingua/bee/v3/rig/base.webp` refait (abeille à veste zippée noir/orange, ailes pailletées) ; `tools/javis/marionnette.js` : `SQUELETTES['bee/v3']` avec 3 antennes, ailes basses plus petites, bras bornés `[-6,16]` (copies `lingua/`, `javis/`, `arbre/` par `sync:javis`) ; `javis/sw.js` = `javis-v1.39`. Bourricot inchangé. CMCteams et light ne sont pas touchées (Bee est un widget du domaine). Gardes : `test:marionnette` 105/0 (ancien squelette → 3 échecs), `test:javis-bee` 97/0.
+
 ## Bee v1.38 / marionnette v2.7 — Bee et Bourricot en peluches style Pixar (2026-11-12)
 - Kevin : « le même visuel que l'image, toujours une marionnette, personnage des plus mignon ». Nouvelles images `lingua/bee/v3/rig/base.webp` et `lingua/donkey/v3/rig/base.webp` ; `tools/javis/marionnette.js` v2.7 (copie `lingua/marionnette.js`, embarqué dans `javis-widget.js` + `arbre/` + `javis/`, `javis/sw.js` = `javis-v1.38`) : squelettes `bee/v3` / `donkey/v3` (ailes en deux lobes, bras bornés). Garde `test:marionnette` 105/0.
 

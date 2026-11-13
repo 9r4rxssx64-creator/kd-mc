@@ -113,21 +113,23 @@
      Mesuré à la main sur la planche 1024 × 1024 (30.10). */
   SQUELETTES['bee/v3'] = {
     os: [
-      { id: 'antG', parent: 'tete', a: [435, 180], trace: [[435, 180], [405, 120], [370, 80], [320, 62]], r: 28, f: 22, cote: -1, sens: 'haut', type: 'antenne' },
-      { id: 'antD', parent: 'tete', a: [590, 185], trace: [[590, 185], [625, 120], [670, 85], [712, 68]], r: 28, f: 22, cote: 1, sens: 'haut', type: 'antenne' },
-      { id: 'aileG', parent: 'tete', a: [300, 540], trace: [[255, 490], [225, 462], [177, 400]], r: 40, f: 20, cote: -1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
-      { id: 'aileD', parent: 'tete', a: [725, 540], trace: [[770, 490], [800, 462], [848, 400]], r: 40, f: 20, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
-      { id: 'aileDb', parent: 'tete', a: [790, 545], trace: [[800, 520], [835, 585], [855, 665]], r: 32, f: 16, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
-      { id: 'brasG', parent: 'corps', a: [300, 620], trace: [[300, 620], [268, 700], [262, 780]], r: 48, f: 24, cote: -1, sens: 'bas', type: 'bras' },
-      { id: 'brasD', parent: 'corps', a: [735, 625], trace: [[735, 625], [760, 700], [752, 780]], r: 48, f: 24, cote: 1, sens: 'bas', type: 'bras', bornes: [-8, 14] },
-      { id: 'jambeG', parent: 'corps', a: [420, 880], trace: [[420, 880], [405, 945], [395, 975]], r: 50, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
-      { id: 'jambeD', parent: 'corps', a: [600, 880], trace: [[600, 880], [610, 940], [625, 975]], r: 50, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
-      { id: 'oeilG', parent: 'visage', a: [398, 375], ellipse: [398, 375, 58, 55], f: 18, type: 'oeil', cote: -1 },
-      { id: 'oeilD', parent: 'visage', a: [628, 377], ellipse: [628, 377, 60, 55], f: 18, type: 'oeil', cote: 1 },
-      { id: 'machoire', parent: 'visage', a: [512, 440], ellipse: [512, 462, 50, 20], f: 18, type: 'machoire', amp: 0.024 },
-      { id: 'visage', parent: 'tete', a: [510, 380], ellipse: [510, 400, 200, 140], f: 40, type: 'visage' },
-      { id: 'tete', parent: 'corps', a: [512, 550], ellipse: [510, 345, 225, 210], f: 34, type: 'tete' },
-      { id: 'corps', parent: null, a: [512, 935], ellipse: [512, 770, 200, 180], f: 40, type: 'corps' }
+      { id: 'antG', parent: 'tete', a: [448, 205], trace: [[448, 205], [440, 160], [400, 125], [345, 102], [318, 116]], r: 26, f: 22, cote: -1, sens: 'haut', type: 'antenne' },
+      { id: 'antC', parent: 'tete', a: [462, 190], trace: [[462, 190], [468, 140], [495, 92], [548, 64]], r: 24, f: 20, cote: 1, sens: 'haut', type: 'antenne' },
+      { id: 'antD', parent: 'tete', a: [598, 205], trace: [[598, 205], [612, 165], [650, 122], [692, 108], [722, 118]], r: 26, f: 22, cote: 1, sens: 'haut', type: 'antenne' },
+      { id: 'aileG', parent: 'tete', a: [310, 520], trace: [[250, 480], [190, 440], [110, 410]], r: 48, f: 24, cote: -1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'aileD', parent: 'tete', a: [725, 520], trace: [[790, 480], [860, 440], [930, 410]], r: 48, f: 24, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'aileGb', parent: 'corps', a: [295, 585], trace: [[250, 605], [215, 640], [190, 668]], r: 20, f: 10, cote: -1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'aileDb', parent: 'corps', a: [735, 585], trace: [[780, 605], [815, 640], [845, 668]], r: 20, f: 10, cote: 1, sens: 'haut', type: 'aile', amp: 2.6, bornes: [-14, 14] },
+      { id: 'brasG', parent: 'corps', a: [350, 650], trace: [[350, 650], [310, 705], [278, 748]], r: 40, f: 20, cote: -1, sens: 'bas', type: 'bras', bornes: [-6, 16] },
+      { id: 'brasD', parent: 'corps', a: [685, 650], trace: [[685, 650], [728, 703], [752, 745]], r: 40, f: 20, cote: 1, sens: 'bas', type: 'bras', bornes: [-6, 16] },
+      { id: 'jambeG', parent: 'corps', a: [430, 895], trace: [[430, 895], [425, 940], [425, 965]], r: 50, f: 20, cote: -1, sens: 'bas', type: 'jambe' },
+      { id: 'jambeD', parent: 'corps', a: [590, 895], trace: [[590, 895], [595, 940], [600, 965]], r: 50, f: 20, cote: 1, sens: 'bas', type: 'jambe' },
+      { id: 'oeilG', parent: 'visage', a: [410, 418], ellipse: [410, 418, 62, 58], f: 18, type: 'oeil', cote: -1 },
+      { id: 'oeilD', parent: 'visage', a: [628, 418], ellipse: [628, 418, 62, 58], f: 18, type: 'oeil', cote: 1 },
+      { id: 'machoire', parent: 'visage', a: [505, 480], ellipse: [505, 498, 48, 18], f: 18, type: 'machoire', amp: 0.024 },
+      { id: 'visage', parent: 'tete', a: [510, 420], ellipse: [510, 430, 185, 150], f: 40, type: 'visage' },
+      { id: 'tete', parent: 'corps', a: [512, 580], ellipse: [510, 395, 225, 205], f: 34, type: 'tete' },
+      { id: 'corps', parent: null, a: [512, 940], ellipse: [512, 780, 190, 170], f: 40, type: 'corps' }
     ]
   };
   SQUELETTES['donkey/v3'] = {

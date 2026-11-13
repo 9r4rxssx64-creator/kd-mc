@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.017 + light v1.146 — « Qui est en ligne » : on touche une personne, son planning s'ouvre ; la batterie de son téléphone est visible de l'admin (2026-11-13)
+- Light : chaque nom de la liste « 🟢 N en ligne » est un bouton (≥ 44 px) qui ferme la liste et ouvre le planning de la personne ; CMCteams : « Connectés à l'instant » fait pareil (Planning filtré sur son nom).
+- Batterie (`🔋 NN %`, `⚡` en charge) : portée par le battement existant (aucune écriture de plus), seulement quand le navigateur la fournit (Android/Chrome ; jamais sur iPhone Safari) ; affichée à l'admin seul, dans la liste et dans la case du nom. Rien n'est inventé quand elle manque.
+- `tools/shared/presence-cmc.js` : CMCteams relit `bat`/`chg` des connectés de la light.
+- Mesuré : `test:presence-live` 22 OK (sections G et F3-F5) ; rouge sous `SABOTAGE=1`, `bat` et `tap`.
+
 ## CMCteams v10.016 + light v1.145 — les équipes d'école ont la teinte du groupe (CRAPS vert, EUROPE bleu) sur toutes leurs cases, comme la light (2026-11-13)
 - Suite de « Fais pas pris » (a) : le garde `test:couleurs-parite`, élargi à octobre + novembre + décembre et à tous les tableaux « Formation <JEU> » (24 314 cases comparées au lieu de 7 440), a montré 577 fonds et 202 textes qui différaient entre l'app et la light (leçon 947).
 - CMCteams (`index.html`, `vDeparts`) : les jours de départ (vendredi, samedi) et les codes à guillemet (14/19") de l'équipe d'école prennent la teinte du groupe ; la ligne grisée de l'équipe d'origine la garde aussi (une faute de frappe `data-formation-grisstyle` faisait perdre son style) ; les jours où l'élève est encore dans son équipe d'origine sont des cases vides « · » sans fond, comme dans la light.

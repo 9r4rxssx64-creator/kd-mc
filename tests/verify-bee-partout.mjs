@@ -38,6 +38,8 @@ const srv = http.createServer((q, r) => {
     if (u === '/') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage()); }
     if (u === '/barre.css') { r.setHeader('content-type', 'text/css'); return r.end('#up{position:fixed;right:12px;bottom:110px;width:44px;height:44px}#reg{position:fixed;right:12px;bottom:160px;width:44px;height:44px}#champ{position:fixed;left:8px;bottom:110px;width:200px;height:44px}'); }
     if (u === '/barre') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('<link rel="stylesheet" href="/barre.css">', '<textarea id="champ"></textarea><button id="up">↑</button><button id="reg">⚙️</button>')); }
+    if (u === '/paysage.css') { r.setHeader('content-type', 'text/css'); return r.end('button{position:fixed;width:44px;height:44px;padding:0}.d{right:8px}.g{left:8px}#cache{left:0;top:195px}' + [130, 174, 218, 262, 306].map((t, i) => `#d${i}{top:${t}px}`).join('') + [130, 262, 306].map((t, i) => `#g${i}{top:${t}px}`).join('')); }
+    if (u === '/paysage') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('<link rel="stylesheet" href="/paysage.css">', [0, 1, 2, 3, 4].map((i) => `<button class="d" id="d${i}">${i}</button>`).join('') + [0, 1, 2].map((i) => `<button class="g" id="g${i}">g${i}</button>`).join('') + '<button id="cache">⏱</button>')); }
     if (u === '/off') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('<meta name="kdmc-bee" content="off">')); }
     if (u === '/deja') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('', '<div id="javis-root"></div>')); }
     if (u === '/dans-un-cadre') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end('<!doctype html><body><iframe id="f" src="/"></iframe>'); }
@@ -60,8 +62,8 @@ const BASE = `http://127.0.0.1:${srv.address().port}`;
 
 const nav = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
 const MIME = { '.js': 'text/javascript', '.webp': 'image/webp', '.png': 'image/png', '.mp4': 'video/mp4' };
-async function ouvre({ marqueur = true, jeton = false, init, url = '/' } = {}) {
-  const ctx = await nav.newContext({ serviceWorkers: 'block', viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
+async function ouvre({ marqueur = true, jeton = false, init, url = '/', vp = { width: 390, height: 844 } } = {}) {
+  const ctx = await nav.newContext({ serviceWorkers: 'block', viewport: vp, deviceScaleFactor: 1 });
   /* les adresses « extérieures » du domaine pointent vers les vrais fichiers du dépôt */
   await ctx.route('https://javis.kd-mc.com/**', (rt) => {
     const p = new URL(rt.request().url()).pathname.replace(/^\//, '');
@@ -306,6 +308,19 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
   m = await mesure(page);
   chk(m.controles.filter(([, r]) => inter(m.cadre, r)).length === 0, 'refermé, le rond retrouve une place libre (il ne retombe pas sur les boutons)');
   await ctx.close();
+  /* 13.11 (pont 2454, robot Servi, CMCteams v10.014 : iPhone en PAYSAGE 844×390, un bouton 44×44 collé au bord gauche (⏱) caché sous la languette de Bee) : écran BAS, murs de boutons fixes des deux côtés dans toute
+     la zone basse ; la seule place libre est plus haut. Avant : Bee se rangeait en languette sur le bouton ; maintenant il cherche aussi en haut. */
+  {
+    const pg = await ouvre({ url: '/paysage', vp: { width: 844, height: 390 } });
+    await pg.page.waitForFunction(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); return f && getComputedStyle(f).display === 'block'; }, null, { timeout: 20000 }).catch(() => {});
+    await dors(2200);
+    const mp = await pg.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(), R = (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, t: e.textContent }; };
+      return { f: { left: f.left, right: f.right, top: f.top, bottom: f.bottom }, bs: [...document.querySelectorAll('button')].map(R), W: innerWidth, H: innerHeight }; });
+    const cachés = mp.bs.filter((b) => Math.min(mp.f.right, b.right) - Math.max(mp.f.left, b.left) > 2 && Math.min(mp.f.bottom, b.bottom) - Math.max(mp.f.top, b.top) > 2).map((b) => b.t);
+    chk(cachés.length === 0, `iPhone en paysage 844×390, boutons fixes des deux côtés : Bee ne cache aucun des ${mp.bs.length} boutons (cachés : ${cachés.join(', ') || 'aucun'} · rond en ${Math.round(mp.f.left)},${Math.round(mp.f.top)})`);
+    chk(mp.f.top >= 0 && mp.f.bottom <= mp.H && mp.f.right > 0 && mp.f.left < mp.W, 'et le rond reste dans l\'écran');
+    await pg.ctx.close();
+  }
   /* une page SANS contrôle permanent : Bee garde sa place habituelle (aucun saut inutile) */
   const n = await ouvre();
   await n.page.waitForFunction(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); return f && getComputedStyle(f).display === 'block'; }, null, { timeout: 20000 }).catch(() => {});

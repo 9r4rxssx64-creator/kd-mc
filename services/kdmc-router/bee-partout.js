@@ -97,20 +97,26 @@ export function partout() {
       }
       return n;
     }
-    function choisirPlace() {
-      if (!cadre || ouvert) return;
-      var rs = controles(), W = window.innerWidth, H = window.innerHeight, meilleure = null, note = 1e9;
-      var maxBas = Math.max(88, Math.round(H * 0.7) - 92);
-      var cotes = ['right', 'left'];
-      /* m = 1 : LANGUETTE — aucune place libre, le rond se range à moitié hors de l'écran (30 px visibles) ; un toucher l'ouvre comme avant */
-      for (var m = 0; m < 2 && note; m++) for (var c = 0; c < cotes.length && note; c++) {
+    /* cherche(maxBas) : la meilleure place (la moins recouvrante) jusqu'à la hauteur maxBas, côté droit puis gauche ; m = 1 : LANGUETTE — aucune place libre, le rond se range à moitié hors de l'écran (30 px visibles), un toucher l'ouvre comme avant */
+    function cherche(rs, W, H, maxBas) {
+      var cotes = ['right', 'left'], res = { meilleure: null, note: 1e9 };
+      for (var m = 0; m < 2 && res.note; m++) for (var c = 0; c < cotes.length && res.note; c++) {
         for (var b = 88; b <= maxBas; b += 16) {
           var vis = m ? 30 : 92, l = cotes[c] === 'right' ? W - (m ? 0 : 8) - vis : (m ? 0 : 8), bas0 = H - b;
           var n = recouvre({ l: l, r: l + vis, t: bas0 - 92, b: bas0 }, rs);
-          if (n < note) { note = n; meilleure = { cote: cotes[c], bas: b, range: !!m }; }
+          if (n < res.note) { res.note = n; res.meilleure = { cote: cotes[c], bas: b, range: !!m }; }
           if (n === 0) break;
         }
       }
+      return res;
+    }
+    function choisirPlace() {
+      if (!cadre || ouvert) return;
+      var rs = controles(), W = window.innerWidth, H = window.innerHeight;
+      var r1 = cherche(rs, W, H, Math.max(88, Math.round(H * 0.7) - 92)), meilleure = r1.meilleure, note = r1.note;
+      /* 13.11 (pont 2454, robot Servi : iPhone en PAYSAGE 844×390, un bouton 44×44 de CMCteams caché sous la languette) : sur un écran bas, les 70 % du bas ne laissent que 6 places par côté ; s'il n'y a aucune place LIBRE
+         dans cette zone, on cherche aussi plus haut (jusqu'à 8 px du haut de l'écran) : une place libre en haut vaut mieux qu'un bouton caché en bas */
+      if (note > 0) { var r2 = cherche(rs, W, H, Math.max(88, H - 8 - 92)); if (r2.note < note) { meilleure = r2.meilleure; note = r2.note; } }
       if (!meilleure) return;
       var visA = place.range ? 30 : 92, lA = place.cote === 'right' ? W - (place.range ? 0 : 8) - visA : (place.range ? 0 : 8);
       var actuelle = recouvre({ l: lA, r: lA + visA, t: H - place.bas - 92, b: H - place.bas }, rs);

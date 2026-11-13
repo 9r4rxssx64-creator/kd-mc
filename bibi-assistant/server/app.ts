@@ -60,6 +60,8 @@ export async function buildApp(config: Config, opts: { fetchImpl?: typeof fetch;
         frameAncestors: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],
+        // Safari (WebKit) transforme http://127.0.0.1 en https si cette directive est présente : le test local plante.
+        upgradeInsecureRequests: config.secure ? [] : null,
       },
     },
     hsts: config.secure,

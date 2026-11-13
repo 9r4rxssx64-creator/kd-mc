@@ -168,3 +168,20 @@ describe("démarrage en production : refus des réglages dangereux", () => {
     expect(() => loadConfig({ ...base, BIBI_ALLOW_OPEN: "true" })).not.toThrow();
   });
 });
+
+describe("https forcé en production, relâché seulement pour l'essai local (Safari plantait sur http://127.0.0.1)", () => {
+  const csp = async (env: Record<string, string>) => String((await ctx.app.inject({ url: "/api/health" })).headers["content-security-policy"]);
+  it("production normale : la page force https et l'HSTS est envoyé", async () => {
+    ctx = await monter({ NODE_ENV: "production", SESSION_SECRET: "x".repeat(40), BIBI_ALLOW_OPEN: "true" });
+    expect(await csp({})).toContain("upgrade-insecure-requests");
+    expect((await ctx.app.inject({ url: "/api/health" })).headers["strict-transport-security"]).toBeTruthy();
+  });
+  it("essai local (BIBI_HTTP_LOCAL + 127.0.0.1) : plus de forçage https", async () => {
+    ctx = await monter({ NODE_ENV: "production", SESSION_SECRET: "x".repeat(40), BIBI_ALLOW_OPEN: "true", BIBI_HTTP_LOCAL: "true", HOST: "127.0.0.1" });
+    expect(await csp({})).not.toContain("upgrade-insecure-requests");
+  });
+  it("BIBI_HTTP_LOCAL sur une adresse publique est ignoré (0.0.0.0 garde https)", async () => {
+    ctx = await monter({ NODE_ENV: "production", SESSION_SECRET: "x".repeat(40), BIBI_ALLOW_OPEN: "true", BIBI_HTTP_LOCAL: "true", HOST: "0.0.0.0" });
+    expect(await csp({})).toContain("upgrade-insecure-requests");
+  });
+});

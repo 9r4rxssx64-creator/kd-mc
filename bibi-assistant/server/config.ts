@@ -34,6 +34,8 @@ const schema = z.object({
   ALLOW_REGISTRATION: bool(false),
   BIBI_ACCESS_CODE: z.string().default(""),
   BIBI_ALLOW_OPEN: bool(false),
+  // Essais locaux seulement (http://127.0.0.1) : ne pas forcer https. Sans effet si l'écoute n'est pas en boucle locale.
+  BIBI_HTTP_LOCAL: bool(false),
   CORS_ORIGIN: z.string().default(""),
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   // Pour les tests : URL de base remplacées (faux fournisseurs locaux)
@@ -75,5 +77,5 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     : c.DATABASE_URL === ":memory:"
       ? ":memory:"
       : `${c.DATA_DIR}/bibi.db`;
-  return { ...c, sessionSecret, dbPath, secure: prod };
+  return { ...c, sessionSecret, dbPath, secure: prod && !(c.BIBI_HTTP_LOCAL && (c.HOST === "127.0.0.1" || c.HOST === "localhost")) };
 }

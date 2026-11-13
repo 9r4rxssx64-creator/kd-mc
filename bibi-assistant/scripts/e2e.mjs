@@ -22,7 +22,7 @@ const verifier = (nom, cond, detail = "") => { if (cond) { ok++; console.log(`  
 
 if (!existsSync("dist/index.html") || !existsSync("dist-server/server/index.js")) { console.error("Lance d'abord : npm run build"); process.exit(2); }
 
-const env = { ...process.env, NODE_ENV: "production", PORT: String(PORT), HOST: "127.0.0.1", BIBI_ALLOW_OPEN: "true",
+const env = { ...process.env, NODE_ENV: "production", PORT: String(PORT), HOST: "127.0.0.1", BIBI_ALLOW_OPEN: "true", BIBI_HTTP_LOCAL: "true",
   SESSION_SECRET: "e2e-secret-e2e-secret-e2e-secret-e2e-secret", DATABASE_URL: `sqlite:${join(tmp, "e2e.db")}`,
   GEMINI_API_KEY: "", GROQ_API_KEY: "", OPENROUTER_API_KEY: "", ELEVENLABS_API_KEY: "", ENABLE_CLOUD_SYNC: "false", ALLOW_PAID_PROVIDERS: "false" };
 const serveur = spawn("node", ["dist-server/server/index.js"], { env, stdio: ["ignore", "pipe", "pipe"] });
@@ -47,6 +47,7 @@ try {
     const ctx = await browser.newContext(MOTEUR === "webkit" ? { ...pw.devices["iPhone 13"], viewport: { width: 375, height: 700 } } : { viewport: { width: 375, height: 700 }, hasTouch: true, isMobile: MOTEUR === "chromium", deviceScaleFactor: 2 });
     const page = await ctx.newPage();
     const erreursJs = []; page.on("pageerror", (e) => erreursJs.push(String(e)));
+    page.on("requestfailed", (r) => console.log(`  ! requête en échec : ${r.url()} (${r.failure()?.errorText})`));
     await page.goto(BASE + "/"); await page.waitForSelector(".menu");
     const m = await page.evaluate(() => ({
       debord: document.documentElement.scrollWidth > window.innerWidth + 1,

@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.016 + light v1.145 — les équipes d'école ont la teinte du groupe (CRAPS vert, EUROPE bleu) sur toutes leurs cases, comme la light (2026-11-13)
+- Suite de « Fais pas pris » (a) : le garde `test:couleurs-parite`, élargi à octobre + novembre + décembre et à tous les tableaux « Formation <JEU> » (24 314 cases comparées au lieu de 7 440), a montré 577 fonds et 202 textes qui différaient entre l'app et la light (leçon 947).
+- CMCteams (`index.html`, `vDeparts`) : les jours de départ (vendredi, samedi) et les codes à guillemet (14/19") de l'équipe d'école prennent la teinte du groupe ; la ligne grisée de l'équipe d'origine la garde aussi (une faute de frappe `data-formation-grisstyle` faisait perdre son style) ; les jours où l'élève est encore dans son équipe d'origine sont des cases vides « · » sans fond, comme dans la light.
+- Light v1.145 : la ligne grisée de l'équipe d'origine prend la teinte du groupe (`finGrp`), comme la ligne « en formation ».
+- Mesuré : `test:couleurs-parite` 24 314 cases, 0 écart de fond, 0 écart de texte ; `test:couleurs-parite-sabotage` rouge sans les correctifs ; `test:pdf-fidelite` 254/254 personnes, 7 874/7 874 cellules ; `test:un-seul-import` 23 OK.
+
 ## CMCteams v10.015 — l'écran Départs de l'app garde les couleurs et l'écriture rouge du PDF sur les élèves et les lignes grisées (2026-11-13)
 - « Fais pas pris » (Kevin, 13.11) : le garde `test:couleurs-parite` était rouge (518 fonds, 122 textes) AVANT mes changements de formation ; rejoué sur `origin/main` : rouge pareil (leçon 944). Cause trouvée en lisant le vrai HTML de l'écran Départs : trois endroits de `vDeparts` ignoraient la couleur de fond et l'écriture rouge du PDF que la light applique — la ligne « en formation » des élèves (`data-formation-eleve`), la ligne grisée de formation (`data-formation-gris`) et la case sans numéro de départ.
 - Corrigé dans `index.html` (CMCteams seul : la light faisait déjà juste) : fond du PDF (`cmcCellBgForView`), écriture rouge `#cc0000` des horaires modifiés, jaune des conventions ; sur les cases de travail d'un élève, la teinte de groupe (`_cmcFormCaseBg`) ne passe qu'en l'absence de couleur du PDF. La ligne grisée garde son opacité .55.

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.015 — l'écran Départs de l'app garde les couleurs et l'écriture rouge du PDF sur les élèves et les lignes grisées (2026-11-13)
+- « Fais pas pris » (Kevin, 13.11) : le garde `test:couleurs-parite` était rouge (518 fonds, 122 textes) AVANT mes changements de formation ; rejoué sur `origin/main` : rouge pareil (leçon 944). Cause trouvée en lisant le vrai HTML de l'écran Départs : trois endroits de `vDeparts` ignoraient la couleur de fond et l'écriture rouge du PDF que la light applique — la ligne « en formation » des élèves (`data-formation-eleve`), la ligne grisée de formation (`data-formation-gris`) et la case sans numéro de départ.
+- Corrigé dans `index.html` (CMCteams seul : la light faisait déjà juste) : fond du PDF (`cmcCellBgForView`), écriture rouge `#cc0000` des horaires modifiés, jaune des conventions ; sur les cases de travail d'un élève, la teinte de groupe (`_cmcFormCaseBg`) ne passe qu'en l'absence de couleur du PDF. La ligne grisée garde son opacité .55.
+- Garde `test:couleurs-parite` : les cases de l'app sont indexées par équipe + nom (un élève figure dans deux tableaux, le second écrasait le premier). Résultat mesuré : 7 440 cases comparées, 0 écart de fond, 0 écart de texte, 0 erreur JS. Sabotage `test:couleurs-parite-sabotage` (copie de l'app SANS les trois correctifs) : rouge, 92 écarts de texte ; câblé dans `test:ci`.
+
 ## CMCteams v10.014 + light v1.144 — les cases de travail des élèves en formation prennent la couleur de leur groupe du PDF (2026-11-13)
 - Demande de Kevin (13.11, « Oui » à la question « j'affiche les couleurs de formation comme le PDF ? »). Mesure du Lenovo (pont 2439/2441), décembre : cases de travail des élèves GR CRAPS = RGB 153,255,51 ; GR EUROPE = RGB 214,254,254 ; les deux apps les montraient en blanc cassé 251,250,243.
 - Une seule fonction `_cmcFormCaseBg(groupe, jeu)` dans `tools/shared/formations-ecole.js` (copie identique `tools/departs/`), appelée par CMCteams (Départs, lignes d'élèves) ET la light (tableaux de formation). Seules les cases de TRAVAIL sont teintées : repos, congés, absences, conventions gardent leur couleur ; un jeu non mesuré reste blanc.

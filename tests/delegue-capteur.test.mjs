@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { siteDe, urlIiifAd06, travailPermis, classer, MAX_PASSAGE } from '../tools/delegue/capteur.mjs';
+import { siteDe, urlIiifAd06, travailPermis, classer, estImage, MAX_PASSAGE } from '../tools/delegue/capteur.mjs';
 
 test('site reconnu par l\'adresse, pas par un faux domaine', () => {
   assert.equal(siteDe('https://archives06.fr/x'), 'ad06');
@@ -30,4 +30,12 @@ test('attente Anubis ≠ captcha (le captcha arrête, jamais contourné) ; 100 i
   assert.equal(classer('Veuillez cocher : je ne suis pas un robot'), 'captcha');
   assert.equal(classer('Registre'), 'ok');
   assert.equal(MAX_PASSAGE, 100);
+});
+
+test('une page d\'erreur HTML n\'est jamais une image (Lenovo 12.11 : « Request Rejected » captée à tort)', () => {
+  assert.equal(estImage(Buffer.from('<html><body>Request Rejected - The requested URL was rejected</body></html>')), false);
+  assert.equal(estImage(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1])), true);
+  assert.equal(estImage(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])), true);
+  assert.equal(estImage(Buffer.from('RIFF....WEBP')), true);
+  assert.equal(estImage(Buffer.alloc(0)), false);
 });

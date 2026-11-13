@@ -81,6 +81,12 @@ export async function ouvrir(page, url) {
   return etatApresAttente(page, aller);
 }
 
+/** Vrai seulement si les octets sont bien ceux d'une image (JPEG, PNG ou WebP) : une page d'erreur HTML n'est jamais « captée ». */
+export function estImage(b) {
+  if (!b || b.length < 12) return false;
+  return (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) || (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) || (b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP');
+}
+
 /** Dépose l'image d'un travail (image directe ou capture de la page). */
 async function deposer(page, t, dossier) {
   const direct = /\.(jpe?g|png|webp)(\?|$)/i.test(new URL(t.url).pathname) || t.url.includes('/default.jpg');
@@ -91,7 +97,9 @@ async function deposer(page, t, dossier) {
   }
   const r = await page.request.get(t.url).catch(() => null);
   if (!r?.ok()) return { id: t.id, statut: 'http-' + (r ? r.status() : 'x') };
-  fs.writeFileSync(fichier, await r.body());
+  const octets = await r.body();
+  if (!estImage(octets)) return { id: t.id, statut: 'pas-une-image', detail: 'le site a répondu autre chose qu\'une image (' + octets.length + ' octets)' };
+  fs.writeFileSync(fichier, octets);
   return { id: t.id, statut: 'capte', fichier, site: siteDe(t.url) };
 }
 

@@ -1,0 +1,61 @@
+name: Bibi — Safari (WebKit, iPhone 13) et Firefox
+
+# Pont 2305 / 2387 / 2409 (13.11.2026) : les sessions n'ont que Chromium ; ce robot rejoue le test de bout en bout de
+# bibi-assistant (scripts/e2e.mjs, moteur choisi par E2E_MOTEUR) avec WebKit (= Safari/iPhone) puis Firefox.
+# AU DÉPÔT PUBLIC (minutes gratuites). Aucun secret, aucune clé d'IA, base jetable dans le dossier temporaire du robot.
+# À la main seulement, jamais de cron. Résultat : des NOMBRES en annotation (réussis / ratés), jamais de contenu.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bibi-plateformes
+  cancel-in-progress: false
+
+jobs:
+  bibi:
+    strategy:
+      fail-fast: false
+      matrix:
+        moteur: [webkit, firefox]
+    runs-on: ubuntu-24.04   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer et construire Bibi
+        working-directory: bibi-assistant
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Installer le moteur ${{ matrix.moteur }}
+        working-directory: bibi-assistant
+        run: bash ../tools/ci/installer-navigateurs.sh "./node_modules/.bin/playwright-core" ${{ matrix.moteur }}
+
+      - name: Test de bout en bout (${{ matrix.moteur }})
+        working-directory: bibi-assistant
+        timeout-minutes: 10
+        env:
+          E2E_MOTEUR: ${{ matrix.moteur }}
+        run: |
+          set +e
+          node scripts/e2e.mjs > /tmp/bibi-e2e.txt 2>&1
+          code=$?
+          ok=$(grep -c '^  ✓' /tmp/bibi-e2e.txt)
+          ko=$(grep -c '^  ✗' /tmp/bibi-e2e.txt)
+          grep '^  ✗' /tmp/bibi-e2e.txt | cut -c1-300
+          tail -5 /tmp/bibi-e2e.txt | cut -c1-300
+          if [ "$code" -eq 0 ]; then
+            echo "::notice title=Bibi ${{ matrix.moteur }}::${ok} réussis, ${ko} ratés"
+          else
+            echo "::error title=Bibi ${{ matrix.moteur }}::${ok} réussis, ${ko} ratés (code ${code})"
+          fi
+          exit $code

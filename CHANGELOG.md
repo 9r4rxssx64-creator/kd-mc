@@ -4,6 +4,12 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.014 + light v1.144 — les cases de travail des élèves en formation prennent la couleur de leur groupe du PDF (2026-11-13)
+- Demande de Kevin (13.11, « Oui » à la question « j'affiche les couleurs de formation comme le PDF ? »). Mesure du Lenovo (pont 2439/2441), décembre : cases de travail des élèves GR CRAPS = RGB 153,255,51 ; GR EUROPE = RGB 214,254,254 ; les deux apps les montraient en blanc cassé 251,250,243.
+- Une seule fonction `_cmcFormCaseBg(groupe, jeu)` dans `tools/shared/formations-ecole.js` (copie identique `tools/departs/`), appelée par CMCteams (Départs, lignes d'élèves) ET la light (tableaux de formation). Seules les cases de TRAVAIL sont teintées : repos, congés, absences, conventions gardent leur couleur ; un jeu non mesuré reste blanc.
+- Pas reproduit, volontairement : les 46 noms à fond bleu clair du PDF (la famille d'une personne vient des jeux détenus, pas de la couleur du nom) ; les lignes de titre de groupe (le Lenovo n'en a vu aucune teintée).
+- Garde `test:formation-couleurs-pdf` (+ `-sabotage`, rouge sans l'appel dans la light), câblé dans `test:ci`.
+
 ## Light v1.143 — une case rouge du PDF reste rouge même quand la copie locale de l'app ne la connaît pas (2026-11-12)
 - Relevé du Lenovo (pont 2393, navigateur de Kevin) : ‹employé›, 20 novembre, `16/22"` — rouge dans le PDF et dans CMCteams (seed.meta `fg:red`, aucune surcharge dans `cmc_ov_meta`), mais comptée non rouge par la light (159 contre 160). Cause : `buildBoardsFromState` reprenait les marques du PDF (`modh`, `conv`) seulement pour les personnes ABSENTES de l'app ; pour celles que l'app connaît, il ne lisait que `cmc_ov_meta`. Corrigé : les marques du PDF sont ajoutées à celles de l'app (l'app ne fournit que les codes). CMCteams inchangé.
 - Garde `test:light-rouge-app-sans-meta` (vrai Chromium, rouge sur v1.142 : `liveModh:false`), câblé dans `test:ci`.
@@ -85,7 +91,7 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 ## Arbre v3.219 — Desarzens se dit « Dessarzanss » (2026-11-09)
 - Kevin : « dessarzanss » (le s final se prononce). `PRONONCIATIONS` : Desarzens → « Dessarzanss ». Garde `verify-prononciation.mjs`.
 
-## Bee v1.39 — Bee « Bibi » : nouvelle image + squelette refait (2026-11-13, prêt, pas encore en ligne)
+## Bee v1.39 — Bee « Bibi » : nouvelle image + squelette refait (2026-11-13, en ligne)
 - Kevin : « Je veux le même visuel que l'image » (Bibi). `lingua/bee/v3/rig/base.webp` refait (abeille à veste zippée noir/orange, ailes pailletées) ; `tools/javis/marionnette.js` : `SQUELETTES['bee/v3']` avec 3 antennes, ailes basses plus petites, bras bornés `[-6,16]` (copies `lingua/`, `javis/`, `arbre/` par `sync:javis`) ; `javis/sw.js` = `javis-v1.39`. Bourricot inchangé. CMCteams et light ne sont pas touchées (Bee est un widget du domaine). Gardes : `test:marionnette` 105/0 (ancien squelette → 3 échecs), `test:javis-bee` 97/0.
 
 ## Bee v1.38 / marionnette v2.7 — Bee et Bourricot en peluches style Pixar (2026-11-12)

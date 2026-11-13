@@ -324,6 +324,7 @@
   "tests/verify-fiche-premiere-connexion.mjs",
   "tests/verify-fiches-privees.mjs",
   "tests/verify-firebase-allege.mjs",
+  "tests/verify-formation-couleurs-pdf.mjs",
   "tests/verify-formations-ecole.mjs",
   "tests/verify-heures-convention.mjs",
   "tests/verify-heures.mjs",

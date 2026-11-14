@@ -9,6 +9,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Corrigé : une seule fonction `_cmcModhBg(code)` (CMCteams) rend `#f8cbad` quand le code finit par `*`, sinon le blanc du PDF ; elle sert aux 5 endroits qui forçaient le blanc ; la light fait pareil aux 3 endroits équivalents. Le bloc Professeurs prend le fond du statut (AF vert 168,224,168) et l'encre du statut.
 - Mesuré : `test:couleurs-parite` 24 314 cases, 0 écart ; 14 cases `*` rouges toutes en 248,203,173 des deux côtés ; 791 cases AF des professeurs toutes en 168,224,168 ; le sabotage rougit sans l'orange pâle ni le fond des AF.
 
+## Apex Chat v1.1.364 — en paysage sur iPhone, l'encart « Mets Apex Chat sur ton écran d'accueil » ne cache plus la liste des conversations (2026-11-14)
+- Constat (robot d'affichage public, iPhone paysage 844×390, runs 43605916685 puis 43608259983) : 4 lignes `div.conv-item` sous `div#install-hint` (encart fixe de 46 px, hauteur d'écran 390 px). Sous 480 px de haut l'encart n'est plus affiché ; en portrait il reste.
+- Garde `test:install-hint-paysage` (vrai navigateur, vraie fonction extraite) : rouge sur l'ancien fichier et sous `SABOTAGE=1` (2 ❌), vert avec le correctif (4 ✅).
+
 ## CMCteams v10.017 + light v1.146 — « Qui est en ligne » : on touche une personne, son planning s'ouvre ; la batterie de son téléphone est visible de l'admin (2026-11-13)
 - Light : chaque nom de la liste « 🟢 N en ligne » est un bouton (≥ 44 px) qui ferme la liste et ouvre le planning de la personne ; CMCteams : « Connectés à l'instant » fait pareil (Planning filtré sur son nom).
 - Batterie (`🔋 NN %`, `⚡` en charge) : portée par le battement existant (aucune écriture de plus), seulement quand le navigateur la fournit (Android/Chrome ; jamais sur iPhone Safari) ; affichée à l'admin seul, dans la liste et dans la case du nom. Rien n'est inventé quand elle manque.

@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.363",
+  "softwareVersion": "v1.1.364",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -492,7 +492,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.363';
+const __APEX_CHAT_VERSION__ = 'v1.1.364';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -839,7 +839,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.363" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
+  <div id="splash-version" data-ver="v1.1.364" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -15122,6 +15122,8 @@ K._maybeShowInstallHint = function(){
   d.innerHTML = '<div id="install-hint-t" role="button" tabindex="0" aria-expanded="false" style="min-height:44px;display:flex;align-items:center;cursor:pointer" onclick="K._toggleInstallHint(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();K._toggleInstallHint(this)}"><strong style="color:var(--ax-gold)">📱 Mets Apex Chat sur ton écran d\'accueil ▾</strong></div>'
     + '<div id="install-hint-d" style="display:none;padding:0 0 10px">Touche <strong>Partager</strong> (le carré avec la flèche), puis <strong>« Sur l\'écran d\'accueil »</strong>, puis <strong>Ajouter</strong>. Tu auras les notifications et l\'app s\'ouvrira comme une vraie app.</div>'
     + '<button aria-label="Fermer" style="position:absolute;top:1px;right:1px;width:44px;height:44px;background:none;border:none;color:var(--ax-text-2);font-size:1.2em" onclick="try{localStorage.setItem(\'apex_chat_install_hint\',\'1\')}catch(_){};this.parentNode.remove()">✕</button>';
+  /* 1.1.364 (robot d'affichage, iPhone paysage 844×390, run 43605916685 : « div.conv-item sous div#install-hint » ×4) : en paysage la hauteur est de ~390 px, l'encart fixe de 46 px tombe au milieu de la liste des conversations et cache jusqu'à 4 lignes. Sous 480 px de haut il n'est pas affiché (il reste en portrait, où il tient sous la liste) ; la règle vit dans une feuille posée une fois, car le style en ligne de l'encart ne se surcharge pas par media query sans !important. */
+  if(!document.getElementById('install-hint-css')){ const st = document.createElement('style'); st.id = 'install-hint-css'; st.textContent = '@media (max-height:480px){#install-hint{display:none!important}}'; document.head.appendChild(st); }
   document.body.appendChild(d);
 };
 

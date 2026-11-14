@@ -272,6 +272,19 @@ export async function avecLimite(fn, ms, msg = 'délai dépassé pour cette adre
   try { return await Promise.race([corps, new Promise((_, rej) => { t = setTimeout(() => rej(new Error(`${msg} (${Math.round(ms / 1000)} s)`)), ms); })]); }
   finally { clearTimeout(t); }
 }
+/* 14.11 (run 43627981507, iPhone 13 WebKit : « page.goto: Page crashed » sur 5 adresses de suite après 2 pages mesurées ; 12.11, run 43216449365 : « Target page, context or browser has been closed ») :
+   un navigateur qui plante n'est pas un défaut des pages — le robot ferme le contexte mort, en ouvre un neuf (connexion admin refaite) et rejoue l'adresse UNE fois ; la ligne
+   porte « reprise après plantage du navigateur ». Si la 2ᵉ ouverture plante aussi, c'est une erreur rapportée comme avant. */
+export function estPlantage(e) { return /Page crashed|crashed|Target page, context or browser has been closed|Target closed|browser has been closed|has been closed|disconnected/i.test(String(e && e.message || e)); }
+export async function avecRepriseSiPlantage(fn, renaitre, r = {}) {
+  try { return await fn(); }
+  catch (e) {
+    if (!estPlantage(e)) throw e;
+    r.reprise = (r.reprise ? r.reprise + ' · ' : '') + 'reprise après plantage du navigateur';
+    await renaitre();
+    return await fn();
+  }
+}
 /* 8.11 : la ligne du journal est une fonction (testable) ; « petit N » NOMME les cibles < 44 px (sélecteurs, sans texte), comme « cache » nomme les boutons recouverts. */
 export function ligneServi(a, nom, r) {
   const redir = r.redirige ? ` · REDIRIGÉ (demandé ${r.redirige}${r.chaine ? ' · chaîne : ' + r.chaine : ''}${r.parametres && r.parametres.length ? ' · paramètres : ' + r.parametres.join(', ') : ''})` : '';
@@ -287,19 +300,28 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
     for (const nom of NOMS_ECRANS_SERVI.filter((n) => !voulus.length || voulus.includes(n))) {
       const ec = trouverEcranServi(nom); const { nom: _n, tel, explorer: _e, ...opts } = ec; delete opts.defaultBrowserType;
       const moteur = bw && nom === 'iphone-13' ? bw : b;
-      const ctx = await moteur.newContext({ ...opts }); await lectureSeule(ctx);
+      let ctx = await moteur.newContext({ ...opts }); await lectureSeule(ctx);
       let page = await ctx.newPage();
       /* 7.11 (apex-cloud, Servi 42361310862 : Apex AI « page.goto Timeout 30000ms » sur 2 écrans paysage, 2 runs de suite) : au dépassement du délai on dit QUELLES requêtes
          n'avaient pas fini (hôte + chemin, jamais les paramètres) — un « timeout » sans cause ne se corrige pas. */
-      const enCours = new Map(); page.on('request', (q) => enCours.set(q, Date.now())); page.on('requestfinished', (q) => enCours.delete(q)); page.on('requestfailed', (q) => enCours.delete(q));
+      const enCours = new Map();
+      const suivre = (p) => { p.on('request', (q) => enCours.set(q, Date.now())); p.on('requestfinished', (q) => enCours.delete(q)); p.on('requestfailed', (q) => enCours.delete(q)); };
+      suivre(page);
       let admin = false;
       if (hash) admin = !!(await connecterAdmin(page, hash).catch(() => ({ ok: false }))).ok;
+      /* 14.11 : navigateur planté → contexte neuf, page neuve, connexion admin refaite (le navigateur lui-même est relancé s'il est tombé) */
+      const renaitre = async () => {
+        await page.close().catch(() => {}); await ctx.close().catch(() => {}); enCours.clear();
+        const m2 = moteur.isConnected() ? moteur : await (moteur === bw ? webkit : chromium).launch({ headless: true });
+        ctx = await m2.newContext({ ...opts }); await lectureSeule(ctx); page = await ctx.newPage(); suivre(page);
+        if (hash) await connecterAdmin(page, hash).catch(() => ({ ok: false }));
+      };
       journal(`=== ${nom} [${moteur === bw ? 'webkit' : 'chromium'}] (${opts.viewport.width}×${opts.viewport.height}) — connexion admin : ${admin ? 'oui' : 'NON'}`);
       const LIMITE_MS = Math.max(30000, Number(process.env.SERVI_ADRESSE_MAX_MS) || 240000);
       for (const a of adresses) {
         const r = { adresse: a, ecran: nom, admin };
         try {
-          await avecLimite(async () => {
+          await avecRepriseSiPlantage(() => avecLimite(async () => {
           const rep = await ouvrirAvecReprise(page, a, r, enCours);
           r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
           { const dem = hoteDemande(a); if (dem && r.hoteFinal !== dem) { r.redirige = dem; r.chaine = chaineRedirections(rep); r.parametres = nomsParametres(page.url()); } }
@@ -317,6 +339,8 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; await page.waitForTimeout(300); }   /* la feuille peut s'ouvrir APRÈS la 1re fermeture (iPhone paysage, 6.11) */
           Object.assign(r, await page.evaluate(mesurerFluidite).catch(() => ({})));
           const m = await mesurerSansFeuille(page, tel, r);
+          /* 14.11 (run 43627981507 : cmcteams-light iPhone 13 « ✅ … cache - haut - déborde - petit - » = page morte pendant la mesure, ligne pourtant verte) : une mesure absente est une erreur, jamais un ✅ vide */
+          if (!m) throw new Error('page.evaluate: Page crashed (mesure absente)');
           /* 6.11 (Kevin : « creuse toujours pour savoir ») : Servi comptait « cache 4 » sur kit.kd-mc.com sans dire QUI cache QUOI, et ne le comptait pas
              « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré
              (dépôt public) — et un bouton recouvert compte comme un défaut. */
@@ -327,21 +351,20 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
             if (!adm.admin) journal(`➖ ${a} · ${nom} · écrans d'administration : compte non administrateur (rôle ${adm.role ?? 'inconnu'}) — rien à mesurer`);
             for (const x of adm.vues) journal(`${vueAdminACorriger(x) ? '❌' : '✅'} ${a} · ${nom} · vue ${x.vue} · affichée ${x.affichee === false ? 'NON' : 'oui'} · cache ${x.cache ?? '-'}${x.cache && x.cacheEx && x.cacheEx.length ? ' [' + x.cacheEx.join(' | ') + ']' : ''} · petit ${x.petit ?? '-'}${x.petit && x.petitEx && x.petitEx.length ? ' [' + x.petitEx.slice(0, 3).join(' | ') + ']' : ''} · déborde ${x.deborde ?? '-'}${x.err ? ' · ' + x.err : ''}`);
           }
-          }, LIMITE_MS);
+          }, LIMITE_MS), renaitre, r);
         } catch (e) {
           r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours);
           if (/délai dépassé pour cette adresse/.test(String(e && e.message))) {   /* page peut-être figée : on la jette et on repart d'une neuve pour les adresses suivantes */
-            await page.close().catch(() => {}); enCours.clear(); page = await ctx.newPage();
-            page.on('request', (q) => enCours.set(q, Date.now())); page.on('requestfinished', (q) => enCours.delete(q)); page.on('requestfailed', (q) => enCours.delete(q));
+            await page.close().catch(() => {}); enCours.clear(); page = await ctx.newPage(); suivre(page);
             if (hash) await connecterAdmin(page, hash).catch(() => ({ ok: false }));
-          }
+          } else if (estPlantage(e)) { await renaitre().catch(() => {}); }   /* planté deux fois de suite : on repart quand même d'un navigateur neuf pour les adresses suivantes */
         }
         sortie.push(r);
 journal(ligneServi(a, nom, r));
       }
-      await ctx.close();
+      await ctx.close().catch(() => {});
     }
-  } finally { await b.close(); if (bw) await bw.close(); }
+  } finally { await b.close().catch(() => {}); if (bw) await bw.close().catch(() => {}); }
   return sortie;
 }
 

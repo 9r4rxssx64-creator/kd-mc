@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, nomsParametres, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, nomsParametres, estPlantage, avecRepriseSiPlantage, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -166,6 +166,16 @@ ok('2j8. adresse bloquée coupée au délai ; redirection écrite avec sa chaîn
 { const noms = nomsParametres('https://kd-mc.com/?return=https%3A%2F%2Fapex-chat.kd-mc.com%2F&_ssob=abc&return=y');
   const l = ligneServi('https://apex-chat.kd-mc.com/', 'portable', { statut: 200, hoteFinal: 'kd-mc.com', redirige: 'apex-chat.kd-mc.com', chaine: 'apex-chat.kd-mc.com/ → kd-mc.com/', parametres: noms, cache: 0, aDefiler: 1, aDefilerEx: ['button#bas (sous div#barre au repos)'] });
   ok('2j9. REDIRIGÉ nomme les paramètres (noms seuls, dédoublonnés) ; « à défiler » nommé dans la ligne', noms.join(',') === 'return,_ssob' && nomsParametres('pas une url').length === 0 && /paramètres : return, _ssob\)/.test(l) && !/abc|apex-chat\.kd-mc\.com%2F/.test(l) && /· à défiler 1 \[button#bas \(sous div#barre au repos\)\]/.test(l), l.slice(-260)); }
+/* 2ai (14.11, run 43627981507 : WebKit « Page crashed » sur 5 adresses de suite ; 12.11 : « Target page, context or browser has been closed ») : un navigateur planté est
+   relancé et l'adresse rejouée UNE fois ; un délai ou une autre erreur ne passent pas par là ; planté deux fois = erreur. */
+const plantage = await (async () => {
+  let n = 0, rn = 0; const r1 = {};
+  const ok1 = await avecRepriseSiPlantage(async () => { n++; if (n === 1) throw new Error('page.goto: Page crashed'); return 'ok'; }, async () => { rn++; }, r1);
+  let n2 = 0, rn2 = 0, e2 = null; try { await avecRepriseSiPlantage(async () => { n2++; throw new Error('page.goto: Timeout 30000ms exceeded.'); }, async () => { rn2++; }); } catch (e) { e2 = e.message; }
+  let n3 = 0, rn3 = 0, e3 = null; try { await avecRepriseSiPlantage(async () => { n3++; throw new Error('Target page, context or browser has been closed'); }, async () => { rn3++; }); } catch (e) { e3 = e.message; }
+  return { ok1, n, rn, reprise: r1.reprise, n2, rn2, e2, n3, rn3, e3, p1: estPlantage(new Error('page.evaluate: Page crashed (mesure absente)')), p2: estPlantage(new Error('délai dépassé pour cette adresse (240 s)')), p3: estPlantage('net::ERR_NAME_NOT_RESOLVED') };
+})();
+ok('2ai. navigateur planté : contexte neuf + adresse rejouée une fois (dit « reprise après plantage ») ; délai / autre erreur : pas rejoués ; planté deux fois = erreur', plantage.ok1 === 'ok' && plantage.n === 2 && plantage.rn === 1 && /reprise après plantage du navigateur/.test(plantage.reprise) && plantage.n2 === 1 && plantage.rn2 === 0 && /Timeout/.test(plantage.e2) && plantage.n3 === 2 && plantage.rn3 === 1 && /has been closed/.test(plantage.e3) && plantage.p1 === true && plantage.p2 === false && plantage.p3 === false, JSON.stringify(plantage));
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

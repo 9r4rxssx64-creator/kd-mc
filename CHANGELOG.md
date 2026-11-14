@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.018 + light v1.147 — Couleurs de décembre : les 9 cases « * » du 24.12 passent à l'orange pâle du PDF, les cases « AF » du bloc Professeurs ont leur fond vert (2026-11-14)
+- Mesuré par le Lenovo (pont 2475) : les cases « * » à écriture rouge (horaire modifié, Café de Paris) restaient BLANCHES dans les deux apps alors que le PDF les a en 248,203,173 ; et 279 cases « AF » du bloc « Professeurs / formateurs » de CMCteams n'avaient aucun fond (encre #031805 presque invisible sur le thème sombre) alors que la light en avait 125 vertes.
+- Corrigé : une seule fonction `_cmcModhBg(code)` (CMCteams) rend `#f8cbad` quand le code finit par `*`, sinon le blanc du PDF ; elle sert aux 5 endroits qui forçaient le blanc ; la light fait pareil aux 3 endroits équivalents. Le bloc Professeurs prend le fond du statut (AF vert 168,224,168) et l'encre du statut.
+- Mesuré : `test:couleurs-parite` 24 314 cases, 0 écart ; 14 cases `*` rouges toutes en 248,203,173 des deux côtés ; 791 cases AF des professeurs toutes en 168,224,168 ; le sabotage rougit sans l'orange pâle ni le fond des AF.
+
 ## CMCteams v10.017 + light v1.146 — « Qui est en ligne » : on touche une personne, son planning s'ouvre ; la batterie de son téléphone est visible de l'admin (2026-11-13)
 - Light : chaque nom de la liste « 🟢 N en ligne » est un bouton (≥ 44 px) qui ferme la liste et ouvre le planning de la personne ; CMCteams : « Connectés à l'instant » fait pareil (Planning filtré sur son nom).
 - Batterie (`🔋 NN %`, `⚡` en charge) : portée par le battement existant (aucune écriture de plus), seulement quand le navigateur la fournit (Android/Chrome ; jamais sur iPhone Safari) ; affichée à l'admin seul, dans la liste et dans la case du nom. Rien n'est inventé quand elle manque.

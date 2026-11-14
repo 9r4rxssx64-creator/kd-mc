@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.019 + light v1.148 — Les lignes-titres « Formation CRAPS / EUROPE » prennent la teinte du PDF dans les deux apps (2026-11-14)
+- Mesuré par le Lenovo (pont 2439 point 3) : la ligne-titre au-dessus d'un tableau d'école (« Formation CRAPS … ») restait bleu pâle `#d6f1fb` dans la light et gris-vert sombre dans CMCteams, alors que le PDF la peint en vert vif (153,255,51) pour CRAPS et en bleu glacé (214,254,254) pour EUROPE ; la ligne d'équipe « dép. » de la light était `#9cf53c` au lieu du vert du PDF.
+- Corrigé : les deux apps appellent la même `_cmcFormCaseBg("", jeu)` (copies identiques `tools/shared/formations-ecole.js` ⇄ `tools/departs/formations-ecole.js`) pour la ligne-titre ; la ligne d'équipe de la light prend `_cmcFormCaseBg(groupe, "")`. Sans équipe d'école, rien ne change.
+- Mesuré : `test:couleurs-parite` 24 314 cases, 0 écart ; 5 lignes-titres CRAPS/EUROPE côté light et 5 côté CMCteams, 0 fausse teinte ; 0 erreur JS. Le sabotage rougit dans les deux apps sans la teinte des titres (3ᵉ sabotage du garde).
+
 ## CMCteams v10.018 + light v1.147 — Couleurs de décembre : les 9 cases « * » du 24.12 passent à l'orange pâle du PDF, les cases « AF » du bloc Professeurs ont leur fond vert (2026-11-14)
 - Mesuré par le Lenovo (pont 2475) : les cases « * » à écriture rouge (horaire modifié, Café de Paris) restaient BLANCHES dans les deux apps alors que le PDF les a en 248,203,173 ; et 279 cases « AF » du bloc « Professeurs / formateurs » de CMCteams n'avaient aucun fond (encre #031805 presque invisible sur le thème sombre) alors que la light en avait 125 vertes.
 - Corrigé : une seule fonction `_cmcModhBg(code)` (CMCteams) rend `#f8cbad` quand le code finit par `*`, sinon le blanc du PDF ; elle sert aux 5 endroits qui forçaient le blanc ; la light fait pareil aux 3 endroits équivalents. Le bloc Professeurs prend le fond du statut (AF vert 168,224,168) et l'encre du statut.

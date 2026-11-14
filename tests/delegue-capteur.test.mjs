@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { siteDe, urlIiifAd06, travailPermis, classer, estImage, MAX_PASSAGE } from '../tools/delegue/capteur.mjs';
+import { siteDe, urlIiifAd06, travailPermis, classer, estImage, MAX_PASSAGE, captureSuspecte } from '../tools/delegue/capteur.mjs';
 
 test('site reconnu par l\'adresse, pas par un faux domaine', () => {
   assert.equal(siteDe('https://archives06.fr/x'), 'ad06');
@@ -38,4 +38,12 @@ test('une page d\'erreur HTML n\'est jamais une image (Lenovo 12.11 : « Request
   assert.equal(estImage(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0])), true);
   assert.equal(estImage(Buffer.from('RIFF....WEBP')), true);
   assert.equal(estImage(Buffer.alloc(0)), false);
+});
+
+test('une capture de page de refus ou minuscule est suspecte, jamais un acte (Lenovo 13.11, Tarn « Accès refusé » 47 Ko)', () => {
+  assert.equal(captureSuspecte(47000, 'Oh non ! Accès refusé'), true);
+  assert.equal(captureSuspecte(400000, 'Accès refusé aux robots'), true);
+  assert.equal(captureSuspecte(400000, 'Please prove you are not a bot'), true);
+  assert.equal(captureSuspecte(60000, 'Registre des naissances'), true);
+  assert.equal(captureSuspecte(400000, 'Registre des naissances 1882'), false);
 });

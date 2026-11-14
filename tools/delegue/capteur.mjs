@@ -87,12 +87,24 @@ export function estImage(b) {
   return (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) || (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) || (b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP');
 }
 
+/** Une capture de visionneuse est « suspecte » (jamais un acte) si elle est minuscule ou si la page dit qu'elle refuse les robots (Lenovo 13.11 : « Accès refusé » du Tarn captée à tort, PNG de 47 Ko). */
+export const CAPTURE_MIN_OCTETS = 100 * 1024;
+export function captureSuspecte(octets, texte) {
+  if ((octets || 0) < CAPTURE_MIN_OCTETS) return true;
+  return /acc[èe]s refus[ée]|not a bot|captcha|request rejected|anti-?robot/i.test(String(texte || ''));
+}
+
 /** Dépose l'image d'un travail (image directe ou capture de la page). */
 async function deposer(page, t, dossier) {
   const direct = /\.(jpe?g|png|webp)(\?|$)/i.test(new URL(t.url).pathname) || t.url.includes('/default.jpg');
   const fichier = path.join(dossier, t.id + (direct ? '.jpg' : '.png'));
   if (!direct) {
     await page.screenshot({ path: fichier, fullPage: false });
+    const texte = await page.evaluate(() => (document.body ? document.body.innerText : '').slice(0, 2000)).catch(() => '');
+    if (captureSuspecte(fs.statSync(fichier).size, texte)) {
+      fs.rmSync(fichier, { force: true });
+      return { id: t.id, statut: 'suspect', detail: 'capture trop petite ou page de refus : pas un acte, jamais réessayée', site: siteDe(t.url) };
+    }
     return { id: t.id, statut: 'capte', fichier, site: siteDe(t.url) };
   }
   const r = await page.request.get(t.url).catch(() => null);

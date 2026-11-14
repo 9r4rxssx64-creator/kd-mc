@@ -275,7 +275,7 @@ export async function avecLimite(fn, ms, msg = 'délai dépassé pour cette adre
 /* 14.11 (run 43627981507, iPhone 13 WebKit : « page.goto: Page crashed » sur 5 adresses de suite après 2 pages mesurées ; 12.11, run 43216449365 : « Target page, context or browser has been closed ») :
    un navigateur qui plante n'est pas un défaut des pages — le robot ferme le contexte mort, en ouvre un neuf (connexion admin refaite) et rejoue l'adresse UNE fois ; la ligne
    porte « reprise après plantage du navigateur ». Si la 2ᵉ ouverture plante aussi, c'est une erreur rapportée comme avant. */
-export function estPlantage(e) { return /Page crashed|crashed|Target page, context or browser has been closed|Target closed|browser has been closed|has been closed|disconnected/i.test(String(e && e.message || e)); }
+export function estPlantage(e) { return /Page crashed|crashed|Target page, context or browser has been closed|Target closed|browser has been closed|has been closed|disconnected/i.test(String(e?.message || e)); }
 export async function avecRepriseSiPlantage(fn, renaitre, r = {}) {
   try { return await fn(); }
   catch (e) {
@@ -289,6 +289,46 @@ export async function avecRepriseSiPlantage(fn, renaitre, r = {}) {
 export function ligneServi(a, nom, r) {
   const redir = r.redirige ? ` · REDIRIGÉ (demandé ${r.redirige}${r.chaine ? ' · chaîne : ' + r.chaine : ''}${r.parametres && r.parametres.length ? ' · paramètres : ' + r.parametres.join(', ') : ''})` : '';
   return `${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'}${r.accueil ? ' · accueil fermé ' + r.accueil : ''} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''}${r.aDefiler ? ' · à défiler ' + r.aDefiler + ' [' + (r.aDefilerEx || []).join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.petit && r.petitEx && r.petitEx.length ? ' [' + r.petitEx.slice(0, 3).join(' | ') + ']' : ''} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}${redir}`;
+}
+/* 7.11 : la ligne du journal d'UNE vue d'administration d'Apex Chat (sélecteurs seulement, jamais de texte : dépôt public). */
+export function ligneVueAdmin(a, nom, x) {
+  const ex = (n, liste, max) => (n && liste && liste.length ? ' [' + liste.slice(0, max).join(' | ') + ']' : '');
+  return `${vueAdminACorriger(x) ? '❌' : '✅'} ${a} · ${nom} · vue ${x.vue} · affichée ${x.affichee === false ? 'NON' : 'oui'} · cache ${x.cache ?? '-'}${ex(x.cache, x.cacheEx, 99)} · petit ${x.petit ?? '-'}${ex(x.petit, x.petitEx, 3)} · déborde ${x.deborde ?? '-'}${x.err ? ' · ' + x.err : ''}`;
+}
+/* 7.11 : Apex Chat, écrans d'administration (portrait étroit et portable seulement : 13 vues x 5 écrans ferait trop long) */
+export async function journaliserVuesAdminApexChat(page, a, { nom, tel, r, journal }) {
+  if (r.hoteFinal !== 'apex-chat.kd-mc.com' || (nom !== 'iphone-13' && nom !== 'portable')) return;
+  const adm = await mesurerVuesAdminApexChat(page, tel);
+  if (!adm.admin) journal(`➖ ${a} · ${nom} · écrans d'administration : compte non administrateur (rôle ${adm.role ?? 'inconnu'}) — rien à mesurer`);
+  for (const x of adm.vues) journal(ligneVueAdmin(a, nom, x));
+}
+/* 14.11 (Sonar, PR 5688) : la mesure d'UNE adresse sur UNE page vit ici, hors de la boucle des écrans ; `page` est celle du moment (elle change après un plantage). */
+export async function mesurerAdresse(page, a, { nom, tel, r, enCours, journal }) {
+  const rep = await ouvrirAvecReprise(page, a, r, enCours);
+  r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
+  const dem = hoteDemande(a);
+  if (dem && r.hoteFinal !== dem) { r.redirige = dem; r.chaine = chaineRedirections(rep); r.parametres = nomsParametres(page.url()); }
+  await page.waitForTimeout(4500); r.demarrage = await attendreFinSplash(page); await page.evaluate(() => window.scrollTo(0, 0));
+  r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
+  r.accueil = await page.evaluate(fermerAccueil).catch(() => ''); if (r.accueil) await page.waitForTimeout(500);
+  /* 6.11 : la pastille du module se retire au plus 1,5 s après la fermeture de la feuille d'installation (suivi toutes les 1,5 s) ; mesurer avant comptait « 2 pastilles » à tort sur Studio */
+  if (r.installeur) await page.waitForTimeout(1800);
+  r.sw = await versionSw(page);
+  Object.assign(r, await page.evaluate(mesurerServi));
+  /* BEE (Kevin 29.10 : « Javis n'est pas à jour de partout ») : la version qui tourne VRAIMENT, sur la page (app qui porte Bee) et dans le cadre posé par le routeur */
+  r.beePage = await page.evaluate(() => String(window.JAVIS_VER || '')).catch(() => '');
+  const cadre = page.frames().find((f) => /\/__javis\/cadre/.test(f.url()));
+  r.beeCadre = cadre ? await cadre.evaluate(() => String(window.JAVIS_VER || '')).catch(() => '?') : '';
+  if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; await page.waitForTimeout(300); }   /* la feuille peut s'ouvrir APRÈS la 1re fermeture (iPhone paysage, 6.11) */
+  Object.assign(r, await page.evaluate(mesurerFluidite).catch(() => ({})));
+  const m = await mesurerSansFeuille(page, tel, r);
+  /* 14.11 (run 43627981507 : cmcteams-light iPhone 13 « ✅ … cache - haut - déborde - petit - » = page morte pendant la mesure, ligne pourtant verte) : une mesure absente est une erreur, jamais un ✅ vide */
+  if (!m) throw new Error('page.evaluate: Page crashed (mesure absente)');
+  /* 6.11 (Kevin : « creuse toujours pour savoir ») : Servi comptait « cache 4 » sur kit.kd-mc.com sans dire QUI cache QUOI, et ne le comptait pas
+     « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré
+     (dépôt public) — et un bouton recouvert compte comme un défaut. */
+  Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), aDefiler: m.aDefiler, aDefilerEx: sansTexte(m.aDefilerEx), haut: m.haut, deborde: m.deborde, petit: m.petit, petitEx: sansTexte(m.petitEx), js: m.js });
+  await journaliserVuesAdminApexChat(page, a, { nom, tel, r, journal });
 }
 export async function verifierServi({ adresses, hash = '', journal = console.log }) {
   const b = await chromium.launch({ headless: true });
@@ -312,7 +352,8 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
       /* 14.11 : navigateur planté → contexte neuf, page neuve, connexion admin refaite (le navigateur lui-même est relancé s'il est tombé) */
       const renaitre = async () => {
         await page.close().catch(() => {}); await ctx.close().catch(() => {}); enCours.clear();
-        const m2 = moteur.isConnected() ? moteur : await (moteur === bw ? webkit : chromium).launch({ headless: true });
+        const lanceur = moteur === bw ? webkit : chromium;
+        const m2 = moteur.isConnected() ? moteur : await lanceur.launch({ headless: true });
         ctx = await m2.newContext({ ...opts }); await lectureSeule(ctx); page = await ctx.newPage(); suivre(page);
         if (hash) await connecterAdmin(page, hash).catch(() => ({ ok: false }));
       };
@@ -321,37 +362,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
       for (const a of adresses) {
         const r = { adresse: a, ecran: nom, admin };
         try {
-          await avecRepriseSiPlantage(() => avecLimite(async () => {
-          const rep = await ouvrirAvecReprise(page, a, r, enCours);
-          r.statut = rep ? rep.status() : 0; r.hoteFinal = new URL(page.url()).hostname;
-          { const dem = hoteDemande(a); if (dem && r.hoteFinal !== dem) { r.redirige = dem; r.chaine = chaineRedirections(rep); r.parametres = nomsParametres(page.url()); } }
-          await page.waitForTimeout(4500); r.demarrage = await attendreFinSplash(page); await page.evaluate(() => window.scrollTo(0, 0));
-          r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
-          r.accueil = await page.evaluate(fermerAccueil).catch(() => ''); if (r.accueil) await page.waitForTimeout(500);
-          /* 6.11 : la pastille du module se retire au plus 1,5 s après la fermeture de la feuille d'installation (suivi toutes les 1,5 s) ; mesurer avant comptait « 2 pastilles » à tort sur Studio */
-          if (r.installeur) await page.waitForTimeout(1800);
-          r.sw = await versionSw(page);
-          Object.assign(r, await page.evaluate(mesurerServi));
-          /* BEE (Kevin 29.10 : « Javis n'est pas à jour de partout ») : la version qui tourne VRAIMENT, sur la page (app qui porte Bee) et dans le cadre posé par le routeur */
-          r.beePage = await page.evaluate(() => String(window.JAVIS_VER || '')).catch(() => '');
-          const cadre = page.frames().find((f) => /\/__javis\/cadre/.test(f.url()));
-          r.beeCadre = cadre ? await cadre.evaluate(() => String(window.JAVIS_VER || '')).catch(() => '?') : '';
-          if (await page.evaluate(fermerFeuilleInstalleur).catch(() => false)) { r.installeur = true; await page.waitForTimeout(300); }   /* la feuille peut s'ouvrir APRÈS la 1re fermeture (iPhone paysage, 6.11) */
-          Object.assign(r, await page.evaluate(mesurerFluidite).catch(() => ({})));
-          const m = await mesurerSansFeuille(page, tel, r);
-          /* 14.11 (run 43627981507 : cmcteams-light iPhone 13 « ✅ … cache - haut - déborde - petit - » = page morte pendant la mesure, ligne pourtant verte) : une mesure absente est une erreur, jamais un ✅ vide */
-          if (!m) throw new Error('page.evaluate: Page crashed (mesure absente)');
-          /* 6.11 (Kevin : « creuse toujours pour savoir ») : Servi comptait « cache 4 » sur kit.kd-mc.com sans dire QUI cache QUOI, et ne le comptait pas
-             « à corriger ». Il nomme maintenant les boutons recouverts et ce qui les recouvre — sélecteurs seulement, le texte entre guillemets est retiré
-             (dépôt public) — et un bouton recouvert compte comme un défaut. */
-          if (m) Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), aDefiler: m.aDefiler, aDefilerEx: sansTexte(m.aDefilerEx || []), haut: m.haut, deborde: m.deborde, petit: m.petit, petitEx: sansTexte(m.petitEx || []), js: m.js });
-          /* 7.11 : Apex Chat, écrans d'administration (portrait étroit et portable seulement : 13 vues x 5 écrans ferait trop long) */
-          if (r.hoteFinal === 'apex-chat.kd-mc.com' && (nom === 'iphone-13' || nom === 'portable')) {
-            const adm = await mesurerVuesAdminApexChat(page, tel);
-            if (!adm.admin) journal(`➖ ${a} · ${nom} · écrans d'administration : compte non administrateur (rôle ${adm.role ?? 'inconnu'}) — rien à mesurer`);
-            for (const x of adm.vues) journal(`${vueAdminACorriger(x) ? '❌' : '✅'} ${a} · ${nom} · vue ${x.vue} · affichée ${x.affichee === false ? 'NON' : 'oui'} · cache ${x.cache ?? '-'}${x.cache && x.cacheEx && x.cacheEx.length ? ' [' + x.cacheEx.join(' | ') + ']' : ''} · petit ${x.petit ?? '-'}${x.petit && x.petitEx && x.petitEx.length ? ' [' + x.petitEx.slice(0, 3).join(' | ') + ']' : ''} · déborde ${x.deborde ?? '-'}${x.err ? ' · ' + x.err : ''}`);
-          }
-          }, LIMITE_MS), renaitre, r);
+          await avecRepriseSiPlantage(() => avecLimite(() => mesurerAdresse(page, a, { nom, tel, r, enCours, journal }), LIMITE_MS), renaitre, r);
         } catch (e) {
           r.err = String(e && e.message).split('\n')[0].slice(0, 90) + enAttente(enCours);
           if (/délai dépassé pour cette adresse/.test(String(e && e.message))) {   /* page peut-être figée : on la jette et on repart d'une neuve pour les adresses suivantes */
@@ -360,7 +371,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
           } else if (estPlantage(e)) { await renaitre().catch(() => {}); }   /* planté deux fois de suite : on repart quand même d'un navigateur neuf pour les adresses suivantes */
         }
         sortie.push(r);
-journal(ligneServi(a, nom, r));
+        journal(ligneServi(a, nom, r));
       }
       await ctx.close().catch(() => {});
     }

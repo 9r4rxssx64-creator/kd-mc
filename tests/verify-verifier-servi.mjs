@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, nomsParametres, estPlantage, avecRepriseSiPlantage, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, nomsParametres, estPlantage, avecRepriseSiPlantage, mesurerAdresse, ligneVueAdmin, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -176,6 +176,17 @@ const plantage = await (async () => {
   return { ok1, n, rn, reprise: r1.reprise, n2, rn2, e2, n3, rn3, e3, p1: estPlantage(new Error('page.evaluate: Page crashed (mesure absente)')), p2: estPlantage(new Error('délai dépassé pour cette adresse (240 s)')), p3: estPlantage('net::ERR_NAME_NOT_RESOLVED') };
 })();
 ok('2ai. navigateur planté : contexte neuf + adresse rejouée une fois (dit « reprise après plantage ») ; délai / autre erreur : pas rejoués ; planté deux fois = erreur', plantage.ok1 === 'ok' && plantage.n === 2 && plantage.rn === 1 && /reprise après plantage du navigateur/.test(plantage.reprise) && plantage.n2 === 1 && plantage.rn2 === 0 && /Timeout/.test(plantage.e2) && plantage.n3 === 2 && plantage.rn3 === 1 && /has been closed/.test(plantage.e3) && plantage.p1 === true && plantage.p2 === false && plantage.p3 === false, JSON.stringify(plantage));
+/* 2aj (14.11, Sonar sur la PR 5688) : la mesure d'une adresse est une fonction à part (`mesurerAdresse`), la boucle des écrans ne porte plus qu'un appel ;
+   une page morte rend une mesure absente → l'erreur « Page crashed (mesure absente) » remonte (reprise par avecRepriseSiPlantage), jamais un ✅ vide. */
+const pageMorte = {
+  goto: async () => ({ status: () => 200, request: () => ({ redirectedFrom: () => null }) }), url: () => 'https://x.kd-mc.com/', waitForTimeout: async () => {}, frames: () => [],
+  evaluate: async (fn) => (typeof fn === 'function' && /scrollTo/.test(String(fn)) ? undefined : (fn === mesurerServi ? {} : null)), on: () => {},
+};
+const mesureMorte = await (async () => { const r = {}; try { await mesurerAdresse(pageMorte, 'x.kd-mc.com', { nom: 'iphone-13', tel: true, r, enCours: new Map(), journal: () => {} }); return { ok: true, r }; } catch (e) { return { ok: false, err: e.message, r }; } })();
+ok('2aj. mesurerAdresse est exportée et une mesure absente (page morte) est une erreur « Page crashed », pas un ✅ vide', typeof mesurerAdresse === 'function' && mesureMorte.ok === false && /Page crashed \(mesure absente\)/.test(mesureMorte.err || ''), JSON.stringify({ ok: mesureMorte.ok, err: mesureMorte.err }));
+const lva1 = ligneVueAdmin('x.kd-mc.com', 'portable', { vue: 'comptes', affichee: true, cache: 2, cacheEx: ['button.a', 'button.b'], petit: 4, petitEx: ['a', 'b', 'c', 'd'], deborde: 0 });
+const lva2 = ligneVueAdmin('x.kd-mc.com', 'portable', { vue: 'journal', affichee: true, cache: 0, petit: 0, deborde: 0 });
+ok('2ak. la ligne d’une vue admin nomme ce qui cache (tous), 3 petits au plus, ❌ si défaut / ✅ sinon', /^❌ .* vue comptes · affichée oui · cache 2 \[button\.a \| button\.b\] · petit 4 \[a \| b \| c\] · déborde 0$/.test(lva1) && /^✅ .* vue journal · affichée oui · cache 0 · petit 0 · déborde 0$/.test(lva2), lva1 + ' || ' + lva2);
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

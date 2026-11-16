@@ -108,6 +108,17 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
 { const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
   const n = (src.match(/for \(let k = 0; k < 3 && await page\.evaluate\(fermerAccueil\)[^\n]*\n\s*(?:const m2|m) = await page\.evaluate\(mesurer, tel\)/g) || []).length;
   ok('le grand robot ferme l\'accueil (jusqu\'à 3 écrans : bienvenue, consentement) avant ses 2 mesures', n === 2, String(n)); }
+/* 16.11 (apex-cloud 2540) : sous une fenêtre modale ouverte, la page derrière n'est pas « cachée » ; le même voile SANS aria-modal le reste. Et un écran de démarrage se laisse attendre. */
+{ const pm = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  const page0 = (attr) => '<!doctype html><title>t</title><body style="margin:0"><button id="derriere" style="position:absolute;left:20px;top:200px;width:120px;height:48px">x</button><div ' + attr + ' style="position:fixed;inset:0;background:rgba(0,0,0,.6)"><button id="fermer" style="position:absolute;right:10px;top:10px;width:48px;height:48px">✕</button></div></body>';
+  await pm.setContent(page0('role="dialog" aria-modal="true"')); const avec = await pm.evaluate(mesurer, true);
+  await pm.setContent(page0('class="voile"')); const sans = await pm.evaluate(mesurer, true);
+  ok('sous une fenêtre aria-modal : 0 caché ; sous le même voile sans aria-modal : 1 caché', avec.cache === 0 && sans.cache === 1, JSON.stringify([avec.cache, sans.cache]));
+  const { ecranDemarrageParti } = await import('../tools/plateformes/verif-affichage-domaine.mjs');
+  await pm.setContent('<!doctype html><title>t</title><body style="margin:0"><div id="splash" class="splash" style="position:fixed;inset:0;background:#000"></div></body>'); const la = await pm.evaluate(ecranDemarrageParti);
+  await pm.evaluate(() => { document.getElementById('splash').style.display = 'none'; }); const parti = await pm.evaluate(ecranDemarrageParti);
+  ok('écran de démarrage : vu tant qu\'il est affiché, parti une fois masqué', la === false && parti === true, JSON.stringify([la, parti]));
+  await pm.close(); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

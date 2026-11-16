@@ -111,6 +111,8 @@ export function mesurer(tel) {
       const ephemere = dessus.closest && dessus.closest('[class*="toast"], [id*="toast"], [role="status"], [role="alert"]');
       if (lab && (lab.contains(e) || (e.id && lab.htmlFor === e.id))) { /* même champ */ }
       else if (carte) { /* marqueur / tuile de carte */ }
+      /* 16.11 (apex-cloud 2540) : une fenêtre modale ouverte (aria-modal, <dialog open>) couvre VOLONTAIREMENT la page derrière elle : un contrôle hors de la fenêtre n'est pas « caché » */
+      else if (dessus.closest && (() => { const md = dessus.closest('[aria-modal="true"], dialog[open]'); return md && !md.contains(e); })()) { /* sous une fenêtre modale */ }
       else if (ephemere) toasts.push(court(e));
       /* 30.10 : dire QUI recouvre (position, z-index, début du texte, parent) — « sous div » ne permettait pas de savoir quel élément du routeur ou de la page cache le bouton */
       else { let cs = {}; try { cs = getComputedStyle(dessus); } catch (_) { /* style illisible */ }
@@ -269,6 +271,8 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
           const rep = await page.goto(url(h), { waitUntil: 'load', timeout: 30000 });
           st = rep ? rep.status() : 0;
           await page.waitForTimeout(4500);                               // laisser les apps dessiner ET Bee se ranger (il se replace à 1,2 s puis 3,5 s)
+          /* 16.11 (apex-cloud 2540 : « a#kdmc-portal-link sous div#splash ») : un écran de démarrage encore affiché n'est pas la page — on l'attend, 6 s au plus */
+          await page.waitForFunction(ecranDemarrageParti, null, { timeout: 6000 }).catch(() => false);
           await page.evaluate(() => window.scrollTo(0, 0));
           await page.evaluate(fermerFeuilleInstalleur).catch(() => false); await page.waitForTimeout(300);
           for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */
@@ -356,6 +360,14 @@ export function fermerAccueil() {
   return '';
 }
 /* 16.11 (pont 2504, run 43778650553 : « cmcteams cache 162 [sous div#cmcV10Welcome] » alors que Servi, qui ferme l'accueil, mesure 0) : le grand robot le ferme aussi. */
+/* Exécuté DANS la page : vrai quand aucun écran de démarrage (id/classe « splash », fixe, ≥ 90 % de la fenêtre, visible) n'est encore affiché. */
+export function ecranDemarrageParti() {
+  for (const d of document.querySelectorAll('[id*="splash" i], [class*="splash" i]')) {
+    const st = getComputedStyle(d); if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden' || Number(st.opacity) === 0) continue;
+    const r = d.getBoundingClientRect(); if (r.width >= innerWidth * 0.9 && r.height >= innerHeight * 0.9) return false;
+  }
+  return true;
+}
 export function fermerFeuilleInstalleur() {
   const f = document.querySelector('[data-kdmc-installer="feuille"]');
   if (!f) return false;

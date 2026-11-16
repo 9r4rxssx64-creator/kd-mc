@@ -131,7 +131,7 @@ export function mesurer(tel) {
     /* 12.11 (passe Servi : worldmonitor « petit 57 », tous des div.leaflet-marker-icon) : une épingle de carte n'est pas un bouton de l'app, elle suit l'échelle de la carte —
        pas comptée « < 44 px » (comme elle n'est pas comptée « cachée », plus haut) ; les commandes de la carte (zoom, couches) restent comptées. */
     const epingle = e.closest && e.closest('.leaflet-marker-pane, .leaflet-tile-pane, .leaflet-overlay-pane, .maplibregl-canvas-container, .leaflet-marker-icon');
-    if (tel && !epingle && (r.width < 44 || r.height < 44) && e.tagName !== 'INPUT' && e.tagName !== 'TEXTAREA' && e.tagName !== 'SELECT') petits.push(court(e));
+    if (tel && !epingle && (r.width < 44 || r.height < 44) && e.tagName !== 'INPUT' && e.tagName !== 'TEXTAREA' && e.tagName !== 'SELECT') petits.push(court(e) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height) + (e.parentElement ? ' dans ' + court(e.parentElement) : ''));   /* 16.11 (pont 2504) : « petits : a » ne disait ni la taille ni l'endroit — deux branches ont cherché le mauvais lien */
   }
   /* haut coupé : un élément visible qui porte du texte ou une image, dont le haut est AU-DESSUS de l'écran alors que la page est tout en haut */
   const haut = [];
@@ -271,6 +271,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
           await page.waitForTimeout(4500);                               // laisser les apps dessiner ET Bee se ranger (il se replace à 1,2 s puis 3,5 s)
           await page.evaluate(() => window.scrollTo(0, 0));
           await page.evaluate(fermerFeuilleInstalleur).catch(() => false); await page.waitForTimeout(300);
+          if (await page.evaluate(fermerAccueil).catch(() => '')) await page.waitForTimeout(500);
           m = await page.evaluate(mesurer, tel);
         } catch (e) { err = String(e && e.message).split('\n')[0].slice(0, 90); }
         page.off('pageerror', onErr); page.off('requestfailed', onFail); page.off('response', onRep);
@@ -291,6 +292,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               const apres = await page.evaluate(() => location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length);
               if (apres === avant) { explo.morts++; if (explo.ex.length < 4) explo.ex.push('sans réaction : n°' + k); }
               await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
+              if (await page.evaluate(fermerAccueil).catch(() => '')) await page.waitForTimeout(500);
               const m2 = await page.evaluate(mesurer, tel);
               const changePage = apres.split('|')[0] !== avant.split('|')[0];
               if (changePage && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après n°' + k); }
@@ -329,6 +331,31 @@ export function fermerFeuilleToujours() {
   try { new MutationObserver(go).observe(document, { childList: true, subtree: true }); } catch (_) { /* pas d'observateur */ }
   setInterval(go, 500);   /* filet si l'observateur manque */
 }
+/* 8.11 (cmcteams : 27 boutons « sous div#cmcV10Welcome », écran de bienvenue VOULU, une fois par navigateur, pont 1891 : « c'est au robot de le fermer ») :
+   un écran plein cadre (fixe, ≥ 90 % de la fenêtre) qui porte un bouton « Plus tard / Fermer / Continuer / Compris / Commencer / OK » est un accueil ou une
+   boîte de dialogue, pas un défaut : on touche ce bouton une fois avant de mesurer. Exécuté DANS la page. */
+export function fermerAccueil() {
+  const W = innerWidth, H = innerHeight; const mots = /^(plus tard|fermer|continuer|ok|d.accord|compris|j.ai compris|commencer|passer|ignorer|non merci|ouvrir le livre|ouvrir|entrer)$/i;   /* 12.11 : la couverture du livre de cuisine (cloud-poste-recherche 2361) */
+  for (const d of document.querySelectorAll('body *')) {
+    const st = getComputedStyle(d); if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden') continue;
+    const r = d.getBoundingClientRect(); if (r.width < W * 0.9 || r.height < H * 0.9) continue;
+    if (d.hasAttribute('data-kdmc-installer') || d.id === 'kdmc-version-badge') continue;
+    const b = [...d.querySelectorAll('button, [role="button"], a')].find((x) => mots.test((x.textContent || '').trim().replace(/\s+/g, ' ')));
+    if (b) { b.click(); return (d.id ? '#' + d.id : d.tagName.toLowerCase()); }
+  }
+  /* 8.11 (CMCteams iPhone : 13 boutons « sous div#cmc-cookie-banner ») : une bannière de consentement (id / classe / aria-label cookie, consent, rgpd)
+     fixe, quelle que soit sa hauteur, se ferme par son bouton d'accord (« J'ai compris », « Accepter », « OK »…) ou, à défaut, son dernier bouton. */
+  const consent = /cookie|consent|rgpd|gdpr|cmp/i, accord = /accept|compris|ok|d.accord|continuer|fermer|refuser/i;
+  for (const d of document.querySelectorAll('body *')) {
+    const st = getComputedStyle(d); if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden') continue;
+    if (!consent.test(d.id + ' ' + d.className + ' ' + (d.getAttribute('aria-label') || ''))) continue;
+    const bs = [...d.querySelectorAll('button, [role="button"]')]; if (!bs.length) continue;
+    const b = bs.find((x) => accord.test((x.textContent || '').trim())) || bs[bs.length - 1];
+    b.click(); return (d.id ? '#' + d.id : d.tagName.toLowerCase());
+  }
+  return '';
+}
+/* 16.11 (pont 2504, run 43778650553 : « cmcteams cache 162 [sous div#cmcV10Welcome] » alors que Servi, qui ferme l'accueil, mesure 0) : le grand robot le ferme aussi. */
 export function fermerFeuilleInstalleur() {
   const f = document.querySelector('[data-kdmc-installer="feuille"]');
   if (!f) return false;

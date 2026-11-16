@@ -11,32 +11,8 @@
  * Seules les adresses *.kd-mc.com sont ouvertes (le cookie admin ne sort jamais du domaine).
  */
 import { chromium, webkit, devices } from 'playwright';
-import { ECRANS, mesurer, connecterAdmin, lectureSeule, fermerFeuilleInstalleur } from './verif-affichage-domaine.mjs';
-export { fermerFeuilleInstalleur };
-/* 8.11 (cmcteams : 27 boutons « sous div#cmcV10Welcome », écran de bienvenue VOULU, une fois par navigateur, pont 1891 : « c'est au robot de le fermer ») :
-   un écran plein cadre (fixe, ≥ 90 % de la fenêtre) qui porte un bouton « Plus tard / Fermer / Continuer / Compris / Commencer / OK » est un accueil ou une
-   boîte de dialogue, pas un défaut : on touche ce bouton une fois avant de mesurer. Exécuté DANS la page. */
-export function fermerAccueil() {
-  const W = innerWidth, H = innerHeight; const mots = /^(plus tard|fermer|continuer|ok|d.accord|compris|j.ai compris|commencer|passer|ignorer|non merci|ouvrir le livre|ouvrir|entrer)$/i;   /* 12.11 : la couverture du livre de cuisine (cloud-poste-recherche 2361) */
-  for (const d of document.querySelectorAll('body *')) {
-    const st = getComputedStyle(d); if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden') continue;
-    const r = d.getBoundingClientRect(); if (r.width < W * 0.9 || r.height < H * 0.9) continue;
-    if (d.hasAttribute('data-kdmc-installer') || d.id === 'kdmc-version-badge') continue;
-    const b = [...d.querySelectorAll('button, [role="button"], a')].find((x) => mots.test((x.textContent || '').trim().replace(/\s+/g, ' ')));
-    if (b) { b.click(); return (d.id ? '#' + d.id : d.tagName.toLowerCase()); }
-  }
-  /* 8.11 (CMCteams iPhone : 13 boutons « sous div#cmc-cookie-banner ») : une bannière de consentement (id / classe / aria-label cookie, consent, rgpd)
-     fixe, quelle que soit sa hauteur, se ferme par son bouton d'accord (« J'ai compris », « Accepter », « OK »…) ou, à défaut, son dernier bouton. */
-  const consent = /cookie|consent|rgpd|gdpr|cmp/i, accord = /accept|compris|ok|d.accord|continuer|fermer|refuser/i;
-  for (const d of document.querySelectorAll('body *')) {
-    const st = getComputedStyle(d); if (st.position !== 'fixed' || st.display === 'none' || st.visibility === 'hidden') continue;
-    if (!consent.test(d.id + ' ' + d.className + ' ' + (d.getAttribute('aria-label') || ''))) continue;
-    const bs = [...d.querySelectorAll('button, [role="button"]')]; if (!bs.length) continue;
-    const b = bs.find((x) => accord.test((x.textContent || '').trim())) || bs[bs.length - 1];
-    b.click(); return (d.id ? '#' + d.id : d.tagName.toLowerCase());
-  }
-  return '';
-}
+import { ECRANS, mesurer, connecterAdmin, lectureSeule, fermerFeuilleInstalleur, fermerAccueil } from './verif-affichage-domaine.mjs';
+export { fermerFeuilleInstalleur, fermerAccueil };   /* 16.11 : fermerAccueil vit avec le détecteur, les DEUX robots ferment l'accueil avant de mesurer */
 /** 6.11 (apex-cloud, Servi 42313704615 : Apex AI iphone-13 et portable « cache 26-27 », installeur « non ») : la feuille « 📲 Installer » du domaine s'ouvre
  *  d'elle-même pour un compte connecté sur un appareil neuf, 1,5 s APRÈS que le domaine a répondu — parfois après les deux fermetures du robot. Elle couvre alors
  *  toute la page, et le robot comptait 27 boutons « cachés » qui ne le sont pas. On ferme, on mesure, on referme : si elle s'est ouverte pendant la mesure, on remesure

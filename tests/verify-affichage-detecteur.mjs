@@ -102,7 +102,12 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
 /* 12.11 (passe Servi iPhone 13 : worldmonitor « petit 57 » = 57 épingles Leaflet) : une épingle de carte n'est pas une cible < 44 px ; un petit bouton de l'app et une commande de la carte le restent */
 { await p.setContent('<!doctype html><title>t</title><div class="leaflet-container" style="position:relative;width:390px;height:400px"><div class="leaflet-marker-pane"><div class="leaflet-marker-icon leaflet-zoom-animated" tabindex="0" role="button" style="position:absolute;left:100px;top:100px;width:25px;height:41px" onclick="void 0"></div><div class="leaflet-marker-icon" role="button" style="position:absolute;left:200px;top:150px;width:25px;height:41px"></div></div><div class="leaflet-control-container"><a href="#" class="leaflet-control-zoom-in" style="position:absolute;left:10px;top:10px;width:30px;height:30px;display:block">+</a></div></div><button id="mini" style="width:30px;height:30px">x</button>');
   const mm = await p.evaluate(mesurer, true);
-  ok('les épingles de carte ne comptent pas « < 44 px » ; la commande de zoom et le petit bouton de l\'app, si', mm.petit === 2 && !mm.petitEx.some((x) => /marker/.test(x)) && mm.petitEx.some((x) => /leaflet-control-zo/.test(x)) && mm.petitEx.some((x) => /button#mini/.test(x)), JSON.stringify([mm.petit, mm.petitEx])); }
+  ok('les épingles de carte ne comptent pas « < 44 px » ; la commande de zoom et le petit bouton de l\'app, si', mm.petit === 2 && !mm.petitEx.some((x) => /marker/.test(x)) && mm.petitEx.some((x) => /leaflet-control-zo/.test(x)) && mm.petitEx.some((x) => /button#mini/.test(x)), JSON.stringify([mm.petit, mm.petitEx]));
+  ok('un « trop petit » dit sa taille et son parent (ex. « button#mini 30x30 dans … »)', mm.petitEx.every((x) => /\s\d+x\d+ dans \S+/.test(x)), JSON.stringify(mm.petitEx)); }
+/* 16.11 : le grand robot ferme l'écran d'accueil AVANT chaque mesure (sinon « cmcteams cache 162 » sous l'écran de bienvenue, run 43778650553) */
+{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  const n = (src.match(/evaluate\(fermerAccueil\)[^\n]*\n\s*(?:const m2|m) = await page\.evaluate\(mesurer, tel\)/g) || []).length;
+  ok('le grand robot ferme l\'accueil avant ses 2 mesures (page ouverte, page explorée)', n === 2, String(n)); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

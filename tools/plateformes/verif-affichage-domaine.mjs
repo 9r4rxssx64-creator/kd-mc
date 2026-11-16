@@ -271,7 +271,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
           await page.waitForTimeout(4500);                               // laisser les apps dessiner ET Bee se ranger (il se replace à 1,2 s puis 3,5 s)
           await page.evaluate(() => window.scrollTo(0, 0));
           await page.evaluate(fermerFeuilleInstalleur).catch(() => false); await page.waitForTimeout(300);
-          if (await page.evaluate(fermerAccueil).catch(() => '')) await page.waitForTimeout(500);
+          for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */
           m = await page.evaluate(mesurer, tel);
         } catch (e) { err = String(e && e.message).split('\n')[0].slice(0, 90); }
         page.off('pageerror', onErr); page.off('requestfailed', onFail); page.off('response', onRep);
@@ -292,7 +292,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               const apres = await page.evaluate(() => location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length);
               if (apres === avant) { explo.morts++; if (explo.ex.length < 4) explo.ex.push('sans réaction : n°' + k); }
               await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
-              if (await page.evaluate(fermerAccueil).catch(() => '')) await page.waitForTimeout(500);
+              for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */
               const m2 = await page.evaluate(mesurer, tel);
               const changePage = apres.split('|')[0] !== avant.split('|')[0];
               if (changePage && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après n°' + k); }

@@ -106,8 +106,8 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   ok('un « trop petit » dit sa taille et son parent (ex. « button#mini 30x30 dans … »)', mm.petitEx.every((x) => /\s\d+x\d+ dans \S+/.test(x)), JSON.stringify(mm.petitEx)); }
 /* 16.11 : le grand robot ferme l'écran d'accueil AVANT chaque mesure (sinon « cmcteams cache 162 » sous l'écran de bienvenue, run 43778650553) */
 { const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
-  const n = (src.match(/evaluate\(fermerAccueil\)[^\n]*\n\s*(?:const m2|m) = await page\.evaluate\(mesurer, tel\)/g) || []).length;
-  ok('le grand robot ferme l\'accueil avant ses 2 mesures (page ouverte, page explorée)', n === 2, String(n)); }
+  const n = (src.match(/for \(let k = 0; k < 3 && await page\.evaluate\(fermerAccueil\)[^\n]*\n\s*(?:const m2|m) = await page\.evaluate\(mesurer, tel\)/g) || []).length;
+  ok('le grand robot ferme l\'accueil (jusqu\'à 3 écrans : bienvenue, consentement) avant ses 2 mesures', n === 2, String(n)); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.022 + light v1.150 — Le fond bleu des élèves de l'école Europe est AFFICHÉ, mesuré en vrai navigateur (2026-11-16)
+- pc-config (pont 2553) : la light n'affichait aucun nom en fond bleu (0 sur six mois) alors que le fichier généré le portait. Cause : `applyBoards` recopiait les personnes sans `fond` (light v1.150 : `if(p.fond)r.fond=1`). CMCteams : les groupes d'absence (Congés, Maladie, Formation, Déplacement, lignes partielles) de `vPlan()` ne lisaient pas `emp.ecoleFond` → 6 noms sans fond en décembre ; v10.022 : `_nomAbs` peint le fond partout.
+- Gardes `tests/verify-light-fond-bleu-affiche.mjs` et `tests/verify-cmc-fond-affiche.mjs` (`npm run test:light-fond-affiche`, `test:cmc-fond-affiche` + sabotages, dans `test:ci`) : DOM réel, 313 élèves sur six mois ; rouges sur v1.149 / v10.021 (et sous `SABOTAGE=1`).
+
 ## CMCteams v10.021 — Le lien météo fait 44 px de haut sous le doigt (2026-11-16)
 - Pont 2539 (cloud-installer, robot d'affichage) : un seul lien de CMCteams restait trop petit au doigt (« a 158x18 dans div.page.bg-casino »). C'est le lien du widget météo vers Windy : `index.html` lui donne `display:inline-flex;align-items:center;min-height:44px`. La light n'a pas ce lien (rien à changer, v1.149 inchangée). Les « 162 cachés » du robot étaient une fausse alerte : CMCteams mesure 0 caché.
 - Garde `tests/verify-cmc-zones-tactiles.mjs` (`npm run test:cmc-zones-tactiles`, dans `test:ci`) : rouge avant (`a https://www.windy.com/43.738 117×19`), vert après (27 contrôles OK, 0 échec) ; `SABOTAGE=1` = 15 échecs. Son petit serveur ne servait pas `/CMCteams/tools/…` (404 → « kdmcMiniChat is not defined » masquait la mesure) : préfixe du domaine retiré.

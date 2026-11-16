@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.021 — Le lien météo fait 44 px de haut sous le doigt (2026-11-16)
+- Pont 2539 (cloud-installer, robot d'affichage) : un seul lien de CMCteams restait trop petit au doigt (« a 158x18 dans div.page.bg-casino »). C'est le lien du widget météo vers Windy : `index.html` lui donne `display:inline-flex;align-items:center;min-height:44px`. La light n'a pas ce lien (rien à changer, v1.149 inchangée). Les « 162 cachés » du robot étaient une fausse alerte : CMCteams mesure 0 caché.
+- Garde `tests/verify-cmc-zones-tactiles.mjs` (`npm run test:cmc-zones-tactiles`, dans `test:ci`) : rouge avant (`a https://www.windy.com/43.738 117×19`), vert après (27 contrôles OK, 0 échec) ; `SABOTAGE=1` = 15 échecs. Son petit serveur ne servait pas `/CMCteams/tools/…` (404 → « kdmcMiniChat is not defined » masquait la mesure) : préfixe du domaine retiré.
+
 ## CMCteams v10.020 + light v1.149 — Le fond bleu clair des élèves de l'école Europe est reproduit comme dans le PDF (2026-11-16)
 - Kevin 14.11 : « Fond bleu clair c'est les élèves en école de Europe » ; 16.11 : « Il faut reproduire à l'identique ». Les noms des élèves sont peints en bleu clair / cyan (214,254,254) dans le PDF ; l'app les affichait sans fond.
 - Import : nouvelle étiquette `{{ECOLEFOND}}` (même nom en majuscules sur fond bleu clair OU cyan). Elle MARQUE seulement (`emp.ecoleFond[mois]`), elle ne déplace personne (les signaux A et B restent les seuls à envoyer vers les roulettes). Garde d'homonyme : nom de famille + initiale.

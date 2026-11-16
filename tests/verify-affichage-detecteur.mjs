@@ -119,6 +119,11 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   await pm.evaluate(() => { document.getElementById('splash').style.display = 'none'; }); const parti = await pm.evaluate(ecranDemarrageParti);
   ok('écran de démarrage : vu tant qu\'il est affiché, parti une fois masqué', la === false && parti === true, JSON.stringify([la, parti]));
   await pm.close(); }
+/* 16.11 (run 43965271962 : « Page crashed » sur 20 apps) : le grand robot relance son navigateur et rejoue l'adresse une fois */
+{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  const { estPlantage } = await import('../tools/plateformes/verif-affichage-domaine.mjs');
+  ok('plantage reconnu (« Page crashed », « context or browser has been closed ») ; une erreur de page ne l\'est pas', estPlantage('page.goto: Page crashed') && estPlantage(new Error('page.evaluate: Target page, context or browser has been closed')) && !estPlantage('page.goto: Timeout 30000ms exceeded') && !estPlantage('net::ERR_NAME_NOT_RESOLVED'));
+  ok('le grand robot : page morte → navigateur relancé avant l\'adresse ; plantage → adresse rejouée UNE fois (2 essais au plus)', /if \(!\(await page\.evaluate\(\(\) => 1\)\.catch\(\(\) => 0\)\)\) \{ await ouvrir\(\);/.test(src) && /for \(let essai = 0; essai < 2; essai\+\+\)/.test(src) && /if \(!err \|\| essai \|\| !estPlantage\(err\)\) break;/.test(src) && /debrancher\(\); await ouvrir\(\); brancher\(\);/.test(src)); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

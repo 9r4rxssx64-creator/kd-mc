@@ -249,25 +249,38 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
       const { nom, tel, explorer, ...opts } = ec;
       const moteur = bw && /iphone|tablette/.test(nom) ? bw : b;
       delete opts.defaultBrowserType;
-      const ctx = await moteur.newContext({ ...opts });
-      await ctx.addInitScript(fermerFeuilleToujours);
-      await lectureSeule(ctx);
-      const page = await ctx.newPage();
-      let admin = false;
-      if (hash) { const c = await connecterAdmin(page, hash).catch(() => ({ ok: false })); admin = c.ok; journal(`=== ${nom} [${moteur === bw ? 'webkit' : 'chromium'}] (${opts.viewport.width}×${opts.viewport.height}) — connexion admin : ${admin ? 'oui' : 'NON'}`); }
+      /* 16.11 (run 43965271962, 33 adresses : « page.goto: Page crashed » sur 20 apps, toutes les pages d'un écran WebKit perdues après le 1er plantage) :
+         un navigateur qui plante n'est pas un défaut des pages. `ouvrir()` (re)fait un contexte neuf et la connexion admin ; on l'appelle au début de l'écran,
+         avant une adresse si la page est morte, et une fois pour rejouer l'adresse qui a planté (même règle que le robot Servi, PR 5688). */
+      let ctx = null, page = null, admin = false;
+      const ouvrir = async () => {
+        if (ctx) await ctx.close().catch(() => undefined);
+        ctx = await moteur.newContext({ ...opts });
+        await ctx.addInitScript(fermerFeuilleToujours);
+        await lectureSeule(ctx);
+        page = await ctx.newPage();
+        admin = false;
+        if (hash) { const c = await connecterAdmin(page, hash).catch(() => ({ ok: false })); admin = c.ok; }
+      };
+      await ouvrir();
+      if (hash) { journal(`=== ${nom} [${moteur === bw ? 'webkit' : 'chromium'}] (${opts.viewport.width}×${opts.viewport.height}) — connexion admin : ${admin ? 'oui' : 'NON'}`); }
       else journal(`=== ${nom} [${moteur === bw ? 'webkit' : 'chromium'}] (${opts.viewport.width}×${opts.viewport.height}) — anonyme`);
       for (const h of hotes) {
+        if (!(await page.evaluate(() => 1).catch(() => 0))) { await ouvrir(); journal(`   ↻ ${nom} : navigateur relancé avant ${h} (page morte)`); }
         const js = [];
         const onErr = (e) => js.push(String(e && e.message).replace(/["'«][^"'»]{12,}["'»]/g, '"…"').replace(/\S+@\S+/g, '…@…').replace(/\d{6,}/g, '…').slice(0, 70));
-        page.on('pageerror', onErr);
         /* 29.10.2026 (pont 1356 : « refus CORS » vers apex-depot-relais, 146 erreurs, que le relais ne reproduit pas au curl) : noter POURQUOI (échec réseau ou réponse ≥ 400, ACAO présent ou non) — hôtes seulement, jamais de chemin ni de texte. */
         const reseau = [];
         const hote = (u) => { try { return new URL(u).host.slice(0, 40); } catch { return '?'; } };
         const onFail = (q) => { if (reseau.length < 3) reseau.push('échec ' + hote(q.url()) + ' ' + String((q.failure() || {}).errorText || '?').slice(0, 60)); };
         const onRep = (r) => { if (reseau.length < 3 && r.status() >= 400) reseau.push(r.status() + ' ' + hote(r.url()) + ' acao=' + (r.headers()['access-control-allow-origin'] ? 'oui' : 'non')); };
-        page.on('requestfailed', onFail); page.on('response', onRep);
+        const brancher = () => { page.on('pageerror', onErr); page.on('requestfailed', onFail); page.on('response', onRep); };
+        const debrancher = () => { page.off('pageerror', onErr); page.off('requestfailed', onFail); page.off('response', onRep); };
+        brancher();
         const t0 = Date.now(); let st = 0, m = null, err = '';
+        for (let essai = 0; essai < 2; essai++) {
         try {
+          err = '';
           const rep = await page.goto(url(h), { waitUntil: 'load', timeout: 30000 });
           st = rep ? rep.status() : 0;
           await page.waitForTimeout(4500);                               // laisser les apps dessiner ET Bee se ranger (il se replace à 1,2 s puis 3,5 s)
@@ -278,7 +291,11 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
           for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */
           m = await page.evaluate(mesurer, tel);
         } catch (e) { err = String(e && e.message).split('\n')[0].slice(0, 90); }
-        page.off('pageerror', onErr); page.off('requestfailed', onFail); page.off('response', onRep);
+        if (!err || essai || !estPlantage(err)) break;
+        journal(`   ↻ ${h} · ${nom} : navigateur planté (${err.slice(0, 40)}), relancé, adresse rejouée une fois`);
+        debrancher(); await ouvrir(); brancher(); js.length = 0; reseau.length = 0;
+        }
+        debrancher();
         /* un niveau plus loin (écrans « explorer ») : toucher chaque onglet/menu, remesurer, noter s'il a réagi et si un retour existe */
         let explo = null;
         if (m && ec.explorer) {
@@ -318,7 +335,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
         if (js.length && reseau.length) journal('   ↳ réseau : ' + reseau.join(' | '));
         if (explo) journal(`   ↳ exploré : ${explo.touches} touché(s) · ${explo.morts} sans réaction · ${explo.sansRetour} page(s) sans retour · ${explo.cache} caché(s) · haut ${explo.haut} · déborde ${explo.deborde}${explo.ex.length ? ' · ' + explo.ex.join(' | ') : ''}`);
       }
-      await ctx.close();
+      await ctx.close().catch(() => undefined);
     }
   } finally { await b.close(); if (bw) await bw.close(); }
   return res;
@@ -368,6 +385,8 @@ export function ecranDemarrageParti() {
   }
   return true;
 }
+/* Un navigateur ou une page qui plante (pas un défaut de la page mesurée). */
+export function estPlantage(e) { return /Page crashed|crashed|Target page, context or browser has been closed|Target closed|has been closed|disconnected/i.test(String((e && e.message) || e)); }
 export function fermerFeuilleInstalleur() {
   const f = document.querySelector('[data-kdmc-installer="feuille"]');
   if (!f) return false;

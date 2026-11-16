@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Apex Chat v1.1.365 — la pastille « ← Portail » ne reste plus cachée sous la fenêtre du menu (2026-11-16)
+- Constat (robot d'affichage + cloud-installer, pont 2538) : `a#kdmc-portal-link` recouverte par la fenêtre du menu (« 🔕 Masquer convs muettes »), non défilable. Elle est dans le fichier d'Apex Chat (ma correction du diagnostic : ce n'est pas un élément commun).
+- Correctif : `body:has(#modal-host .modal-back) #kdmc-portal-link{display:none!important}` (fenêtre ouverte = pastille masquée, elle revient à la fermeture). Garde `test:portail-modale` : rouge sur l'ancien fichier (2 ❌) et sous `SABOTAGE=1`, vert avec (4 ✅).
+- Reste : le lien « a 59x14 dans footer » (< 44 px) vu seulement sur l'écran Android n'existe ni dans `index.html` ni dans le rendu local ; demandé à cloud-installer son sélecteur exact.
+
 ## CMCteams v10.019 + light v1.148 — Les lignes-titres « Formation CRAPS / EUROPE » prennent la teinte du PDF dans les deux apps (2026-11-14)
 - Mesuré par le Lenovo (pont 2439 point 3) : la ligne-titre au-dessus d'un tableau d'école (« Formation CRAPS … ») restait bleu pâle `#d6f1fb` dans la light et gris-vert sombre dans CMCteams, alors que le PDF la peint en vert vif (153,255,51) pour CRAPS et en bleu glacé (214,254,254) pour EUROPE ; la ligne d'équipe « dép. » de la light était `#9cf53c` au lieu du vert du PDF.
 - Corrigé : les deux apps appellent la même `_cmcFormCaseBg("", jeu)` (copies identiques `tools/shared/formations-ecole.js` ⇄ `tools/departs/formations-ecole.js`) pour la ligne-titre ; la ligne d'équipe de la light prend `_cmcFormCaseBg(groupe, "")`. Sans équipe d'école, rien ne change.

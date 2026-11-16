@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.364",
+  "softwareVersion": "v1.1.365",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -315,6 +315,8 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
    - clavier ouvert : la barre du haut et les réponses suggérées se replient (place aux messages). */
 html.chat-view body{height:var(--ax-vvh, 100dvh);min-height:0;overflow:hidden}
 html.chat-view #bnav{display:none!important}
+/* 1.1.365 (robot d'affichage 14.11, pont 2538) : la pastille « ← Portail » (z 150) est recouverte par la fenêtre du menu (« 🔕 Masquer convs muettes » @8,548 sous elle) et le visiteur ne peut pas la faire défiler : tant qu'une fenêtre est ouverte, la pastille est masquée (la fenêtre a son ✕), elle revient à la fermeture. */
+body:has(#modal-host .modal-back) #kdmc-portal-link{display:none!important}
 html.chat-view #app.chat-mode .chat-input{padding-bottom:calc(var(--ax-safe-bottom) + 8px)}
 html.chat-view.kb-open #topbar{display:none!important}
 html.chat-view.kb-open #app.chat-mode .chat-input{padding-bottom:8px}
@@ -492,7 +494,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.364';
+const __APEX_CHAT_VERSION__ = 'v1.1.365';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -839,7 +841,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.364" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.364</div>
+  <div id="splash-version" data-ver="v1.1.365" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -853,7 +855,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.364</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.360</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>

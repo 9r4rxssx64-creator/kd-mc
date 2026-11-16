@@ -307,6 +307,7 @@
   "tests/verify-documents-travail-parite.mjs",
   "tests/verify-donnees-a-jour.mjs",
   "tests/verify-donnees-rh-app.mjs",
+  "tests/verify-ecole-fond-bleu.mjs",
   "tests/verify-ecritures-cmc.mjs",
   "tests/verify-entete-instantane.mjs",
   "tests/verify-entetes-light.mjs",

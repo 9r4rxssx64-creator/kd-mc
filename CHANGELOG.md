@@ -4,6 +4,14 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.020 + light v1.149 — Le fond bleu clair des élèves de l'école Europe est reproduit comme dans le PDF (2026-11-16)
+- Kevin 14.11 : « Fond bleu clair c'est les élèves en école de Europe » ; 16.11 : « Il faut reproduire à l'identique ». Les noms des élèves sont peints en bleu clair / cyan (214,254,254) dans le PDF ; l'app les affichait sans fond.
+- Import : nouvelle étiquette `{{ECOLEFOND}}` (même nom en majuscules sur fond bleu clair OU cyan). Elle MARQUE seulement (`emp.ecoleFond[mois]`), elle ne déplace personne (les signaux A et B restent les seuls à envoyer vers les roulettes). Garde d'homonyme : nom de famille + initiale.
+- Seed (`planning-seed.js`, champ `fond`) et tableaux de la light (`boards-gen.js`, `fond:1`) viennent de la MÊME passe d'import (`_mois-import.mjs` → `_gen-planning.mjs`). Mesuré : 53 noms en juillet, 52 d'août à décembre.
+- Affichage : CMCteams peint la cellule du nom `#1d4a5c` (`data-ecole-fond`), la light la même teinte (`.cNom.ecolefond`).
+- Garde : `npm run test:ecole-fond-bleu` (22 contrôles) + `test:ecole-fond-bleu-sabotage` (rouge : 19 ko), dans `test:ci`.
+- À confirmer par le Lenovo : décembre = 52 noms chez nous, 46 comptés à l'œil (écart à rapprocher).
+
 ## Apex Chat v1.1.365 — la pastille « ← Portail » ne reste plus cachée sous la fenêtre du menu (2026-11-16)
 - Constat (robot d'affichage + cloud-installer, pont 2538) : `a#kdmc-portal-link` recouverte par la fenêtre du menu (« 🔕 Masquer convs muettes »), non défilable. Elle est dans le fichier d'Apex Chat (ma correction du diagnostic : ce n'est pas un élément commun).
 - Correctif : `body:has(#modal-host .modal-back) #kdmc-portal-link{display:none!important}` (fenêtre ouverte = pastille masquée, elle revient à la fermeture). Garde `test:portail-modale` : rouge sur l'ancien fichier (2 ❌) et sous `SABOTAGE=1`, vert avec (4 ✅).

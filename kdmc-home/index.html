@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.90 -->
+<!-- v1.0.91 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -281,16 +281,16 @@
 
     <footer>
       <b>KDMC APEX</b> — Kevin DESARZENS · Monaco<br />
-      <a href="https://kd-mc.com/" style="color:var(--gold);text-decoration:none">kd-mc.com</a><br />
+      <span style="color:var(--gold)">kd-mc.com</span><br />   <!-- v1.0.91 : plus un lien (il menait à la page où l'on est déjà, et faisait 59x14 px sous le doigt — robot d'affichage, run 43783484535) -->
       <span class="v">PWA · session unique signée · CSP stricte</span>
     </footer>
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.90"></script>
-  <script src="kdmc-boite.js?v=1.0.90"></script>
-  <script src="kdmc-portal.js?v=1.0.90"></script>
+  <script src="kdmc-sso.js?v=1.0.91"></script>
+  <script src="kdmc-boite.js?v=1.0.91"></script>
+  <script src="kdmc-portal.js?v=1.0.91"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.90" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.91" data-color="#c9a227" defer></script>
 </body>
 </html>

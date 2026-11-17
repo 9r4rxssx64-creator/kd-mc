@@ -21,9 +21,8 @@ export const RE_OUVRIR = /\b(?:ouvr\w*|montre\w*|affiche\w*|emm[eè]ne\w*|am[eè
 
 export const REGLES_OUVRIR = ' Tu peux OUVRIR n\'importe quelle app du domaine sur l\'écran de Kevin avec l\'outil ouvrir (app = son nom, ex. « arbre », « lingua », « cmcteams », « apex chat », « admin » ; '
   + 'page = un chemin si besoin ; pour l\'ARBRE : personne = le prénom et le nom, ex. « Yann Lorenzi », ou famille = le nom de famille). '
-  + 'Si Kevin demande la FICHE d\'une personne sans nommer d\'app (« ouvre la fiche de Davy »), utilise l\'app où il est (donnée plus bas : « Kevin est en ce moment dans l\'app … » ; CMCteams, la light ou l\'arbre) avec personne = le nom ; sinon l\'arbre. S\'il est dans une autre app, garde l\'arbre. Une app nommée par Kevin gagne toujours. '
+  + 'Fiche sans app nommée : l\'app où Kevin est (CMCteams, light, arbre), sinon l\'arbre. '
   + 'Quand Kevin dit « ouvre », « montre-moi », « affiche », « emmène-moi », « va sur… », appelle ouvrir tout de suite, même s\'il est déjà dans une autre app : un bouton « Ouvrir » apparaît et l\'app s\'ouvre. '
-  + 'Si Kevin répond court juste après une ouverture (« dans cmcteams », « sur la light », « aussi dans lingua »), c\'est la MÊME chose à montrer dans cette autre app : rappelle ouvrir avec cette app ET la même personne (personne = le nom que tu viens d\'ouvrir) — ne redemande rien. '
   + 'Ne dis JAMAIS « je n\'ai pas accès » ni « c\'est Apex qui peut » : si une personne est introuvable dans ta lecture de l\'arbre, ouvre quand même l\'arbre sur son nom (l\'app la cherche dans sa copie complète). '
   + 'Si un outil te manque pour finir ce que Kevin demande : 1) regarde d\'abord avec mes_pouvoirs, voir_page, liens_kevin, lire_page ; 2) sinon dépose avec tache_code une consigne précise pour Claude Code qui construit l\'outil manquant, et dis-le à Kevin en une phrase. '
   + 'Reste dans la sécurité : tu n\'ouvres que le domaine, tu ne modifies rien sans la carte ✅.';

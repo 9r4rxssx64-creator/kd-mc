@@ -285,10 +285,21 @@ export async function connecterAdmin(page, hash) {
 
 /* Lecture seule : on laisse passer les lectures, la connexion admin et les échanges de session du domaine ; tout le reste qui écrit est bloqué. */
 const ECRITURE_PERMISE = /\/__admin\/login$|\/__sso\/(whoami|pass|refresh|session)/;
-export async function lectureSeule(ctx) {
+/* 17.11 (apex-cloud 2573 / 2618, pont-check) : une CONNEXION d'app est un POST qui ne fait qu'ouvrir une session pour le robot déjà admin du domaine
+   (Apex Chat : POST <API>/api/auth/sso-from-kdmc, sans lui rien ne s'affiche en Chromium, le robot tombe sur la porte). Un robot la déclare EXPRÈS
+   (`connexions` = liste d'adresses EXACTES) ; tout autre POST de l'app (ex. /api/keys/device qui poserait un « appareil » sur le compte admin de Kevin,
+   /api/users/me) reste bloqué. Sans la liste, rien ne change : les autres robots restent en lecture seule stricte. Pure, testable. */
+export function ecriturePermise(methode, url, connexions = []) {
+  const m = String(methode || '').toUpperCase();
+  if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return true;
+  const u = String(url || '');
+  if (ECRITURE_PERMISE.test(u)) return true;
+  return m === 'POST' && connexions.some((c) => (c instanceof RegExp ? c.test(u) : c === u));
+}
+export async function lectureSeule(ctx, { connexions = [] } = {}) {
   await ctx.route('**/*', (r) => {
     const q = r.request();
-    if (q.method() === 'GET' || q.method() === 'HEAD' || q.method() === 'OPTIONS' || ECRITURE_PERMISE.test(q.url())) return r.continue();
+    if (ecriturePermise(q.method(), q.url(), connexions)) return r.continue();
     /* 29.10.2026 : sans en-têtes CORS, cette fausse réponse faisait « refuser » par WebKit tout POST vers une autre origine (« due to access control checks »)
        → de fausses erreurs JS (146 sur apex-ai, pont 1356) que le robot fabriquait lui-même. */
     const origine = q.headers().origin || '*';

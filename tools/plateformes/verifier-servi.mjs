@@ -342,6 +342,9 @@ export async function mesurerAdresse(page, a, { nom, tel, r, enCours, journal })
   Object.assign(r, { cache: m.cache, cacheEx: sansTexte(m.cacheEx), aDefiler: m.aDefiler, aDefilerEx: sansTexte(m.aDefilerEx), haut: m.haut, deborde: m.deborde, petit: m.petit, petitEx: sansTexte(m.petitEx), js: m.js });
   await journaliserVuesAdminApexChat(page, a, { nom, tel, r, journal });
 }
+/* 17.11 (apex-cloud 2618, oui pour CE POST seulement) : la connexion d'Apex Chat que Servi laisse passer, en plus de la connexion admin du domaine.
+   Adresse EXACTE (l'API d'Apex Chat est servie par son worker, pas par apex-chat.kd-mc.com) ; /api/keys/device, /api/users/me et tout autre POST restent bloqués. */
+export const CONNEXIONS_SERVI = ['https://apex-chat-api.9r4rxssx64.workers.dev/api/auth/sso-from-kdmc'];
 export async function verifierServi({ adresses, hash = '', journal = console.log }) {
   const b = await chromium.launch({ headless: true });
   const bw = process.env.WEBKIT === '1' ? await webkit.launch({ headless: true }).catch(() => null) : null;
@@ -352,7 +355,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
     for (const nom of NOMS_ECRANS_SERVI.filter((n) => !voulus.length || voulus.includes(n))) {
       const ec = trouverEcranServi(nom); const { nom: _n, tel, explorer: _e, ...opts } = ec; delete opts.defaultBrowserType;
       const moteur = bw && nom === 'iphone-13' ? bw : b;
-      let ctx = await moteur.newContext({ ...opts }); await lectureSeule(ctx);
+      let ctx = await moteur.newContext({ ...opts }); await lectureSeule(ctx, { connexions: CONNEXIONS_SERVI });
       let page = await ctx.newPage();
       /* 7.11 (apex-cloud, Servi 42361310862 : Apex AI « page.goto Timeout 30000ms » sur 2 écrans paysage, 2 runs de suite) : au dépassement du délai on dit QUELLES requêtes
          n'avaient pas fini (hôte + chemin, jamais les paramètres) — un « timeout » sans cause ne se corrige pas. */
@@ -366,7 +369,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
         await page.close().catch(() => {}); await ctx.close().catch(() => {}); enCours.clear();
         const lanceur = moteur === bw ? webkit : chromium;
         const m2 = moteur.isConnected() ? moteur : await lanceur.launch({ headless: true });
-        ctx = await m2.newContext({ ...opts }); await lectureSeule(ctx); page = await ctx.newPage(); suivre(page);
+        ctx = await m2.newContext({ ...opts }); await lectureSeule(ctx, { connexions: CONNEXIONS_SERVI }); page = await ctx.newPage(); suivre(page);
         if (hash) await connecterAdmin(page, hash).catch(() => ({ ok: false }));
       };
       journal(`=== ${nom} [${moteur === bw ? 'webkit' : 'chromium'}] (${opts.viewport.width}×${opts.viewport.height}) — connexion admin : ${admin ? 'oui' : 'NON'}`);

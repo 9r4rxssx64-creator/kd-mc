@@ -204,6 +204,18 @@ export function nomSansTexte(e) {
   const r = e.getBoundingClientRect(), cl = typeof e.className === 'string' ? e.className.trim().split(/\s+/).filter(Boolean).slice(0, 2) : [];
   return e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (cl.length ? '.' + cl.join('.') : '') + ' @' + Math.round(r.left) + ',' + Math.round(r.top);
 }
+/* 17.11 (apex-ai « 8 boutons sans réaction » : 4 lignes « toucher impossible : n°2 (locator.click: Timeout 4000ms exceeded.) » ne disaient NI le bouton NI pourquoi) :
+   la raison est dans les lignes d'appel de Playwright (« element is not visible », « <div id="x"> intercepts pointer events », « element is not stable »…). */
+export function raisonToucher(message) {
+  const lignes = String(message || '').split('\n').map((l) => l.trim());
+  const inter = lignes.find((l) => /intercepts pointer events/.test(l));
+  if (inter) { const m = inter.match(/<([a-z0-9-]+)([^>]*)>/i); const id = m && /\bid="([^"]+)"/.exec(m[2]); const cl = m && /\bclass="([^"\s]+)/.exec(m[2]); return 'recouvert par ' + (m ? m[1] + (id ? '#' + id[1] : '') + (cl ? '.' + cl[1] : '') : 'un autre élément'); }
+  if (lignes.some((l) => /element is not visible/.test(l))) return 'invisible';
+  if (lignes.some((l) => /element is not stable/.test(l))) return 'bouge sans cesse';
+  if (lignes.some((l) => /element is not enabled/.test(l))) return 'désactivé';
+  if (lignes.some((l) => /outside of the viewport/.test(l))) return 'hors de l\'écran';
+  return lignes[0].replace(/\d{6,}/g, '…').slice(0, 60);
+}
 export function candidatsNavigation() {
   const DANGER = /supprim|effac|envoy|valid|achet|pay|commander|déconnex|deconnex|logout|quitter|réinit|reinit|publier|signer|accepter|refuser|bloquer|bannir/i;
   const vis = (e) => { const r = e.getBoundingClientRect(); const st = getComputedStyle(e); return r.width > 8 && r.height > 8 && st.visibility !== 'hidden' && st.display !== 'none' && r.top < innerHeight && r.bottom > 0; };
@@ -353,7 +365,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               /* 17.11 (lingua « 7 onglets sans réaction », tous réactifs en local) : après le rechargement on attend comme à la première ouverture (écran de démarrage parti, accueil fermé),
                  sinon l'onglet suivant est touché sur une page pas encore prête */
               if (changePage) { await page.goto(url(h), { waitUntil: 'load', timeout: 30000 }); await page.waitForTimeout(1500); await page.waitForFunction(ecranDemarrageParti, null, { timeout: 6000 }).catch(() => false); for (let q = 0; q < 3 && await page.evaluate(fermerAccueil).catch(() => ''); q++) await page.waitForTimeout(500); await page.evaluate(candidatsNavigation); }
-            } catch (e) { /* un onglet qui ne se laisse pas toucher : compté comme mort */ explo.morts++; if (explo.ex.length < 4) explo.ex.push('toucher impossible : n°' + k + ' (' + String(e && e.message).split('\n')[0].replace(/\d{6,}/g, '…').slice(0, 60) + ')'); }
+            } catch (e) { /* un onglet qui ne se laisse pas toucher : compté comme mort */ explo.morts++; if (explo.ex.length < 4) explo.ex.push('toucher impossible : ' + ((await page.locator('[data-kdmc-explo="' + k + '"]').first().evaluate(nomSansTexte).catch(() => '')) || 'n°' + k) + ' (' + raisonToucher(e && e.message) + ')'); }
           }
         }
         const ligne = { app: h, ecran: nom, admin, st, ms: Date.now() - t0, js: js.length, jsEx: [...new Set(js)].slice(0, 2).concat(reseau.slice(0, 2).map((x) => 'rés ' + x)), err, ...(m || {}), explo };

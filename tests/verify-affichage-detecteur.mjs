@@ -5,7 +5,7 @@
  * Lancer : npm run test:affichage-detecteur
  */
 import { chromium } from 'playwright';
-import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours } from '../tools/plateformes/verif-affichage-domaine.mjs';
+import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours, raisonToucher } from '../tools/plateformes/verif-affichage-domaine.mjs';
 
 const PIEGE = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>p</title>
 <style>body{margin:0;font:16px sans-serif} header{position:relative;top:-30px;height:60px;background:#333;color:#fff}
@@ -154,7 +154,7 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   ok('le grand robot nomme le débordement après un toucher et la page sans retour', /explo\.ex\.push\('déborde après ' \+ \(nomCible/.test(src) && /'pas de retour après ' \+ \(nomCible/.test(src)); }
 /* 17.11 (lingua « onglets sans réaction », réactifs en local) : après un rechargement le grand robot attend la page prête ; un « sans réaction » dit ce qui est posé sur le bouton ; un toucher impossible est nommé */
 { const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
-  ok('le grand robot : rechargement → page attendue prête ; « sans réaction » avec ce qui est dessus ; « toucher impossible » nommé', /if \(changePage\) \{ await page\.goto\(url\(h\)[^\n]*waitForFunction\(ecranDemarrageParti[^\n]*fermerAccueil[^\n]*candidatsNavigation\)/.test(src) && /\(dessus : ' \+ dessus/.test(src) && /'toucher impossible : n°'/.test(src)); }
+  ok('le grand robot : rechargement → page attendue prête ; « sans réaction » avec ce qui est dessus ; « toucher impossible » nommé', /if \(changePage\) \{ await page\.goto\(url\(h\)[^\n]*waitForFunction\(ecranDemarrageParti[^\n]*fermerAccueil[^\n]*candidatsNavigation\)/.test(src) && /\(dessus : ' \+ dessus/.test(src) && /'toucher impossible : ' \+ \(\(await page\.locator[^\n]*raisonToucher\(e && e\.message\)/.test(src)); }
 /* 17.11 (studio : « Choisir une photo » compté sans réaction) : un toucher qui ouvre le choix d'un fichier ou une boîte du navigateur est une réaction */
 { const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
   ok('le grand robot écoute « filechooser » et « dialog » pendant le toucher et ne compte pas ces boutons morts', /page\.on\('filechooser', surFichier\); page\.on\('dialog', surBoite\);/.test(src) && /if \(apres === avant && !hors\)/.test(src) && /page\.off\('filechooser', surFichier\); page\.off\('dialog', surBoite\);/.test(src));
@@ -162,6 +162,14 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   await pf.setContent('<!doctype html><title>t</title><body><input type="file" id="f" style="display:none"><button id="choisir" onclick="document.getElementById(\'f\').click()">Choisir</button></body>');
   let vu = false; const sur = () => { vu = true; }; pf.on('filechooser', sur); await pf.click('#choisir'); await pf.waitForTimeout(300); pf.off('filechooser', sur);
   ok('vrai navigateur : un bouton « choisir un fichier » déclenche bien l\'événement écouté', vu === true); await pf.close(); }
+/* 17.11 « toucher impossible » : le robot dit POURQUOI (raison de Playwright), avec un vrai clic raté */
+{ const pt = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await pt.setContent('<button id="cache" style="display:none">x</button><button id="sous" style="position:absolute;top:10px;left:10px;width:80px;height:40px">y</button><div id="voile" style="position:absolute;top:0;left:0;width:200px;height:100px"></div>');
+  const raison = async (sel) => { try { await pt.locator(sel).click({ timeout: 700 }); return 'ok'; } catch (e) { return raisonToucher(e.message); } };
+  const r1 = await raison('#cache'), r2 = await raison('#sous');
+  ok('toucher impossible : un bouton invisible est nommé « invisible »', r1 === 'invisible', r1);
+  ok('toucher impossible : un bouton recouvert dit par QUOI', /^recouvert par div#voile/.test(r2), r2);
+  ok('toucher impossible : message inconnu → première ligne, sans numéro de 6 chiffres', raisonToucher('locator.click: Timeout 4000ms exceeded 1234567.') === 'locator.click: Timeout 4000ms exceeded ….'); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.152 — « Séances de cette équipe » se touche sur 44 px (2026-11-17)
+- Bilan d'affichage n°2 (pc-config, pont 2608) : le résumé repliable « Séances de cette équipe » faisait 726×32 px ; il passe à `min-height:44px` (règle des cibles tactiles).
+- Garde `tests/verify-light-resume-44.mjs` (`npm run test:light-resume-44` + `test:light-resume-44-sabotage`, dans `test:ci`), rouge sous sabotage.
+
 ## light v1.151 — Les élèves absents tout le mois gardent leur fond bleu en vrai Chrome (2026-11-17)
 - pc-config (pont 2584) : dans le vrai Chrome de Kevin, la light peignait 1 à 5 noms de moins par mois que le PDF (ex. SEGGIARO J, ORRADO F, MARCHI T, CELLARIO T, MACCARIO S, DEHAENE J, REYNIER M). Cause : une personne absente tout le mois (Congés / Maladie) n'existe que dans un tableau d'absence du PDF ; `buildBoardsFromState` (état vivant Firebase / `cmc_e`) ne reprenait que les personnes déjà présentes dans une équipe, donc elle disparaissait du rendu vivant. Le garde hors ligne de v1.150 lisait `DEPARTS_GEN` directement et ne pouvait pas le voir.
 - Correctif : `buildBoardsFromState` recrée, depuis le PDF généré, les personnes absentes tout le mois dans leur tableau d'absence (codes, `fond`, ordre du PDF conservés).

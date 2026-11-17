@@ -1,0 +1,71 @@
+name: Vérif RÉELLE — La porte du journal du domaine marche, app par app
+
+# Kevin 17.11.2026 : « qui a fait quoi ou quand, de tout le domaine, chaque app ». Le robot, connecté en admin (code = SECRET, empreinte, jamais écrite ni journalisée),
+# ouvre chaque app, dit si le script du domaine y pose window.kdmcJournal, envoie UNE ligne d'essai par la porte /__boite/journal et lit la réponse.
+# Tout autre envoi est absorbé. AU DÉPÔT PUBLIC : verdicts et nombres seulement. À la main seulement ; les lignes d'essai sont effacées ensuite dans la base.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: "Hôtes à essayer, séparés par des espaces (vide = la liste du robot)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verif-live-journal
+  cancel-in-progress: false
+
+jobs:
+  verif:
+    runs-on: ubuntu-24.04   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Installer Chromium
+        # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud).
+        run: |
+          npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
+          ./node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Une ligne d essai par app, connecté en admin, sur le vrai domaine — verdicts seulement
+        id: robot
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+          SANS_NOMS: "1"
+          APPS: ${{ inputs.apps }}
+        # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee` (toujours 0) et un robot qui dit « ÉCHEC » ressortirait vert.
+        shell: bash -euo pipefail {0}
+        run: |
+          set +e
+          stdbuf -oL -eL node tests/verif-live-journal.mjs 2>&1 | tee /tmp/verif-journal.log
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Rapport lisible depuis l'agent (annotations, nombres seulement)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/verif-journal.log ] || { echo "::notice title=Vérif Journal::(pas de journal)"; exit 0; }
+          grep -aE '✅|❌|⚠|ℹ️|=== VÉRIF|^   ↳' /tmp/verif-journal.log \
+            | grep -avE 'code admin|pinhash|PIN_HASH' | sed -E 's/[0-9a-f]{16,}/…/g' \
+            | head -60 > /tmp/rap.txt || tail -40 /tmp/verif-journal.log > /tmp/rap.txt
+          split -l 12 -d /tmp/rap.txt /tmp/bl_
+          n=0
+          for f in /tmp/bl_*; do
+            n=$((n+1))
+            msg=$(sed -e 's/%/%25/g' "$f" | awk '{printf "%s%%0A", $0}')
+            echo "::notice title=Vérif Journal ${n}::${msg}"
+          done
+          echo "::notice title=Vérif Journal bilan::${n} bloc(s) publiés en annotations"
+
+      - name: Verdict
+        if: always()
+        run: test "${{ steps.robot.outputs.rc }}" = "0"

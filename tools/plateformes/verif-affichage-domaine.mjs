@@ -272,7 +272,10 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
       let ctx = null, page = null, admin = false;
       const ouvrir = async () => {
         if (ctx) await ctx.close().catch(() => undefined);
-        ctx = await moteur.newContext({ ...opts });
+        /* 17.11 (cloud-poste-recherche 2597, dossiers « a.btn 104x17 ») : sur WebKit, dès qu'un service worker contrôle la page, les requêtes filtrées par lectureSeule()
+           sont annulées (« Load request cancelled ») et la feuille de style ne charge plus — dans le robot seulement. Sur les écrans WebKit, le robot bloque donc le service worker
+           (Playwright : le filtrage des requêtes et les service workers ne vont pas ensemble). Le service worker lui-même est testé ailleurs (gardes hors ligne de chaque app). */
+        ctx = await moteur.newContext({ ...opts, ...(moteur === bw ? { serviceWorkers: 'block' } : {}) });
         await ctx.addInitScript(fermerFeuilleToujours);
         await lectureSeule(ctx);
         page = await ctx.newPage();

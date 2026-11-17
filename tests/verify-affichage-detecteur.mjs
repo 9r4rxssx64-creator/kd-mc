@@ -140,6 +140,9 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
 /* 17.11 (run 43973722309 : une erreur de l'arbre comptée sur « autorisations », l'adresse suivante) : le grand robot vide la page avant d'écouter les erreurs de l'adresse suivante */
 { const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
   ok('le grand robot vide la page (about:blank) AVANT de brancher l\'écoute des erreurs', /await page\.goto\('about:blank'\)\.catch\(\(\) => \{\}\); await page\.waitForTimeout\(400\);\n\s*brancher\(\);/.test(src)); }
+/* 17.11 (cloud-poste-recherche 2597) : sur les écrans WebKit, le grand robot bloque le service worker (sinon ses requêtes filtrées sont annulées et le style ne charge pas) */
+{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  ok('le grand robot ouvre ses écrans WebKit sans service worker (et seulement ceux-là)', /newContext\(\{ \.\.\.opts, \.\.\.\(moteur === bw \? \{ serviceWorkers: 'block' \} : \{\}\) \}\)/.test(src)); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

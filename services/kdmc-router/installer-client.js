@@ -219,6 +219,16 @@ export const INSTALLER_JS = String.raw`(function () {
         .then(function (r) { return r.json().catch(function () { return { ok: false, reason: 'reponse_illisible' }; }); });
     }
     function etatNotifs() { return !('Notification' in window) ? 'indisponible' : Notification.permission; }
+    /* 17.11 (Kevin, capture : « je reçois les notifs app fermée normalement mais il met ça à chaque fois ») : sur iPhone chaque application installée du domaine a SA
+       permission ; les notifications, elles, suivent le COMPTE. Si un appareil du compte est déjà abonné (/__push/moi), tout arrive déjà : plus de cloche, plus de
+       feuille qui s'ouvre toute seule, plus de bouton « Activer » qu'Apple refuse sans rien demander. Le « oui » du domaine est gardé 7 jours sur l'appareil. */
+    var COMPTE_TTL = 7 * 86400000;
+    function compteDejaNotifie() { var t = +lire('kdmc_notifs_compte') || 0; return t > 0 && Date.now() - t < COMPTE_TTL; }
+    var demandeCompte = null;
+    function compteAbonne() {
+      if (!demandeCompte) demandeCompte = api('/__push/moi').then(function (r) { var n = r && r.ok ? (Number(r.appareils) || 0) : 0; ecrire('kdmc_notifs_compte', n > 0 ? String(Date.now()) : '0'); return n; }).catch(function () { return 0; });
+      return demandeCompte;
+    }
     function abonne() {
       return assurerSW().then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (s) { return !!s; }).catch(function () { return false; });
     }
@@ -257,7 +267,7 @@ export const INSTALLER_JS = String.raw`(function () {
     var NOIR = '#0b1409', OR = '#e8b830', TEXTE = '#f3f0e6';
     function majPastille() {
       if (!document.body) return;
-      var tout = DEJA || ((INSTALLEE || installeeMaintenant) && (PROPRES_NOTIFS || etatNotifs() === 'granted' || !PUSH_OK));
+      var tout = DEJA || ((INSTALLEE || installeeMaintenant) && (PROPRES_NOTIFS || etatNotifs() === 'granted' || !PUSH_OK || compteDejaNotifie()));
       if (tout && !feuille) { if (pastille) { pastille.remove(); pastille = null; } return; }
       if (!pastille) {
         pastille = el('button', 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);right:8px;z-index:2147482000;min-width:44px;min-height:44px;border-radius:22px;border:1px solid ' + OR + ';background:' + NOIR + ';color:' + OR + ';font:700 18px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.45);cursor:pointer;padding:0 12px', (INSTALLEE || installeeMaintenant) ? '🔔' : '📲');
@@ -384,7 +394,7 @@ export const INSTALLER_JS = String.raw`(function () {
       }, false));
       if (IOS && !INSTALLEE && !installeeMaintenant && !PROPRES_NOTIFS) {
         feuille.appendChild(ligne('Notifications', "Sur iPhone, d'abord installer l'application (étape au-dessus), puis l'ouvrir depuis l'écran d'accueil : le bouton d'activation apparaîtra tout seul.", "🔔 Après l'installation", function () {}, true));
-      } else if (PUSH_OK && IOS && etatNotifs() === 'denied') {
+      } else if (PUSH_OK && IOS && etatNotifs() !== 'granted') {
         /* 12.11 (Kevin, iPhone : « impossible d'activer les notifs alors que tous les paramètres sont ok ») : sur iPhone la permission appartient à l'app ouverte
            depuis SON icône ; une page ouverte depuis une AUTRE app installée (portail → light) est une autre adresse : Apple y répond « refusé » sans rien demander.
            L'ancien texte (« le cadenas près de l'adresse ») n'existe pas sur iPhone. Or les notifications du domaine suivent le COMPTE : si un appareil du compte est
@@ -392,11 +402,20 @@ export const INSTALLER_JS = String.raw`(function () {
         var li = ligne('Notifications', "Je regarde si ton compte les reçoit déjà…", '…', function () {}, true);
         var aideI = li.children[1], btnI = li.children[2]; feuille.appendChild(li);
         var sansAbo = function () {
+          /* permission jamais demandée ici ET compte sans aucun appareil abonné : c'est une vraie première activation → le bouton normal */
+          if (etatNotifs() === 'default') {
+            aideI.textContent = "Un toucher, tu acceptes : messages, appels et alertes arrivent même application fermée, écran éteint.";
+            btnI.textContent = '🔔 Activer les notifications'; btnI.disabled = false; btnI.style.background = OR; btnI.style.color = NOIR;
+            btnI.onclick = function () { msg.textContent = '…'; activerNotifs().then(function (r) {
+              if (r.ok) { msg.textContent = '✅ Notifications activées.'; ouvrir(); }
+              else msg.textContent = r.raison === 'refusee' ? "L'iPhone a refusé sans rien demander : ouvre l'application par SON icône de l'écran d'accueil, ou Réglages › Notifications › le nom de l'application › Autoriser." : r.raison === 'ignoree' ? "Tu n'as pas répondu : touche de nouveau le bouton." : 'Pas activées (' + (r.raison || 'erreur') + ').';
+            }); };
+            return;
+          }
           aideI.textContent = "Sur iPhone, elles s'activent seulement dans l'application ouverte depuis son icône de l'écran d'accueil. Ferme cette page, ouvre l'application par son icône, touche 🔔 puis « Activer ». Si c'est déjà le cas : Réglages de l'iPhone › Notifications › le nom de l'application › Autoriser.";
           btnI.textContent = "🔔 À activer depuis l'icône de l'écran d'accueil";
         };
-        api('/__push/moi').then(function (r) {
-          var n = r && r.ok ? (Number(r.appareils) || 0) : 0;
+        compteAbonne().then(function (n) {
           if (!feuille || !li.parentNode) return;
           if (n < 1) return sansAbo();
           aideI.textContent = '✅ Déjà actives sur ton compte (' + n + ' appareil' + (n > 1 ? 's' : '') + ") : les messages et alertes de cette application t'arrivent déjà. Rien à régler ici.";
@@ -478,9 +497,14 @@ export const INSTALLER_JS = String.raw`(function () {
       majPastille();
       demanderSiInstallee();
       proposerALInscription();
-      if (INSTALLEE && PUSH_OK && etatNotifs() === 'default') {
-        var dernier = +lire('kdmc_notifs_propose') || 0;
-        if (Date.now() - dernier > 86400000) { ecrire('kdmc_notifs_propose', String(Date.now())); setTimeout(ouvrir, 1200); }
+      if (INSTALLEE && PUSH_OK && etatNotifs() !== 'granted') {
+        /* on demande d'abord au compte : s'il reçoit déjà, la cloche disparaît et rien ne s'ouvre ; sinon la proposition quotidienne d'avant (permission jamais demandée) */
+        compteAbonne().then(function (n) {
+          if (n > 0) { majPastille(); return; }
+          if (etatNotifs() !== 'default') return;
+          var dernier = +lire('kdmc_notifs_propose') || 0;
+          if (Date.now() - dernier > 86400000) { ecrire('kdmc_notifs_propose', String(Date.now())); setTimeout(ouvrir, 1200); }
+        });
       }
       /* déjà autorisée : s'assurer que l'abonnement est bien enregistré au domaine (appareil changé, abonnement expiré) */
       if (PUSH_OK && etatNotifs() === 'granted' && Date.now() - (+lire('kdmc_notifs_ok') || 0) > 6 * 86400000) { activerNotifs(); }

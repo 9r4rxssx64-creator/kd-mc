@@ -46,7 +46,7 @@ const page = async (html, w = 390, h = 664) => {
   const s = lire('kdmc-home/worldmonitor/index.html');
   ok(/id="briefModal"[^>]*aria-modal="true"/.test(s), 'worldmonitor : la fenêtre « Brief IA » est aria-modal');
   ok(/m\.setAttribute\("aria-modal","true"\)/.test(s), 'worldmonitor : la fenêtre « Ajouter à l\'écran d\'accueil » est aria-modal');
-  ok(!/min-height:42px/.test(s), 'worldmonitor : plus de bouton à 42 px');
+  ok(!/min-height:(42|38)px/.test(s), 'worldmonitor : plus de bouton à 42 ou 38 px (« Compris », « Installer »)');
 }
 
 /* 3. Cuisine : le retour fait 44 px, porte data-kdmc-retour ; l'accueil a son lien vers le portail */

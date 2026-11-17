@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## Boutiques — le journal du domaine dit ce qui a été enregistré : Chez Lolo v2.0.28, La Détente v1.53.37, Sourcing v1.0.8, Kit IA v1.0.1, Devenir croupier (accès) v1.1.2 (2026-11-17)
+- Pont 2637 (cloud-installer, Kevin « qui a fait quoi, de tout le domaine, chaque app ») : après chaque enregistrement RÉUSSI la page appelle `window.kdmcJournal('phrase')` (posé par le routeur ; sans lui : rien, jamais d'erreur). Chez Lolo et La Détente : commande passée (nombre d'articles), produit ajouté / créé au Studio ; Sourcing : article ajouté ou retiré de la sélection (seulement si la base a répondu OK) ; Kit IA : commande enregistrée, paiement enregistré (« J'ai payé », seulement s'il est accepté), paiement PayPal confirmé (pas de 2ᵉ ligne si l'accès était déjà ouvert) ; Devenir croupier : paiement enregistré pour un accès.
+- Jamais de nom, d'e-mail, d'adresse, de montant, de référence ni de code dans la phrase ; jamais dans une boucle. Tableau boutiques (lecture seule) et Rotaplan (enregistré par le routeur, déjà dans la boîte) : rien à brancher.
+- Garde `npm run test:journal-boutiques` (dans `test:ci`) : 42 contrôles ; `SABOTAGE=1` 12 rouges ; appel déplacé avant l'enregistrement : rouge.
+
 ## CMCteams v10.023 + light v1.154 — le journal du domaine reçoit une phrase après chaque enregistrement réussi (2026-11-17)
 - Pont 2632 (cloud-installer) : après un enregistrement qui a réussi, l'app appelle `window.kdmcJournal('phrase', type)` (posé par le routeur ; sans lui : rien, jamais d'erreur). CMCteams : import de planning, import JSON, compte validé, message du chat, compte réinitialisé, matricule modifié. Light : fiche de renseignements envoyée, pointage (arrivée / départ), pointage ajouté à la main. Mini-chat (copies identiques `tools/shared` et `tools/departs`) : une phrase générique après un envoi réussi, jamais le texte du message ni un nom.
 - Jamais de code, de mot de passe ni de texte privé dans la phrase. Garde `npm run test:journal-domaine-apps` (dans `test:ci`, rouge sous `SABOTAGE=1`).

@@ -645,6 +645,7 @@ function _saveProduct(cat){
     material:(st.pf?("Print-on-demand · "+(st.pf.brand||"")):"Coton premium"),placement:st.placement,theme:theme,tags:["personnalisé","studio","chez lolo",theme.toLowerCase()].filter(Boolean),sizes:["S","M","L","XL","XXL"],stock:99,shipping:"standard",_printify:(st.pf?{blueprint_id:st.pf.id,category:cat,design:"studio",placement:st.placement}:undefined),ts:Date.now()});
   localStorage.setItem("cl_custom_products",JSON.stringify(arr));
   closeModal();toast("Produit ajouté à la boutique ✅ ("+arr.length+" créa)");
+  try{if(window.kdmcJournal)window.kdmcJournal("Chez Lolo : produit créé au Studio")}catch(_){}
  }
  /* fichier d'impression = design transparent (sans photo distante → pas de canvas taint) */
  svgToPng(buildSVG(2000,false,null),2000,function(print){

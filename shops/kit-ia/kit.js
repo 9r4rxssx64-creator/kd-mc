@@ -32,6 +32,11 @@
     return s.replace(/(.{4})(?=.)/g, '$1-');
   }
   /* Réponse de /reclamer → quoi afficher. Trois états : ok / attente / erreur. */
+  /* 17.11 journal du domaine : une ligne par enregistrement réussi (commande, paiement déclaré),
+     jamais l'e-mail, la référence ni le code d'accès. Sans session du domaine, l'appel ne fait rien. */
+  function journal(t) { try { if (window.kdmcJournal) window.kdmcJournal(t); } catch (_) {} }
+  function journalPaiement(v) { if (v && (v.etat === 'ok' || v.etat === 'attente')) journal('Kit IA : paiement enregistré pour un accès'); }
+
   function interprete(rep, httpOk) {
     if (!rep || typeof rep !== 'object') return { etat: 'erreur', titre: 'Réponse illisible', texte: 'Réessaie dans un instant.' };
     if (rep.ok && rep.verifie && rep.code) {
@@ -120,7 +125,7 @@
       fetch(API + '/reclamer', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ produit: ($('produit') && $('produit').value) || PRODUIT, methode: methode.value, email: email.value.trim(), ref: ($('refPanier') && $('refPanier').value.trim()) || '', reference: ($('reference') || {}).value || '' }) })
         .then(function (r) { return r.json().then(function (j) { return { j: j, ok: r.ok }; }); })
-        .then(function (x) { afficheResultat(boite, interprete(x.j, x.ok)); })
+        .then(function (x) { var v = interprete(x.j, x.ok); afficheResultat(boite, v); journalPaiement(v); })
         .catch(function (e) { afficheResultat(boite, { etat: 'erreur', titre: 'Pas de réseau', texte: 'Ton paiement n’est pas perdu. Réessaie : ' + String(e.message || e) }); })
         .finally(function () { bouton.disabled = false; texte(bouton, ancien); });
     });
@@ -189,7 +194,7 @@
         body: JSON.stringify({ ref: d.ref, produit: produit, methode: d.moyen, email: mail }) })
         .then(function (r) { return r.json().then(function (j) { return { j: j, ok: r.ok }; }); })
         .then(function (x) {
-          var v = interprete(x.j, x.ok);
+          var v = interprete(x.j, x.ok); journalPaiement(v);
           var res = $('resultat');
           if (res) afficheResultat(res, v);
           else { avis.textContent = ''; var q = document.createElement('p'); texte(q, v.titre + ' \u2014 ' + v.texte); avis.appendChild(q); }
@@ -234,6 +239,7 @@
       .then(function (d) {
         if (!d || !d.ok || !d.ref) return false;
         ecrisRef(d.ref);
+        journal('Kit IA : commande enregistrée (' + String(produit || 'kit').slice(0, 40) + ')');
         montrePanier(avis, d, produit, mail);
         /* Le virement n'ouvre AUCUN onglet : tout ce qu'il faut est \u00e0 l'\u00e9cran.
            Le lien vient du serveur (montant pris dans NOTRE catalogue) ;

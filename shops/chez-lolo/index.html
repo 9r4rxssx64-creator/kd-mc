@@ -663,6 +663,8 @@ var order={id:orderId,items:items,subtotal:subtotal,discount:discAmt,shipping:sh
 /* Sauvegarder commande */
 var orders;try{orders=JSON.parse(localStorage.getItem("kdmc_orders_"+STORE_ID)||"[]")||[]}catch(e){orders=[]}
 orders.push(order);try{localStorage.setItem("kdmc_orders_"+STORE_ID,JSON.stringify(orders))}catch(e){}
+/* 17.11 journal du domaine : ce qui a été enregistré, jamais qui ni combien */
+try{if(window.kdmcJournal)window.kdmcJournal("Chez Lolo : commande passée ("+items.length+" article"+(items.length>1?"s":"")+")")}catch(_){}
 /* Décrémenter stock */
 items.forEach(function(i){decrementStock(i.id)});
 trackPurchase(orderId,total,items);
@@ -965,6 +967,7 @@ function clSaveNewProduct(){
   if(typeof P!=="undefined" && !P.some(function(x){return x.id===prod.id}))P.unshift(prod);
   var mm=document.getElementById("clAddProdModal");if(mm)mm.remove();
   toast&&toast("Produit ajouté ✅ ("+arr.length+" créa)");
+  try{if(window.kdmcJournal)window.kdmcJournal("Chez Lolo : produit ajouté à la boutique")}catch(_){}
   if(typeof dc==="function")dc();
 }
 /* boot */
@@ -1020,7 +1023,7 @@ function clSaveNewProduct(){
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="chez-lolo"
-        data-version="v2.0.27"
+        data-version="v2.0.28"
         data-color="#e8b830"
         defer></script>
 

@@ -110,12 +110,19 @@
       addedBy: (_user && _user.name) || 'Invité', ts: Date.now()
     };
     fetch(selUrl(id), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-      .then(function (r) { _selCache[id] = payload; toast('✅ Ajouté à la sélection'); if (cb) cb(true, id); })
+      .then(function (r) {
+        _selCache[id] = payload; toast('✅ Ajouté à la sélection');
+        /* 17.11 journal du domaine : seulement si la base a vraiment enregistré */
+        try { if (r && r.ok && window.kdmcJournal) window.kdmcJournal('Sourcing : article ajouté à la sélection'); } catch (_) {}
+        if (cb) cb(true, id);
+      })
       .catch(function () { toast('⚠️ Réseau — réessaie'); if (cb) cb(false); });
   }
   function removeFromSelection(id, cb) {
-    fetch(selUrl(id), { method: 'DELETE' }).then(function () {
-      delete _selCache[id]; toast('🗑️ Retiré'); if (cb) cb(true);
+    fetch(selUrl(id), { method: 'DELETE' }).then(function (r) {
+      delete _selCache[id]; toast('🗑️ Retiré');
+      try { if (r && r.ok && window.kdmcJournal) window.kdmcJournal('Sourcing : article retiré de la sélection'); } catch (_) {}
+      if (cb) cb(true);
     }).catch(function () { toast('⚠️ Réseau'); if (cb) cb(false); });
   }
   function selectionArray() {

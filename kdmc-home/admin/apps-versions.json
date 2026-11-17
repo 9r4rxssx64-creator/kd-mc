@@ -24,11 +24,11 @@
   },
   "la-detente.kd-mc.com": {
    "page": "shops/la-detente/index.html",
-   "version": "v1.53.36"
+   "version": "v1.53.37"
   },
   "chez-lolo.kd-mc.com": {
    "page": "shops/chez-lolo/index.html",
-   "version": "v2.0.27"
+   "version": "v2.0.28"
   },
   "dashboard.kd-mc.com": {
    "page": "shops/dashboard/index.html",
@@ -36,7 +36,7 @@
   },
   "sourcing.kd-mc.com": {
    "page": "shops/sourcing/index.html",
-   "version": "v1.0.7"
+   "version": "v1.0.8"
   },
   "coffre.kd-mc.com": {
    "page": "coffre-fort/index.html",
@@ -116,7 +116,7 @@
   },
   "kit.kd-mc.com": {
    "page": "shops/kit-ia/index.html",
-   "version": "v1.0.0"
+   "version": "v1.0.1"
   },
   "dossiers.kd-mc.com": {
    "page": "dossiers/index.html",

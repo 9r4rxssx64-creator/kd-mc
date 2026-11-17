@@ -833,6 +833,8 @@ var order={id:orderId,items:items,total:total,method:method,ts:Date.now(),status
 /* Sauvegarder commande */
 var orders=JSON.parse(localStorage.getItem("kdmc_orders_"+STORE_ID)||"[]");
 orders.push(order);localStorage.setItem("kdmc_orders_"+STORE_ID,JSON.stringify(orders));
+/* 17.11 journal du domaine : ce qui a été enregistré, jamais qui ni combien */
+try{if(window.kdmcJournal)window.kdmcJournal("La Détente : commande passée ("+items.length+" article"+(items.length>1?"s":"")+")")}catch(_){}
 
 /* Décrémenter stock */
 items.forEach(function(i){decrementStock(i.id)});
@@ -1322,7 +1324,7 @@ function ldConsentRefuse(el){try{
 <!-- Kevin v9.615 ABSOLUE : badge version + auto-MAJ shared helper -->
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
         data-project="la-detente"
-        data-version="v1.53.36"
+        data-version="v1.53.37"
         data-color="#e8b830"
         defer></script>
 

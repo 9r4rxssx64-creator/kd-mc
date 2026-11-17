@@ -7,24 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 17/11/2026 14:06 UTC
-
-- **Branche** : `main` · **Commit** : `5f29d51c` · **Run** : `44098170517`
-- **Ce qui a lâché** : deploy › Déploiement du routeur (+ custom domains kd-mc.com)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/44098170517
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m# 16.10 (run public 38961876371) : envoi réussi, puis « Internal authentication error: internal server error [code: 10500] »^[[0m
-^[[36;1m  if [ "$essai" -ge 3 ] || ! grep -qiE 'internal server error|code: 10500|internal authentication error|HTTP 5[0-9][0-9]' deploy.log; then^[[0m
-^[[36;1m    echo "::error title=wrangler deploy::$(tail -c 1500 deploy.log | tr '\n\r' '  ' | sed 's/%/%25/g')"^[[0m
-^[[36;1m    echo "::error::wrangler n'a PAS appliqué UPSTREAM_BASE — les variables du wrangler.toml ne sont pas parties, la bascule ne peut pas prendre"^[[0m
-        throw new Error(`The package "${pkg}" could not be found, and is needed by workerd.
-Error: The package "@cloudflare/workerd-linux-64" could not be found, and is needed by workerd.
-##[error]/opt/hostedtoolcache/node/22.23.4/x64/lib/node_modules/wrangler/node_modules/workerd/lib/main.js:118         throw new Error(`The package "${pkg}" could not be found, and is needed by workerd.         ^  Error: The package "@cloudflare/workerd-linux-64" could not be found, and is needed by workerd.  If you are installing workerd with npm, make sure that you don't specify the "--no-optional" flag. The "optionalDependencies" package.json feature is used by workerd to install the correct binary executable for your current platform.     at generateBinPath (/opt/hostedtoolcache/node/22.23.4/x64/lib/node_modules/wrangler/node_modules/workerd/lib/main.js:118:15)     at Object.<anonymous> (/opt/hostedtoolcache/node/22.23.4/x64/lib/node_modules/wrangler/node_modules/workerd/lib/main.js:152:19)     at Module._compile (node:internal/modules/cjs/loader:1781:14)     at Object..js (node:internal/modules/cjs/loader:1913:10)     at Module.load (node:internal/modules/cjs/loader:1505:32)     at Function._load (node:internal/modules/cjs/loader:1309:12)     at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)     at Module.require (node:internal/modules/cjs/loader:1527:12)     at require (node:internal/modules/helpers:147:16)     at Object.<anonymous> (/opt/hostedtoolcache/node/22.23.4/x64/lib/node_modules/wrangler/node_modules/miniflare/dist/src/index.js:4222:31)  Node.js v22.23.4
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -546,4 +528,17 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
+##[error]Process completed with exit code 1.
 ```

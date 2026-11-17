@@ -813,6 +813,7 @@ function _saveProduct(cat){
     img:mockImg,printFile:print,rating:5,reviews:0,desc:name+" — création La Détente (Studio). Tailles S à XXL.",
     material:(st.pf?("Print-on-demand · "+(st.pf.brand||"")):"Coton premium"),placement:st.placement,theme:theme,tags:["personnalisé","studio","la détente",theme.toLowerCase()].filter(Boolean),sizes:["S","M","L","XL","XXL"],stock:99,shipping:"standard",_printify:(st.pf?{blueprint_id:st.pf.id,category:cat,design:"studio",placement:st.placement}:undefined),ts:Date.now()};
   var arr=JSON.parse(localStorage.getItem("ld_custom_products")||"[]");arr.push(prod);localStorage.setItem("ld_custom_products",JSON.stringify(arr));
+  try{if(window.kdmcJournal)window.kdmcJournal("La Détente : produit créé au Studio")}catch(_){}
   /* Publie pour les CLIENTS (Firebase) en 1 étape — copie allégée sans le gros fichier d'impression (gardé en local pour la production) */
   if(window.kdmcPublishProduct){var pub={};Object.keys(prod).forEach(function(k){if(k!=="printFile")pub[k]=prod[k];});window.kdmcPublishProduct("la-detente",pub).then(function(){closeModal();toast("✅ Publié en boutique — visible par les clients");}).catch(function(){closeModal();toast("Enregistré localement. Cloud KO — republie via Admin → 🚀 Publier","error");});}
   else{closeModal();toast("Produit ajouté (local). Publie via Admin → 🚀 Publier en boutique");}

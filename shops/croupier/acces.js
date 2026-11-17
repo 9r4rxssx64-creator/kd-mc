@@ -280,7 +280,11 @@
       }),
     })
       .then(function (r) { return r.json().then(function (j) { return { j: j, ok: r.ok }; }); })
-      .then(function (x) { affiche(interprete(x.j, x.ok)); })
+      .then(function (x) {
+        var v = interprete(x.j, x.ok); affiche(v);
+        /* 17.11 journal du domaine : un paiement enregistré, jamais l'e-mail ni le code */
+        try { if ((v.etat === 'ok' || v.etat === 'attente') && window.kdmcJournal) window.kdmcJournal('Devenir croupier : paiement enregistré pour un accès'); } catch (_) {}
+      })
       .catch(function (e) {
         affiche({ etat: 'erreur', titre: 'Pas de réseau', texte: 'Ton paiement n’est pas perdu. Réessaie : ' + String(e.message || e) });
       })

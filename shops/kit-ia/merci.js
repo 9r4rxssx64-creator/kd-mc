@@ -36,6 +36,8 @@
         return;
       }
       $('titre').textContent = d.deja_delivre ? 'Ton accès est déjà ouvert' : 'C’est bon, merci !';
+      /* 17.11 journal du domaine : le paiement PayPal est confirmé (jamais la référence ni le code) */
+      try { if (!d.deja_delivre && window.kdmcJournal) window.kdmcJournal('Kit IA : paiement PayPal confirmé'); } catch (_) {}
       $('etat').hidden = true;
       $('code').textContent = d.code;
       var lien = d.livre || 'lire.html';

@@ -81,7 +81,8 @@ export function mesurer(tel) {
     const d2 = (x2 >= 0 && y2 >= 0 && x2 < W && y2 < H) ? document.elementFromPoint(x2, y2) : null;
     /* 12.11 nuit (pont 2344, Bee v1.38) : juste après un défilement INSTANTANÉ, le cadre de Bee n'a pas encore eu ses 350 ms pour se replacer ailleurs (bee-partout.js, défilement fini → re-place) ;
        le voir « par-dessus » à cet instant n'est pas un contrôle caché. Au repos, Bee est jugé strictement (plus bas) et `tests/verify-bee-defilement.mjs` prouve son replacement. */
-    const estBee = (n) => !!n && ((n.tagName === 'IFRAME' && /\/__javis\/cadre/.test(n.getAttribute('src') || '')) || !!(n.closest && n.closest('#javis-root,.bee-companion')));
+    const estBee = (n) => !!n && ((n.tagName === 'IFRAME' && /\/__javis\/cadre/.test(n.getAttribute('src') || '')) || !!(n.closest && n.closest('#javis-root,.bee-companion,[data-kdmc-pastille],[data-kdmc-vue]')));
+    /* 17.11 (pont 2608) : mêmes 500 ms de replacement pour la languette « Vue admin » et la pastille du routeur (installer-client.js : `degager` après défilement) ; au repos ils restent jugés strictement. */
     const encore = !d2 || (d2 !== e && !e.contains(d2) && !d2.contains(e) && !estBee(d2));
     /* 12.11 soir (CMCteams iPhone : « encore caché après défilement » sans dire PAR QUI ni où le bouton s'est retrouvé) : le robot garde le nom, la position et
        le rectangle de ce qui recouvre APRÈS le défilement, et de combien la page a bougé — sans cela on ne sait pas si c'est une barre, un flottant ou une page figée. */

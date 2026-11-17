@@ -95,7 +95,7 @@ h1{font-size:21px;margin:18px 0 4px}
 </div>
 
 <!-- Drawer sélection -->
-<div class="drawer" id="drawer">
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Sélection à vendre">
   <div class="drawer-in">
     <div class="drawer-h"><b>🛒 Sélection à vendre</b><span class="spacer"></span><button class="btn" onclick="closeDrawer()">✕</button></div>
     <div class="sel-list" id="selList"></div>
@@ -182,6 +182,6 @@ function refreshSel(){
 function rm(id){ KDMCSourcing.removeFromSelection(id, function(){ refreshSel(); }); }
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 60); });
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-sourcing" data-version="v1.0.6" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-sourcing" data-version="v1.0.7" data-color="#c9a227" defer></script>
 </body>
 </html>

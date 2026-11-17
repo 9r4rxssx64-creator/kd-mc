@@ -262,6 +262,7 @@
   "tests/verify-boite-portail.mjs",
   "tests/verify-boite-temps-reel.mjs",
   "tests/verify-boot-sobre.mjs",
+  "tests/verify-boutiques-320.mjs",
   "tests/verify-boutiques-fermees.mjs",
   "tests/verify-boutiques-polices.mjs",
   "tests/verify-boutons-json-onclick.mjs",

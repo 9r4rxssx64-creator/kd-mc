@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.023 + light v1.154 — le journal du domaine reçoit une phrase après chaque enregistrement réussi (2026-11-17)
+- Pont 2632 (cloud-installer) : après un enregistrement qui a réussi, l'app appelle `window.kdmcJournal('phrase', type)` (posé par le routeur ; sans lui : rien, jamais d'erreur). CMCteams : import de planning, import JSON, compte validé, message du chat, compte réinitialisé, matricule modifié. Light : fiche de renseignements envoyée, pointage (arrivée / départ), pointage ajouté à la main. Mini-chat (copies identiques `tools/shared` et `tools/departs`) : une phrase générique après un envoi réussi, jamais le texte du message ni un nom.
+- Jamais de code, de mot de passe ni de texte privé dans la phrase. Garde `npm run test:journal-domaine-apps` (dans `test:ci`, rouge sous `SABOTAGE=1`).
+
 ## light v1.153 — la barre du haut ne dépasse plus de 3 px sur iPhone SE (2026-11-17)
 - Robot d'affichage (WebKit, 320 px) : le texte coupé du choix d'équipe `select#boardSel` (308 px dans 290) élargissait la page de 3 px. `header select{overflow:hidden;white-space:nowrap}` + `header{overflow-x:clip}`.
 - Garde `tests/verify-light-entete-largeur.mjs` : 4 largeurs (320, 375, 390, 412), règle exigée, rouge sans (`SABOTAGE=1`).

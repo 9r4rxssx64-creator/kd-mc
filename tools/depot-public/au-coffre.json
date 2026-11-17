@@ -145,6 +145,7 @@
   "tests/export-public-propre.mjs",
   "tests/generateurs-reproductibles.test.mjs",
   "tests/import-real-pdf.mjs",
+  "tests/journal-domaine-apps.test.mjs",
   "tests/journal-erreurs-lisible.test.mjs",
   "tests/kit-ia.test.mjs",
   "tests/kit-metiers.test.mjs",

@@ -137,6 +137,9 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
   ok('le grand robot écrit le nom du bouton sans réaction', /cible\.evaluate\(nomSansTexte\)/.test(src) && /'sans réaction : ' \+ \(nomCible \|\| 'n°' \+ k\)/.test(src));
   await pn.close(); }
+/* 17.11 (run 43973722309 : une erreur de l'arbre comptée sur « autorisations », l'adresse suivante) : le grand robot vide la page avant d'écouter les erreurs de l'adresse suivante */
+{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  ok('le grand robot vide la page (about:blank) AVANT de brancher l\'écoute des erreurs', /await page\.goto\('about:blank'\)\.catch\(\(\) => \{\}\); await page\.waitForTimeout\(400\);\n\s*brancher\(\);/.test(src)); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

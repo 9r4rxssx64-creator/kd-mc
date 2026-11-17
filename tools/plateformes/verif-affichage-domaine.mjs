@@ -293,6 +293,10 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
         const onRep = (r) => { if (reseau.length < 3 && r.status() >= 400) reseau.push(r.status() + ' ' + hote(r.url()) + ' acao=' + (r.headers()['access-control-allow-origin'] ? 'oui' : 'non')); };
         const brancher = () => { page.on('pageerror', onErr); page.on('requestfailed', onFail); page.on('response', onRep); };
         const debrancher = () => { page.off('pageerror', onErr); page.off('requestfailed', onFail); page.off('response', onRep); };
+        /* 17.11 (apex-cloud 2592, run 43973722309 : « autorisations · js 1 · …/arbre/c », « arbre · …/apex-chat-api…/force-update-ts ») : sur WebKit, quitter une page annule ses
+           requêtes en cours et chaque annulation devient une « erreur » (« … due to access control checks », « sw.js load failed ») comptée sur l'adresse SUIVANTE.
+           On vide la page AVANT d'écouter : les annulations de l'adresse précédente tombent dans le vide. */
+        await page.goto('about:blank').catch(() => {}); await page.waitForTimeout(400);
         brancher();
         const t0 = Date.now(); let st = 0, m = null, err = '';
         for (let essai = 0; essai < 2; essai++) {

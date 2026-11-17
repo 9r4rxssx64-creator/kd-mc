@@ -107,6 +107,13 @@ export const INSTALLER_JS = String.raw`(function () {
         };
         var tScroll = 0; window.addEventListener('scroll', function () { clearTimeout(tScroll); tScroll = setTimeout(degager, 500); }, true);   /* le contenu défile sous la pastille : on la remet au bon endroit quand le défilement s'arrête */
         degager(); setTimeout(degager, 800); setTimeout(degager, 3000); setTimeout(degager, 8000); setTimeout(degager, 15000); window.addEventListener('resize', degager);
+        /* SUIVI-TARD-DEBUT */
+        /* 17.11 (robot d'affichage, run 43973722309, arbre sur iPhone SE : le bouton des réglages de la scène, ouvert par un toucher, se retrouvait SOUS « Vue admin ») :
+           passé 15 s, la pastille ne se replaçait plus que sur défilement ou rotation. Un toucher ou un changement de la page la replace 0,35 s après le dernier changement. */
+        var tTard = 0, tard = function () { clearTimeout(tTard); tTard = setTimeout(degager, 350); };
+        document.addEventListener('click', tard, true);
+        try { if (window.MutationObserver) new MutationObserver(tard).observe(document.body, { childList: true, subtree: true }); } catch (eT) { /* page sans observateur : le toucher suffit */ }
+        /* SUIVI-TARD-FIN */
         /* 23.10 soir (Kevin : « Tableau KDMC a disparu… je ne suis pas connecté en admin… il était censé y avoir un bouton admin partout ») :
            le marqueur dure 1 an, la session admin moins. Le bouton affichait « 👑 Vue admin » alors que l'admin avait expiré, puis disparaissait.
            Il demande maintenant l'état VRAI au domaine (1 requête, appareils de Kevin seulement) ; admin expiré → « 🔑 Connexion admin »

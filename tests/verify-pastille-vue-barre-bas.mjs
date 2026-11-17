@@ -212,6 +212,40 @@ for (const [w, h] of [[320, 568], [844, 390]]) {
   ok(R.installeur && R.installeur.length === 0, w + '×' + h + ' : aucune place libre — 📲 ne cache aucun contrôle FIXE (onglet du bas, croix)', R);
   await ctx.close();
 }
+
+/* E. (robot d'affichage, run 43973722309, arbre sur iPhone SE : « button#btnCtl ⟵ sous 👑 Vue admin ») : un bouton qui ARRIVE après un toucher, plus de 15 s après
+ * l'ouverture (les replacements programmés sont finis) et sans défilement : la pastille doit se replacer d'elle-même.
+ * SABOTAGE : `SABOTAGE_TARD=1` retire le suivi des touchers et des changements de page → doit être ROUGE. */
+{
+  let SRC_E = INSTALLER_JS;
+  if (process.env.SABOTAGE_TARD === '1') SRC_E = SRC_E.replace(/\/\* SUIVI-TARD-DEBUT \*\/[\s\S]*?\/\* SUIVI-TARD-FIN \*\//, '');
+  const PAGE_TARD = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#0a1a0c;color:#fff;font:16px sans-serif}#ouvre{position:fixed;top:12px;right:12px;min-width:44px;min-height:44px}
+#tard{position:fixed;left:60px;bottom:12px;width:44px;height:44px;display:none}body.ouvert #tard{display:block}</style>
+<main>Scène plein écran</main><button id="ouvre" onclick="document.body.classList.add('ouvert')">☰</button><button id="tard">⚙</button>`;
+  for (const [w, h] of [[320, 568], [390, 844]]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+    const p = await ctx.newPage();
+    await p.clock.install();
+    await p.route('**/__admin/vue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, mode: 'admin' }) }));
+    await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_TARD }));
+    await p.goto('https://kdmc.test/');
+    await p.evaluate(() => { document.cookie = 'kdmc_k=1; path=/'; });
+    await p.addScriptTag({ content: SRC_E });
+    await p.waitForSelector('[data-kdmc-vue]', { timeout: 5000 }).catch(() => {});
+    await p.clock.runFor(20000);   /* tous les replacements programmés (0,8 / 3 / 8 / 15 s) sont passés */
+    await p.click('#ouvre');
+    await p.clock.runFor(2000);
+    const R = await p.evaluate(() => {
+      const b = document.querySelector('[data-kdmc-vue]'), t = document.getElementById('tard'); if (!b) return { absent: true };
+      const r = b.getBoundingClientRect(), q = t.getBoundingClientRect();
+      return { absent: false, visible: q.width > 0, recouvre: r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top, pastille: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], dedans: r.top >= 0 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight };
+    });
+    ok(!R.absent && R.visible && !R.recouvre, w + '×' + h + ' : un bouton arrivé après un toucher (20 s après l\'ouverture) n\'est pas recouvert par « Vue admin »', R);
+    ok(!R.absent && R.dedans, w + '×' + h + ' : après replacement, la pastille reste dans l\'écran', R);
+    await ctx.close();
+  }
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

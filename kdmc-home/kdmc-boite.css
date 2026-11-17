@@ -101,3 +101,23 @@ html.boite-ouverte,html.boite-ouverte body{overflow:hidden}
 #boite-fen .bf-grp{margin:14px 2px 2px;font-size:13px;letter-spacing:.4px;text-transform:uppercase;color:var(--gold2)}
 /* 05.11 : un nom de compte est un lien vers sa fiche admin (cible >= 44 px) */
 #boite-fen a.bf-fiche,.bb a.bf-fiche{display:inline-flex;align-items:center;min-height:44px;color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+/* 17.11 (Kevin, 2 captures : « trop fouilli, pas clair du tout, trop d'infos mélangées ») : la carte d'une personne en blocs — alerte, ce qui vient de se passer,
+   la personne, détails repliés, actions, déconnexion à part. */
+#boite-fen .bf-sec{margin:16px 0 6px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);font-weight:700}
+#boite-fen .bf-al{margin:4px 0 2px;padding:10px 12px;border-radius:12px;background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.45);font-size:14.5px;line-height:1.45;word-break:break-word}
+#boite-fen .bf-alt{font-weight:700;color:#fbbf24;margin-bottom:3px}
+#boite-fen .bf-evs{border-top:1px solid rgba(255,255,255,.07)}
+#boite-fen .bf-ev{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:14.5px;line-height:1.35}
+#boite-fen .bf-evt{flex:1;min-width:0;word-break:break-word}
+#boite-fen .bf-evq{flex:0 0 auto;color:var(--mut);font-size:13px;white-space:nowrap}
+#boite-fen .bf-kvs{display:flex;flex-direction:column;gap:8px}
+#boite-fen .bf-kv{font-size:14.5px;line-height:1.4;word-break:break-word}
+#boite-fen .bf-k{color:var(--mut);margin-right:6px}
+#boite-fen .bf-sous{font-size:13px;color:var(--mut);line-height:1.4;word-break:break-word;margin-top:1px}
+#boite-fen details.bf-plus{margin-top:10px}
+#boite-fen details.bf-plus>summary{display:flex;align-items:center;min-height:44px;color:var(--gold);font-size:14px;cursor:pointer}
+#boite-fen details.bf-plus .bf-sous,#boite-fen details.bf-plus .bf-ev{margin-top:4px}
+#boite-fen .bf-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+#boite-fen .bf-acts>*{flex:1 1 150px}
+#boite-fen .bf-acts a.bf-ouvrir,#boite-fen .bf-acts button.bf-ouvrir{margin-top:0}
+#boite-fen button.bf-revoke{width:100%;margin-top:22px;border-color:rgba(220,38,38,.55);color:#f87171}

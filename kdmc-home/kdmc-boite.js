@@ -181,7 +181,7 @@
     r.appendChild(liste); liste.scrollTop = pos;
     r.appendChild(codes());
     r.appendChild(inscriptionsAdmin());
-    r.appendChild(inscriptions());
+    r.appendChild(inscriptions(true));
     r.appendChild(el('p', 'bf-pied', 'Mis à jour ' + quand(D.maj) + ' · se rafraîchit toute seule'));
     try { r.scrollTop = posFen; if (posDoc) (document.scrollingElement || document.documentElement).scrollTop = posDoc; } catch (e) { /* */ }
   }
@@ -302,6 +302,7 @@
     c.appendChild(tete);
     if (ouvert === m.cle) {
       var corps = el('div', 'bf-corps');
+      if (m.perso) { corpsPersonne(m, corps); c.appendChild(corps); return c; }   /* 17.11 : la carte d'une personne est rangée en blocs (voir corpsPersonne) */
       (m.fil || []).forEach(function (x) { var b = el('div', 'bf-b ' + (x.moi ? 'moi' : 'eux')); b.appendChild(el('div', null, x.texte)); b.appendChild(el('div', 'bf-bt', (x.moi ? 'Toi · ' : '') + quand(x.ts))); corps.appendChild(b); });
       /* 6.10 (Kevin, capture : bulle verte VIDE sous « Code admin refusé ») : pas de bulle sans texte, et l'heure exacte toujours. */
       if (!(m.fil || []).length && String(m.texte || '').trim()) corps.appendChild(el('div', 'bf-b eux', m.texte));
@@ -309,46 +310,6 @@
       (m.infos || []).forEach(function (l) { corps.appendChild(el('div', 'bf-info', l)); });
       if (m.contact && !(m.infos || []).length) corps.appendChild(el('div', 'bf-info', '✉️ ' + m.contact));
       var bas = el('div', 'bf-bas');
-      /* HISTORIQUE COMPLET d'une personne (Kevin 4.10) : sa fiche + tous ses événements (pages, lieux, questions, enregistrements…), le plus récent d'abord. */
-      var uidP = /^perso:u:(.+)$/.exec(m.cle);
-      if (uidP) {
-        var hb = el('button', 'bf-ouvrir', HIST[uidP[1]] ? 'Masquer l\'historique' : '🕘 Historique complet'); hb.type = 'button';
-        hb.onclick = function () {
-          if (HIST[uidP[1]]) { delete HIST[uidP[1]]; dessiner(); return; }
-          HIST[uidP[1]] = { chargement: true }; dessiner();
-          fetch('/__boite/admin/personne?uid=' + encodeURIComponent(uidP[1]), { credentials: 'include', cache: 'no-store', headers: entetes(false) })
-            .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { HIST[uidP[1]] = j && j.ok ? j : { erreur: true }; dessiner(); })
-            .catch(function () { HIST[uidP[1]] = { erreur: true }; dessiner(); });
-        };
-        corps.appendChild(hb);
-        /* sa fiche dans l'admin (périmètre, état du compte, supprimer, bannir) — un toucher */
-        var fa = el('a', 'bf-ouvrir', '👤 Sa fiche admin'); fa.href = '/admin/#fiche-' + encodeURIComponent(uidP[1]);
-        fa.onclick = function () { if (/\/admin\/?$/.test(location.pathname)) { fermer(); } };
-        corps.appendChild(fa);
-        /* 🚫 DÉCONNECTER PARTOUT (Kevin 8.10, « sécurité +++ » : un Windows inconnu à Stockholm sur le compte de Laurence) : d'un geste, toutes les
-           sessions de ce compte tombent (/__admin/revoke, porte admin du domaine) ; le compte reste intact, la personne se reconnecte avec
-           Face ID ou nom + code. Jamais sur le compte de Kevin lui-même (il se déconnecterait de sa propre boîte). */
-        if (uidP[1] !== 'kdmc_admin' && uidP[1] !== 'kevin-desarzens') {
-          var rb = el('button', 'bf-ouvrir bf-revoke', REV[uidP[1]] === 'ok' ? '✅ Déconnecté partout — il devra se reconnecter (Face ID ou nom + code)' : REV[uidP[1]] === 'ko' ? '❌ Déconnexion impossible pour le moment' : '🚫 Déconnecter ce compte partout'); rb.type = 'button';
-          rb.disabled = REV[uidP[1]] === 'ok';
-          rb.onclick = function () {
-            if (!window.confirm('Déconnecter « ' + m.de + ' » de toutes ses sessions, sur tous ses appareils ? Son compte reste, il devra juste se reconnecter.')) return;
-            rb.disabled = true; rb.textContent = 'Déconnexion…';
-            fetch('/__admin/revoke', { method: 'POST', credentials: 'include', cache: 'no-store', headers: entetes(true), body: JSON.stringify({ uid: uidP[1] }) })
-              .then(function (r) { return r.json(); }).then(function (j) { REV[uidP[1]] = j && j.ok ? 'ok' : 'ko'; dessiner(); })
-              .catch(function () { REV[uidP[1]] = 'ko'; dessiner(); });
-          };
-          corps.appendChild(rb);
-        }
-        var H = HIST[uidP[1]];
-        if (H) {
-          var box = el('div', 'bf-hist');
-          if (H.chargement) box.appendChild(el('div', 'bf-info', 'Chargement…'));
-          else if (H.erreur) box.appendChild(el('div', 'bf-info', '❌ Historique indisponible pour le moment.'));
-          else (H.evenements || []).forEach(function (e) { var l = el('div', 'bf-hl'); l.appendChild(el('span', 'bf-hq', quand(e.ts))); l.appendChild(el('span', null, ' ' + e.texte)); var hh = /\b((?:[a-z0-9-]+\.)?kd-mc\.com)\b/.exec(String(e.texte || '')); if (hh) { var la = el('a', 'bf-app', ' ↗ ouvrir'); la.href = 'https://' + hh[1] + '/'; la.target = '_blank'; la.rel = 'noopener'; l.appendChild(la); } if (e.appareil) l.appendChild(el('span', 'bf-hq', ' · 📲 ' + e.appareil)); box.appendChild(l); });
-          corps.appendChild(box);
-        }
-      }
       if (m.repondre === 'direct') {
         var ta = el('textarea'); ta.rows = 2; ta.maxLength = 2000; ta.placeholder = 'Ta réponse…'; ta.value = saisie || ''; ta.setAttribute('aria-label', 'Ta réponse');
         var st = el('div', 'bf-st'); var en = el('button', 'bf-env', 'Envoyer'); en.type = 'button';
@@ -370,6 +331,136 @@
     }
     return c;
   }
+  /* ── 17.11 · LA CARTE D'UNE PERSONNE, RANGÉE (Kevin, 2 captures de « Mes messages » : « trop fouilli, pas clair du tout, trop d'infos mélangées ») ─────────
+     Avant : le fil brut du plus ancien au plus récent (le dernier événement tout en bas, après des dizaines de lignes), puis 14 lignes de fiche
+     (appareils, réseau, langue, portée…) dans le même flot, puis 3 boutons de même poids dont « Déconnecter partout ».
+     Maintenant, 4 blocs dans cet ordre : ⚠️ la dernière alerte (seulement s'il y en a une) · 🕘 ce qui vient de se passer (le plus récent en haut,
+     les répétitions repliées « ×3 ») · 👤 la personne (3-4 lignes) · 🔧 détails techniques repliés · puis les actions, la déconnexion à part.
+     Les données reçues du domaine ne changent pas : on les range, on n'en perd aucune (le technique est replié, l'historique complet reste). */
+  var ISO = /(\d{4})-(\d{2})-(\d{2})/g;
+  function jourCourt(t) { return String(t || '').replace(ISO, function (_, a, mo, j) { return j + '/' + mo; }); }
+  function sessionsTxt(n) { return n + (n > 1 ? ' connexions' : ' connexion'); }
+  /* range les lignes « infos » reçues par ce qu'elles disent */
+  function classerInfos(infos) {
+    var o = { qui: '', apps: '', appareils: [], semaine: '', alerte: [], alerteNote: [], tech: [] };
+    (infos || []).forEach(function (l) {
+      l = String(l || ''); var t;
+      if (l.indexOf('👤') === 0) {
+        var ins = /inscrit le (\S+)/.exec(l), se = /(\d+) session/.exec(l), vu = /vu pour la dernière fois (\S+)/.exec(l), parts = [];
+        if (ins) parts.push('inscrit le ' + jourCourt(ins[1])); if (se) parts.push(sessionsTxt(+se[1])); if (vu && vu[1] !== '?') parts.push('vu le ' + jourCourt(vu[1]));
+        o.qui = parts.length ? parts.join(' · ') : l.replace(/^👤\s*/, '');
+      } else if (l.indexOf('📱 Apps :') === 0) {
+        o.apps = l.replace('📱 Apps :', '').split(' · ').map(function (x) { var m = /^(\S+) (\d+)× (.+)$/.exec(x.trim()); return m ? { n: +m[2], t: m[1] + ' ×' + m[2] + (/^0 min$/.test(m[3]) ? '' : ' (' + m[3] + ')') } : { n: 0, t: x.trim() }; })
+          .filter(function (x) { return x.t; }).sort(function (a, b) { return b.n - a.n; }).map(function (x) { return x.t; }).join(' · ');   /* la plus utilisée d'abord */
+      } else if (l.indexOf('🖥️ Appareils :') === 0) {
+        o.tech.push(l);   /* redondant avec les lignes « appareil » ci-dessous : replié */
+      } else if (l.indexOf('📲') === 0) {
+        var cut = l.replace(/^📲\s*/, '').split(' — '), nom = cut[0], reste = cut.slice(1).join(' — '), sous = [], mm;
+        mm = /^(\d+) session\(s\), du (\S+) au (\S+)(.*)$/.exec(reste) || /^du (\S+) au (\S+)(.*)$/.exec(reste);
+        if (mm && mm.length === 5) { sous.push(sessionsTxt(+mm[1])); sous.push('dernière le ' + jourCourt(mm[3])); t = (mm[4] || '').split(' · ').filter(Boolean); }
+        else if (mm) { sous.push('dernière le ' + jourCourt(mm[2])); t = (mm[3] || '').split(' · ').filter(Boolean); }
+        else t = [];
+        var ev = ''; t = t.filter(function (x) { if (/événement\(s\) en 7 jours/.test(x)) { ev = x.trim(); return false; } return true; });
+        if (t.length) sous.push(t[0]); if (t.length > 1) o.tech.push('🛰️ ' + nom + ' : ' + t.slice(1).join(' · '));
+        if (ev) sous.push(ev.replace('événement(s) en 7 jours', 'événements cette semaine'));
+        o.appareils.push({ nom: nom, sous: sous.join(' · ') });
+      } else if (l.indexOf('📊 7 jours :') === 0) {
+        o.semaine = l.replace('📊 7 jours :', '').trim();
+      } else if (l.indexOf('🌍') === 0 || l.indexOf('↔️') === 0 || l.indexOf('ℹ️') === 0 || l.indexOf('🚪') === 0) {
+        (l.indexOf('↔️') === 0 || l.indexOf('ℹ️') === 0 ? o.alerteNote : o.alerte).push(l);
+      } else if (l.indexOf('🖥️') === 0) {
+        o.alerte.push(l);   /* l'appareil de la dernière alerte */
+      } else if (l.indexOf('📱') === 0 && l.indexOf('📱 Apps') !== 0) {
+        o.tech.push(l);     /* « 📱 departs » = l'app de l'alerte : déjà dans l'en-tête de la carte, replié */
+      } else { o.tech.push(l); }   /* 📍 lieux · 🛰️ réseau · 🗣️ langue · 🔑 portée · 🔝 pages · ❓ question … */
+    });
+    return o;
+  }
+  /* les événements : les mêmes (même texte) se replient en une ligne « ×3 », le plus récent en haut */
+  function grouperEvenements(fil) {
+    var G = {}, ordre = [];
+    (fil || []).forEach(function (x) {
+      var k = String(x.texte || ''); if (!k) return;
+      if (!G[k]) { G[k] = { texte: k, n: 0, dernier: 0 }; ordre.push(k); }
+      G[k].n++; G[k].dernier = Math.max(G[k].dernier, x.ts || 0);
+    });
+    return ordre.map(function (k) { return G[k]; }).sort(function (a, b) { return b.dernier - a.dernier; });
+  }
+  function titreSec(txt) { return el('h4', 'bf-sec', txt); }
+  function ligneKv(etiq, txt, sous) {
+    var l = el('div', 'bf-kv'); if (etiq) l.appendChild(el('span', 'bf-k', etiq)); var v = el('span', 'bf-v', txt); l.appendChild(v);
+    if (sous) l.appendChild(el('div', 'bf-sous', sous)); return l;
+  }
+  function corpsPersonne(m, corps) {
+    var I = classerInfos(m.infos), G = grouperEvenements(m.fil);
+    if (I.alerte.length || I.alerteNote.length) {
+      var al = el('div', 'bf-al'); al.appendChild(el('div', 'bf-alt', '⚠️ Dernière alerte'));
+      if (I.alerte.length) al.appendChild(el('div', null, I.alerte.join('  ·  ')));
+      I.alerteNote.forEach(function (x) { al.appendChild(el('div', 'bf-sous', x)); });
+      corps.appendChild(al);
+    }
+    corps.appendChild(titreSec('🕘 Ce qui vient de se passer'));
+    var ev = el('div', 'bf-evs');
+    function ligneEv(g) { var l = el('div', 'bf-ev'); l.appendChild(el('span', 'bf-evt', g.texte)); l.appendChild(el('span', 'bf-evq', (g.n > 1 ? '×' + g.n + ' · ' : '') + quand(g.dernier))); return l; }
+    G.slice(0, 5).forEach(function (g) { ev.appendChild(ligneEv(g)); });
+    if (!G.length) ev.appendChild(el('div', 'bf-sous', 'Rien de récent.'));
+    corps.appendChild(ev);
+    if (G.length > 5) { var plus = el('details', 'bf-plus'); plus.appendChild(el('summary', null, 'Plus ancien (' + (G.length - 5) + ')')); G.slice(5).forEach(function (g) { plus.appendChild(ligneEv(g)); }); corps.appendChild(plus); }
+    if (I.qui || I.apps || I.appareils.length || I.semaine) {
+      corps.appendChild(titreSec('👤 La personne'));
+      var kv = el('div', 'bf-kvs');
+      if (I.qui) kv.appendChild(ligneKv('', I.qui));
+      if (I.apps) kv.appendChild(ligneKv('Apps', I.apps));
+      I.appareils.forEach(function (a) { kv.appendChild(ligneKv('📲', a.nom, a.sous)); });
+      if (I.semaine) kv.appendChild(ligneKv('Cette semaine', I.semaine));
+      corps.appendChild(kv);
+    }
+    if (I.tech.length) { var tech = el('details', 'bf-plus'); tech.appendChild(el('summary', null, '🔧 Détails techniques (' + I.tech.length + ')')); I.tech.forEach(function (x) { tech.appendChild(el('div', 'bf-sous', x)); }); corps.appendChild(tech); }
+    var uidP = /^perso:u:(.+)$/.exec(m.cle), bas = el('div', 'bf-acts');
+    if (uidP) {
+      /* HISTORIQUE COMPLET d'une personne (Kevin 4.10) : sa fiche + tous ses événements (pages, lieux, questions, enregistrements…), le plus récent d'abord. */
+      var hb = el('button', 'bf-ouvrir', HIST[uidP[1]] ? 'Masquer l\'historique' : '🕘 Historique complet'); hb.type = 'button';
+      hb.onclick = function () {
+        if (HIST[uidP[1]]) { delete HIST[uidP[1]]; dessiner(); return; }
+        HIST[uidP[1]] = { chargement: true }; dessiner();
+        fetch('/__boite/admin/personne?uid=' + encodeURIComponent(uidP[1]), { credentials: 'include', cache: 'no-store', headers: entetes(false) })
+          .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { HIST[uidP[1]] = j && j.ok ? j : { erreur: true }; dessiner(); })
+          .catch(function () { HIST[uidP[1]] = { erreur: true }; dessiner(); });
+      };
+      bas.appendChild(hb);
+      /* sa fiche dans l'admin (périmètre, état du compte, supprimer, bannir) — un toucher */
+      var fa = el('a', 'bf-ouvrir', '👤 Sa fiche admin'); fa.href = '/admin/#fiche-' + encodeURIComponent(uidP[1]);
+      fa.onclick = function () { if (/\/admin\/?$/.test(location.pathname)) { fermer(); } };
+      bas.appendChild(fa);
+    }
+    var src = (D.sources || []).filter(function (s) { return s.id === m.source; })[0];
+    if (src && src.lien) { var o = el('a', 'bf-ouvrir', 'Ouvrir le journal des alertes ↗'); o.href = src.lien; bas.appendChild(o); }
+    corps.appendChild(bas);
+    var H = uidP && HIST[uidP[1]];
+    if (H) {
+      var box = el('div', 'bf-hist');
+      if (H.chargement) box.appendChild(el('div', 'bf-info', 'Chargement…'));
+      else if (H.erreur) box.appendChild(el('div', 'bf-info', '❌ Historique indisponible pour le moment.'));
+      else (H.evenements || []).forEach(function (e) { var l = el('div', 'bf-hl'); l.appendChild(el('span', 'bf-hq', quand(e.ts))); l.appendChild(el('span', null, ' ' + e.texte)); var hh = /\b((?:[a-z0-9-]+\.)?kd-mc\.com)\b/.exec(String(e.texte || '')); if (hh) { var la = el('a', 'bf-app', ' ↗ ouvrir'); la.href = 'https://' + hh[1] + '/'; la.target = '_blank'; la.rel = 'noopener'; l.appendChild(la); } if (e.appareil) l.appendChild(el('span', 'bf-hq', ' · 📲 ' + e.appareil)); box.appendChild(l); });
+      corps.appendChild(box);
+    }
+    /* 🚫 DÉCONNECTER PARTOUT (Kevin 8.10, « sécurité +++ » : un Windows inconnu à Stockholm sur le compte de Laurence) : d'un geste, toutes les
+       sessions de ce compte tombent (/__admin/revoke, porte admin du domaine) ; le compte reste intact, la personne se reconnecte avec
+       Face ID ou nom + code. Jamais sur le compte de Kevin lui-même. 17.11 : à PART, en bas, en rouge (une action grave ne se range pas parmi les liens). */
+    if (uidP && uidP[1] !== 'kdmc_admin' && uidP[1] !== 'kevin-desarzens') {
+      var rb = el('button', 'bf-ouvrir bf-revoke', REV[uidP[1]] === 'ok' ? '✅ Déconnecté partout — il devra se reconnecter (Face ID ou nom + code)' : REV[uidP[1]] === 'ko' ? '❌ Déconnexion impossible pour le moment' : '🚫 Déconnecter ce compte partout'); rb.type = 'button';
+      rb.disabled = REV[uidP[1]] === 'ok';
+      rb.onclick = function () {
+        if (!window.confirm('Déconnecter « ' + m.de + ' » de toutes ses sessions, sur tous ses appareils ? Son compte reste, il devra juste se reconnecter.')) return;
+        rb.disabled = true; rb.textContent = 'Déconnexion…';
+        fetch('/__admin/revoke', { method: 'POST', credentials: 'include', cache: 'no-store', headers: entetes(true), body: JSON.stringify({ uid: uidP[1] }) })
+          .then(function (r) { return r.json(); }).then(function (j) { REV[uidP[1]] = j && j.ok ? 'ok' : 'ko'; dessiner(); })
+          .catch(function () { REV[uidP[1]] = 'ko'; dessiner(); });
+      };
+      corps.appendChild(rb);
+    }
+  }
+
   /* 8.10 — LES CODES À VALIDER (Kevin : « la connexion inconnue sur le compte de Laurence ne doit plus jamais arriver ») : un compte sans code
      ne s'ouvre plus sur son nom ; quand quelqu'un propose un code depuis un appareil inconnu, c'est ICI que Kevin tranche, avec l'appareil, le
      lieu et le réseau sous les yeux. Accepter = ce code devient celui du compte ; refuser = rien ne change. Rien n'est affiché sans demande. */
@@ -438,9 +529,11 @@
     return z;
   }
   /* 7.10 — LES INSCRIPTIONS EN ATTENTE, sous les messages : chacune se valide ici d'un geste (le domaine écrit, jamais la page). */
-  function inscriptions() {
+  function inscriptions(masquerSiVide) {
     var z = el('div', 'bf-ins'), L = D.inscriptions || [];
     z.id = 'bf-inscriptions';
+    /* 17.11 (Kevin : « pas clair, trop d'infos ») : une section vide ne prend pas 240 px au bas de la fenêtre (le bandeau dit déjà « rien en attente ») ; le tableau de bord garde sa ligne. */
+    if (masquerSiVide && !L.length && (!D.inscriptionsEtat || D.inscriptionsEtat === 'ok')) { z.hidden = true; return z; }
     z.appendChild(el('h3', 'bf-ins-t', '📝 Inscriptions à valider' + (L.length ? ' (' + L.length + ')' : '')));
     if (D.inscriptionsEtat && D.inscriptionsEtat !== 'ok') z.appendChild(el('p', 'bf-warn', '⚠️ Inscriptions CMCteams indisponibles pour le moment — réessaie avec ↻.'));
     else if (!L.length) z.appendChild(el('p', 'bf-vide', 'Aucune inscription en attente.'));

@@ -4,6 +4,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.024 + light v1.155 — Kevin ajoute les matricules SBM au fur et à mesure sur les fiches (2026-11-17)
+- Demande de Kevin : « ajouter les identifiants SBM quand je le sais, au fur et à mesure, sur les comptes ». Avant : champ limité aux id `U`+chiffres, saisie par `prompt()`, rien dans la light.
+- Maintenant : champ + bouton « Ajouter » / « Corriger » (≥ 44 px) sur la fiche (CMCteams) et dans la carte « 👤 nom » de la light (admin seulement), pour tout id interne ; `U` + 3 à 6 chiffres, vide = effacer ; le domaine refuse un matricule déjà pris par une autre personne.
+- Garde `npm run test:matricule-fiche` (31 contrôles) + `test:matricule-fiche-sabotage` (rouge sans le correctif), dans `test:ci`.
+
 ## Boutiques — le journal du domaine dit ce qui a été enregistré : Chez Lolo v2.0.28, La Détente v1.53.37, Sourcing v1.0.8, Kit IA v1.0.1, Devenir croupier (accès) v1.1.2 (2026-11-17)
 - Pont 2637 (cloud-installer, Kevin « qui a fait quoi, de tout le domaine, chaque app ») : après chaque enregistrement RÉUSSI la page appelle `window.kdmcJournal('phrase')` (posé par le routeur ; sans lui : rien, jamais d'erreur). Chez Lolo et La Détente : commande passée (nombre d'articles), produit ajouté / créé au Studio ; Sourcing : article ajouté ou retiré de la sélection (seulement si la base a répondu OK) ; Kit IA : commande enregistrée, paiement enregistré (« J'ai payé », seulement s'il est accepté), paiement PayPal confirmé (pas de 2ᵉ ligne si l'accès était déjà ouvert) ; Devenir croupier : paiement enregistré pour un accès.
 - Jamais de nom, d'e-mail, d'adresse, de montant, de référence ni de code dans la phrase ; jamais dans une boucle. Tableau boutiques (lecture seule) et Rotaplan (enregistré par le routeur, déjà dans la boîte) : rien à brancher.

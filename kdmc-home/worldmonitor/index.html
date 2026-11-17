@@ -382,7 +382,7 @@
 
 <script>
 "use strict";
-var VER="v2.47";
+var VER="v2.48";
 document.getElementById("ver").textContent="World Monitor "+VER;
 document.getElementById("ver").onclick=function(){ try{location.replace(location.pathname+"?_v="+Date.now());}catch(e){location.reload();} };
 
@@ -472,7 +472,10 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){retur
 function ago(ms){var s=Math.max(0,(Date.now()-ms)/1000);if(s<60)return Math.floor(s)+"s";if(s<3600)return Math.floor(s/60)+"min";if(s<86400)return Math.floor(s/3600)+"h";return Math.floor(s/86400)+"j";}
 function reduceMotion(){try{return matchMedia("(prefers-reduced-motion:reduce)").matches;}catch(e){return false;}}
 async function getJSON(url,ms){var c=new AbortController();var t=setTimeout(function(){c.abort();},ms||9000);
-  try{var r=await fetch(url,{signal:c.signal,cache:"no-store"});if(!r.ok)throw 0;return await r.json();}finally{clearTimeout(t);}}
+  /* 17.11 (robot d'affichage, pont 2608) : sur Safari, cache:"no-store" ajoute Cache-Control/Pragma à la requête → vérification préalable CORS ;
+     la NASA (EONET) était refusée sur les seuls écrans Safari. Pour ces sources, requête simple + paramètre anti-cache. */
+  var simple=/^https:\/\/eonet\.gsfc\.nasa\.gov\//.test(url);
+  try{var r=await fetch(simple?url+(url.indexOf("?")<0?"?":"&")+"_t="+Date.now():url,simple?{signal:c.signal}:{signal:c.signal,cache:"no-store"});if(!r.ok)throw 0;return await r.json();}finally{clearTimeout(t);}}
 
 /* horloge */
 function tickClock(){var d=new Date();
@@ -1899,6 +1902,6 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)fast
   })();
 })();
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.47" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.48" data-color="#c9a227" defer></script>
 </body>
 </html>

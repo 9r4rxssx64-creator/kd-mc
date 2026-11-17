@@ -46,6 +46,7 @@ const page = async (html, w = 390, h = 664) => {
   const s = lire('kdmc-home/worldmonitor/index.html');
   ok(/id="briefModal"[^>]*aria-modal="true"/.test(s), 'worldmonitor : la fenêtre « Brief IA » est aria-modal');
   ok(/m\.setAttribute\("aria-modal","true"\)/.test(s), 'worldmonitor : la fenêtre « Ajouter à l\'écran d\'accueil » est aria-modal');
+  ok(/var simple=\/\^https:\\\/\\\/eonet/.test(s) && /simple\?\{signal:c\.signal\}/.test(s), 'worldmonitor : la NASA (EONET) est lue en requête simple, sans cache:no-store');
   ok(!/min-height:(42|38)px/.test(s), 'worldmonitor : plus de bouton à 42 ou 38 px (« Compris », « Installer »)');
 }
 

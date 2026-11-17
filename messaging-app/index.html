@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.365",
+  "softwareVersion": "v1.1.366",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -410,6 +410,21 @@ html.chat-view.kb-open #app.chat-mode #smart-reply-chips{display:none!important}
 .admin-tile .ico{font-size:1.8em;margin-bottom:4px}
 .admin-tile .lbl{font-size:.82em;color:var(--ax-text-2)}
 .admin-tile .stat{font-size:1.3em;color:var(--ax-gold);font-weight:700}
+.adm-sec{background:var(--ax-bg-2);border:1px solid var(--ax-border);border-radius:var(--ax-radius);overflow:hidden;margin-bottom:6px}
+.adm-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:10px 12px;cursor:pointer;border-top:1px solid var(--ax-border)}
+.adm-row:first-child{border-top:0}
+.adm-row:active{background:var(--ax-bg-3)}
+.adm-row .ico{font-size:1.5em;width:32px;text-align:center;flex:none}
+.adm-row .txt{flex:1;min-width:0}
+.adm-row .nm{font-weight:600;color:var(--ax-text)}
+.adm-row .ds{font-size:.76em;color:var(--ax-text-3);margin-top:2px}
+.adm-row .bdg{flex:none;min-width:28px;text-align:center;padding:2px 8px;border-radius:12px;background:var(--ax-bg-3);color:var(--ax-gold);font-weight:700;font-size:.85em}
+.adm-row .bdg.warn{background:var(--ax-warn);color:#000}
+.adm-row .chev{color:var(--ax-text-3)}
+.set-sec-title{color:var(--ax-gold);font-size:.78em;letter-spacing:1px;text-transform:uppercase;margin:18px 4px 6px;font-weight:700}
+.set-ver{font-size:.82em;color:var(--ax-text-2);padding:2px 4px 8px}
+.chip{display:inline-block;font-size:.7em;padding:1px 7px;border-radius:10px;background:var(--ax-bg-3);color:var(--ax-text-2);margin-left:4px;vertical-align:middle}
+.chip.or{color:var(--ax-gold)}.chip.ok{color:var(--ax-ok)}.chip.ko{color:var(--ax-err)}
 .admin-section-title{color:var(--ax-gold);font-family:Georgia,serif;letter-spacing:2px;
   margin:18px 0 10px;font-size:1em;font-weight:700;border-bottom:1px solid var(--ax-border);padding-bottom:6px}
 
@@ -494,7 +509,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.365';
+const __APEX_CHAT_VERSION__ = 'v1.1.366';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -841,7 +856,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.365" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.365</div>
+  <div id="splash-version" data-ver="v1.1.366" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -855,7 +870,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.365</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.360</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -12563,11 +12578,19 @@ K._openContactSheet = async function(id){
   const editable = c.can_edit;
   const geo = c.last_geo_label || ((c.last_lat!=null && c.last_lng!=null) ? (Number(c.last_lat).toFixed(3)+', '+Number(c.last_lng).toFixed(3)) : '');
   const lastSeen = c.last_seen ? new Date(c.last_seen).toLocaleString('fr-FR') : '—';
+  /* sorties des modèles (une valeur par instruction : lisible, et Sonar S3358/S4624) */
+  const maFiche = !!(c.can_edit && !c.can_delete);
+  const ouvrirFiche = maFiche ? 'open' : '';
+  const titreFiche = maFiche ? '✏️ Ma fiche' : '✏️ Modifier la fiche';
+  let etatFiche = '';
+  if(c.last_seen && (Date.now() - c.last_seen < 300000)) etatFiche = '<span class="chip ok">🟢 En ligne</span>';
+  else if(c.last_seen) etatFiche = '<span class="chip">Vu ' + K._ilYa(c.last_seen) + '</span>';
   const html = `
     <div style="text-align:center;margin-bottom:12px">
       <div style="margin:0 auto 6px;display:inline-block">${K._renderAvatarHTML(nm, c.id, 56)}</div>
       <div style="font-weight:700;font-size:1.05em">${esc(c.my_nickname || nm)}</div>
-      <div style="color:var(--ax-text-3);font-size:.78em">@${esc(c.pseudo||'?')} · ${esc(c.id.slice(0,10))}…</div>
+      <div style="color:var(--ax-text-3);font-size:.78em">@${esc(c.pseudo||'?')}${c.job ? ' · ' + esc(c.job) : ''}${c.city ? ' · ' + esc(c.city) : ''}</div>
+      <div style="margin-top:4px">${etatFiche}${c.is_admin ? '<span class="chip or">👑 Admin</span>' : ''}</div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
@@ -12576,18 +12599,20 @@ K._openContactSheet = async function(id){
     </div>
     ${c.phone ? `<button class="btn btn-sm btn-block" style="margin-bottom:12px;background:var(--ax-gold);color:#000" onclick="K._inviteAndOpen('${esc(c.id)}')">📨 Inviter sur Apex Chat + ouvrir la conversation</button>` : ''}
 
-    <div class="card" style="padding:10px 12px">
-      <label class="label">🏷 Pseudo d'affichage (juste pour toi)</label>
+    <details class="card" style="padding:0 12px;margin-top:10px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--ax-text-2)">🏷 Mon surnom pour cette personne</summary>
+      <div style="padding:0 0 10px">
+      <label class="label">Pseudo d'affichage (juste pour toi)</label>
       <div style="display:flex;gap:6px">
         <input id="cs-nick" class="input" value="${esc(c.my_nickname||'')}" placeholder="ex: Lolo ❤️ — laisse vide = nom réel" maxlength="60">
         <button class="btn btn-sm" onclick="K._saveNickname('${esc(c.id)}')">💾</button>
       </div>
       <div style="font-size:.72em;color:var(--ax-text-3);margin-top:4px">Affiché à la place du nom dans TA liste.</div>
-    </div>
+      </div>
+    </details>
 
     ${editable ? `
-    <div class="card" style="padding:10px 12px;margin-top:10px">
-      <div style="color:var(--ax-gold);font-size:.92em;margin-bottom:4px">${c.can_edit && !c.can_delete ? '✏️ Ma fiche' : '✏️ Modifier la fiche'}</div>
+    <details class="card" style="padding:0 12px;margin-top:10px" ${ouvrirFiche}><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--ax-gold)">${titreFiche}</summary>
+      <div style="padding:0 0 10px">
       ${fld('Prénom','first_name',c.first_name)}
       ${fld('Nom','last_name',c.last_name)}
       ${fld('Pseudo (choisi par le client)','pseudo',c.pseudo)}
@@ -12601,7 +12626,8 @@ K._openContactSheet = async function(id){
       <label class="label" style="margin-top:8px">Bio</label>
       <textarea id="cs-bio" class="input" rows="2" maxlength="300">${esc(c.bio||'')}</textarea>
       <button class="btn btn-block" style="margin-top:10px" onclick="K._saveContactSheet('${esc(c.id)}')">💾 Enregistrer la fiche</button>
-    </div>` : `
+      </div>
+    </details>` : `
     <div class="card" style="padding:8px 12px;margin-top:10px">
       ${ro('Prénom', c.first_name)}${ro('Nom', c.last_name)}${ro('Email', c.email)}
       ${ro('Ville', c.city)}${ro('Pays', c.country)}${ro('Bio', c.bio)}
@@ -15471,7 +15497,7 @@ function renderSettings(app){
         <span>📱</span><span style="flex:1">Mes appareils (une clé par appareil)</span><span>›</span>
       </div>
       <div class="card-row" onclick="K._openUpdateDiagnostic()">
-        <span>🔧</span><span style="flex:1">Diagnostic MAJ${K.user?.is_admin ? ' + Forcer MAJ chez tous' : ''}</span><span>›</span>
+        <span>🔧</span><span style="flex:1">Vérifier la mise à jour${K.user?.is_admin ? ' (et la forcer chez tous)' : ''}</span><span>›</span>
       </div>
       ${K.user?.is_admin ? `<div class="card-row" onclick="K._openConfigureCorePair()">
         <span>👥</span><span style="flex:1">Cercle privé pré-câblé (Laurence)</span><span>›</span>
@@ -15534,96 +15560,78 @@ function renderSettings(app){
     <button class="btn btn-err btn-block" onclick="K.logout()">🚪 Se déconnecter</button>
     <p style="text-align:center;color:var(--ax-text-3);font-size:.75em;margin-top:20px">Apex Chat ${__APEX_CHAT_VERSION__}</p>
   `;
+  try{ K._rangerReglages(app); }catch(e){ _safeCatch && _safeCatch('silent', e); }
 }
+
+
+/* 17.11 (Kevin « range intelligemment, tout beaucoup plus clair ») : les lignes des Réglages sont REGROUPÉES par thème sans en retirer une seule (une ligne inconnue va dans « Autres »). */
+K._REGLAGES_GROUPES = [
+  ['🔄 Version et mise à jour', ["K._openUpdateDiagnostic()"], true],
+  ['👤 Mon compte', ["K.openProfile()", "K._openProfilePhoto()", "K._openMyStatus()", "K._viewMyStories()", "K.openPremium()"]],
+  ['🔔 Notifications et sons', ["K.openNotifPrefs()", "K._openPushSettings()", "K._openSoundPicker(null)", "K._testServerPush()"]],
+  ['🔒 Confidentialité et sécurité', ["K.openPrivacyPrefs()", "K._viewBlockedList()", "K._openMyDevices()", "K._openAdminKeySetup()"]],
+  ['💬 Mes messages et outils', ["K._openStarredList()", "K._viewScheduledList()", "K.openLetters()", "K.openTimeCapsule()", "K.openMemoryLane()", "K._openSnippetEditor()", "K._markAllConvsAsRead()", "K._openKeyboardShortcuts()", "K._openInsightsModal()", "K.openMiniApps()", "K._openPayQr()"]],
+  ['🎨 Apparence', ["K.openAppearance()", "K._openThemePicker()"]],
+  ['💾 Mes données', ["K._openStorageStats()", "K._openBackupRestoreMenu()", "K._exportAllData()", "K._openImportData()", "K._downloadServerData()"]],
+  ['🔧 Dépannage', ["K._healConversations()", "K._healDmServer()", "window.open('./diag.html')", "K._openConfigureCorePair()"]],
+  ['ℹ️ Aide et mentions légales', ["window.open('./aide.html')", "K._contactSupport()", "window.open('./cgu.html')", "window.open('./privacy.html')", "window.open('./mentions.html')"]],
+  ['⚠️ Zone sensible', ["K._wipeAllChatHistory()", "K._deleteMyAccount()"]]
+];
+K._rangerReglages = function(app){
+  const card = app.querySelector('.card'); if(!card) return;
+  const rows = [...card.querySelectorAll(':scope > .card-row[onclick]')];
+  const parClic = new Map(rows.map(r => [r.getAttribute('onclick'), r]));
+  const vus = new Set(); const frag = document.createDocumentFragment();
+  const section = (titre, lignes, ver) => {
+    if(!lignes.length) return;
+    const d = document.createElement('div'); d.className = 'set-sec';
+    d.innerHTML = '<div class="set-sec-title">' + titre + '</div>' + (ver ? '<div class="set-ver">Tu utilises Apex Chat ' + esc(__APEX_CHAT_VERSION__) + '. Touche la ligne ci-dessous pour chercher une mise à jour.</div>' : '');
+    const c = document.createElement('div'); c.className = 'card'; lignes.forEach(r => { vus.add(r); c.appendChild(r); }); d.appendChild(c); frag.appendChild(d);
+  };
+  K._REGLAGES_GROUPES.forEach(g => section(g[0], g[1].map(h => parClic.get(h)).filter(Boolean), g[2]));
+  section('Autres', rows.filter(r => !vus.has(r)));
+  card.after(frag);
+};
 
 function renderAdmin(app){
   if(!K.user?.is_admin){ K.sv('chats'); return toast('Accès admin uniquement', 'err'); }
   const sent = K.sentinels || {};
   const userCount = Object.keys(PRECONFIGURED_USERS).length + (lg('invited_users', []).length || 0);
+  const nbSignal = lg('signalements',[]).length;
+  const pctMem = sent.storage?.ratio ? Math.round(sent.storage.ratio*100) : 0;
+  const sante = pctMem >= 85 ? pctMem + ' %' : 'OK';
+  /* Rangé par usage (Kevin 17.11 « tout beaucoup plus clair, range intelligemment ») : [icône, nom, à quoi ça sert, pastille, pastille alerte ?, action] — les actions sont celles d'avant, rien n'est retiré. */
+  const RANG = [
+    ['👥 Les personnes', [
+      ['👥', 'Utilisateurs', 'Tous les comptes et la fiche de chacun', String(userCount), false, "K.sv('admin-users')"],
+      ['🟢', 'Connectés en ce moment', 'Qui est en ligne maintenant', '', false, "K.sv('admin-live-users')"],
+      ['📋', "Carnet d'invitations", "Inviter quelqu'un et suivre les invitations", '', false, "K.sv('admin-invite-book')"],
+      ['🔓', 'Cercle de confiance', 'Les personnes qui entrent sans SMS', '', false, "K.sv('admin-trusted-circle')"],
+      ['⭐', 'Demandes Premium', 'Paiements à valider', '', false, "K.sv('admin-premium')"]]],
+    ['🔎 Surveiller', [
+      ['🩺', 'Diagnostic', "Tout vérifier d'un coup : comptes, serveur, tests", '', false, "K.sv('admin-diag')"],
+      ['⚠', 'Signalements', 'Messages ou comptes signalés', nbSignal > 0 ? String(nbSignal) : '', nbSignal > 0, "K._adminLoadSignalements()"],
+      ['🔔', 'Journal des connexions', "Qui s'est connecté, quand, depuis où", '', false, "K.sv('admin-connections')"],
+      ['📜', 'Journal des actions', "Ce qui a été fait dans l'application", '', false, "K.sv('admin-audit')"],
+      ['🛡', "Santé de l'app", 'Mémoire utilisée et alertes automatiques', sante, pctMem >= 85, "K.sv('admin-sentinels')"],
+      ['🗺', 'Carte', 'Où sont les personnes en ce moment', '', false, "K.sv('admin-map')"],
+      ['🔍', 'Recherche', 'Retrouver une personne ou un message', '', false, "K.sv('admin-search')"]]],
+    ['🎛 Régler et envoyer', [
+      ['🎛', 'Interrupteurs', 'Activer ou couper une fonction', '', false, "K.sv('admin-toggles')"],
+      ['📢', 'Message à tout le monde', 'Envoyer une annonce à tous', '', false, "K._adminCmd('broadcast')"],
+      ['📊', 'Statistiques', "Les chiffres d'utilisation", '', false, "K._adminCmd('analytics')"],
+      ['🔔', 'Tester notifications et appels', 'Sur cet appareil', '', false, "window.open('./diag.html')"]]]
+  ];
+  const ligneAdmin = (t) => {
+    let pastille = '';
+    if(t[3]) pastille = '<span class="bdg' + (t[4] ? ' warn' : '') + '">' + t[3] + '</span>';
+    return '<div class="adm-row" role="button" tabindex="0" onclick="' + t[5] + '"><span class="ico">' + t[0] + '</span>'
+      + '<span class="txt"><div class="nm">' + t[1] + '</div><div class="ds">' + t[2] + '</div></span>' + pastille + '<span class="chev">›</span></div>';
+  };
   app.innerHTML = `
-    <h2 style="font-family:Georgia,serif;color:var(--ax-gold);margin:8px 0 16px">👑 Panel admin Kevin</h2>
-    <div class="admin-grid">
-      <div class="admin-tile" onclick="K.sv('admin-diag')" style="border:1px solid var(--ax-gold)">
-        <div class="ico">🩺</div>
-        <div class="stat" style="color:var(--ax-gold)">DIAG</div>
-        <div class="lbl">Diagnostic + tests</div>
-      </div>
-      <div class="admin-tile" onclick="window.open('./diag.html')">
-        <div class="ico">🔔</div>
-        <div class="stat" style="color:var(--ax-gold)">TEST</div>
-        <div class="lbl">Notifs / Appels (device)</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-live-users')">
-        <div class="ico">🟢</div>
-        <div class="stat" style="color:var(--ax-ok)">LIVE</div>
-        <div class="lbl">Connectés live</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-map')">
-        <div class="ico">🗺</div>
-        <div class="stat" style="color:var(--ax-gold)">MAP</div>
-        <div class="lbl">Carte temps réel</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-invite-book')">
-        <div class="ico">📋</div>
-        <div class="stat" style="color:var(--ax-gold)">+</div>
-        <div class="lbl">Carnet invitations</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-trusted-circle')">
-        <div class="ico">🔓</div>
-        <div class="stat" style="color:var(--ax-gold)">SMS✕</div>
-        <div class="lbl">Cercle de confiance</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-users')">
-        <div class="ico">👥</div>
-        <div class="stat">${userCount}</div>
-        <div class="lbl">Utilisateurs</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-toggles')">
-        <div class="ico">🎛</div>
-        <div class="stat">ON/OFF</div>
-        <div class="lbl">Toggles</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-audit')">
-        <div class="ico">📜</div>
-        <div class="stat">${lg('telemetry',[]).length}</div>
-        <div class="lbl">Audit log</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-sentinels')">
-        <div class="ico">🛡</div>
-        <div class="stat" style="color:${sent.storage?.ratio > 0.85 ? 'var(--ax-warn)' : 'var(--ax-ok)'}">${sent.storage?.ratio ? (sent.storage.ratio*100).toFixed(0)+'%' : 'OK'}</div>
-        <div class="lbl">Sentinelles</div>
-      </div>
-      <div class="admin-tile" onclick="K._adminCmd('analytics')">
-        <div class="ico">📊</div>
-        <div class="stat">—</div>
-        <div class="lbl">Stats</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-search')">
-        <div class="ico">🔍</div>
-        <div class="stat">🔎</div>
-        <div class="lbl">Recherche globale</div>
-      </div>
-      <div class="admin-tile" onclick="K._adminCmd('broadcast')">
-        <div class="ico">📢</div>
-        <div class="stat">—</div>
-        <div class="lbl">Broadcast</div>
-      </div>
-      <div class="admin-tile" onclick="K._adminLoadSignalements()">
-        <div class="ico">⚠</div>
-        <div class="stat">${lg('signalements',[]).length}</div>
-        <div class="lbl">Signalements</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-connections')">
-        <div class="ico">🔔</div>
-        <div class="stat" style="color:var(--ax-gold)">LOG</div>
-        <div class="lbl">Connexions</div>
-      </div>
-      <div class="admin-tile" onclick="K.sv('admin-premium')">
-        <div class="ico">⭐</div>
-        <div class="stat" style="color:var(--ax-gold)">€</div>
-        <div class="lbl">Demandes Premium</div>
-      </div>
-    </div>
+    <h2 style="font-family:Georgia,serif;color:var(--ax-gold);margin:8px 0 4px">👑 Panneau admin</h2>
+    <p style="color:var(--ax-text-3);font-size:.82em;margin:0 0 6px">Tout est rangé par usage. Touche une ligne pour l'ouvrir.</p>
+    ${RANG.map(g => '<div class="admin-section-title">' + g[0] + '</div><div class="adm-sec">' + g[1].map(ligneAdmin).join('') + '</div>').join('')}
 
     <div class="admin-section-title">🤖 Assistant Apex admin</div>
     <div class="card">
@@ -15635,13 +15643,12 @@ function renderAdmin(app){
       <div id="admin-ai-result" style="margin-top:12px"></div>
     </div>
 
-    <div class="admin-section-title">⚙ Architecture (Mode A — cercle privé)</div>
-    <div class="card" style="font-size:.85em">
+    <details class="card" style="font-size:.85em;margin-top:14px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--ax-gold)">⚙ Détails techniques (réservé au dépannage)</summary>
       <div class="card-row"><span style="flex:1">Mode</span><strong>${esc(K.config.ADMIN_MODE || 'A')}</strong></div>
       <div class="card-row"><span style="flex:1">Kevin invisible admin</span><strong>${K.config.KEVIN_INVISIBLE_ADMIN === 'true' ? '✓ Actif' : '✗ Désactivé'}</strong></div>
       <div class="card-row"><span style="flex:1">Auth provider</span><strong>${esc(K.config.AUTH_PROVIDER || 'firebase')}</strong></div>
       <div class="card-row"><span style="flex:1">Pipeline self-healing</span><strong style="color:var(--ax-ok)">✓ Apex (ax_telemetry_in)</strong></div>
-    </div>
+    </details>
   `;
 }
 
@@ -16025,32 +16032,36 @@ async function renderAdminConnections(app){
 }
 
 // Helper render carte user (réutilisable filter)
+/* « Vu il y a … » en français simple (Kevin 17.11 : fiches personnes plus claires) */
+K._ilYa = function(ts){
+  if(!ts) return '';
+  const m = Math.max(0, Math.round((Date.now() - ts) / 60000));
+  if(m < 2) return "à l'instant";
+  if(m < 60) return 'il y a ' + m + ' min';
+  const h = Math.round(m / 60); if(h < 24) return 'il y a ' + h + ' h';
+  const j = Math.round(h / 24); return 'il y a ' + j + (j > 1 ? ' jours' : ' jour');
+};
 K._renderLiveUserCard = function(u){
   const isOnline = u.last_seen && (Date.now() - u.last_seen < 300000);
   const isMe = u.id === K.user.id;
   const banned = !!u.is_banned;
+  const nom = u.real_name || u.pseudo || '?';
+  let etat = "<span class=\"chip\">N'a pas encore ouvert l'app</span>";
+  if(isOnline) etat = '<span class="chip ok">🟢 En ligne</span>';
+  else if(u.last_seen) etat = '<span class="chip">Vu ' + K._ilYa(u.last_seen) + '</span>';
   return `
     <div class="card" style="margin-bottom:10px;${banned?'opacity:.55':''}">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="avatar" style="position:relative;${u.is_admin?'border:2px solid var(--ax-gold)':''}">
-          ${esc((u.pseudo || u.real_name || '?')[0].toUpperCase())}
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="avatar" style="position:relative;flex:none;${u.is_admin?'border:2px solid var(--ax-gold)':''}">
+          ${esc(nom[0].toUpperCase())}
           <span class="dot ${isOnline ? '' : 'dot-off'}" style="position:absolute;bottom:0;right:0;border:2px solid var(--ax-bg-2)"></span>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-            ${esc(u.pseudo || '?')}${isMe ? ' <span style="color:var(--ax-gold)">(toi)</span>' : ''}
-            ${u.is_admin ? ' 👑' : ''}${banned ? ' 🚫' : ''}${u.admin_authorized ? ' ✅' : ''}
-          </div>
-          <div style="font-size:.76em;color:var(--ax-text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-            ${esc(u.real_name || '')} ${u.phone ? '· ' + esc(u.phone) : ''}
-          </div>
-          <div style="font-size:.7em;color:var(--ax-text-3);margin-top:2px">
-            ${isOnline ? '🟢 En ligne' : (u.last_seen ? '⚫ ' + formatTime(u.last_seen) : '⚫ Jamais connecté')}
-            ${u.last_geo_label ? ' · 📍 ' + esc(u.last_geo_label) : ''}
-            ${u.conv_count ? ' · 💬 ' + u.conv_count : ''}
-          </div>
+          <div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nom)}${isMe ? ' <span class="chip or">toi</span>' : ''}${u.is_admin ? ' <span class="chip or">👑 Admin</span>' : ''}${banned ? ' <span class="chip ko">🚫 Banni</span>' : ''}</div>
+          <div style="font-size:.76em;color:var(--ax-text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${esc(u.pseudo || '?')}${u.phone ? ' · ' + esc(u.phone) : ''}</div>
+          <div style="font-size:.74em;color:var(--ax-text-3);margin-top:3px">${etat}${u.last_geo_label ? ' <span class="chip">📍 ' + esc(u.last_geo_label) + '</span>' : ''}${u.conv_count ? ' <span class="chip">💬 ' + u.conv_count + '</span>' : ''}</div>
         </div>
-        <button class="btn btn-sm btn-out" onclick="K._openContactSheet('${esc(u.id)}')" title="Fiche (voir / modifier / supprimer)">📇</button>
+        <button class="btn btn-sm btn-out" style="flex:none;min-height:44px" onclick="K._openContactSheet('${esc(u.id)}')" aria-label="Ouvrir la fiche de ${esc(nom)}">📇 Fiche</button>
       </div>
     </div>
   `;
@@ -17619,12 +17630,13 @@ K._showModal = function(title, html, opts){
   // clic extérieur) — pour les gates indispensables (fiche+PIN onboarding,
   // consentement autorisations « ou accepté ou pas de connexion »). Le bouton
   // d'action du modal reste le seul chemin → jamais de blocage (il ferme tjs).
+  /* 17.11 (pont 2577, robot d'affichage : « ☰ Menu rapide » sans aria-modal) : le marquage de fenêtre modale va sur le VOILE (.modal-back), pas seulement sur le cadre intérieur — c'est le voile qui reçoit le toucher quand on appuie à côté du cadre, donc c'est lui que le robot trouve au-dessus d'un bouton. Garde : tests/verify-modale-aria.mjs. */
   const host = $('#modal-host');
   const backClick = opts.noClose ? '' : ' onclick="if(event.target===this)K._closeModal()"';
   const closeBtn = opts.noClose ? '' : '<button class="modal-close" onclick="K._closeModal()" aria-label="Fermer la fenêtre">✕</button>';
   host.innerHTML = `
-    <div class="modal-back" role="presentation"${backClick}>
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title-text" tabindex="-1">
+    <div class="modal-back" role="dialog" aria-modal="true" aria-labelledby="modal-title-text"${backClick}>
+      <div class="modal" tabindex="-1">
         ${closeBtn}
         <h3 class="modal-title" id="modal-title-text">${esc(title)}</h3>
         ${html}

@@ -332,11 +332,14 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               if (!(await cible.count())) continue;
               const nomCible = await cible.evaluate(nomSansTexte).catch(() => '');   /* 17.11 (apex-cloud 2592) : « n°2 » ne dit pas QUEL bouton ; on le nomme, sans son texte (jamais un nom de personne au journal public) */
               const jsAvant = js.length;
-              await cible.click({ timeout: 4000, trial: false });
-              await page.waitForTimeout(1200);
+              /* 17.11 (studio « sans réaction : button.bigbtn » = « Choisir une photo » / « Prendre une photo ») : ouvrir le choix d'un fichier ou une boîte du navigateur EST une réaction,
+                 même si la page ne change pas. On l'écoute le temps du toucher (la boîte est refermée, aucun fichier n'est envoyé). */
+              let hors = false; const surFichier = () => { hors = true; }, surBoite = (d) => { hors = true; d.dismiss().catch(() => undefined); };
+              page.on('filechooser', surFichier); page.on('dialog', surBoite);
+              try { await cible.click({ timeout: 4000, trial: false }); await page.waitForTimeout(1200); } finally { page.off('filechooser', surFichier); page.off('dialog', surBoite); }
               explo.touches++;
               const apres = await page.evaluate(empreintePage);
-              if (apres === avant) { explo.morts++; if (explo.ex.length < 4) explo.ex.push('sans réaction : ' + (nomCible || 'n°' + k)); }
+              if (apres === avant && !hors) { explo.morts++; const dessus = await cible.evaluate((e) => { const r = e.getBoundingClientRect(), d = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !d || d === e || e.contains(d) ? '' : d.tagName.toLowerCase() + (d.id ? '#' + d.id : '') + (typeof d.className === 'string' && d.className.trim() ? '.' + d.className.trim().split(/\s+/).slice(0, 2).join('.') : ''); }).catch(() => ''); if (explo.ex.length < 4) explo.ex.push('sans réaction : ' + (nomCible || 'n°' + k) + (dessus ? ' (dessus : ' + dessus + ')' : '')); }
               await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
               for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */
               const m2 = await page.evaluate(mesurer, tel);
@@ -346,8 +349,10 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               if (m2.cache && explo.ex.length < 4) explo.ex.push('caché après n°' + k + ' : ' + m2.cacheEx[0]);
               /* 17.11 (kit « déborde 102 » après un toucher, deux passages de suite, sans dire QUOI ni sur quelle page) : on nomme ce qui déborde et le chemin de la page atteinte */
               if (m2.deborde && m2.debordeEx && m2.debordeEx.length && !explo.ex.some((x) => x.startsWith('déborde après'))) explo.ex.push('déborde après ' + (nomCible || 'n°' + k) + ' (' + (await page.evaluate(() => location.pathname).catch(() => '?')) + ') : ' + m2.debordeEx.slice(0, 2).join(' | '));
-              if (changePage) { await page.goto(url(h), { waitUntil: 'load', timeout: 30000 }); await page.waitForTimeout(1500); await page.evaluate(candidatsNavigation); }
-            } catch (e) { /* un onglet qui ne se laisse pas toucher : compté comme mort */ explo.morts++; }
+              /* 17.11 (lingua « 7 onglets sans réaction », tous réactifs en local) : après le rechargement on attend comme à la première ouverture (écran de démarrage parti, accueil fermé),
+                 sinon l'onglet suivant est touché sur une page pas encore prête */
+              if (changePage) { await page.goto(url(h), { waitUntil: 'load', timeout: 30000 }); await page.waitForTimeout(1500); await page.waitForFunction(ecranDemarrageParti, null, { timeout: 6000 }).catch(() => false); for (let q = 0; q < 3 && await page.evaluate(fermerAccueil).catch(() => ''); q++) await page.waitForTimeout(500); await page.evaluate(candidatsNavigation); }
+            } catch (e) { /* un onglet qui ne se laisse pas toucher : compté comme mort */ explo.morts++; if (explo.ex.length < 4) explo.ex.push('toucher impossible : n°' + k + ' (' + String(e && e.message).split('\n')[0].replace(/\d{6,}/g, '…').slice(0, 60) + ')'); }
           }
         }
         const ligne = { app: h, ecran: nom, admin, st, ms: Date.now() - t0, js: js.length, jsEx: [...new Set(js)].slice(0, 2).concat(reseau.slice(0, 2).map((x) => 'rés ' + x)), err, ...(m || {}), explo };

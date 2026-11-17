@@ -146,6 +146,16 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
 /* 17.11 (kit « déborde 102 » après un toucher, sans dire quoi) : le grand robot nomme ce qui déborde après un toucher, et la page « sans retour » */
 { const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
   ok('le grand robot nomme le débordement après un toucher et la page sans retour', /explo\.ex\.push\('déborde après ' \+ \(nomCible/.test(src) && /'pas de retour après ' \+ \(nomCible/.test(src)); }
+/* 17.11 (lingua « onglets sans réaction », réactifs en local) : après un rechargement le grand robot attend la page prête ; un « sans réaction » dit ce qui est posé sur le bouton ; un toucher impossible est nommé */
+{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  ok('le grand robot : rechargement → page attendue prête ; « sans réaction » avec ce qui est dessus ; « toucher impossible » nommé', /if \(changePage\) \{ await page\.goto\(url\(h\)[^\n]*waitForFunction\(ecranDemarrageParti[^\n]*fermerAccueil[^\n]*candidatsNavigation\)/.test(src) && /\(dessus : ' \+ dessus/.test(src) && /'toucher impossible : n°'/.test(src)); }
+/* 17.11 (studio : « Choisir une photo » compté sans réaction) : un toucher qui ouvre le choix d'un fichier ou une boîte du navigateur est une réaction */
+{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  ok('le grand robot écoute « filechooser » et « dialog » pendant le toucher et ne compte pas ces boutons morts', /page\.on\('filechooser', surFichier\); page\.on\('dialog', surBoite\);/.test(src) && /if \(apres === avant && !hors\)/.test(src) && /page\.off\('filechooser', surFichier\); page\.off\('dialog', surBoite\);/.test(src));
+  const pf = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await pf.setContent('<!doctype html><title>t</title><body><input type="file" id="f" style="display:none"><button id="choisir" onclick="document.getElementById(\'f\').click()">Choisir</button></body>');
+  let vu = false; const sur = () => { vu = true; }; pf.on('filechooser', sur); await pf.click('#choisir'); await pf.waitForTimeout(300); pf.off('filechooser', sur);
+  ok('vrai navigateur : un bouton « choisir un fichier » déclenche bien l\'événement écouté', vu === true); await pf.close(); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

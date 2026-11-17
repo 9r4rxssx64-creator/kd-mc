@@ -100,7 +100,8 @@ footer a,.petit a,.sur a,.faq p a{display:inline-flex;align-items:center;min-hei
 .module .attention::before{content:"Les pièges";display:block;font-weight:800;color:var(--attention);margin-bottom:var(--e8)}
 .module .check{background:var(--surface2);border-radius:var(--r-sm);padding:var(--e16);margin:var(--e24) 0;font-size:var(--t16)}
 .module .check::before{content:"À cocher avant de passer au module suivant";display:block;font-weight:800;margin-bottom:var(--e8)}
-.module table{border-collapse:collapse;width:100%;font-size:var(--t16);margin:var(--e16) 0}
+/* 17.11 (robot d'affichage, run 44014483823, iPhone 13 : table 16→492 px, page élargie de 102 px) : un tableau plus large que l'écran défile DANS sa boîte */
+.module table{border-collapse:collapse;display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;font-size:var(--t16);margin:var(--e16) 0}
 .module td,.module th{border:1px solid var(--bord);padding:8px;text-align:left;vertical-align:top}
 .nav-modules{display:flex;gap:var(--e16);margin:var(--e32) 0}
 .nav-modules .btn{flex:1}

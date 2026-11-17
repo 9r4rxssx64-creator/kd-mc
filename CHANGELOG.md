@@ -17,6 +17,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Correctif : `buildBoardsFromState` recrée, depuis le PDF généré, les personnes absentes tout le mois dans leur tableau d'absence (codes, `fond`, ordre du PDF conservés).
 - Garde `tests/verify-light-fond-bleu-live.mjs` (`npm run test:light-fond-live` + `test:light-fond-live-sabotage`, dans `test:ci`) : simule l'état vivant sans les personnes absentes, rend chaque mois, compte les noms peints en bleu contre le PDF. v1.151 : 10 ok / 0 ko ; v1.150 : 4 ok / 6 ko ; `SABOTAGE=1` : 4 ok / 6 ko.
 
+## Apex Chat v1.1.369 — Le journal du domaine dit « qui a fait quoi » dans Apex Chat (2026-11-17)
+- cloud-installer (pont 2632 / 2637, Kevin : « qui a fait quoi, de tout le domaine, chaque app ») : Apex Chat écrit au journal du domaine (`window.kdmcJournal`, posé par le routeur) après un enregistrement RÉUSSI : message envoyé (« dans le groupe … » ou « message privé envoyé », jamais le texte), groupe créé, profil modifié, action admin sur un compte, Premium activé. Jamais sur un échec, jamais un identifiant ni un code ; sans le script, aucune erreur.
+- Garde `tests/verify-chat-journal.mjs` (`npm run test:chat-journal`, dans `test:ci`) : 12 OK ; sous `SABOTAGE=1` 11 rouges.
+
 ## Apex Chat v1.1.368 — L'écran de connexion défile, n'est plus coupé et laisse la pastille « ← KDMC » touchable (2026-11-17)
 - cloud-installer (pont 2608, passage 44014242295) : la pastille « ← KDMC » était recouverte par l'écran de connexion (z 1000 contre 150) sur iPhone SE / 13, tablette et paysage, et le titre « APEX CHAT » coupé en haut. Cause : l'écran de connexion était centré sans pouvoir défiler (contenu 853 px dans 390 px de paysage) et plus haut que la pastille.
 - Correctif : l'écran défile (marges automatiques, jamais coupé), garde 76 px libres en bas, logo réduit sous 720 px de haut, et la pastille passe au-dessus (z 1001, 12 px du bas) tant qu'il est affiché.

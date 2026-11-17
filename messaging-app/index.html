@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.368",
+  "softwareVersion": "v1.1.369",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -220,7 +220,7 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px;
 .splash{position:fixed;inset:0;background:linear-gradient(180deg,#08080f,#13131c);z-index:1000;
   display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;
   animation:fadein .4s ease}
-/* 1.1.368 (bilan d'affichage n°2, pont 2608) : l'écran de connexion était centré SANS pouvoir défiler (le haut, « APEX CHAT », sortait de
+/* 1.1.369 (bilan d'affichage n°2, pont 2608) : l'écran de connexion était centré SANS pouvoir défiler (le haut, « APEX CHAT », sortait de
    l'écran de 23 à 33 px sur petit écran et en paysage) et recouvrait la pastille « ← KDMC » (z 150 < 1000), seule sortie pour qui n'a pas de compte.
    Il défile, se centre par marges automatiques (jamais coupé), garde 76 px libres en bas, et la pastille passe AU-DESSUS tant qu'il est affiché. */
 .splash{overflow-y:auto;-webkit-overflow-scrolling:touch;justify-content:flex-start;padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
@@ -517,7 +517,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.368';
+const __APEX_CHAT_VERSION__ = 'v1.1.369';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -864,7 +864,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.368" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.368</div>
+  <div id="splash-version" data-ver="v1.1.369" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -878,7 +878,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.368</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.360</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -10064,7 +10064,7 @@ K._publishDevice = async function(force){
     const marque = [K.user.id, pub, K._deviceId(), jour, sig || ''].join('|');
     if(!force && lg('device_published', null) === marque) return true;
     const corps = { device_id: K._deviceId(), identity_key_pub: pub, crypto_caps: K._CRYPTO_CAPS + ',' + K._MDEV_CAP, label: K._deviceLabel(), ...(sig ? { signing_key_pub: sig } : {}) };
-    // v1.1.368 : K._api LÈVE sur toute réponse non-ok ; l'ancien test « r.error === 'device_revoked' » ne s'exécutait donc jamais
+    // v1.1.369 : K._api LÈVE sur toute réponse non-ok ; l'ancien test « r.error === 'device_revoked' » ne s'exécutait donc jamais
     // (l'appareil retiré ne se représentait pas, et chaque ouverture écrivait « Appareil retiré » en erreur dans la console).
     let r;
     try{ r = await K._api('POST', '/api/keys/device', corps); }
@@ -10268,6 +10268,11 @@ K._pendingToastText = function(conv){
     : '🔒 En attente de la clé du contact — sera chiffré puis envoyé';
 };
 
+/* 1.1.369 (cloud-installer 2632/2637, Kevin : « qui a fait quoi, de tout le domaine, chaque app ») : après un enregistrement RÉUSSI, une phrase courte au
+   journal du domaine (window.kdmcJournal, posé par le routeur). Jamais le texte d'un message, d'un code ou d'une personne ; sans le script ou sans réseau, rien ne se passe. */
+K._journal = function(phrase, type){
+  try{ if(typeof window.kdmcJournal === 'function') window.kdmcJournal(String(phrase || '').slice(0, 180), type); }catch(_e){ /* le journal ne gêne jamais l'app */ }
+};
 K._sendMsg = async function(){
   const input = $('#msg-input');
   let text = input.value.trim();
@@ -10381,6 +10386,7 @@ K._sendMsg = async function(){
   // l'outbox jusqu'à l'accusé du serveur (A2-08).
   const wire = { type: 'message', ciphertext: decision.wire, mime: 'text/plain', ts: msg.ts, id: msg.id, ...K._wireExtras(msg) };
   if(K._dispatchWire(conv.id, wire) === 'sent'){
+    K._journal(conv && conv.type === 'group' ? 'message envoyé dans le groupe « ' + (conv.name || '') + ' »' : 'message privé envoyé', 'message');
     const nExcl = (grpDecision && grpDecision.encrypted && Array.isArray(grpDecision.excluded)) ? grpDecision.excluded.length : 0;   // v1.1.304
     if(nExcl) toast('🛡 Envoyé chiffré E2E · ' + K._grpExcludedText(nExcl) + ' (pas de clé de chiffrement)', 'warn', 4000);
     else toast((ciphertext || (grpDecision && grpDecision.encrypted)) ? '🛡 Envoyé chiffré E2E'
@@ -12562,6 +12568,7 @@ K._saveProfile = async function(){
     }
   }
   toast('✅ Profil sauvegardé', 'ok');
+  K._journal('profil modifié');
   if(K.view === 'settings') K.sv('settings');
 };
 
@@ -15984,6 +15991,7 @@ K._adminGrantPremium = async function(userId, plan){
     const r = await K._api('POST', '/api/admin/grant-premium', { user_id: userId, plan: plan || 'monthly' });
     if(r && r.ok){
       toast('✅ Premium activé pour ' + userId, 'ok', 4000);
+      K._journal('Premium activé pour un compte (action admin)');
       K.sv('admin-premium'); /* refresh liste */
     } else {
       toast('Activation échouée', 'err');
@@ -17117,6 +17125,7 @@ K._adminUserAction = async function(userId, action){
     const r = await K._api('POST', '/api/admin/users/' + encodeURIComponent(userId) + '/' + action);
     if(r && r.ok){
       toast(K._humanError((r && r.message) || '', '✅ Fait'), 'ok');
+      K._journal((labels[action] || action) + ' : compte d\'un utilisateur (action admin)');
       K.render();
     } else toast(K._humanError((r && r.message) || '', 'Erreur'), 'err');
   } catch(e){ toast('Serveur injoignable, réessaie dans un instant', 'warn'); }
@@ -17493,6 +17502,7 @@ K._createGroup = async function(){
     K._closeModal && K._closeModal();
     K.sv && K.sv('chats');
     toast('✅ Groupe "' + name + '" créé', 'ok');
+    K._journal('groupe « ' + name + ' » créé');
     return;
   }
   // r.offline / r.timeout / r.ok=false sans throw → fallback local

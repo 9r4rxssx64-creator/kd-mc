@@ -246,6 +246,44 @@ for (const [w, h] of [[320, 568], [844, 390]]) {
     await ctx.close();
   }
 }
+
+/* F. (apex-cloud 2598, robot d'affichage run 44008565957, Apex Chat iPhone 13 et paysage : « button 136x44 @8,480 sous iframe /__javis/cadre @8,452 92x92 ») :
+ * la pastille « Vue admin » ne se pose jamais SOUS le cadre de Bee (le rond de l'assistante), qui est au-dessus d'elle.
+ * SABOTAGE : `SABOTAGE_BEE=1` retire la règle → doit être ROUGE. */
+{
+  let SRC_F = INSTALLER_JS;
+  if (process.env.SABOTAGE_BEE === '1') SRC_F = SRC_F.replace(/\/\* SOUS-BEE-DEBUT \*\/[\s\S]*?\/\* SOUS-BEE-FIN \*\//, '');
+  const PAGE_BEE = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#0a1a0c;color:#fff;font:16px sans-serif}iframe{position:fixed;left:8px;bottom:0;width:92px;height:92px;border:0;z-index:2147483000}</style>
+<main>Messagerie</main><iframe src="/__javis/cadre" title="Bee, ton assistante"></iframe>`;
+  for (const [w, h] of [[390, 844], [844, 390]]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+    const p = await ctx.newPage();
+    await p.clock.install();
+    await p.route('**/__admin/vue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, mode: 'admin' }) }));
+    await p.route('**/__javis/cadre', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><body style="margin:0;background:#fc0"></body>' }));
+    await p.route('https://kdmc.test/', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_BEE }));
+    await p.goto('https://kdmc.test/');
+    await p.evaluate(() => { document.cookie = 'kdmc_k=1; path=/'; });
+    await p.addScriptTag({ content: SRC_F });
+    await p.waitForSelector('[data-kdmc-vue]', { timeout: 5000 }).catch(() => {});
+    await p.clock.runFor(1500);
+    const R = await p.evaluate(() => {
+      const b = document.querySelector('[data-kdmc-vue]'), c = document.querySelector('iframe'); if (!b) return { absent: true };
+      const r = b.getBoundingClientRect(), q = c.getBoundingClientRect();
+      return { absent: false, sousBee: r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top, pastille: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], dedans: r.top >= 0 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight };
+    });
+    ok(!R.absent && !R.sousBee, w + '×' + h + ' : « Vue admin » n\'est pas sous le cadre de Bee', R);
+    /* Bee se DÉPLACE ensuite sur la pastille (elle fuit une barre du bas et arrive au même endroit), plus de 15 s après l'ouverture : la pastille s'écarte d'elle-même */
+    await p.clock.runFor(20000);
+    await p.evaluate(() => { const b = document.querySelector('[data-kdmc-vue]'), c = document.querySelector('iframe'), r = b.getBoundingClientRect(); c.style.bottom = 'auto'; c.style.left = Math.max(0, Math.round(r.left)) + 'px'; c.style.top = Math.max(0, Math.round(r.top - 28)) + 'px'; });
+    await p.clock.runFor(2000);
+    const R2 = await p.evaluate(() => { const b = document.querySelector('[data-kdmc-vue]'), c = document.querySelector('iframe'); const r = b.getBoundingClientRect(), q = c.getBoundingClientRect(); return { sousBee: r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top, pastille: [Math.round(r.left), Math.round(r.top)], bee: [Math.round(q.left), Math.round(q.top)], dedans: r.top >= 0 && r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight }; });
+    ok(!R2.sousBee && R2.dedans, w + '×' + h + ' : Bee vient se poser sur la pastille (20 s après) → la pastille s\'écarte et reste dans l\'écran', R2);
+    ok(!R.absent && R.dedans, w + '×' + h + ' : loin de Bee, la pastille reste dans l\'écran', R);
+    await ctx.close();
+  }
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

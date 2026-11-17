@@ -28,3 +28,10 @@ DROP TRIGGER IF EXISTS ts_en_millisecondes;
 CREATE TRIGGER IF NOT EXISTS ts_serveur AFTER INSERT ON messages
 WHEN abs(NEW.ts - CAST(strftime('%s','now') AS INTEGER)*1000) > 600000
 BEGIN UPDATE messages SET ts = CAST(strftime('%s','now') AS INTEGER)*1000 WHERE id = NEW.id; END;
+-- 17.11 : même règle pour les prises (une prise datée du 23.11 restait en tête du tableau).
+CREATE TRIGGER IF NOT EXISTS ts_serveur_prises AFTER INSERT ON prises
+WHEN abs(NEW.ts - CAST(strftime('%s','now') AS INTEGER)*1000) > 600000
+BEGIN UPDATE prises SET ts = CAST(strftime('%s','now') AS INTEGER)*1000 WHERE cle = NEW.cle; END;
+CREATE TRIGGER IF NOT EXISTS ts_serveur_prises_maj AFTER UPDATE OF ts ON prises
+WHEN abs(NEW.ts - CAST(strftime('%s','now') AS INTEGER)*1000) > 600000
+BEGIN UPDATE prises SET ts = CAST(strftime('%s','now') AS INTEGER)*1000 WHERE cle = NEW.cle; END;

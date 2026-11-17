@@ -112,7 +112,21 @@ export const INSTALLER_JS = String.raw`(function () {
            passé 15 s, la pastille ne se replaçait plus que sur défilement ou rotation. Un toucher ou un changement de la page la replace 0,35 s après le dernier changement. */
         var tTard = 0, tard = function () { clearTimeout(tTard); tTard = setTimeout(degager, 350); };
         document.addEventListener('click', tard, true);
-        try { if (window.MutationObserver) new MutationObserver(tard).observe(document.body, { childList: true, subtree: true }); } catch (eT) { /* page sans observateur : le toucher suffit */ }
+        try { if (window.MutationObserver) new MutationObserver(function () { suivreBee(); tard(); }).observe(document.body, { childList: true, subtree: true }); } catch (eT) { /* page sans observateur : le toucher suffit */ }
+        /* SOUS-BEE-DEBUT */
+        /* 17.11 (apex-cloud 2598, robot run 44008565957, Apex Chat iPhone 13 : « Vue admin » @8,480 sous le cadre de Bee @8,452) : Bee et la pastille fuient la même barre du bas
+           et arrivent au même endroit ; Bee ne change que son STYLE, que rien ne suivait ici. On suit le style du cadre de Bee : quand elle bouge, la pastille revérifie sa place. */
+        var beeSuivie = null, obsBee = null;
+        var suivreBee = function () {
+          try {
+            var c = document.querySelector('iframe[src*="/__javis/cadre"]');
+            if (!c || c === beeSuivie || !window.MutationObserver) return;
+            if (obsBee) obsBee.disconnect();
+            beeSuivie = c; obsBee = new MutationObserver(tard); obsBee.observe(c, { attributes: true, attributeFilter: ['style', 'class'] });
+          } catch (eB) { /* pas de cadre : rien à suivre */ }
+        };
+        suivreBee(); setTimeout(suivreBee, 3000);
+        /* SOUS-BEE-FIN */
         /* SUIVI-TARD-FIN */
         /* 23.10 soir (Kevin : « Tableau KDMC a disparu… je ne suis pas connecté en admin… il était censé y avoir un bouton admin partout ») :
            le marqueur dure 1 an, la session admin moins. Le bouton affichait « 👑 Vue admin » alors que l'admin avait expiré, puis disparaissait.

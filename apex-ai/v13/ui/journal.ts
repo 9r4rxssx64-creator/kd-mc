@@ -8,9 +8,24 @@
  * jamais d'appel sur un échec ni dans une boucle ; sans le script du domaine, ou hors ligne : rien ne se passe, aucune erreur.
  */
 export function journalDomaine(phrase: string, type?: 'message'): void {
+  const texte = String(phrase ?? '').slice(0, 180);
   try {
-    const f = (window as unknown as { kdmcJournal?: (t: string, ty?: string) => void }).kdmcJournal;
-    if (typeof f === 'function') f(String(phrase ?? '').slice(0, 180), type);
+    const w = window as unknown as { kdmcJournal?: (t: string, ty?: string) => void };
+    if (typeof w.kdmcJournal === 'function') {
+      w.kdmcJournal(texte, type);
+      return;
+    }
+    /* v13.4.399 (cloud-installer 2676, mesuré en réel) : la CSP d'Apex AI (strict-dynamic) refuse /__boite/bouton.js, donc
+       window.kdmcJournal n'existe JAMAIS ici. On parle alors directement à la porte du domaine (même origine, cookie de session). */
+    if (typeof fetch === 'function') {
+      void fetch('/__boite/journal', {
+        method: 'POST',
+        credentials: 'include',
+        keepalive: true,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type: type === 'message' ? 'message' : 'modif', detail: texte }),
+      }).catch(() => undefined);
+    }
   } catch {
     /* le journal ne gêne jamais l'app */
   }

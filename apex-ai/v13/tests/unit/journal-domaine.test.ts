@@ -27,6 +27,35 @@ describe('journalDomaine', () => {
     journalDomaine('y'.repeat(500));
     expect((f.mock.calls[0]?.[0] as string).length).toBe(180);
   });
+  it('sans le script du domaine : la phrase part directement à la porte /__boite/journal (CSP d\'Apex AI, mesuré en réel)', () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response('{}')));
+    vi.stubGlobal('fetch', fetchMock);
+    journalDomaine('projet créé');
+    journalDomaine('message envoyé à Apex', 'message');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('/__boite/journal');
+    expect(init.method).toBe('POST');
+    expect(init.credentials).toBe('include');
+    expect(init.keepalive).toBe(true);
+    expect(JSON.parse(String(init.body))).toEqual({ type: 'modif', detail: 'projet créé' });
+    expect(JSON.parse(String((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body))).toEqual({ type: 'message', detail: 'message envoyé à Apex' });
+    vi.unstubAllGlobals();
+  });
+  it('avec le script du domaine : une seule voie, pas de double ligne', () => {
+    const fetchMock = vi.fn(() => Promise.resolve(new Response('{}')));
+    vi.stubGlobal('fetch', fetchMock);
+    (window as unknown as { kdmcJournal: unknown }).kdmcJournal = vi.fn();
+    journalDomaine('projet créé');
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+  it('porte injoignable : aucune erreur', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('hors ligne'))));
+    expect(() => journalDomaine('x')).not.toThrow();
+    await Promise.resolve();
+    vi.unstubAllGlobals();
+  });
   it('sans le script du domaine, ou si il lève : aucune erreur', () => {
     expect(() => journalDomaine('x')).not.toThrow();
     (window as unknown as { kdmcJournal: unknown }).kdmcJournal = () => {

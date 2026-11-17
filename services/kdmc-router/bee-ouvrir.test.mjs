@@ -8,7 +8,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { createHash, createHmac } from 'node:crypto';
 import mod from './worker.js';
-import { resoudreApp, cheminSur, adresse, outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, ALIAS, MAX_OUVRIR, intentionOuvrir, corrigerTexte } from './bee-ouvrir.js';
+import { resoudreApp, cheminSur, adresse, outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, ALIAS, MAX_OUVRIR, intentionOuvrir, corrigerTexte, intentionSuite, estSuiteOuverture, appDeFiche, lireDemandeFiche, intentionFiche, homonymesArbre, reponseFiche } from './bee-ouvrir.js';
 
 let pass = 0, fail = 0;
 const ok = (c, m, d) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m + (d !== undefined ? ' → ' + String(d).slice(0, 300) : '')); } };
@@ -83,7 +83,7 @@ const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.cerebras = []; 
 const toolMsgs = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 const outilsVus = () => IA_VUES.flatMap((v) => (v.corps.tools || []).map((t) => t.function.name));
 async function bee(texte, e2, headers) {
-  const r = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, headers || KEVIN), body: JSON.stringify({ messages: [{ role: 'user', content: texte }] }) }), e2 || env, ctx);
+  const r = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, headers || KEVIN), body: JSON.stringify({ messages: Array.isArray(texte) ? texte : [{ role: 'user', content: texte }] }) }), e2 || env, ctx);
   await Promise.allSettled(att.splice(0)); return { st: r.status, j: await r.json().catch(() => null) };
 }
 
@@ -101,6 +101,23 @@ for (const non of ['quel temps demain ?', 'comment ouvrir l\'arbre ?', 'ouvre l\
 ok(Inull('ouvre ' + 'mot '.repeat(20)) === null, '4k. une phrase de plus de 14 mots : pas de voie directe');
 ok(corrigerTexte('Je n\'ai pas accès à l\'arbre.', [{ libelle: 'L\'arbre — Yann' }]) === 'Je t\'ouvre « L\'arbre — Yann ».' && corrigerTexte('Je ne peux pas ouvrir d\'applications (c\'est Apex).', [{ libelle: 'A' }, { libelle: 'B' }]) === 'Je t\'ouvre ça : « A », « B ».', '4l. un lien prêt + « pas accès » dans la phrase de l\'IA → remplacée par la vérité');
 ok(corrigerTexte('Voilà, c\'est ouvert.', [{ libelle: 'A' }]) === 'Voilà, c\'est ouvert.' && corrigerTexte('Je n\'ai pas accès.', []) === 'Je n\'ai pas accès.', '4m. une phrase normale, ou sans lien : intacte');
+
+/* ───────── 4ter. LA SUITE : « Dans cmcteams » après « Je t'ouvre l'arbre sur Davy Carpinelli. » (Kevin 17.11 : Bee répondait « je ne peux pas ouvrir ») ───────── */
+const U = (c) => ({ role: 'user', content: c }); const AS = (c) => ({ role: 'assistant', content: c });
+const HIST = [U('montre-moi l\'arbre de Davy Carpinelli'), AS('Je t\'ouvre l\'arbre sur Davy Carpinelli.')];
+const S = (suite, hist) => intentionSuite((hist || HIST).concat([U(suite)]), HOTES, NOMS);
+ok(adresse({ app: 'cmcteams', personne: 'Davy Carpinelli' }, HOTES, NOMS).url === 'https://cmcteams.kd-mc.com/#personne=Davy%20Carpinelli' && adresse({ app: 'la light', personne: 'Davy Carpinelli' }, HOTES, NOMS).url === 'https://departs.kd-mc.com/#personne=Davy%20Carpinelli', '4n. CMCteams et la light reçoivent #personne=… (comme l\'arbre)');
+ok(!/[<>"]/.test(adresse({ app: 'cmcteams', personne: '<b>x</b>"' }, HOTES, NOMS).url) && adresse({ app: 'lingua', personne: 'Davy' }, HOTES, NOMS).url === 'https://lingua.kd-mc.com/', '4o. nom piégé nettoyé ; lingua ignore toujours « personne »');
+ok((S('Dans cmcteams') || {}).url === 'https://cmcteams.kd-mc.com/#personne=Davy%20Carpinelli' && (S('Dans cmcteams') || {}).texte === 'Je t\'ouvre CMCteams sur Davy Carpinelli.', '4p. « Dans cmcteams » → CMCteams SUR Davy Carpinelli, sans verbe', JSON.stringify(S('Dans cmcteams')));
+for (const [suite, hote] of [['dans la light', 'departs.kd-mc.com'], ['Sur cmcteams', 'cmcteams.kd-mc.com'], ['cmcteams', 'cmcteams.kd-mc.com'], ['et dans CMC Teams ?', 'cmcteams.kd-mc.com'], ['ouvre-la dans cmcteams', 'cmcteams.kd-mc.com'], ['ouvre ça dans la light s\'il te plaît', 'departs.kd-mc.com'], ['plutôt dans cmcteams', 'cmcteams.kd-mc.com'], ['non, dans la light', 'departs.kd-mc.com']])
+  ok(((S(suite) || {}).url || '') === 'https://' + hote + '/#personne=Davy%20Carpinelli', '4q. la suite « ' + suite + ' » → ' + hote + ' sur la même personne', JSON.stringify(S(suite)));
+ok((S('dans lingua') || {}).url === 'https://lingua.kd-mc.com/', '4r. une app sans fiche de personne : ouverte telle quelle (jamais de fragment)');
+const HIST_IA = [U('ouvre l\'arbre de Yann Lorenzi et dis-moi qui c\'est'), AS('Je t\'ouvre « L\'arbre — Yann Lorenzi ».')];
+ok((S('dans cmcteams', HIST_IA) || {}).url === 'https://cmcteams.kd-mc.com/#personne=Yann%20Lorenzi', '4s. le sujet vient aussi d\'une phrase de l\'IA (« L\'arbre — Yann Lorenzi »)');
+ok((S('dans cmcteams', [U('ouvre l\'arbre de Yann Lorenzi'), AS('Je t\'ouvre l\'arbre sur Yann Lorenzi.'), U('merci'), AS('Avec plaisir !')]) === null), '4t. le sujet doit venir de la réponse JUSTE avant (sinon on ne devine pas)');
+for (const [non, h] of [['dans cmcteams', []], ['dans cmcteams', [U('salut'), AS('Salut Kevin !')]], ['dans cmcteams', [U('ouvre l\'arbre'), AS('Je t\'ouvre l\'arbre.')]], ['ouvre l\'arbre de Laurence', HIST], ['ouvre l\'arbre', HIST], ['merci', HIST], ['oui', HIST], ['dans cmcteams et dis-moi son âge', HIST], ['dans https://evil.example/', HIST], ['dans evil.example', HIST], ['quel temps demain ?', HIST], ['dans cmcteams ' + 'mot '.repeat(8), HIST]])
+  ok(S(non, h) === null, '4u. PAS une suite : « ' + non + ' » (' + h.length + ' messages avant)');
+ok(estSuiteOuverture(HIST.concat([U('dans cmcteams et dis-moi pourquoi')])) === true && estSuiteOuverture(HIST.concat([U('combien de personnes dans la famille de Davy Carpinelli et de ses enfants et leurs voisins ?')])) === false && estSuiteOuverture([U('dans cmcteams')]) === false, '4v. « suite d\'ouverture » : court, juste après « Je t\'ouvre… » ; sinon non');
 
 /* ───────── 5. par le VRAI serveur de Bee ───────── */
 { reset();
@@ -130,7 +147,91 @@ ok(corrigerTexte('Voilà, c\'est ouvert.', [{ libelle: 'A' }]) === 'Voilà, c\'e
 { reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
   await bee('ouvre l\'arbre et dis-moi qui est Yann', Object.assign({}, env, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' }));
   ok(reseau.every((u) => !/anthropic|openai/.test(u)), '5j. 0 € : aucun appel Anthropic / OpenAI'); }
+/* la suite par le vrai serveur */
+{ reset();
+  const r = await bee(HIST.concat([U('Dans cmcteams')]));
+  ok(r.st === 200 && r.j.ok && r.j.provider === 'domaine' && r.j.gratuit === true && r.j.outils.join() === 'ouvrir' && IA_VUES.length === 0, '5l. « Dans cmcteams » après l\'arbre : compris SANS IA — ' + JSON.stringify(r.j).slice(0, 200));
+  ok(r.j.ouvrir && r.j.ouvrir.length === 1 && r.j.ouvrir[0].url === 'https://cmcteams.kd-mc.com/#personne=Davy%20Carpinelli' && !/pas|ne peux/.test(r.j.text) && r.j.text === 'Je t\'ouvre CMCteams sur Davy Carpinelli.', '5m. le bouton mène à CMCteams SUR la personne, phrase vraie', JSON.stringify(r.j)); }
+{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+  const r = await bee(HIST.concat([U('Dans cmcteams')]), Object.assign({}, env, { BEE_OUVRIR: '0' }));
+  ok(r.j.provider !== 'domaine' && !(r.j.ouvrir && r.j.ouvrir.length), '5n. BEE_OUVRIR=0 coupe aussi la suite'); }
+{ reset(); const r = await bee(HIST.concat([U('Dans cmcteams')]), env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
+  ok(r.st === 403 && IA_VUES.length === 0, '5o. un autre compte : 403 même pour la suite'); }
+{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'cmcteams', personne: 'Davy Carpinelli' })] }, { content: 'Je ne peux pas ouvrir des fichiers ou des apps directement.' }];
+  const r = await bee(HIST.concat([U('non plutôt dans cmcteams et dis-moi pourquoi')]));
+  ok(outilsVus().includes('ouvrir') && /JAMAIS « je n'ai pas accès »/.test(IA_VUES[0].corps.messages[0].content), '5p. phrase composée juste après une ouverture : l\'outil `ouvrir` et ses règles sont offerts à l\'IA');
+  ok(r.j.ouvrir && r.j.ouvrir[0].url === 'https://cmcteams.kd-mc.com/#personne=Davy%20Carpinelli' && !/ne peux pas/.test(r.j.text), '5q. et si l\'IA dit « je ne peux pas ouvrir », le domaine corrige', JSON.stringify(r.j)); }
 ok(!kvEcrit.some((k) => /^cfg:|^cred:|^bee|^fil|^arbre:/.test(k)), '5k. aucune écriture dans la configuration, les codes, la mémoire ni l\'arbre', kvEcrit.join());
+
+/* ───────── 5bis. « ouvre la fiche de Davy » : l'app où Kevin est (17.11) ───────── */
+const Hf = (q, ou) => intentionFiche(q, ou === undefined ? '' : ou, HOTES, NOMS);
+ok(appDeFiche('cmcteams', HOTES, NOMS) === 'cmcteams' && appDeFiche('departs', HOTES, NOMS) === 'departs' && appDeFiche('cmcteams-light', HOTES, NOMS) === 'departs' && appDeFiche('arbre', HOTES, NOMS) === 'arbre' && appDeFiche('cmcteams.kd-mc.com', HOTES, NOMS) === 'cmcteams', '7a. appDeFiche : cmcteams, departs, cmcteams-light (= la light), arbre, adresse complète');
+ok(appDeFiche('lingua', HOTES, NOMS) === '' && appDeFiche('', HOTES, NOMS) === '' && appDeFiche('evil.example', HOTES, NOMS) === '' && appDeFiche(null, HOTES, NOMS) === '' && appDeFiche('portail', HOTES, NOMS) === '', '7b. appDeFiche : Lingua, vide, site extérieur, portail → aucune app de fiches');
+ok(lireDemandeFiche('ouvre la fiche de Davy').personne === 'Davy' && lireDemandeFiche('ouvre la fiche de Davy').appExplicite === '', '7c. « ouvre la fiche de Davy » → Davy, sans app nommée');
+ok(lireDemandeFiche('ouvre-moi la fiche de Davy Carpinelli dans l\'arbre').appExplicite === 'arbre' && lireDemandeFiche('ouvre la fiche de Davy sur la light').appExplicite === 'departs' && lireDemandeFiche('montre-moi le profil de Davy dans cmcteams').appExplicite === 'cmcteams', '7d. l\'app nommée à la fin est lue (arbre, light, CMCteams)');
+for (const non of ['ouvre la fiche de la famille Buchet', 'ouvre la fiche', 'quelle est la fiche de Davy ?', 'comment ouvrir la fiche de Davy ?', 'ouvre la fiche de Davy et dis-moi son âge', 'raconte-moi une blague', 'ouvre l\'arbre de Davy'])
+  ok(lireDemandeFiche(non) === null, '7e. PAS une demande de fiche : « ' + non + ' »');
+ok(Hf('ouvre la fiche de Davy', 'cmcteams').app === 'cmcteams' && Hf('ouvre la fiche de Davy', 'cmcteams').courante === 'cmcteams' && !Hf('ouvre la fiche de Davy', 'cmcteams').explicite, '7f. dans CMCteams, sans app nommée → CMCteams');
+ok(Hf('ouvre la fiche de Davy', 'cmcteams-light').app === 'departs' && Hf('ouvre la fiche de Davy', 'departs').app === 'departs', '7g. dans la light → la light');
+ok(Hf('ouvre la fiche de Davy', 'arbre').app === 'arbre' && Hf('ouvre la fiche de Davy', 'lingua').app === 'arbre' && Hf('ouvre la fiche de Davy', '').app === 'arbre', '7h. dans l\'arbre, dans Lingua, ou sans contexte → l\'arbre');
+ok(Hf('ouvre la fiche de Davy dans l\'arbre', 'cmcteams').app === 'arbre' && Hf('ouvre la fiche de Davy dans l\'arbre', 'cmcteams').explicite === true && Hf('ouvre la fiche de Davy sur la light', 'cmcteams').app === 'departs', '7i. une app nommée GAGNE sur l\'app où l\'on est');
+const SEED7 = { persons: { p1: { prenom: 'Davy', nom: 'Carpinelli' }, p2: { prenom: 'Davy', nom: 'Rossi' }, p3: { prenom: 'Yann', nom: 'Lorenzi' }, p4: { prenom: 'Davyd', nom: 'Autre' } } };
+const trouverA = (seed, q, m) => { const mots = String(q).toLowerCase().split(' '); return Object.keys(seed.persons).map((id) => ({ id, p: seed.persons[id] })).filter((r) => mots.every((w) => (r.p.prenom + ' ' + r.p.nom).toLowerCase().split(' ').includes(w))).slice(0, m || 4); };
+const nomA = (p) => p.prenom + ' ' + p.nom;
+ok(homonymesArbre(SEED7, 'Davy', trouverA, nomA).map((x) => x.nom).join() === 'Davy Carpinelli,Davy Rossi' && homonymesArbre(SEED7, 'Zoé', trouverA, nomA).length === 0 && homonymesArbre(SEED7, 'Davy', () => { throw new Error('x'); }, nomA).length === 0, '7j. homonymesArbre : les vrais « Davy » seulement, 0 si absent, 0 (sans erreur) si la recherche plante');
+{ const rf = (q, ou, arbre) => reponseFiche(Hf(q, ou), HOTES, NOMS, arbre);
+  const vide = { cherche: true, trouves: [] }, un = { cherche: true, trouves: [{ id: 'p1', nom: 'Davy Carpinelli' }] }, deux = { cherche: true, trouves: [{ id: 'p1', nom: 'Davy Carpinelli' }, { id: 'p2', nom: 'Davy Rossi' }] };
+  let r = rf('ouvre la fiche de Davy', 'cmcteams', un);
+  ok(r.ouvrir[0].url === 'https://cmcteams.kd-mc.com/#personne=Davy' && /CMCteams sur Davy/.test(r.texte) && r.ouvrir.length === 2 && r.ouvrir[1].url === 'https://arbre.kd-mc.com/#personne=Davy%20Carpinelli' && /Dans l'arbre, il y a aussi : Davy Carpinelli/.test(r.texte), '7k. CMCteams : la fiche s\'ouvre DANS CMCteams, l\'arbre est proposé à côté (1 trouvé)');
+  r = rf('ouvre la fiche de Davy', 'cmcteams', vide);
+  ok(r.ouvrir.length === 1 && /pas|personne/.test(r.texte) && /dans l'arbre non plus/.test(r.texte), '7l. CMCteams, personne dans l\'arbre : CMCteams s\'ouvre et Bee dit qu\'il n\'y a personne dans l\'arbre');
+  r = rf('ouvre la fiche de Davy', 'departs', deux);
+  ok(r.ouvrir[0].url === 'https://departs.kd-mc.com/#personne=Davy' && /CMCteams light sur Davy/.test(r.texte) && r.ouvrir.length === 3, '7m. la light : la fiche s\'ouvre dans la light (+ 2 homonymes de l\'arbre)');
+  r = rf('ouvre la fiche de Davy', 'arbre', vide);
+  ok(r.ouvrir.length === 0 && /Je ne trouve personne qui s'appelle « Davy » dans l'arbre/.test(r.texte), '7n. arbre, personne : Bee le DIT et n\'ouvre pas une page vide');
+  r = rf('ouvre la fiche de Davy', 'arbre', un);
+  ok(r.ouvrir.length === 1 && r.ouvrir[0].url === 'https://arbre.kd-mc.com/#personne=Davy%20Carpinelli' && /Je t'ouvre l'arbre sur Davy Carpinelli/.test(r.texte), '7o. arbre, une personne : son nom COMPLET');
+  r = rf('ouvre la fiche de Davy', 'lingua', deux);
+  ok(r.ouvrir.length === 2 && /plusieurs « Davy »/.test(r.texte), '7p. arbre, plusieurs : Bee les nomme et propose chacun');
+  r = rf('ouvre la fiche de Davy', 'arbre', { cherche: false, trouves: [] });
+  ok(r.ouvrir.length === 1 && r.ouvrir[0].url === 'https://arbre.kd-mc.com/#personne=Davy', '7q. arbre illisible : on ouvre quand même, l\'app dira si elle ne trouve pas');
+  r = rf('ouvre la fiche de Davy', 'cmcteams', { cherche: false, trouves: [] });
+  ok(r.ouvrir.length === 1 && r.ouvrir[0].url === 'https://cmcteams.kd-mc.com/#personne=Davy', '7r. arbre illisible, CMCteams : la fiche CMCteams s\'ouvre quand même'); }
+/* par le vrai serveur : contexte = l'app où Kevin est */
+kv.set('arbre:seed', JSON.stringify(SEED7));
+async function beeCtx(texte, app, e2, headers) {
+  const r = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, headers || KEVIN), body: JSON.stringify({ messages: [{ role: 'user', content: texte }], contexte: app === null ? undefined : { app, titre: 'x' } }) }), e2 || env, ctx);
+  await Promise.allSettled(att.splice(0)); return { st: r.status, j: await r.json().catch(() => null) };
+}
+{ reset(); const r = await beeCtx('ouvre la fiche de Davy', 'cmcteams');
+  ok(r.st === 200 && r.j.ok && r.j.provider === 'domaine' && r.j.gratuit === true && IA_VUES.length === 0 && r.j.ouvrir[0].url === 'https://cmcteams.kd-mc.com/#personne=Davy' && r.j.ouvrir.length === 3, '7s. SERVEUR, dans CMCteams : la fiche s\'ouvre dans CMCteams (jamais l\'arbre d\'abord), sans IA, gratuit', JSON.stringify(r.j).slice(0, 300)); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Davy', 'cmcteams-light');
+  ok(r.j.ouvrir && r.j.ouvrir[0].url === 'https://departs.kd-mc.com/#personne=Davy' && IA_VUES.length === 0, '7t. SERVEUR, dans la light : la light'); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Davy', 'arbre');
+  ok(r.j.ouvrir && r.j.ouvrir.length === 2 && /plusieurs/.test(r.j.text) && IA_VUES.length === 0, '7u. SERVEUR, dans l\'arbre : les deux Davy de l\'arbre'); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Davy', 'lingua');
+  ok(r.j.ouvrir && /^https:\/\/arbre\.kd-mc\.com\//.test(r.j.ouvrir[0].url), '7v. SERVEUR, dans Lingua : l\'arbre'); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Davy', null);
+  ok(r.j.ouvrir && /^https:\/\/arbre\.kd-mc\.com\//.test(r.j.ouvrir[0].url), '7w. SERVEUR, sans contexte : l\'arbre'); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Davy dans l\'arbre', 'cmcteams');
+  ok(r.j.ouvrir && /^https:\/\/arbre\.kd-mc\.com\//.test(r.j.ouvrir[0].url) && !/cmcteams\.kd-mc/.test(r.j.ouvrir.map((o) => o.url).join()), '7x. SERVEUR : « dans l\'arbre » GAGNE sur CMCteams'); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Zoé Inconnue', 'arbre');
+  ok(r.j.ok && r.j.provider === 'domaine' && (!r.j.ouvrir || r.j.ouvrir.length === 0) && /Je ne trouve personne/.test(r.j.text) && IA_VUES.length === 0, '7y. SERVEUR, arbre, nom absent : « Je ne trouve personne… », rien d\'ouvert, sans IA'); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Zoé Inconnue', 'cmcteams');
+  ok(r.j.ouvrir && r.j.ouvrir.length === 1 && r.j.ouvrir[0].url === 'https://cmcteams.kd-mc.com/#personne=Zoe%20Inconnue' && /dans l'arbre non plus/.test(r.j.text), '7z. SERVEUR, CMCteams, nom absent de l\'arbre : CMCteams s\'ouvre et Bee dit « personne dans l\'arbre non plus »', JSON.stringify(r.j).slice(0, 300)); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Davy', 'cmcteams<script>');
+  ok(r.j.ok && r.j.ouvrir && /^https:\/\/arbre\.kd-mc\.com\//.test(r.j.ouvrir[0].url), '7aa. un contexte piégé est ignoré : l\'arbre'); }
+{ reset(); const r = await beeCtx('ouvre la fiche de la famille Buchet', 'cmcteams');
+  ok(!(r.j.ouvrir && r.j.ouvrir.some((o) => /#personne=Famille/.test(o.url))), '7bb. « la fiche de la famille Buchet » n\'est PAS prise pour une personne « Famille Buchet »'); }
+{ reset(); const r = await beeCtx('ouvre la fiche de Davy', 'cmcteams', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
+  ok(r.st === 403 && IA_VUES.length === 0, '7cc. un autre compte : 403'); }
+{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+  const r = await beeCtx('ouvre la fiche de Davy', 'cmcteams', Object.assign({}, env, { BEE_OUVRIR: '0' }));
+  ok(r.j.provider !== 'domaine' && !(r.j.ouvrir && r.j.ouvrir.length), '7dd. BEE_OUVRIR=0 coupe aussi la fiche'); }
+kv.delete('arbre:seed');
+ok(!kvEcrit.some((k) => /^cfg:|^cred:|^bee|^fil|^arbre:/.test(k)), '7ee. la fiche n\'écrit rien (ni configuration, ni code, ni mémoire, ni arbre)', kvEcrit.join());
+{ const rg = readFileSync(new URL('./bee-ouvrir.js', import.meta.url), 'utf8');
+  ok(/dans l'app où il est|app où Kevin est/.test(rg) && /REGLES_OUVRIR/.test(rg) && /fiche d'une personne|FICHE d\\'une personne|FICHE d'une personne/.test(rg), '7ff. les règles de l\'IA connaissent la fiche d\'une personne'); }
 
 /* ───────── 6. le widget ───────── */
 { const wd = readFileSync(new URL('../../tools/javis/javis-widget.js', import.meta.url), 'utf8');

@@ -1,5 +1,18 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## CMCteams v10.027 + light v1.158 + routeur — « ouvre la fiche de X » comprend l'app où tu es (2026-11-17)
+
+Bee ouvre la fiche dans l'app courante (CMCteams, light, arbre) sans qu'on la nomme, sinon dans l'arbre ; elle cherche la personne et dit clairement quand il n'y en a pas. CMCteams et la light, personne introuvable : message clair + bouton « 🌳 Chercher dans l'arbre ». Gardes `bee-ouvrir.test.mjs` (157) et `test:lien-personne` (23).
+
+## CMCteams v10.026 + light v1.157 + routeur — Bee comprend « Dans cmcteams » ; lien `#personne=` (2026-11-17)
+
+Bee garde le sujet d'une ouverture (« l'arbre de X » puis « Dans cmcteams » / « sur la light ») et ouvre l'app demandée sur la même personne. CMCteams ouvre la fiche rapide, la light trouve la personne dans le bon mois (admin prouvé seulement, `kdmc_sso` du hash intact). Gardes `bee-ouvrir.test.mjs` (119) et `test:lien-personne` (11).
+
+## Bee v1.40 — barre d'outils du widget rangée : essentiel d'abord, « Effacer » rouge et à part (2026-11-17)
+
+Ordre 🔊 Voix · 🧸 3D · ℹ️ · version (une ligne) · 🗑 Effacer (rouge, à droite). Boutons 44 px à 375 et 390 px. Garde `test:bee-ecrans-ranges`. Cache `javis-v1.40`.
+
+
 Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.md` pour référence rapide.
 
 ---

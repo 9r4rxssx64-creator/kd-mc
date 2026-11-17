@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.39';
+  var JAVIS_VER = 'v1.40';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -443,7 +443,10 @@
       '#javis-outils button{min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;border:1px solid rgba(246,183,60,.28);' +
       'background:rgba(246,183,60,.08);color:#f0e2bd;font:600 14px/1 -apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer}' +
       '#javis-outils button[aria-pressed="false"]{opacity:.75}' +
+      '#javis-outils{gap:6px}#javis-outils button{padding:0 10px;white-space:nowrap}' +
       '#javis-ver{margin-left:auto;color:#b8a57c;font-size:14px}' +
+      /* l'action qui détruit : rouge, à part (un espace avant), jamais collée à une action sûre */
+      '#javis-outils #javis-oublie{margin-left:10px;color:#ff8a80;border-color:rgba(255,107,107,.55);background:rgba(255,107,107,.10)}' +
       /* une version plus récente est servie : le badge s'allume (Kevin 3.10 : « l'indicateur de version n'est pas cliquable pour mettre à jour ») */
       '#javis-outils #javis-ver.javis-ver-neuve{background:#f6b73c;border-color:#f6b73c;color:#1a1204}' +
       '.javis-lien{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;padding:0 14px;border-radius:12px;' +
@@ -2101,11 +2104,13 @@
       '<div id="javis-masc" role="group" aria-label="Choisir le personnage">' + boutonsMascottes() + '</div>' +
       '<button id="javis-close" type="button" aria-label="Fermer">✕</button></div>' +
       /* ON/OFF (règle Kevin) : couper la voix, effacer la conversation — et la version visible */
+      /* RANGÉ (Kevin 17.11, pont 2665) : ce qu'on utilise d'abord (voix, 3D), puis ce qui informe (ℹ️, version),
+         et « Effacer » — la seule action qui détruit — en ROUGE, seule, tout au bout */
       '<div id="javis-outils"><button id="javis-voix" type="button" aria-pressed="true">\uD83D\uDD0A Voix</button>' +
-      '<button id="javis-oublie" type="button">\uD83D\uDDD1 Effacer</button>' +
-      '<button id="javis-info" type="button" aria-label="Où vont mes messages">\u2139\uFE0F</button>' +
       '<button id="javis-3d" type="button" aria-label="Me voir en 3D, en réalité augmentée">\uD83E\uDDF8 3D</button>' +
-      '<button id="javis-ver" type="button" aria-label="Version de Bee, toucher pour mettre à jour">Bee ' + JAVIS_VER + ' \u21BB</button></div>' +
+      '<button id="javis-info" type="button" aria-label="Où vont mes messages">\u2139\uFE0F</button>' +
+      '<button id="javis-ver" type="button" aria-label="Version de Bee, toucher pour mettre à jour">Bee ' + JAVIS_VER + ' \u21BB</button>' +
+      '<button id="javis-oublie" type="button" aria-label="Effacer la conversation">\uD83D\uDDD1 Effacer</button></div>' +
       '<div id="javis-msgs" role="log" aria-live="polite" aria-label="Conversation"></div>' +
       '<form id="javis-form"><textarea id="javis-input" aria-label="Ta question" placeholder="Écris-moi quelque chose…" rows="1" maxlength="2000"></textarea>' +
       '<button id="javis-mic" type="button" aria-label="Dicter" aria-pressed="false">🎙</button>' +

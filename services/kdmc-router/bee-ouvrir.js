@@ -21,7 +21,9 @@ export const RE_OUVRIR = /\b(?:ouvr\w*|montre\w*|affiche\w*|emm[eè]ne\w*|am[eè
 
 export const REGLES_OUVRIR = ' Tu peux OUVRIR n\'importe quelle app du domaine sur l\'écran de Kevin avec l\'outil ouvrir (app = son nom, ex. « arbre », « lingua », « cmcteams », « apex chat », « admin » ; '
   + 'page = un chemin si besoin ; pour l\'ARBRE : personne = le prénom et le nom, ex. « Yann Lorenzi », ou famille = le nom de famille). '
+  + 'Si Kevin demande la FICHE d\'une personne sans nommer d\'app (« ouvre la fiche de Davy »), utilise l\'app où il est (donnée plus bas : « Kevin est en ce moment dans l\'app … » ; CMCteams, la light ou l\'arbre) avec personne = le nom ; sinon l\'arbre. S\'il est dans une autre app, garde l\'arbre. Une app nommée par Kevin gagne toujours. '
   + 'Quand Kevin dit « ouvre », « montre-moi », « affiche », « emmène-moi », « va sur… », appelle ouvrir tout de suite, même s\'il est déjà dans une autre app : un bouton « Ouvrir » apparaît et l\'app s\'ouvre. '
+  + 'Si Kevin répond court juste après une ouverture (« dans cmcteams », « sur la light », « aussi dans lingua »), c\'est la MÊME chose à montrer dans cette autre app : rappelle ouvrir avec cette app ET la même personne (personne = le nom que tu viens d\'ouvrir) — ne redemande rien. '
   + 'Ne dis JAMAIS « je n\'ai pas accès » ni « c\'est Apex qui peut » : si une personne est introuvable dans ta lecture de l\'arbre, ouvre quand même l\'arbre sur son nom (l\'app la cherche dans sa copie complète). '
   + 'Si un outil te manque pour finir ce que Kevin demande : 1) regarde d\'abord avec mes_pouvoirs, voir_page, liens_kevin, lire_page ; 2) sinon dépose avec tache_code une consigne précise pour Claude Code qui construit l\'outil manquant, et dis-le à Kevin en une phrase. '
   + 'Reste dans la sécurité : tu n\'ouvres que le domaine, tu ne modifies rien sans la carte ✅.';
@@ -106,6 +108,10 @@ export function adresse(a, hotes, noms) {
     if (personne) { url += '#personne=' + encodeURIComponent(personne); libelle = 'L\'arbre — ' + personne; }
     else if (fiche && /^[A-Za-z0-9_-]{1,60}$/.test(fiche)) { url += '#fiche=' + encodeURIComponent(fiche); libelle = 'L\'arbre — fiche ' + fiche; }
     else if (famille) { url += '#famille=' + encodeURIComponent(famille); libelle = 'L\'arbre — famille ' + famille; }
+  } else if (noms && (noms[r.hote] === 'cmcteams' || noms[r.hote] === 'departs')) {
+    /* CMCteams et la light : la fiche d'une personne s'ouvre aussi par #personne= (Kevin 17.11 : « Dans cmcteams » après l'arbre de Davy Carpinelli) */
+    const personne = propre(a && a.personne, 80);
+    if (personne) { url += '#personne=' + encodeURIComponent(personne); libelle = (noms[r.hote] === 'departs' ? 'CMCteams light' : 'CMCteams') + ' — ' + personne; }
   }
   return { url, libelle: propre(a && a.libelle, 60) || libelle, hote: r.hote };
 }
@@ -141,6 +147,122 @@ export function intentionOuvrir(message, hotes, noms) {
   const r0 = resoudreApp(cible, hotes, noms); if (r0.erreur || !r0.hote) return null;
   const r = adresse({ app: r0.hote }, hotes, noms); if (r.erreur) return null;
   return { url: r.url, libelle: r.libelle, texte: 'Je t\'ouvre « ' + r.libelle + ' ».' };
+}
+
+/* ───────── LA FICHE D'UNE PERSONNE : « ouvre la fiche de Davy » (Kevin 17.11) ─────────
+ * Kevin était dans CMCteams, a dit « ouvre la fiche de Davy » et Bee a ouvert l'ARBRE. Règle : sans app nommée, on reste dans l'app où il est
+ * (CMCteams, la light ou l'arbre) ; ailleurs (portail, Lingua…) on garde l'arbre. Une app nommée à la fin (« … dans l'arbre », « … sur la light ») gagne toujours.
+ * `ou` = le nom court de l'app où Kevin se trouve (celui que la page envoie : « cmcteams », « departs », « cmcteams-light », « arbre »…). */
+const APPS_FICHE = new Set(['cmcteams', 'departs', 'arbre']);
+const RE_FICHE = /^(?:(?:la|le|une|un|sa|son|ma|mon)\s+)?(?:fiche|profil|personne|dossier)\s+(?:de\s+|d\s+|du\s+|des\s+)?(?:(?:la|le|l)\s+)?(.+)$/;
+/** Le nom court d'une app (« cmcteams », « departs », « arbre ») pour une adresse ou un nom de page ; '' si ce n'est pas une des trois qui montrent des fiches. */
+export function appDeFiche(ou, hotes, noms) {
+  const brut = sansAccent(ou).replace(/[^a-z0-9.\-]+/g, '').replace(/\.kd-mc\.com$/, '');
+  if (!brut) return '';
+  const r = resoudreApp(brut, hotes, noms);
+  if (r.erreur || !r.hote) return '';
+  const nom = r.hote === ARBRE ? 'arbre' : (noms && noms[r.hote]) || '';
+  return APPS_FICHE.has(nom) ? nom : '';
+}
+/** « ouvre la fiche de Davy [dans CMCteams] » → { personne, appExplicite } ; sinon null. */
+export function lireDemandeFiche(message) {
+  const n = sansAccent(message).replace(/[’'`´]/g, ' ').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!n || n.split(' ').length > 14) return null;
+  const m = n.match(RE_DIRECT); if (!m) return null;
+  let cible = m[2].replace(/\s+(?:s il te plait|stp|svp|maintenant|tout de suite|merci)$/, '').trim();
+  cible = cible.replace(/^(?:(?:sur|dans|vers|a|au|aux|en|le|la|les|l|un|une|mon|ma|mes|moi|nous)\s+)+/, '').trim();
+  const f = cible.match(RE_FICHE); if (!f) return null;
+  let reste = f[1].trim(), appExplicite = '';
+  const fin = reste.match(/^(.+?)\s+(?:dans|sur|de|en|vers)\s+(?:(?:l|la|le|les|mon|ma|mes|cmc|app|application|appli)\s+)*(arbre(?:\s+genealogique)?|cmc\s*teams?(?:\s+light)?|cmcteams?(?:\s+light)?|la\s+light|light|departs|planning)$/);
+  if (fin) { reste = fin[1].trim(); appExplicite = /arbre/.test(fin[2]) ? 'arbre' : /light|departs/.test(fin[2]) ? 'departs' : 'cmcteams'; }
+  if (!reste || COMPOSEE.test(reste) || reste.split(' ').length > 5 || /^famille\b/.test(reste)) return null;   /* « la fiche de la famille X » : une famille, pas une personne (c'est la route de l'arbre) */
+  return { personne: titre(reste), appExplicite };
+}
+/** La demande de fiche → { app, personne } (app = l'app visée : explicite > celle où Kevin est > l'arbre) ; sinon null. */
+export function intentionFiche(message, ou, hotes, noms) {
+  const d = lireDemandeFiche(message); if (!d) return null;
+  const courante = appDeFiche(ou, hotes, noms);
+  return { personne: d.personne, app: d.appExplicite || courante || 'arbre', courante, explicite: !!d.appExplicite };
+}
+/** Les noms de l'arbre qui correspondent à `personne` (liste de { id, nom } ; `trouver` vient de bee-arbre.js, `seed` = la copie de l'arbre). */
+export function homonymesArbre(seed, personne, trouver, nomComplet) {
+  let res = [];
+  try { res = trouver(seed, personne, 4) || []; } catch (_) { res = []; }
+  /* seules les vraies correspondances (tous les mots de la demande dans le nom) : pas un « Davy » qui ne ressemble qu'à moitié */
+  const mots = sansAccent(personne).split(' ').filter(Boolean);
+  return res.filter((r) => r && r.p).map((r) => ({ id: r.id, nom: nomComplet(r.p) }))
+    .filter((r) => { const jetons = new Set(sansAccent(r.nom).replace(/[-']/g, ' ').split(' ')); return mots.every((m) => jetons.has(m)); });
+}
+/** La réponse de Bee pour une fiche : texte + boutons. `arbre` = { cherche: bool, trouves: [{id,nom}] } (la recherche dans l'arbre, déjà faite par le serveur). */
+export function reponseFiche(f, hotes, noms, arbre) {
+  const vers = (app, personne) => adresse({ app, personne }, hotes, noms);
+  const nomApp = (a) => (a === 'departs' ? 'CMCteams light' : a === 'cmcteams' ? 'CMCteams' : 'l\'arbre');
+  const trouves = arbre && Array.isArray(arbre.trouves) ? arbre.trouves : [];
+  const boutons = [];
+  const principal = vers(f.app, f.personne);
+  if (principal.erreur) return null;
+  /* L'arbre est visé : on sait si la personne y est. Une seule personne trouvée → son nom complet ; aucune → on le dit, sans ouvrir une page vide. */
+  if (f.app === 'arbre' && arbre && arbre.cherche) {
+    if (!trouves.length) return { texte: 'Je ne trouve personne qui s\'appelle « ' + f.personne + ' » dans l\'arbre. Dis-moi son nom de famille, ou donne-moi un autre prénom, et je cherche encore.', ouvrir: [] };
+    if (trouves.length === 1) { const r = vers('arbre', trouves[0].nom); return r.erreur ? null : { texte: 'Je t\'ouvre l\'arbre sur ' + trouves[0].nom + '.', ouvrir: [{ url: r.url, libelle: r.libelle }] }; }
+    const noms2 = trouves.slice(0, 3).map((t) => t.nom);
+    return { texte: 'Il y a plusieurs « ' + f.personne + ' » dans l\'arbre : ' + noms2.join(', ') + '. Je t\'ouvre le premier ; dis-moi lequel si ce n\'est pas lui.', ouvrir: noms2.map((n) => { const r = vers('arbre', n); return r.erreur ? null : { url: r.url, libelle: r.libelle }; }).filter(Boolean) };
+  }
+  /* CMCteams / la light : on ouvre la fiche DANS l'app où Kevin est ; la page dit elle-même si la personne n'y est pas, et l'arbre est proposé à côté. */
+  boutons.push({ url: principal.url, libelle: principal.libelle });
+  let texte = 'Je t\'ouvre ' + nomApp(f.app) + ' sur ' + f.personne + '.';
+  if (arbre && arbre.cherche) {
+    if (trouves.length) {
+      for (const t of trouves.slice(0, 2)) { const r = vers('arbre', t.nom); if (!r.erreur) boutons.push({ url: r.url, libelle: r.libelle }); }
+      texte += ' Dans l\'arbre, il y a aussi : ' + trouves.slice(0, 2).map((t) => t.nom).join(', ') + '.';
+    } else texte += ' Je n\'ai personne qui s\'appelle « ' + f.personne + ' » dans l\'arbre non plus.';
+  }
+  return { texte, ouvrir: boutons.slice(0, MAX_OUVRIR) };
+}
+
+/* ───────── LA SUITE : « Dans cmcteams » juste après « Je t'ouvre l'arbre sur Davy Carpinelli. » (Kevin 17.11) ─────────
+ * Un message court sans verbe garde le sujet de la réponse qui le précède : même personne, autre app. Sans IA, gratuit, identique à chaque fois.
+ * Le sujet vient UNIQUEMENT de la réponse juste avant (jamais deviné plus loin) ; un message long ou composé continue d'aller à l'IA. */
+const RE_SUJET_DIRECT = /Je t['’]ouvre l['’]arbre sur (?!la famille)(.{2,80}?)\.\s*$/i;
+const RE_SUJET_LIBELLE = /Je t['’]ouvre\s+«\s*L['’]arbre\s+—\s+(?!famille |fiche )(.{2,80}?)\s*»/i;
+const RE_SUJET_APP = /Je t['’]ouvre CMCteams(?: light)? sur (.{2,80}?)\.\s*$/i;
+const DEBUT_SUITE = /^(?:(?:et|non|plutot|alors|ok|aussi|maintenant|ouvre|ouvrez|montre|montres|affiche|emmene|va|vas|ca|la|le|les|l|moi|dans|sur|vers|a|au|en|app|application|appli)\s+)+/;
+const lastTexte = (m) => (m && typeof m.content === 'string' ? m.content : '');
+
+function sujetPrecedent(messages) {
+  const av = messages[messages.length - 2];
+  if (!av || av.role !== 'assistant') return '';
+  const t = lastTexte(av);
+  const m = t.match(RE_SUJET_DIRECT) || t.match(RE_SUJET_LIBELLE) || t.match(RE_SUJET_APP);
+  return m ? propre(m[1], 80) : '';
+}
+
+/** Vrai quand le dernier message est court et suit juste une réponse « Je t'ouvre… » : l'outil `ouvrir` doit être offert à l'IA. */
+export function estSuiteOuverture(messages) {
+  if (!Array.isArray(messages) || messages.length < 2) return false;
+  const dern = messages[messages.length - 1], av = messages[messages.length - 2];
+  if (!dern || dern.role !== 'user' || !av || av.role !== 'assistant') return false;
+  if (!/Je t['’]ouvre/i.test(lastTexte(av))) return false;
+  return lastTexte(dern).trim().split(/\s+/).filter(Boolean).length <= 12;
+}
+
+/** Un message court qui nomme seulement une autre app, juste après une ouverture sur une personne → { url, libelle, texte } ; sinon null. */
+export function intentionSuite(messages, hotes, noms) {
+  if (!Array.isArray(messages) || messages.length < 2) return null;
+  const dern = messages[messages.length - 1];
+  if (!dern || dern.role !== 'user') return null;
+  let n = sansAccent(lastTexte(dern)).replace(/[’'`´]/g, ' ').replace(/[^a-z0-9.:/ \-]+/g, ' ').replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+  n = n.replace(/\s+(?:s il te plait|stp|svp|merci|maintenant|tout de suite)$/, '').trim();
+  if (!n || n.split(' ').length > 7) return null;
+  const cible = n.replace(DEBUT_SUITE, '').trim();
+  if (!cible || COMPOSEE.test(cible)) return null;
+  const r0 = resoudreApp(cible, hotes, noms);
+  if (r0.erreur || !r0.hote || r0.hote === ARBRE) return null;
+  const personne = sujetPrecedent(messages);
+  if (!personne) return null;
+  const r = adresse({ app: r0.hote, personne }, hotes, noms); if (r.erreur) return null;
+  const nom = noms && noms[r0.hote] === 'departs' ? 'CMCteams light' : noms && noms[r0.hote] === 'cmcteams' ? 'CMCteams' : '';
+  return { url: r.url, libelle: r.libelle, texte: r.url.includes('#personne=') && nom ? 'Je t\'ouvre ' + nom + ' sur ' + personne + '.' : 'Je t\'ouvre « ' + r.libelle + ' ».' };
 }
 
 /** Quand un lien d'ouverture est prêt, la phrase de l'IA ne doit jamais dire « je n'ai pas accès » : on la remplace par la vérité. */

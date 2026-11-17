@@ -9,6 +9,7 @@ import { logger } from '../../core/logger.js';
 import { store } from '../../core/store.js';
 import { cspStyleHelper } from '../../services/core-svc/csp-style-helper.js';
 import { renderRechargeAction } from '../../ui/recharge-action.js';
+import { journalDomaine } from '../../ui/journal.js';
 
 /* P1-6 (audit v13.2.7) : scope listeners pour anti-leak SPA navigation. */
 let activeSettingsScope: CleanupScope | null = null;
@@ -72,6 +73,7 @@ export async function wireVoiceSection(rootEl: HTMLElement): Promise<void> {
           apexMemoryRag.enable(ragInput.checked);
           const { toast } = await import('../../ui/toast.js');
           toast.success(ragInput.checked ? '🧠 Mémoire long terme activée' : 'Mémoire long terme désactivée');
+          journalDomaine(ragInput.checked ? 'réglage : mémoire long terme activée' : 'réglage : mémoire long terme désactivée');
         })();
       });
     }
@@ -88,6 +90,7 @@ export async function wireVoiceSection(rootEl: HTMLElement): Promise<void> {
           compactMemory.enable(cmemInput.checked);
           const { toast } = await import('../../ui/toast.js');
           toast.success(cmemInput.checked ? '⚡ Mémoire compacte activée' : 'Mémoire compacte désactivée');
+          journalDomaine(cmemInput.checked ? 'réglage : mémoire compacte activée' : 'réglage : mémoire compacte désactivée');
         })();
       });
     }
@@ -102,6 +105,7 @@ export async function wireVoiceSection(rootEl: HTMLElement): Promise<void> {
         void (async () => {
           const { toast } = await import('../../ui/toast.js');
           toast.success(autoReadInput.checked ? 'Lecture auto activée' : 'Lecture auto désactivée');
+          journalDomaine(autoReadInput.checked ? 'réglage : lecture auto activée' : 'réglage : lecture auto désactivée');
         })();
       });
     }
@@ -185,6 +189,7 @@ export async function wireVoiceSection(rootEl: HTMLElement): Promise<void> {
           const list = listVoices() as readonly VoiceListItem[];
           const v = list.find((x) => x.id === id);
           toast.success(v ? `Voix par défaut : ${v.name}` : 'Voix mise à jour');
+          journalDomaine('réglage : voix par défaut changée');
         })();
       }
     });

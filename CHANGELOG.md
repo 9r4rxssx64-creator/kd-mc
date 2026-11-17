@@ -26,6 +26,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Correctif : `buildBoardsFromState` recrée, depuis le PDF généré, les personnes absentes tout le mois dans leur tableau d'absence (codes, `fond`, ordre du PDF conservés).
 - Garde `tests/verify-light-fond-bleu-live.mjs` (`npm run test:light-fond-live` + `test:light-fond-live-sabotage`, dans `test:ci`) : simule l'état vivant sans les personnes absentes, rend chaque mois, compte les noms peints en bleu contre le PDF. v1.151 : 10 ok / 0 ko ; v1.150 : 4 ok / 6 ko ; `SABOTAGE=1` : 4 ok / 6 ko.
 
+## Apex AI v13.4.398 — Journal du domaine + bouton de fermeture des notifications à 44 px (2026-11-17)
+- cloud-installer (pont 2632 / 2637, Kevin : « qui a fait quoi, de tout le domaine, chaque app ») : `ui/journal.ts` (`journalDomaine`) appelle `window.kdmcJournal` après un enregistrement RÉUSSI : message envoyé à Apex (phrase fixe, jamais le texte), projet créé / modifié / supprimé, note ajoutée (jamais le nom), réglages (mémoire long terme, mémoire compacte, lecture auto, voix). Sans le script du domaine, aucune erreur.
+- Robot d'affichage : `button.ax-toast-close` mesurait 43×43 en paysage (rétréci dans le flex par un long texte) → `flex: 0 0 auto` + min 44 px.
+- Garde `tests/unit/journal-domaine.test.ts` : 7 OK ; 4 rouges sans les modifications de source. Paquet `apex-ai-v13/` reconstruit (`npm run build`), `sw.js` copié à part et identique.
+
 ## Apex Chat v1.1.369 — Le journal du domaine dit « qui a fait quoi » dans Apex Chat (2026-11-17)
 - cloud-installer (pont 2632 / 2637, Kevin : « qui a fait quoi, de tout le domaine, chaque app ») : Apex Chat écrit au journal du domaine (`window.kdmcJournal`, posé par le routeur) après un enregistrement RÉUSSI : message envoyé (« dans le groupe … » ou « message privé envoyé », jamais le texte), groupe créé, profil modifié, action admin sur un compte, Premium activé. Jamais sur un échec, jamais un identifiant ni un code ; sans le script, aucune erreur.
 - Garde `tests/verify-chat-journal.mjs` (`npm run test:chat-journal`, dans `test:ci`) : 12 OK ; sous `SABOTAGE=1` 11 rouges.

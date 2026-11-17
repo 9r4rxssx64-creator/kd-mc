@@ -13,6 +13,7 @@ import { store } from '../../core/store.js';
 import { projects } from '../../services/ai/projects.js';
 import { guardFeatureEnabled } from '../../services/auth/feature-guard.js';
 import { toast } from '../../ui/toast.js';
+import { journalDomaine } from '../../ui/journal.js';
 
 export { escapeHtml };
 
@@ -137,6 +138,7 @@ function attachHandlers(rootEl: HTMLElement, uid: string): void {
         return;
       }
       toast.success(editingId ? 'Projet mis à jour' : `Projet « ${saved.name} » créé`);
+      journalDomaine(editingId ? 'projet modifié' : 'projet créé');
       editingId = null;
       render(rootEl);
     });
@@ -150,6 +152,7 @@ function attachHandlers(rootEl: HTMLElement, uid: string): void {
       const content = nf.querySelector<HTMLTextAreaElement>('.ax-proj-note-content')?.value ?? '';
       if (pid && projects.addNote(pid, { title, content }, uid)) {
         toast.success('Note ajoutée à la base de connaissances');
+        journalDomaine('note ajoutée à la base de connaissances d\'un projet');
         render(rootEl);
       } else {
         toast.warn('Contenu de la note requis');
@@ -202,6 +205,7 @@ function attachHandlers(rootEl: HTMLElement, uid: string): void {
       case 'delete':
         if (id && projects.remove(id, uid)) {
           toast.info('Projet supprimé');
+          journalDomaine('projet supprimé');
           if (editingId === id) editingId = null;
           if (openNotesId === id) openNotesId = null;
           render(rootEl);

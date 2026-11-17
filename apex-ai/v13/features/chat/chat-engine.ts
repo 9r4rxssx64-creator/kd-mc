@@ -27,6 +27,7 @@ import { persistConversation } from './chat-persistence.js';
 import { renderMessages, updateAssistantBubble, pushAssistantMessage } from './chat-render-loop.js';
 
 import type { DisplayMessage } from './index.js';
+import { journalDomaine } from '../../ui/journal.js';
 
 /* État du moteur — réfs STABLES fournies une fois par setEngineState (mutées in-place). */
 let conversation: DisplayMessage[] = [];
@@ -356,6 +357,7 @@ export async function processQueue(rootEl: HTMLElement): Promise<void> {
   };
   conversation.push(userMsg);
   persistConversation(conversation);
+  journalDomaine('message envoyé à Apex', 'message');   /* v13.4.398 : jamais le texte */
   /* v13.4.361 : réf STABLE de la bulle user — `userMsg` est shadowé dans onError
    * (const userMsg = errors.toUserMessage(err)), donc le retry doit splicer via ceci. */
   const userBubble = userMsg;

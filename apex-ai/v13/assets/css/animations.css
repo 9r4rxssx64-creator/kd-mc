@@ -194,6 +194,10 @@
   /* P0 audit UX : 44x44 min Apple HIG (était 28×28) */
   width: var(--ax-touch-min);
   height: var(--ax-touch-min);
+  /* v13.4.398 (robot d'affichage : 43×43 en paysage) : jamais rétréci par un long texte de toast dans le flex */
+  flex: 0 0 auto;
+  min-width: var(--ax-touch-min);
+  min-height: var(--ax-touch-min);
   border-radius: 50%;
   display: flex;
   align-items: center;

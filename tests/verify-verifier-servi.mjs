@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
-import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, nomsParametres, estPlantage, avecRepriseSiPlantage, mesurerAdresse, ligneVueAdmin, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
+import { adresseSure, mesurerServi, NOMS_ECRANS_SERVI, trouverEcranServi, sansTexte, aCorriger, fermerFeuilleInstalleur, fermerAccueil, ligneServi, nomsParametres, estPlantage, avecRepriseSiPlantage, mesurerAdresse, ligneVueAdmin, detecterPorte, lireVersionSw, mesurerFluidite, mesurerSansFeuille, enAttente, attendreFinSplash, mesurerVuesAdminApexChat, vueAdminACorriger, ouvrirAvecReprise, avecLimite, chaineRedirections, hoteDemande } from '../tools/plateformes/verifier-servi.mjs';
 import { mesurer } from '../tools/plateformes/verif-affichage-domaine.mjs';
 const require = createRequire(import.meta.url);
 let chromium; try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require('./../messaging-app/node_modules/playwright')); }
@@ -187,6 +187,21 @@ ok('2aj. mesurerAdresse est exportée et une mesure absente (page morte) est une
 const lva1 = ligneVueAdmin('x.kd-mc.com', 'portable', { vue: 'comptes', affichee: true, cache: 2, cacheEx: ['button.a', 'button.b'], petit: 4, petitEx: ['a', 'b', 'c', 'd'], deborde: 0 });
 const lva2 = ligneVueAdmin('x.kd-mc.com', 'portable', { vue: 'journal', affichee: true, cache: 0, petit: 0, deborde: 0 });
 ok('2ak. la ligne d’une vue admin nomme ce qui cache (tous), 3 petits au plus, ❌ si défaut / ✅ sinon', /^❌ .* vue comptes · affichée oui · cache 2 \[button\.a \| button\.b\] · petit 4 \[a \| b \| c\] · déborde 0$/.test(lva1) && /^✅ .* vue journal · affichée oui · cache 0 · petit 0 · déborde 0$/.test(lva2), lva1 + ' || ' + lva2);
+/* 2al (17.11, apex-cloud 2573) : une PORTE servie au robot connecté admin n'est jamais un ✅. Trois signaux : en-tête x-kdmc-porte, titre « … — connexion » /
+   body[data-return], portail servi avec ?return à la place d'un autre hôte. Une page d'app normale → ''. La ligne du journal passe ❌ avec « porte (non connecté : … ) ». */
+const portes = {
+  entete: detecterPorte({ entete: 'fiche', titre: 'Apex chat' }),
+  titre: detecterPorte({ titre: 'Apex chat — connexion' }),
+  corps: detecterPorte({ dataReturn: true, titre: 'x' }),
+  code: detecterPorte({ titre: 'Apex chat — crée ton code' }),
+  portail: detecterPorte({ redirige: 'apex-chat.kd-mc.com', hoteFinal: 'kd-mc.com', parametres: ['return'] }),
+  app: detecterPorte({ titre: 'Apex Chat', hoteFinal: 'apex-chat.kd-mc.com' }),
+  redirSansReturn: detecterPorte({ redirige: 'www.kd-mc.com', hoteFinal: 'kd-mc.com', parametres: [] }),
+};
+const lignePorte = ligneServi('apex-chat.kd-mc.com', 'iphone-13-paysage', { statut: 200, hoteFinal: 'apex-chat.kd-mc.com', porte: 'fiche', err: 'porte (non connecté : fiche · whoami 200 ok:false admin:false)' });
+ok('2al. porte servie = ❌ « porte (non connecté : <type>) » ; en-tête, titre, body[data-return], portail ?return reconnus ; une app normale ou une redirection sans return = rien',
+  portes.entete === 'fiche' && portes.titre === 'fiche' && portes.corps === 'fiche' && portes.code === 'code' && portes.portail === 'portail' && portes.app === '' && portes.redirSansReturn === ''
+  && /^❌ /.test(lignePorte) && /porte \(non connecté : fiche · whoami 200 ok:false admin:false\)/.test(lignePorte), JSON.stringify(portes) + ' || ' + lignePorte.slice(0, 60));
 /* 2k (6.11, tâche 108) : « sw vide / sans CACHE_VERSION » sur 16 hôtes était du vocabulaire de robot, pas des défauts : la version se lit aussi dans
    `CACHE` / `CACHE_NAME` / `VERSION`, la porte servie à la place de /sw.js n'est pas un worker, et « aucun » ne se dit que si le navigateur n'a
    AUCUN worker enregistré. SABOTAGE=sw : l'ancienne lecture (CACHE_VERSION seul) → rouge. */

@@ -278,6 +278,41 @@ export async function journaliserVuesAdminApexChat(page, a, { nom, tel, r, journ
   if (!adm.admin) journal(`➖ ${a} · ${nom} · écrans d'administration : compte non administrateur (rôle ${adm.role ?? 'inconnu'}) — rien à mesurer`);
   for (const x of adm.vues) journal(ligneVueAdmin(a, nom, x));
 }
+/* 17.11 (apex-cloud 2573, runs 43627981507 / 43973747944 / 43989746303) : sur apex-chat.kd-mc.com en Chromium, le robot lisait la PORTE du domaine (la page
+   « connexion » du routeur, ou le portail avec ?return=…) et écrivait « ✅ … badge v1.0.91 » — la version du portail, pas celle de l'app. Une porte servie à un
+   robot connecté admin n'est jamais un ✅ : la ligne dit « porte (non connecté : <type>) » et compte comme erreur. Les signaux, dans l'ordre : l'en-tête
+   `x-kdmc-porte` du document (fiche / code), le titre « … — connexion » ou le `body[data-return]` de la porte, le portail servi à la place d'un autre hôte
+   (hôte final kd-mc.com avec le paramètre `return`). Pure, testable. */
+export function detecterPorte({ entete = '', titre = '', dataReturn = false, redirige = '', hoteFinal = '', parametres = [] } = {}) {
+  if (entete) return String(entete);
+  const t = String(titre).toLowerCase();
+  if (dataReturn || t.endsWith('— connexion')) return 'fiche';
+  if (t.endsWith('crée ton code')) return 'code';
+  if (redirige && /^(www\.)?kd-mc\.com$/.test(String(hoteFinal)) && (parametres || []).includes('return')) return 'portail';
+  return '';
+}
+/* Diagnostic quand la porte est servie : ce que le domaine dit du robot sur CET hôte (statut + booléens, jamais d'identité). */
+async function diagnosticWhoami(page) {
+  return page.evaluate(async () => {
+    try {
+      const x = await fetch('/__sso/whoami', { credentials: 'include', cache: 'no-store' });
+      const j = await x.json().catch(() => ({}));
+      return `whoami ${x.status} ok:${!!j.ok} admin:${!!j.admin}${j.reason ? ' ' + String(j.reason).slice(0, 30) : ''}`;
+    } catch {
+      /* réseau coupé ou porte qui refuse la requête : c'est le diagnostic lui-même, rien d'autre à faire */
+      return 'whoami injoignable';
+    }
+  }).catch(() => 'whoami illisible');
+}
+/* La page ouverte est-elle une porte ? Alors `r.porte` + `r.err` (avec le diagnostic whoami) et vrai. */
+async function reconnaitrePorte(page, rep, r) {
+  const entete = rep && typeof rep.headers === 'function' ? (rep.headers()['x-kdmc-porte'] || '') : '';
+  const signes = await page.evaluate(() => ({ titre: document.title || '', dataReturn: !!document.body?.dataset?.return })).catch(() => ({}));
+  r.porte = detecterPorte({ entete, ...signes, redirige: r.redirige, hoteFinal: r.hoteFinal, parametres: r.parametres });
+  if (!r.porte) return false;
+  r.err = `porte (non connecté : ${r.porte} · ${await diagnosticWhoami(page)})`;
+  return true;
+}
 /* 14.11 (Sonar, PR 5688) : la mesure d'UNE adresse sur UNE page vit ici, hors de la boucle des écrans ; `page` est celle du moment (elle change après un plantage). */
 export async function mesurerAdresse(page, a, { nom, tel, r, enCours, journal }) {
   const rep = await ouvrirAvecReprise(page, a, r, enCours);
@@ -285,6 +320,7 @@ export async function mesurerAdresse(page, a, { nom, tel, r, enCours, journal })
   const dem = hoteDemande(a);
   if (dem && r.hoteFinal !== dem) { r.redirige = dem; r.chaine = chaineRedirections(rep); r.parametres = nomsParametres(page.url()); }
   await page.waitForTimeout(4500); r.demarrage = await attendreFinSplash(page); await page.evaluate(() => window.scrollTo(0, 0));
+  if (await reconnaitrePorte(page, rep, r)) return;   /* une porte : rien à mesurer, la ligne dit pourquoi */
   r.installeur = await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
   r.accueil = await page.evaluate(fermerAccueil).catch(() => ''); if (r.accueil) await page.waitForTimeout(500);
   /* 6.11 : la pastille du module se retire au plus 1,5 s après la fermeture de la feuille d'installation (suivi toutes les 1,5 s) ; mesurer avant comptait « 2 pastilles » à tort sur Studio */

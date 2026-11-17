@@ -510,6 +510,7 @@
   "tools/arbre/verify-gravure.mjs",
   "tools/arbre/verify-histoire.mjs",
   "tools/arbre/verify-historique-admin.mjs",
+  "tools/arbre/verify-journal-domaine.mjs",
   "tools/arbre/verify-lecture-pistes.mjs",
   "tools/arbre/verify-legendes-photos.mjs",
   "tools/arbre/verify-lien-deux-parents.mjs",

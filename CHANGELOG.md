@@ -13,6 +13,11 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 - Correctif : `buildBoardsFromState` recrée, depuis le PDF généré, les personnes absentes tout le mois dans leur tableau d'absence (codes, `fond`, ordre du PDF conservés).
 - Garde `tests/verify-light-fond-bleu-live.mjs` (`npm run test:light-fond-live` + `test:light-fond-live-sabotage`, dans `test:ci`) : simule l'état vivant sans les personnes absentes, rend chaque mois, compte les noms peints en bleu contre le PDF. v1.151 : 10 ok / 0 ko ; v1.150 : 4 ok / 6 ko ; `SABOTAGE=1` : 4 ok / 6 ko.
 
+## Apex Chat v1.1.368 — L'écran de connexion défile, n'est plus coupé et laisse la pastille « ← KDMC » touchable (2026-11-17)
+- cloud-installer (pont 2608, passage 44014242295) : la pastille « ← KDMC » était recouverte par l'écran de connexion (z 1000 contre 150) sur iPhone SE / 13, tablette et paysage, et le titre « APEX CHAT » coupé en haut. Cause : l'écran de connexion était centré sans pouvoir défiler (contenu 853 px dans 390 px de paysage) et plus haut que la pastille.
+- Correctif : l'écran défile (marges automatiques, jamais coupé), garde 76 px libres en bas, logo réduit sous 720 px de haut, et la pastille passe au-dessus (z 1001, 12 px du bas) tant qu'il est affiché.
+- Garde `tests/verify-splash-portail.mjs` (`npm run test:splash-portail`, dans `test:ci`) : 7 écrans × 6 contrôles = 42 OK ; sous `SABOTAGE=1` (fichier d'avant) 12 rouges.
+
 ## Apex Chat v1.1.367 — Un appareil retiré se représente tout seul, plus d'erreur « Appareil retiré » à chaque ouverture (2026-11-17)
 - pc-config (pont 2586, Chrome de Kevin, console lue) : `[apex-chat:publish-device] Appareil retiré` à chaque ouverture. Cause : `K._api` LÈVE sur toute réponse non-ok, donc le test `r.error === 'device_revoked'` de `K._publishDevice` ne s'exécutait jamais — l'appareil retiré ne se représentait pas sous un nouvel identifiant (comportement prévu) et l'erreur s'écrivait en console.
 - Correctif : `K._api` porte `apiCode` (code du serveur) ; `K._publishDevice` attrape `device_revoked`, se représente sous un NOUVEL identifiant (2 envois, 2 ids), rend `true`, aucune erreur console.

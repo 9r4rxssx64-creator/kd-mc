@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v0.11.16 -->
+<!-- v0.11.17 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -277,6 +277,15 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
   @keyframes splashIn{from{opacity:0;transform:translateY(10px) scale(.92)}to{opacity:1;transform:none}}
   @keyframes splashSpin{to{transform:rotate(360deg)}}
   @media(min-width:560px){#nav button{font-size:10.5px}}
+  #nav button{min-width:44px}
+  /* iPhone SE (320 px) : 7 boutons de 44 px + barre du haut qui tient (pont 2578, 17.11) */
+  @media(max-width:360px){
+    #top{padding-left:10px;padding-right:10px;gap:8px}
+    #top h1{min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #top .robot{min-width:0;max-width:34vw;overflow:hidden;text-overflow:ellipsis;padding:5px 8px;font-size:10px}
+    #nav{padding-left:2px;padding-right:2px;gap:0}
+    #nav button{padding-left:0;padding-right:0;letter-spacing:0;font-size:9px}
+  }
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
   @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
     #top{background:rgba(8,19,31,.97)}#nav{background:rgba(8,19,31,.98)}
@@ -333,7 +342,7 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
 </div>
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
-        data-project="poolrobot" data-version="v0.11.16" data-color="#39c2ff" defer></script>
+        data-project="poolrobot" data-version="v0.11.17" data-color="#39c2ff" defer></script>
 <script>
 "use strict";
 /* ============ PoolPilot — Beatbot+ companion (v0.2.0) ============
@@ -341,7 +350,7 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
    Couche stratégie/cartographie/analytics AUTOUR du robot.
    Pré-réglé pour Kevin : AquaSense 2 Ultra + Waterair Céline 7 (haricot).
 ================================================================= */
-var APP_VER="v0.11.16";
+var APP_VER="v0.11.17";
 function $(s,el){return (el||document).querySelector(s)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function lg(k,d){try{var v=localStorage.getItem("pr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}

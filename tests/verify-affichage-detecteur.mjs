@@ -143,6 +143,9 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
 /* 17.11 (cloud-poste-recherche 2597) : sur les écrans WebKit, le grand robot bloque le service worker (sinon ses requêtes filtrées sont annulées et le style ne charge pas) */
 { const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
   ok('le grand robot ouvre ses écrans WebKit sans service worker (et seulement ceux-là)', /newContext\(\{ \.\.\.opts, \.\.\.\(moteur === bw \? \{ serviceWorkers: 'block' \} : \{\}\) \}\)/.test(src)); }
+/* 17.11 (kit « déborde 102 » après un toucher, sans dire quoi) : le grand robot nomme ce qui déborde après un toucher, et la page « sans retour » */
+{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  ok('le grand robot nomme le débordement après un toucher et la page sans retour', /explo\.ex\.push\('déborde après ' \+ \(nomCible/.test(src) && /'pas de retour après ' \+ \(nomCible/.test(src)); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

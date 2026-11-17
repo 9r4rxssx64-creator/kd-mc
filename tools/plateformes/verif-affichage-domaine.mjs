@@ -341,9 +341,11 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */
               const m2 = await page.evaluate(mesurer, tel);
               const changePage = apres.split('|')[0] !== avant.split('|')[0];
-              if (changePage && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après n°' + k); }
+              if (changePage && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après ' + (nomCible || 'n°' + k) + ' (' + (await page.evaluate(() => location.pathname).catch(() => '?')) + ')'); }
               explo.cache += m2.cache; explo.haut += m2.haut; explo.deborde = Math.max(explo.deborde, m2.deborde); explo.js += js.length - jsAvant;
               if (m2.cache && explo.ex.length < 4) explo.ex.push('caché après n°' + k + ' : ' + m2.cacheEx[0]);
+              /* 17.11 (kit « déborde 102 » après un toucher, deux passages de suite, sans dire QUOI ni sur quelle page) : on nomme ce qui déborde et le chemin de la page atteinte */
+              if (m2.deborde && m2.debordeEx && m2.debordeEx.length && !explo.ex.some((x) => x.startsWith('déborde après'))) explo.ex.push('déborde après ' + (nomCible || 'n°' + k) + ' (' + (await page.evaluate(() => location.pathname).catch(() => '?')) + ') : ' + m2.debordeEx.slice(0, 2).join(' | '));
               if (changePage) { await page.goto(url(h), { waitUntil: 'load', timeout: 30000 }); await page.waitForTimeout(1500); await page.evaluate(candidatsNavigation); }
             } catch (e) { /* un onglet qui ne se laisse pas toucher : compté comme mort */ explo.morts++; }
           }

@@ -5,7 +5,7 @@ function __kdmcNav(ev, rq, opt) { if (rq && rq.mode === 'navigate' && ev && ev.p
    skipWaiting à l'installation + clients.claim à l'activation : une nouvelle version prend la main tout de suite.
    Page admin : réseau d'abord (toujours la dernière version), repli hors-ligne sur la page. Ne touche JAMAIS aux
    réponses du domaine (/__bot, /__admin, /__sso : capitaux, session) ni aux requêtes non-GET ni aux autres origines. */
-var CACHE_VERSION = 'kdmc-bot-v1.5.4';
+var CACHE_VERSION = 'kdmc-bot-v1.5.5';
 self.addEventListener('install', function (e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE_VERSION).then(function (c) { return c.add('./index.html').catch(function () {}); }));

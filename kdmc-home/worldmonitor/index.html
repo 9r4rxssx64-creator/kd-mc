@@ -382,7 +382,7 @@
 
 <script>
 "use strict";
-var VER="v2.45";
+var VER="v2.46";
 document.getElementById("ver").textContent="World Monitor "+VER;
 document.getElementById("ver").onclick=function(){ try{location.replace(location.pathname+"?_v="+Date.now());}catch(e){location.reload();} };
 
@@ -1837,7 +1837,7 @@ setInterval(loadStorms,1800000);   /* tempêtes : 30 min */
 setInterval(loadBrief,900000);     /* synthèse IA : 15 min (cache worker) */
 document.addEventListener("visibilitychange",function(){if(!document.hidden)fast();});
 </script>
-<div id="briefModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(4,7,14,.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:18px" role="dialog" aria-label="Brief IA">
+<div id="briefModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(4,7,14,.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:18px" role="dialog" aria-modal="true" aria-label="Brief IA">
   <div style="max-width:560px;width:100%;max-height:80vh;overflow:auto;background:#0b1120;border:1px solid rgba(120,150,210,.35);border-radius:14px;padding:18px 18px 14px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px">
       <b style="font-size:15px">🧠 Brief IA — situation mondiale</b>
@@ -1888,17 +1888,17 @@ document.addEventListener("visibilitychange",function(){if(!document.hidden)fast
       if(deferred){deferred.prompt();deferred.userChoice&&deferred.userChoice.then(function(){deferred=null;btn.style.display="none";});return;}
       /* iOS / navigateurs sans invite : mini-guide */
       var m=document.createElement("div");
-      m.style.cssText="position:fixed;inset:0;z-index:2100;background:rgba(4,7,14,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px";
+      m.setAttribute("role","dialog");m.setAttribute("aria-modal","true");m.style.cssText="position:fixed;inset:0;z-index:2100;background:rgba(4,7,14,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px";
       m.innerHTML='<div style="max-width:340px;background:#0b1120;border:1px solid rgba(120,150,210,.35);border-radius:14px;padding:18px;font-size:14px;line-height:1.6;color:#e8eef8">'+
         '<b style="font-size:15px">📲 Ajouter à l\u2019écran d\u2019accueil</b><div style="margin:10px 0">'+
         (isIOS?'1. Touche <b>Partager</b> ⬆️ en bas de Safari<br>2. Choisis <b>« Sur l\u2019écran d\u2019accueil »</b> ➕<br>3. Touche <b>Ajouter</b>':'Ouvre le menu de ton navigateur puis <b>« Installer l\u2019application »</b> / <b>« Ajouter à l\u2019écran d\u2019accueil »</b>.')+
-        '</div><button style="width:100%;min-height:42px;background:linear-gradient(135deg,#c9a227,#e8b830);border:0;border-radius:9px;color:#1a1300;font-weight:700;font-size:14px">Compris</button></div>';
+        '</div><button style="width:100%;min-height:44px;background:linear-gradient(135deg,#c9a227,#e8b830);border:0;border-radius:9px;color:#1a1300;font-weight:700;font-size:14px">Compris</button></div>';
       m.addEventListener("click",function(e){if(e.target===m||e.target.tagName==="BUTTON")document.body.removeChild(m);});
       document.body.appendChild(m);
     });
   })();
 })();
 </script>
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.45" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="worldmonitor" data-version="v2.46" data-color="#c9a227" defer></script>
 </body>
 </html>

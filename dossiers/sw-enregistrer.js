@@ -8,7 +8,7 @@
     });
     navigator.serviceWorker.register('sw.js').then(function (r) {
       sessionStorage.setItem('kdmc-sw-vu', '1');
-      try { r.update(); } catch (e) { /* mise à jour au prochain chargement */ }
+      try { var u=r.update();if(u&&u.catch)u.catch(function(){}); } catch (e) { /* mise à jour au prochain chargement */ }
     }).catch(function () { /* hors ligne ou refus : la page marche sans */ });
   } catch (e) { /* navigateur sans service worker */ }
 })();

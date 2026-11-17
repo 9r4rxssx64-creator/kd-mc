@@ -467,7 +467,7 @@ th{color:var(--gold2);font-size:12.5px;text-transform:uppercase;letter-spacing:.
   <button role="tab" data-v="secu" aria-selected="false"><span class="ic">🛡</span>Sécurité</button>
   <button role="tab" data-v="quiz" aria-selected="false"><span class="ic">🎓</span>Quiz</button>
 </nav>
-<div id="vbadge">v1.10</div>
+<div id="vbadge">v1.11</div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -916,7 +916,7 @@ try {
 } catch (e) {}
 </script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="tor" data-version="v1.10" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
-<script>/* 6.11 tâche 108 : MAJ forcée tôt — le service worker prend la main dès son installation, la page se recharge une fois au changement ; rien n'est écrit dans le navigateur (promesse de la page) : on recharge seulement si une version tournait déjà */(function(){try{if(!("serviceWorker" in navigator))return;var rl=false,avant=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener("controllerchange",function(){if(rl||!avant)return;rl=true;location.reload();});navigator.serviceWorker.register("sw.js").then(function(r){try{r.update();}catch(e){}}).catch(function(){});}catch(e){}})();</script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="tor" data-version="v1.11" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
+<script>/* 6.11 tâche 108 : MAJ forcée tôt — le service worker prend la main dès son installation, la page se recharge une fois au changement ; rien n'est écrit dans le navigateur (promesse de la page) : on recharge seulement si une version tournait déjà */(function(){try{if(!("serviceWorker" in navigator))return;var rl=false,avant=!!navigator.serviceWorker.controller;navigator.serviceWorker.addEventListener("controllerchange",function(){if(rl||!avant)return;rl=true;location.reload();});navigator.serviceWorker.register("sw.js").then(function(r){try{var u=r.update();if(u&&u.catch)u.catch(function(){});}catch(e){}}).catch(function(){});}catch(e){}})();</script>
 </body>
 </html>

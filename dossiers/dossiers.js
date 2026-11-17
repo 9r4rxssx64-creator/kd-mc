@@ -19,3 +19,13 @@
   }
   q.addEventListener('input', function () { clearTimeout(t); t = setTimeout(filtre, 150); });
 })();
+/* 17.11.2026 (robot d'affichage, run 43973722309, pont 2578) : sur les écrans Safari du robot, dossiers.css était annulé pendant
+   le chargement (« Load request cancelled ») → boutons « Ouvrir l'original » à 17 px de haut. Si la feuille n'a pas pris, on la redemande une fois. */
+window.addEventListener('load', function () {
+  try {
+    var b = document.querySelector('.btn');
+    if (b && b.getBoundingClientRect().height < 44) {
+      var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'dossiers.css?r=' + Date.now(); document.head.appendChild(l);
+    }
+  } catch (e) { /* la page reste lisible sans */ }
+});

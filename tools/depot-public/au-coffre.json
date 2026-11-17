@@ -433,6 +433,7 @@
   "tests/verify-sw-lie-fi.mjs",
   "tests/verify-sw-navigation.mjs",
   "tests/verify-tel-invite-portail.mjs",
+  "tests/verify-tor-page.mjs",
   "tests/verify-un-seul-import.mjs",
   "tests/verify-validation-par-mail-docs.mjs",
   "tests/verify-verifier-reel.mjs",

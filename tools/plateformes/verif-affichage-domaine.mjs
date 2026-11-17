@@ -186,6 +186,14 @@ export function mesurer(tel) {
 
 /* EXPLORATION (Kevin 25.10 : « va plus loin, réel aussi test ») : un niveau plus loin dans chaque app. Exécuté DANS la page :
    les candidats = onglets, barres de navigation, menus (jamais un bouton qui envoie/supprime/achète : filtré par son libellé). */
+/* 17.11.2026 (cloud-poste-recherche, pont 2578 : tor « 6 boutons sans réaction » alors que ses onglets marchent) : changer d'onglet en basculant
+   une classe (class="hide" passe d'une vue à l'autre, aria-selected true/false) garde la MÊME longueur de HTML et le même nombre d'éléments.
+   On ajoute une empreinte du TEXTE VISIBLE (innerText ignore ce qui est caché) : une vue qui change se voit. Garde : tests/verify-affichage-cloud-poste.mjs. */
+export function empreintePage() {
+  const t = (document.body && document.body.innerText) || '';
+  let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
+  return location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length + '|' + t.length + ':' + h;
+}
 export function candidatsNavigation() {
   const DANGER = /supprim|effac|envoy|valid|achet|pay|commander|déconnex|deconnex|logout|quitter|réinit|reinit|publier|signer|accepter|refuser|bloquer|bannir/i;
   const vis = (e) => { const r = e.getBoundingClientRect(); const st = getComputedStyle(e); return r.width > 8 && r.height > 8 && st.visibility !== 'hidden' && st.display !== 'none' && r.top < innerHeight && r.bottom > 0; };
@@ -303,14 +311,14 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
           const n = await page.evaluate(candidatsNavigation).catch(() => 0);
           for (let k = 0; k < n; k++) {
             try {
-              const avant = await page.evaluate(() => location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length);
+              const avant = await page.evaluate(empreintePage);
               const cible = page.locator('[data-kdmc-explo="' + k + '"]').first();
               if (!(await cible.count())) continue;
               const jsAvant = js.length;
               await cible.click({ timeout: 4000, trial: false });
               await page.waitForTimeout(1200);
               explo.touches++;
-              const apres = await page.evaluate(() => location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length);
+              const apres = await page.evaluate(empreintePage);
               if (apres === avant) { explo.morts++; if (explo.ex.length < 4) explo.ex.push('sans réaction : n°' + k); }
               await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
               for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */

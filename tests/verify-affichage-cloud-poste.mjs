@@ -73,5 +73,29 @@ for (const f of ['kdmc-home/ia/index.html', 'kdmc-home/outils/index.html', 'kdmc
 /* 5. Dossiers : la feuille annulée est redemandée */
 ok(/dossiers\.css\?r=/.test(lire('dossiers/dossiers.js')), 'dossiers : feuille de style redemandée si les boutons font moins de 44 px');
 
+/* 6. Première visite avec service worker (Chromium, comme l'écran Android du robot) : la page ne se recharge pas toute seule,
+   la feuille de style arrive, les boutons font 44 px (pont 2608 : « a.btn 104x17 » sur android seulement). */
+{
+  const fs = await import('node:fs'); const path = await import('node:path');
+  const racine = path.resolve(new URL('../dossiers', import.meta.url).pathname);
+  const ctx = await b.newContext({ viewport: { width: 412, height: 839 } });
+  await ctx.route('https://d.test/**', (r) => {
+    let f = new URL(r.request().url()).pathname.replace(/^\//, '') || 'index.html';
+    if (SAB && f === 'sw-enregistrer.js') return r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(racine, f), 'utf8').replace(/ \|\| !avant/, '') });
+    const p = path.join(racine, f);
+    if (!fs.existsSync(p)) return r.fulfill({ status: 404, body: '' });
+    r.fulfill({ status: 200, contentType: f.endsWith('.css') ? 'text/css' : f.endsWith('.js') ? 'application/javascript' : 'text/html', body: fs.readFileSync(p) });
+  });
+  const p = await ctx.newPage(); let nav = 0;
+  p.on('framenavigated', (fr) => { if (fr === p.mainFrame()) nav++; });
+  await p.goto('https://d.test/'); await p.waitForTimeout(3500);
+  const R = await p.evaluate(() => ({ sw: !!navigator.serviceWorker.controller, h: Math.round(document.querySelector('.btn').getBoundingClientRect().height) }));
+  ok(nav === 1 && R.h >= 44, `dossiers 1re visite (service worker ${R.sw ? 'actif' : 'en route'}) : ${nav} chargement(s), bouton ${R.h} px`, { nav, ...R });
+  await ctx.close();
+}
+for (const f of ['kdmc-home/ia/index.html', 'kdmc-home/outils/index.html', 'kdmc-home/osint/index.html']) {
+  ok(/var avant=!!navigator\.serviceWorker\.controller;/.test(lire(f)) && /if\(rl\|\|!avant\|\|/.test(lire(f)), `${f} : rechargement seulement pour une vraie mise à jour`);
+}
+
 await b.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`); process.exit(fail ? 1 : 0);

@@ -16,6 +16,14 @@ export function bouton() {
     /* une app peut retirer le BOUTON (écran plein, jeu…) — jamais la porte des conditions (règle du 7.10 : aucun accès sans accord) */
     var sansBouton = !!(m && /^(off|non|0)$/i.test(m.getAttribute('content') || ''));
     window.__kdmcBoite = 1;
+    /* 17.11 — LE JOURNAL DU DOMAINE, côté page : une app appelle window.kdmcJournal('ce qui vient d\'être enregistré') après un enregistrement réussi.
+       Le domaine note QUI (la session) et OÙ (l'app) ; la page ne donne que la phrase. Jamais bloquant, jamais d'erreur vers l'app. */
+    window.kdmcJournal = function (detail, type) {
+      try {
+        var t = String(detail == null ? '' : detail).slice(0, 200); if (t.length < 2) return;
+        fetch('/__boite/journal', { method: 'POST', credentials: 'include', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: type === 'message' ? 'message' : 'modif', detail: t }) }).catch(function () { /* hors ligne : rien */ });
+      } catch (e) { /* jamais d'erreur vers l'app */ }
+    };
     var app = String(location.hostname).split('.')[0] || 'domaine';
     var LS = 'kdmc_boite_suivi', LV = 'kdmc_boite_vu';
     var lire = function (k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };

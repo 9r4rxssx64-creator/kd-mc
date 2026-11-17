@@ -239,6 +239,11 @@ if (!indexAjour && !VERIFIER) {
   m.claude_index = taille('CLAUDE.md');
 }
 
+/* la version de chaque app, lue par le tableau de bord admin (17.11 : personne ne la régénérait, 30 versions fausses sur 33) */
+let versionsAjour = true;
+try { execSync('node tools/admin/apps-versions.mjs --verifier', { stdio: 'pipe' }); } catch { versionsAjour = false; }
+if (!versionsAjour && !VERIFIER) { try { execSync('node tools/admin/apps-versions.mjs', { stdio: 'pipe' }); versionsAjour = true; } catch { /* le garde test:apps-versions le dira */ } }
+
 const { perimes, maj } = appliquer(b);
 
 /* le bilan des branches : réseau, donc mode complet */
@@ -247,7 +252,7 @@ if (!RAPIDE && !VERIFIER) {
 }
 
 if (VERIFIER) {
-  const pb = [...perimes]; if (!indexAjour) pb.unshift('CLAUDE.md (index des règles)');
+  const pb = [...perimes]; if (!indexAjour) pb.unshift('CLAUDE.md (index des règles)'); if (!versionsAjour) pb.unshift('kdmc-home/admin/apps-versions.json (version de chaque app)');
   if (!pb.length) { log('✅ tout est à jour.'); process.exit(0); }
   console.error('❌ périmé : ' + pb.join(' · ') + '\n   → npm run maj-tout');
   process.exit(1);

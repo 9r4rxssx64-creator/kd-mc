@@ -60,6 +60,45 @@ export async function fil(db, uid, limite) {
   const r = await db.prepare('SELECT ts, type, app, detail, lieu, appareil FROM activite WHERE uid = ? ORDER BY ts DESC, id DESC LIMIT ?').bind(uid, limite || LIM.fil).all();
   return ((r && r.results) || []).reverse();
 }
+/* ── LE FIL DE TOUT LE DOMAINE (Kevin 17.11 : « j'ai du mal à voir clairement les dernières infos, connexions, modifs, qui a fait quoi ou quand, de tout le domaine, chaque app ») ──
+   Les mêmes lignes que les fiches, mais TOUTES PERSONNES CONFONDUES, de la plus récente à la plus ancienne, filtrables par type, par app et par personne.
+   MESURÉ le 17.11 sur la vraie base : en 2 jours, 808 lignes sur le compte admin dont 616 écrites par les robots de vérification (navigateurs de test), contre 35 lignes
+   pour les vraies personnes. Un robot n'est pas quelqu'un : ses lignes sont écartées ici (appareil de navigateur de test), et ne sont plus écrites à la source (worker.js). */
+export const APPAREIL_ROBOT = /^(?:Linux · Linux · |Pixel 7 · Android 14 · Chrome |iPhone · iOS (?:10\.3|15\.0) · Safari 18|iPad · iOS 12\.2 · Safari 18)/;
+/* la même liste pour la base (LIKE) : toute retouche se fait aux DEUX endroits (garde 9a/9c de activite.test.mjs) */
+const ROBOT_SQL = ['Linux · Linux · %', 'Pixel 7 · Android 14 · Chrome %', 'iPhone · iOS 10.3 · Safari 18%', 'iPhone · iOS 15.0 · Safari 18%', 'iPad · iOS 12.2 · Safari 18%'];
+export const estAppareilRobot = (appareil) => APPAREIL_ROBOT.test(String(appareil || ''));
+export const TYPES_FIL = Object.keys(TYPES);
+/** Le fil du domaine. o = { avant (ts exclusif), types [..], app, uid, sansUid (l'admin, pour « les autres »), robots (true = on les garde), limite ≤ 100 }. */
+export async function filDomaine(db, o) {
+  await table(db); o = o || {};
+  const limite = Math.max(1, Math.min(100, Number(o.limite) || 60));
+  const types = (Array.isArray(o.types) ? o.types : []).filter((t) => TYPES[t]);
+  const cond = ['ts < ?'], args = [Number(o.avant) > 0 ? Number(o.avant) : 9e15];
+  if (types.length) { cond.push('type IN (' + types.map(() => '?').join(',') + ')'); args.push(...types); }
+  if (o.app) { const court = String(o.app).replace(/\.kd-mc\.com$/, ''); cond.push('(app = ? OR app = ? OR app = ?)'); args.push(String(o.app), court, court + '.kd-mc.com'); }
+  if (o.uid) { cond.push('uid = ?'); args.push(String(o.uid)); }
+  if (o.sansUid) { cond.push('uid != ?'); args.push(String(o.sansUid)); }
+  /* les robots sont écartés DANS la requête (ils font les trois quarts des lignes : les écarter après coup viderait la page) */
+  if (!o.robots) { cond.push('NOT (' + ROBOT_SQL.map(() => "COALESCE(appareil, '') LIKE ?").join(' OR ') + ')'); args.push(...ROBOT_SQL); }
+  const r = await db.prepare('SELECT id, ts, uid, nom, type, app, detail, lieu, appareil FROM activite WHERE ' + cond.join(' AND ') + ' ORDER BY ts DESC, id DESC LIMIT ?').bind(...args, limite + 1).all();
+  const lignes = (r && r.results) || [];
+  const out = lignes.slice(0, limite);
+  return { lignes: out, suite: lignes.length > limite ? out[out.length - 1].ts : 0 };
+}
+/** Chaque app du domaine : sa dernière activité, combien de lignes et de personnes depuis `depuis` (robots écartés). */
+export async function parApp(db, depuis) {
+  await table(db);
+  const r = await db.prepare('SELECT app, appareil, uid, MAX(ts) AS dernier, COUNT(*) AS n FROM activite WHERE ts > ? GROUP BY app, appareil, uid').bind(depuis).all();
+  const m = new Map();
+  for (const l of (r && r.results) || []) {
+    if (estAppareilRobot(l.appareil)) continue;
+    const cle = String(l.app || 'domaine').replace(/\.kd-mc\.com$/, '') || 'domaine';
+    const e = m.get(cle) || { app: cle, dernier: 0, n: 0, uids: new Set() };
+    e.dernier = Math.max(e.dernier, l.dernier); e.n += l.n; e.uids.add(l.uid); m.set(cle, e);
+  }
+  return [...m.values()].map((e) => ({ app: e.app, dernier: e.dernier, n: e.n, personnes: e.uids.size })).sort((x, y) => y.dernier - x.dernier);
+}
 /** Les personnes actives depuis `depuis` : { uid, nom, dernier, n }, la plus récente d'abord. */
 export async function actives(db, depuis, limite) {
   await table(db);

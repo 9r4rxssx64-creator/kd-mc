@@ -207,6 +207,15 @@
       /* 16.10 soir (Kevin : « Affiche ici un visuel des connectés live ») : qui est sur le domaine EN CE MOMENT, sous « À traiter ».
          Données : la boîte (présence D1, robots exclus), relue toutes les 15 s quand la page est visible. Toucher une personne → sa fiche. */
       + '<section class="live" id="tb-live" aria-label="En ligne maintenant" aria-live="polite"><h2><span class="pt" aria-hidden="true"></span>En ligne maintenant <b id="tb-live-n">…</b></h2><div class="live-l" id="tb-live-l"><p class="live-vide">Lecture…</p></div></section>'
+      /* 17.11 (Kevin : « j'ai du mal à trouver les infos que je cherche et voir clairement les dernières infos, notifs, connexions, modifs, qui a fait quoi ou quand,
+         de tout le domaine, chaque app ») : LE JOURNAL DU DOMAINE — une seule liste, la plus récente en haut : l'heure, l'app, la personne, ce qu'elle a fait.
+         Trois réglages au doigt (qui, quoi, quelle app). Source : /__boite/admin/fil (journal d'activité, robots écartés) + les messages de la boîte. Relu toutes les 30 s. */
+      + '<section class="fil" id="tb-fil" aria-label="Journal du domaine"><h2>🕘 Journal du domaine <span class="fil-maj" id="tb-fil-maj" aria-live="polite">lecture…</span></h2>'
+      + '<div class="fil-f" role="group" aria-label="Qui">' + FIL_QUI.map(function (q, i) { return '<button type="button" class="fil-c" data-fil-qui="' + q[0] + '" aria-pressed="' + (i === 0) + '">' + esc(q[1]) + '</button>'; }).join('') + '</div>'
+      + '<div class="fil-f" role="group" aria-label="Quoi">' + FIL_QUOI.map(function (q, i) { return '<button type="button" class="fil-c" data-fil-quoi="' + q[0] + '" aria-pressed="' + (i === 0) + '">' + esc(q[1]) + '</button>'; }).join('') + '</div>'
+      + '<select id="tb-fil-app" class="fil-app" aria-label="Quelle app"><option value="">Toutes les apps</option></select>'
+      + '<div class="fil-l" id="tb-fil-l"><p class="live-vide">Lecture…</p></div>'
+      + '<button type="button" class="fil-plus" id="tb-fil-plus" hidden>Voir plus ancien</button></section>'
       + '<nav class="tbnav" id="tb-nav" aria-label="Sections"><a class="retour-tb" href="#accueil" id="tb-retour">← Tableau de bord</a>' + SECTIONS.map(function (s) { return '<a href="#' + s.id + '" data-nav="' + s.id + '">' + s.ic + ' ' + esc(s.t.split(' ')[0]) + '</a>'; }).join('') + '</nav>'
       + '<div class="cherche"><input id="tb-q" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" placeholder="🔎 Que veux-tu faire ?" aria-label="Que veux-tu faire ?"><div class="res" id="tb-res" hidden></div></div>'
       /* 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien ») : un ACCUEIL de 7 grandes tuiles, puis une seule
@@ -423,7 +432,7 @@
     if (liste.childNodes.length) z.appendChild(liste);
   }
 
-  function surBoite(D) { BOITE = D; INST = instantane(D, LIVE && LIVE.file ? LIVE.file.n || 0 : null); garderInstantane(INST); dessinerCompteurs(); dessinerAttente(D); dessinerMessages(D); dessinerLive(D); }
+  function surBoite(D) { BOITE = D; try { dessinerFil(); } catch (e) { /* journal pas encore monté */ } INST = instantane(D, LIVE && LIVE.file ? LIVE.file.n || 0 : null); garderInstantane(INST); dessinerCompteurs(); dessinerAttente(D); dessinerMessages(D); dessinerLive(D); }
 
   /* LES CONNECTÉS EN DIRECT : une pastille par personne (initiales, nom, l'app où elle est, depuis quand). Construit en DOM (textContent),
      jamais en innerHTML : un nom vient d'un visiteur. Le « il y a » se recalcule toutes les 15 s sans relire le domaine. */
@@ -539,6 +548,99 @@
     });
   }
 
+  /* ── LE JOURNAL DU DOMAINE (17.11) ─────────────────────────────────────────────────────────────────────────────────
+     Tout est construit en DOM (textContent) : un nom, un détail viennent d'un visiteur. Aucune donnée n'est gardée dans le navigateur. */
+  var FIL_QUI = [['autres', '👥 Les autres'], ['moi', '🙂 Moi'], ['tous', 'Tout le monde']];
+  var FIL_QUOI = [['essentiel', '⭐ L\'essentiel', 'connexion,lieu,appareil,modif,message,contact,question'], ['connexions', '🔓 Connexions', 'connexion,lieu,appareil'],
+    ['modifs', '✏️ Modifs & messages', 'modif,message,contact,question'], ['pages', '🌐 Pages vues', 'visite']];
+  var FIL = { qui: 'autres', quoi: 'essentiel', app: '', lignes: [], suite: 0, maj: 0, enCours: false, vus: 0 };
+  function filTypes() { for (var i = 0; i < FIL_QUOI.length; i++) if (FIL_QUOI[i][0] === FIL.quoi) return FIL_QUOI[i][2]; return ''; }
+  function jourDe(ts) {
+    var d = new Date(ts), a = new Date(), h = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime(), j = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    if (j === h) return 'Aujourd\'hui'; if (j === h - 864e5) return 'Hier';
+    return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  function heureDe(ts) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  /* les messages et corrections déjà rassemblés par la boîte (Lingua, CMCteams, autres apps, Rotaplan, Arbre) entrent dans le même journal */
+  function filDeLaBoite() {
+    if (!BOITE || !Array.isArray(BOITE.messages) || FIL.qui === 'moi' || (FIL.quoi !== 'essentiel' && FIL.quoi !== 'modifs')) return [];
+    return BOITE.messages.filter(function (m) { return m && m.ts && m.source !== 'alertes' && (!FIL.app || String(m.app || m.source) === FIL.app); }).map(function (m) {
+      var arbre = m.source === 'arbre';
+      return { id: 'b:' + m.cle, ts: m.ts, nom: m.de || 'Quelqu\'un', app: String(m.app || m.source || 'domaine'), action: arbre ? '✏️ a corrigé' : '💬 a écrit', detail: String(m.texte || '').slice(0, 140), boite: true, type: arbre ? 'modif' : 'message' };
+    });
+  }
+  function dessinerFil() {
+    var z = document.getElementById('tb-fil-l'), maj = document.getElementById('tb-fil-maj'), plus = document.getElementById('tb-fil-plus');
+    if (!z) return;
+    var vu = {}, tout = FIL.lignes.concat(filDeLaBoite()).filter(function (e) { if (vu[e.id]) return false; vu[e.id] = 1; return true; }).sort(function (x, y) { return y.ts - x.ts; });
+    /* la boîte ne remonte pas plus loin que la page lue du journal : sinon de vieux messages se glisseraient sous des lignes pas encore chargées */
+    var plancher = FIL.suite ? FIL.suite : 0; tout = tout.filter(function (e) { return !e.boite || e.ts >= plancher; });
+    if (maj) maj.textContent = FIL.erreur ? 'lecture impossible — nouvel essai dans 30 s' : FIL.maj ? 'à jour ' + ilYa(FIL.maj) : 'lecture…';
+    if (plus) plus.hidden = !FIL.suite;
+    z.textContent = '';
+    if (!tout.length) { var v = document.createElement('p'); v.className = 'live-vide'; v.textContent = FIL.maj ? 'Rien pour ce choix. Change « qui » ou « quoi » ci-dessus.' : 'Lecture…'; z.appendChild(v); return; }
+    var jour = '';
+    tout.forEach(function (e) {
+      var j = jourDe(e.ts);
+      if (j !== jour) { jour = j; var t = document.createElement('h3'); t.className = 'fil-j'; t.textContent = j; z.appendChild(t); }
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'fil-e' + (e.ts > FIL.vus && FIL.vus ? ' neuf' : '');
+      if (e.boite) b.setAttribute('data-va', 'boite'); else if (e.uid && !e.moi) b.setAttribute('data-va', 'fiche:' + e.uid);
+      var h = document.createElement('span'); h.className = 'h'; h.textContent = heureDe(e.ts);
+      var c = document.createElement('span'); c.className = 'c';
+      var l1 = document.createElement('span'); l1.className = 'l1';
+      var nm = document.createElement('b'); nm.textContent = e.moi ? 'Moi' : (e.nom || 'Quelqu\'un');
+      var ap = document.createElement('span'); ap.className = 'app'; ap.textContent = nomApp(e.app);
+      l1.appendChild(nm); l1.appendChild(ap);
+      var l2 = document.createElement('span'); l2.className = 'l2'; l2.textContent = (e.action || '') + (e.detail && e.type !== 'connexion' ? ' ' + e.detail : '');
+      c.appendChild(l1); c.appendChild(l2);
+      var bas = [e.appareil, e.lieu].filter(Boolean).join(' · ');
+      if (bas) { var l3 = document.createElement('span'); l3.className = 'l3'; l3.textContent = bas; c.appendChild(l3); }
+      b.appendChild(h); b.appendChild(c);
+      b.setAttribute('aria-label', heureDe(e.ts) + ', ' + nomApp(e.app) + ', ' + nm.textContent + ' ' + l2.textContent);
+      z.appendChild(b);
+    });
+  }
+  function lireFil(suite) {
+    if (FIL.enCours) return; FIL.enCours = true;
+    var u = '/__boite/admin/fil?qui=' + FIL.qui + '&types=' + encodeURIComponent(filTypes()) + (FIL.app ? '&app=' + encodeURIComponent(FIL.app) : '') + (suite && FIL.suite ? '&avant=' + FIL.suite : '') + (suite ? '' : '&apps=1') + '&limite=' + (suite ? 40 : 25);
+    lireJson(u).then(function (j) {
+      FIL.enCours = false;
+      if (!j || !j.ok) { FIL.erreur = true; dessinerFil(); return; }
+      FIL.erreur = false;
+      if (suite) { FIL.lignes = FIL.lignes.concat(j.evenements || []); FIL.suite = j.suite || 0; }
+      else {
+        /* relecture : on garde les pages plus anciennes déjà dépliées, on remplace seulement la tête */
+        var tete = j.evenements || [], plusVieux = tete.length ? tete[tete.length - 1].ts : 0;
+        var reste = FIL.suiteDepliee ? FIL.lignes.filter(function (e) { return e.ts < plusVieux; }) : [];
+        if (FIL.lignes.length) FIL.vus = Math.max(FIL.vus, FIL.lignes[0].ts); 
+        FIL.lignes = tete.concat(reste); if (!FIL.suiteDepliee) FIL.suite = j.suite || 0;
+        if (Array.isArray(j.apps)) {
+          var sel = document.getElementById('tb-fil-app');
+          if (sel && sel.options.length !== j.apps.length + 1) { var garde = sel.value; sel.textContent = ''; var o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Toutes les apps'; sel.appendChild(o0);
+            j.apps.forEach(function (x) { var o = document.createElement('option'); o.value = x.app; o.textContent = nomApp(x.app) + ' · ' + ilYa(x.dernier); sel.appendChild(o); }); sel.value = garde; }
+        }
+      }
+      FIL.maj = Date.now(); dessinerFil();
+    });
+  }
+  function brancherFil() {
+    var sec = document.getElementById('tb-fil'); if (!sec) return;
+    var changer = function () { FIL.lignes = []; FIL.suite = 0; FIL.suiteDepliee = false; FIL.vus = 0; FIL.maj = 0; dessinerFil(); lireFil(false); };
+    sec.addEventListener('click', function (e) {
+      var q = e.target.closest && e.target.closest('[data-fil-qui],[data-fil-quoi]'); if (!q) return;
+      var cle = q.hasAttribute('data-fil-qui') ? 'qui' : 'quoi', val = q.getAttribute('data-fil-' + cle);
+      if (FIL[cle] === val) return; FIL[cle] = val;
+      Array.prototype.forEach.call(sec.querySelectorAll('[data-fil-' + cle + ']'), function (x) { x.setAttribute('aria-pressed', String(x === q)); });
+      changer();
+    });
+    var sel = document.getElementById('tb-fil-app'); if (sel) sel.onchange = function () { FIL.app = sel.value; changer(); };
+    var plus = document.getElementById('tb-fil-plus'); if (plus) plus.onclick = function () { FIL.suiteDepliee = true; lireFil(true); };
+    lireFil(false);
+    setInterval(function () { if (document.visibilityState === 'visible' && document.body.getAttribute('data-vue') === 'accueil') lireFil(false); }, 30000);
+    setInterval(function () { var m = document.getElementById('tb-fil-maj'); if (m && FIL.maj && !FIL.erreur) m.textContent = 'à jour ' + ilYa(FIL.maj); }, 15000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') lireFil(false); });
+  }
+
   function demarrer(s) {
     coquille();
     /* 16.10 (Kevin : « toutes infos doit être cliquable et atterrir au bon endroit ») : tout ce qui porte data-va (pastilles, cartes de chiffres)
@@ -563,6 +665,7 @@
     dessinerCompteurs();
     dessinerEnAttendant();
     brancherRecherche();
+    brancherFil();
     var rac = document.querySelectorAll('[data-racc]');
     for (var ri = 0; ri < rac.length; ri++) (function (b) { b.onclick = function () { var r = RACCOURCIS[+b.getAttribute('data-racc')]; if (!r) return; if (r[1] === '#creer-invite') { var t = document.getElementById('tb-creer'); if (t) { t.click(); return; } } aller(r[1]); }; })(rac[ri]);
     /* admin.js et commerce.js redessinent leurs blocs (actualisation) : on les reclasse dans leurs onglets, sans boucle */

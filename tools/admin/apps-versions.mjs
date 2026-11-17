@@ -39,7 +39,19 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const apps = releve();
   const sortie = { _doc: 'Généré par tools/admin/apps-versions.mjs — relevé dans le dépôt, pas en direct.', genere: new Date().toISOString().slice(0, 10), apps };
   if (process.argv.includes('--check')) { console.log(JSON.stringify(sortie, null, 1)); process.exit(0); }
-  writeFileSync(join(RACINE, 'kdmc-home/admin/apps-versions.json'), JSON.stringify(sortie, null, 1) + '\n');
+  /* 17.11 (Kevin : « je n'ai pas l'impression que ça se mette à jour réellement ») : ce fichier n'était régénéré par PERSONNE depuis le 22.10 — 30 versions fausses sur 33.
+     --verifier : code 1 si le fichier ne dit pas les versions du dépôt (garde test:apps-versions, dans test:ci). Sans option : réécrit seulement si une version a changé
+     (la date ne bouge pas pour rien). maj-tout l'appelle à chaque fin de tour. */
+  const fichier = join(RACINE, 'kdmc-home/admin/apps-versions.json');
+  let ancien = null; try { ancien = JSON.parse(readFileSync(fichier, 'utf8')); } catch { ancien = null; }
+  const pareil = !!ancien && JSON.stringify(ancien.apps) === JSON.stringify(apps);
+  if (process.argv.includes('--verifier')) {
+    if (pareil) { console.log('apps-versions.json : à jour (' + Object.keys(apps).length + ' apps)'); process.exit(0); }
+    const ecarts = Object.keys(apps).filter((h) => !ancien || !ancien.apps || JSON.stringify(ancien.apps[h]) !== JSON.stringify(apps[h]));
+    console.log('❌ apps-versions.json périmé : ' + ecarts.length + ' app(s) — ' + ecarts.slice(0, 8).join(', ') + '\n   → node tools/admin/apps-versions.mjs (ou node tools/audit/maj-tout.mjs --rapide)'); process.exit(1);
+  }
+  if (pareil) { console.log('apps-versions.json : déjà à jour'); process.exit(0); }
+  writeFileSync(fichier, JSON.stringify(sortie, null, 1) + '\n');
   const sans = Object.entries(apps).filter(([, a]) => !a.version).map(([h]) => h);
   console.log(Object.keys(apps).length + ' apps relevées, ' + sans.length + ' sans version lisible' + (sans.length ? ' : ' + sans.join(', ') : ''));
 }

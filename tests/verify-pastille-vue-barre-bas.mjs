@@ -284,6 +284,41 @@ for (const [w, h] of [[320, 568], [844, 390]]) {
     await ctx.close();
   }
 }
+
+/* G. (capture de Kevin, 17.11, kd-mc.com, panneau « Mes messages » ouvert : la cloche et « 👑 Vue admin » posées SUR le titre « 📝 Inscriptions à valider ») :
+ * quand une fenêtre plein écran du domaine est ouverte (role=dialog aria-modal), les pastilles du domaine s'effacent ; elles reviennent à la fermeture.
+ * SABOTAGE : `SABOTAGE_FENETRE=1` retire la règle → doit être ROUGE. */
+{
+  let SRC_G = INSTALLER_JS;
+  if (process.env.SABOTAGE_FENETRE === '1') SRC_G = SRC_G.replace(/function fenetrePleine\(\) \{/, 'function fenetrePleine() { return false;');
+  const PAGE_FEN = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#0a1a0c;color:#fff;font:16px sans-serif}#fen{position:fixed;inset:0;background:#0b130d;display:flex;flex-direction:column}#fen[hidden]{display:none}
+#liste{flex:1;overflow:auto;padding:16px}#pied{padding:16px;border-top:1px solid #333}#pied h3{margin:0 0 8px}</style>
+<main><button id="ouvrir" style="min-width:44px;min-height:44px;margin:16px" onclick="document.getElementById('fen').hidden=false">📬 Mes messages</button></main>
+<div id="fen" role="dialog" aria-modal="true" aria-label="Mes messages" hidden><div id="liste"><button id="fermer" style="min-width:44px;min-height:44px" onclick="document.getElementById('fen').hidden=true">✕</button><p>Un message</p></div>
+<div id="pied"><h3 id="titre">📝 Inscriptions à valider</h3><p>Aucune inscription en attente.</p></div></div>`;
+  for (const [w, h] of [[390, 844], [320, 568]]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+    const p = await ctx.newPage();
+    await p.route('**/__admin/vue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, mode: 'admin' }) }));
+    await p.route('https://kdmc.test/', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_FEN }));
+    await p.goto('https://kdmc.test/');
+    await p.evaluate(() => { document.cookie = 'kdmc_k=1; path=/'; });
+    await p.addScriptTag({ content: SRC_G });
+    await p.waitForSelector('[data-kdmc-vue]', { timeout: 5000 }).catch(() => {});
+    await p.waitForTimeout(1200);
+    const vues = () => p.evaluate(() => [...document.querySelectorAll('[data-kdmc-vue], [data-kdmc-installer="pastille"]')].map((e) => { const r = e.getBoundingClientRect(), t = document.getElementById('titre').getBoundingClientRect(), cs = getComputedStyle(e);
+      return { quoi: e.getAttribute('data-kdmc-vue') ? 'vue' : 'pastille', visible: cs.visibility !== 'hidden' && cs.display !== 'none' && r.width > 0, surTitre: t.width > 0 && r.left < t.right && r.right > t.left && r.top < t.bottom && r.bottom > t.top }; }));
+    const avant = await vues();
+    await p.click('#ouvrir'); await p.waitForTimeout(900);
+    const ouvert = await vues();
+    ok(avant.length >= 1 && avant.every((x) => x.visible) && ouvert.every((x) => !x.visible), w + '×' + h + ' : fenêtre plein écran ouverte → les pastilles du domaine s\'effacent (rien sur « Inscriptions à valider »)', { avant, ouvert });
+    await p.click('#fermer'); await p.waitForTimeout(900);
+    const ferme = await vues();
+    ok(ferme.length === avant.length && ferme.every((x) => x.visible), w + '×' + h + ' : fenêtre fermée → les pastilles reviennent', ferme);
+    await ctx.close();
+  }
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

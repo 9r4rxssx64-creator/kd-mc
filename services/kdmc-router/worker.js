@@ -3517,7 +3517,10 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
      écraserait la vraie (sans attente_admin → compte ouvert sans mail, téléphone perdu). L'appelant le signale : on n'écrit rien. */
   if (isNew && opts && opts.sansCreation) return;
   /* FIL D'ACTIVITÉ (Kevin 4.10) : une page consultée par cette personne s'ajoute dans SA fiche (chemin seul, jamais les paramètres) ; les pings de présence n'en font pas. */
-  if (opts && opts.page) { let chemin = ''; try { chemin = new URL(request.url).pathname; } catch { chemin = ''; } await activite.noter(env, { uid, nom: name, type: 'visite', app: host, detail: chemin || '/', appareil: appareilLabel(request.headers && request.headers.get ? request.headers.get('user-agent') : '') }); }
+  /* 17.11 (mesuré : 616 des 808 lignes du compte admin en 2 jours venaient des robots de vérification, qui ouvrent les pages avec la session admin depuis GitHub Actions) :
+     une page ouverte depuis le réseau des robots (ASN_SONDE) n'est pas une activité de personne → rien dans le fil. La fiche, les alertes et le journal de sécurité ne changent pas. */
+  const passageRobot = ASN_SONDE.has(Number(request && request.cf && request.cf.asn) || 0);
+  if (opts && opts.page && !passageRobot) { let chemin = ''; try { chemin = new URL(request.url).pathname; } catch { chemin = ''; } await activite.noter(env, { uid, nom: name, type: 'visite', app: host, detail: chemin || '/', appareil: appareilLabel(request.headers && request.headers.get ? request.headers.get('user-agent') : '') }); }
   /* PÉRIMÈTRE — une NOUVELLE fiche naît fermée : elle n'existe que dans l'app où la
      personne s'est inscrite (Kevin 2026-09-15 : « quelqu'un d'extérieur peut
      s'enregistrer et être seulement dans une app »). C'est l'admin qui ouvre ensuite
@@ -3653,9 +3656,9 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
      attend une ouverture que personne ne sait devoir faire. Journal admin + push
      (opt-in par config, fail-open : jamais une connexion cassée par une notif). */
   /* Dans le fil de la personne : nouvelle session, nouveau lieu, nouvel appareil (une seule ligne par chose nouvelle, jamais en double). */
-  if (nouvelleSession || isNew) await activite.noter(env, { uid, nom: acc.name, type: 'connexion', app: host, detail: (host || 'domaine') + (isNew ? ' · première connexion' : ''), lieu: place, appareil: devFull });
-  if (place && place !== prevPlace && !isNew) await activite.noter(env, { uid, nom: acc.name, type: 'lieu', app: host, detail: place + (NET.isp ? ' · ' + NET.isp : '') + (NET.vpn ? ' · VPN/hébergeur' : ''), lieu: place, appareil: devFull });
-  if (newDevice && !isNew) await activite.noter(env, { uid, nom: acc.name, type: 'appareil', app: host, detail: devFull || devKey, lieu: place, appareil: devFull });
+  if ((nouvelleSession || isNew) && !passageRobot) await activite.noter(env, { uid, nom: acc.name, type: 'connexion', app: host, detail: (host || 'domaine') + (isNew ? ' · première connexion' : ''), lieu: place, appareil: devFull });
+  if (place && place !== prevPlace && !isNew && !passageRobot) await activite.noter(env, { uid, nom: acc.name, type: 'lieu', app: host, detail: place + (NET.isp ? ' · ' + NET.isp : '') + (NET.vpn ? ' · VPN/hébergeur' : ''), lieu: place, appareil: devFull });
+  if (newDevice && !isNew && !passageRobot) await activite.noter(env, { uid, nom: acc.name, type: 'appareil', app: host, detail: devFull || devKey, lieu: place, appareil: devFull });
   /* « TOUTES LES INFOS POSSIBLES » (Kevin 4.10) : chaque alerte porte qui (nom + compte), dans quelle app et sur quelle page, depuis quel appareil,
      d'où (lieu, opérateur, numéro de réseau, VPN ou non), la langue et le fuseau, et pour un changement de pays : d'où il venait. Jamais l'adresse IP. */
   const ctxAlerte = () => ({ name: acc.name || '', app: host, page: acc.last_path || '', device: acc.last_device || '', os, lang: acc.last_lang || '', tz: acc.last_tz || '',

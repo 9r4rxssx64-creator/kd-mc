@@ -36,6 +36,8 @@ export const INSTALLER_JS = String.raw`(function () {
         /* 24.10 (capture de Kevin, admin v2.7.13) : le badge de version est aussi en bas à gauche — dans l'app installée ils se chevauchaient.
            Le bouton se pose AU-DESSUS de tout ce qui occupe déjà son coin (badge chargé plus tard : on revérifie). */
         var degager = function () {
+          if (fenetrePleine()) { b.style.visibility = 'hidden'; return; }
+          b.style.removeProperty('visibility');
           b.style.left = '8px'; ['width', 'min-width', 'overflow', 'white-space'].forEach(function (c) { b.style.removeProperty(c); }); b.style.padding = '0 14px'; b.style.borderRadius = '22px'; b.style.removeProperty('top'); b.style.removeProperty('right');   /* repart de la forme pleine : une languette se redéploie dès que la place se libère */
           var bas = 8, autres = document.querySelectorAll('#kdmc-version-badge');
           for (var k = 0; k < autres.length; k++) {
@@ -284,6 +286,21 @@ export const INSTALLER_JS = String.raw`(function () {
        fixe de La Détente) : un contrôle FIXE (barre, croix, onglet) ne se retrouve jamais en dessous ; un contrôle du CONTENU défile, on peut le dégager. Le repli prend
        donc la première place qui ne cache aucun contrôle fixe. */
     function fixe(n) { for (var k3 = 0; n && n.nodeType === 1 && k3 < 14; n = n.parentElement, k3++) { var p3 = getComputedStyle(n).position; if (p3 === 'fixed' || p3 === 'sticky') return true; } return false; }
+    /* 17.11 (capture de Kevin, kd-mc.com, panneau « Mes messages » ouvert : la cloche et « 👑 Vue admin » posées sur le titre « 📝 Inscriptions à valider ») :
+       une fenêtre PLEIN ÉCRAN du domaine (role=dialog aria-modal ou <dialog open>, visible, ≥ 90 % de la largeur et ≥ 80 % de la hauteur) occupe tout :
+       il n'y a aucune place libre dessus. Tant qu'elle est ouverte, les pastilles du domaine s'effacent ; elles reviennent à la fermeture. */
+    function fenetrePleine() {
+      try {
+        var l = document.querySelectorAll('[aria-modal="true"], dialog[open]');
+        for (var i = 0; i < l.length; i++) {
+          var e = l[i]; if (e.hidden || (e.closest && e.closest('[data-kdmc-installer]'))) continue;
+          var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+          var r = e.getBoundingClientRect();
+          if (r.width >= window.innerWidth * 0.9 && r.height >= window.innerHeight * 0.8) return true;
+        }
+      } catch (e2) { /* mesure impossible : on ne cache rien */ }
+      return false;
+    }
     function cacheUnJeu(box, moi, seulFixe) {
       var vus = [], i, j, k;
       for (i = 0; i < 3; i++) for (j = 0; j < 3; j++) {
@@ -306,6 +323,7 @@ export const INSTALLER_JS = String.raw`(function () {
     }
     function placer() {
       if (!pastille || feuille) return;
+      if (fenetrePleine()) { pastille.style.visibility = 'hidden'; return; }
       var base = 'position:fixed;z-index:2147482000;min-width:44px;min-height:44px;border-radius:22px;border:1px solid ' + OR + ';background:' + NOIR + ';color:' + OR + ';font:700 18px/1 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.45);cursor:pointer;padding:0 12px;';
       for (var i = 0; i < COINS.length; i++) { pastille.style.cssText = base + COINS[i]; if (!couvre()) return; }
       /* 6.11 soir (pont 1879, mesure du robot d'affichage : 📲 recouvre un contrôle sur cmcteams 8, apex-ai 4, la-detente 4, apex-chat 3, lingua 2, beatbot 2, studio 1) :

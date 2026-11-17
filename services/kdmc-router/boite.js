@@ -682,6 +682,22 @@ export async function handleBoite(request, url, env, outils) {
       if (outils.notifier) await outils.notifier('📨 ' + app + ' — ' + nom, texte.slice(0, 140));
       return J({ ok: true, suivi });
     }
+    /* LA PORTE COMMUNE DU JOURNAL (Kevin 17.11 : « qui a fait quoi ou quand, de tout le domaine, chaque app ») : n'importe quelle app du domaine signale
+       « telle personne vient d'enregistrer / de modifier telle chose » avec UN appel (window.kdmcJournal('planning de novembre importé') — posé sur toutes les pages
+       par bouton.js). Mesuré le 17.11 : seules Lingua et l'Arbre le disaient. L'identité vient de la SESSION du domaine, l'app de l'origine de la page — jamais de ce
+       que la page déclare. Types permis depuis une page : modif, message. Plafond par compte et anti-doublon : ceux du journal d'activité (400 lignes/jour, 1 h). */
+    if (p === '/journal' && m === 'POST') {
+      if (!ORIGINE_DOMAINE.test(origine)) return J({ ok: false, reason: 'origine_refusee' }, 403);
+      const qui = await outils.qui(request).catch(() => null);
+      if (!qui || !(qui.uid || qui.admin)) return J({ ok: false, reason: 'compte_requis' }, 401);
+      let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'json_illisible' }, 400); }
+      const detail = propre(b.detail, 200);
+      if (detail.length < 2) return J({ ok: false, reason: 'detail_requis' }, 400);
+      let hote = ''; try { hote = new URL(origine).hostname; } catch { hote = ''; }
+      const etat = await activite.noter(env, { uid: qui.admin ? ADMIN : qui.uid, nom: propre(qui.nom, 60), type: b.type === 'message' ? 'message' : 'modif', app: hote || 'domaine', detail,
+        appareil: outils.appareilDe ? outils.appareilDe(request) : appareilDe(request.headers.get('user-agent')) }, now);
+      return J({ ok: etat === 'ajoute' || etat === 'doublon', etat });
+    }
     /* Tout le reste : l'admin, prouvé par le domaine. */
     if (!p.startsWith('/admin')) return J({ ok: false, reason: 'introuvable' }, 404);
     const qui = await outils.qui(request);
@@ -694,6 +710,18 @@ export async function handleBoite(request, url, env, outils) {
       if (!uid) return J({ ok: false, reason: 'uid_requis' }, 400);
       const evts = await activite.fil(db, uid, 200);
       return J({ ok: true, uid, infos: await ficheLignes(env, db, uid, now), evenements: evts.map((e) => ({ ts: e.ts, type: e.type, texte: (activite.TYPES[e.type] || e.type) + (e.detail ? ' ' + e.detail : ''), app: e.app, lieu: e.lieu, appareil: e.appareil || '' })).reverse() });
+    }
+    /* LE FIL DE TOUT LE DOMAINE (Kevin 17.11) : qui a fait quoi, quand, dans quelle app — une seule liste, la plus récente en haut. Admin seul (même garde que /admin). */
+    if (p === '/admin/fil' && m === 'GET') {
+      const q = url.searchParams;
+      const types = String(q.get('types') || '').split(',').map((t) => propre(t, 20)).filter(Boolean).slice(0, 8);
+      const qui = q.get('qui') === 'moi' ? 'moi' : q.get('qui') === 'tous' ? 'tous' : 'autres';
+      const f = await activite.filDomaine(db, { avant: Number(q.get('avant')) || 0, types, app: propre(q.get('app'), 60), uid: qui === 'moi' ? ADMIN : propre(q.get('uid'), 120), sansUid: qui === 'autres' && !q.get('uid') ? ADMIN : '', limite: Number(q.get('limite')) || 60 });
+      const lignes = f.lignes.filter((e) => !estCompteDeTest(e.uid) && !estRobot(e.uid));
+      const apps = q.get('apps') === '1' ? await activite.parApp(db, now - 7 * 864e5).catch(() => []) : undefined;
+      return J({ ok: true, maj: now, qui, suite: f.suite, apps,
+        evenements: lignes.map((e) => ({ id: e.id, ts: e.ts, uid: e.uid, nom: e.nom || nomDepuisUid(e.uid), moi: e.uid === ADMIN, type: e.type, action: activite.TYPES[e.type] || e.type, detail: e.detail || '',
+          app: String(e.app || 'domaine').replace(/\.kd-mc\.com$/, '') || 'domaine', lieu: e.lieu || '', appareil: activite.appareilCourt(e.appareil) })) });
     }
     let b = {}; if (m === 'POST') { try { b = await request.json(); } catch { b = {}; } }
     if (p === '/admin/lu' && m === 'POST') {

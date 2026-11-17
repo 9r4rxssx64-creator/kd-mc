@@ -5,7 +5,7 @@
  * jamais d'adresse IP ; zéro écriture KV pour tout ça. node services/kdmc-router/activite.test.mjs */
 import { DatabaseSync } from 'node:sqlite';
 import mod, { enrich } from './worker.js';
-import { noter, fil, actives, resume, LIM, TYPES, _resetPurge } from './activite.js';
+import { noter, fil, actives, resume, LIM, TYPES, _resetPurge, filDomaine, parApp, estAppareilRobot } from './activite.js';
 import { lireBoite, handleBoite, _viderMemo } from './boite.js';
 import { handleCercle, ADMIN, schema as schemaCercle } from './cercle.js';
 
@@ -148,6 +148,64 @@ ok(cD.fil.some((e) => /\/profil · 📲 iPhone · iOS 18\.0$/.test(e.texte)) && 
 const outilsD = { qui: async () => ({ uid: ADMIN, nom: 'Admin', admin: true }), now: () => T0 + 200e3, fbToken: async () => '', fetch: async () => new Response('null') };
 const phD = await (await handleBoite(new Request('https://kd-mc.com/__boite/admin/personne?uid=dev1', { headers: { origin: 'https://kd-mc.com' } }), new URL('https://kd-mc.com/__boite/admin/personne?uid=dev1'), envD, outilsD)).json();
 ok(phD.evenements.length === 3 && phD.evenements.every((e) => e.appareil) && phD.evenements[0].appareil === LIB_IPHONE, '8g. l\'historique complet donne l\'appareil de chaque événement', phD.evenements);
+
+/* 9. LE FIL DE TOUT LE DOMAINE (Kevin 17.11 : « voir clairement les dernières infos, connexions, modifs, qui a fait quoi ou quand, de tout le domaine, chaque app ») */
+console.log('\nLe fil du domaine\n');
+{
+  const envF = mk(); const T = T0 + 5e6;
+  const LINUX = 'Linux · Linux · Chrome 131', IPH = 'iPhone · iOS 18.7 · Safari 27';
+  await noter(envF, { uid: 'lea', nom: 'Léa', type: 'connexion', app: 'arbre.kd-mc.com', detail: 'arbre.kd-mc.com', appareil: IPH, lieu: 'Nice' }, T + 1000);
+  await noter(envF, { uid: 'lea', nom: 'Léa', type: 'modif', app: 'arbre.kd-mc.com', detail: 'fiche modifiée', appareil: IPH }, T + 2000);
+  await noter(envF, { uid: 'tom', nom: 'Tom', type: 'visite', app: 'lingua.kd-mc.com', detail: '/', appareil: IPH }, T + 3000);
+  await noter(envF, { uid: ADMIN, nom: 'Admin', type: 'visite', app: 'kd-mc.com', detail: '/admin/', appareil: IPH }, T + 4000);
+  for (let i = 0; i < 40; i++) await noter(envF, { uid: ADMIN, nom: 'Admin', type: 'visite', app: 'tor.kd-mc.com', detail: '/p' + i, appareil: LINUX }, T + 5000 + i);
+  await noter(envF, { uid: 'testparcours-1', nom: 'Test', type: 'connexion', app: 'kd-mc.com', detail: 'x', appareil: IPH }, T + 6000);
+  const dbF = envF.CERCLE_DB;
+  const tout = await filDomaine(dbF, { limite: 60 });
+  ok(tout.lignes.length === 5 && tout.lignes.every((l) => !estAppareilRobot(l.appareil)), '9a. le fil du domaine écarte les 40 passages du robot (navigateur de test) et garde les 5 vraies lignes', tout.lignes.length);
+  ok(tout.lignes[0].ts > tout.lignes[tout.lignes.length - 1].ts && tout.lignes.some((l) => l.uid === 'lea') && tout.lignes.some((l) => l.uid === 'tom'), '9b. toutes les personnes dans UNE liste, la plus récente en haut');
+  ok((await filDomaine(dbF, { robots: true, limite: 100 })).lignes.length === 45, '9c. avec robots : les 45 lignes sont là (rien n\'est effacé, seulement écarté de la vue)');
+  const modifs = await filDomaine(dbF, { types: ['modif'] });
+  ok(modifs.lignes.length === 1 && modifs.lignes[0].uid === 'lea' && modifs.lignes[0].detail === 'fiche modifiée', '9d. filtre par type : seules les modifications', modifs.lignes);
+  const arbre = await filDomaine(dbF, { app: 'arbre.kd-mc.com' }), arbreCourt = await filDomaine(dbF, { app: 'arbre' });
+  ok(arbre.lignes.length === 2 && arbreCourt.lignes.length === 2, '9e. filtre par app (nom long ou court)', [arbre.lignes.length, arbreCourt.lignes.length]);
+  const p1 = await filDomaine(dbF, { limite: 2 }), p2 = await filDomaine(dbF, { limite: 2, avant: p1.suite });
+  ok(p1.lignes.length === 2 && p1.suite > 0 && p2.lignes.length === 2 && p2.lignes[0].ts < p1.lignes[1].ts, '9f. la suite se lit par pages (« voir plus »), sans doublon');
+  const apps = await parApp(dbF, T);
+  ok(apps.length === 3 && apps[0].app === 'kd-mc.com'.replace('.kd-mc.com', '') || apps.some((x) => x.app === 'arbre' && x.n === 2 && x.personnes === 1), '9g. par app : dernière activité, lignes et personnes, sans le robot (tor absent)', apps);
+  ok(!apps.some((x) => x.app === 'tor'), '9h. une app vue seulement par le robot n\'apparaît pas comme « active »', apps.map((x) => x.app));
+  const outilsF = { qui: async () => ({ uid: ADMIN, nom: 'Admin', admin: true }), now: () => T + 9000, fbToken: async () => '', fetch: async () => new Response('null') };
+  const appelF = async (q, outils) => { const u = 'https://kd-mc.com/__boite/admin/fil' + q; const r = await handleBoite(new Request(u, { headers: { origin: 'https://kd-mc.com' } }), new URL(u), envF, outils || outilsF); return { st: r.status, j: await r.json() }; };
+  const autres = await appelF('?apps=1');
+  ok(autres.st === 200 && autres.j.evenements.length === 3 && autres.j.evenements.every((e) => !e.moi && e.uid !== 'testparcours-1') && autres.j.evenements[0].app === 'lingua' && /consulté/.test(autres.j.evenements[0].action), '9i. la route : par défaut « les autres » (sans moi, sans compte de test, sans robot), app en nom court, action en clair', autres.j.evenements);
+  ok(Array.isArray(autres.j.apps) && autres.j.apps.some((x) => x.app === 'arbre'), '9j. la route rend aussi le résumé par app quand on le demande');
+  const moi = await appelF('?qui=moi'), tous = await appelF('?qui=tous&types=modif,connexion');
+  ok(moi.j.evenements.length === 1 && moi.j.evenements[0].moi === true, '9k. « moi » : mes vraies lignes seulement (1), pas celles du robot', moi.j.evenements.length);
+  ok(tous.j.evenements.length === 2 && tous.j.evenements.every((e) => e.type === 'modif' || e.type === 'connexion'), '9l. « tous » + types : connexions et modifications', tous.j.evenements);
+  const refuse = await appelF('', { ...outilsF, qui: async () => ({ uid: 'lea', nom: 'Léa', admin: false }) });
+  ok(refuse.st === 401 && !refuse.j.evenements, '9m. quelqu\'un qui n\'est pas admin ne lit RIEN du fil (401)', refuse);
+  /* la porte commune : une app signale une modification, le domaine dit qui et où */
+  const porte = async (origine, corps, qui) => { const u = 'https://arbre.kd-mc.com/__boite/journal'; const r = await handleBoite(new Request(u, { method: 'POST', headers: { 'content-type': 'application/json', origin: origine, 'user-agent': IPHONE }, body: JSON.stringify(corps) }), new URL(u), envF, { ...outilsF, qui: async () => qui }); return { st: r.status, j: await r.json() }; };
+  const lea = { uid: 'lea', nom: 'Léa', admin: false };
+  const p1j = await porte('https://arbre.kd-mc.com', { detail: 'fiche de Jean corrigée (date de naissance)', app: 'faux', uid: 'tom', nom: 'Usurpé' }, lea);
+  const vu = (await filDomaine(dbF, { types: ['modif'], app: 'arbre' })).lignes[0];
+  ok(p1j.st === 200 && p1j.j.etat === 'ajoute' && vu.uid === 'lea' && vu.nom === 'Léa' && vu.app === 'arbre.kd-mc.com' && /Jean corrigée/.test(vu.detail), '9o. la porte commune : la modification est notée au nom de la SESSION et de l\'app d\'origine (ce que la page déclare est ignoré)', vu);
+  ok((await porte('https://evil.example', { detail: 'xx' }, lea)).st === 403, '9p. une page hors du domaine est refusée (403)');
+  ok((await porte('https://arbre.kd-mc.com', { detail: 'xx' }, null)).st === 401, '9q. sans compte connecté : refusé (401)');
+  ok((await porte('https://arbre.kd-mc.com', { detail: '' }, lea)).st === 400, '9r. sans phrase : refusé (400)');
+  const adm = await porte('https://cmcteams.kd-mc.com', { detail: 'planning de novembre importé' }, { uid: '', nom: 'Admin', admin: true });
+  const moiJ = (await filDomaine(dbF, { uid: ADMIN, types: ['modif'] })).lignes[0];
+  ok(adm.j.etat === 'ajoute' && moiJ && moiJ.app === 'cmcteams.kd-mc.com', '9s. mes propres modifications (admin) entrent aussi dans le journal, sous « Moi »', moiJ);
+  const { BOUTON_JS } = await import('./boite-bouton.js');
+  ok(/window\.kdmcJournal = function/.test(BOUTON_JS) && /\/__boite\/journal/.test(BOUTON_JS), '9t. le script servi à toutes les pages offre window.kdmcJournal');
+  /* à la source : une page ouverte depuis le réseau des robots (GitHub Actions) n'écrit plus rien dans le fil */
+  const envR = mk(); const AZURE = { country: 'US', city: 'Boydton', region: 'Virginia', asn: 8075, asOrganization: 'Microsoft' };
+  await enrich(envR, rq(AZURE, PC, '/planning'), 'robotin', 'Robotin', true, undefined, { hote: 'cmcteams.kd-mc.com', page: true });
+  let nR = 0; try { nR = envR.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n; } catch { nR = 0; /* table jamais créée : rien n'a été noté */ }
+  await enrich(envR, rq(NICE, IPHONE, '/planning'), 'humain', 'Humain', true, undefined, { hote: 'cmcteams.kd-mc.com', page: true });
+  const nH = envR.CERCLE_DB._s.prepare("SELECT COUNT(*) AS n FROM activite WHERE uid = 'humain'").get().n;
+  ok(nR === 0 && nH >= 1, '9n. à la source : depuis le réseau des robots, aucune ligne ; depuis un vrai réseau, la visite est notée', [nR, nH]);
+}
 
 /* 6. aucune écriture KV pour tout ça */
 ok(!kvEcrit.some((k) => /activ|perso|fil:/.test(k)) && envB.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n > 30, '6. le fil d\'activité n\'écrit RIEN au KV : tout vit en D1 (' + envB.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n + ' lignes), les écritures KV restantes sont celles d\'avant (fiches, journal, limites)');

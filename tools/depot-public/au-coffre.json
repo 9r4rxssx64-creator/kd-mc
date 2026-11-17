@@ -342,6 +342,7 @@
   "tests/verify-inscription-unique.mjs",
   "tests/verify-insee-verif.mjs",
   "tests/verify-javis-bee.mjs",
+  "tests/verify-journal-domaine.mjs",
   "tests/verify-lessons-numeros.mjs",
   "tests/verify-lg-liste-firebase.mjs",
   "tests/verify-liens-corriges.mjs",

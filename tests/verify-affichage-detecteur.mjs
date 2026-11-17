@@ -5,7 +5,8 @@
  * Lancer : npm run test:affichage-detecteur
  */
 import { chromium } from 'playwright';
-import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours, raisonToucher } from '../tools/plateformes/verif-affichage-domaine.mjs';
+import { readFileSync } from 'node:fs';
+import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours, raisonToucher, fermerFenetreOuverte } from '../tools/plateformes/verif-affichage-domaine.mjs';
 
 const PIEGE = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>p</title>
 <style>body{margin:0;font:16px sans-serif} header{position:relative;top:-30px;height:60px;background:#333;color:#fff}
@@ -170,6 +171,18 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   ok('toucher impossible : un bouton invisible est nommé « invisible »', r1 === 'invisible', r1);
   ok('toucher impossible : un bouton recouvert dit par QUOI', /^recouvert par div#voile/.test(r2), r2);
   ok('toucher impossible : message inconnu → première ligne, sans numéro de 6 chiffres', raisonToucher('locator.click: Timeout 4000ms exceeded 1234567.') === 'locator.click: Timeout 4000ms exceeded ….'); }
+/* 17.11 (apex-ai) : une fenêtre modale ouverte par un toucher est refermée avant le toucher suivant */
+{ const pm = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await pm.setContent('<button id="ouvre" onclick="document.body.insertAdjacentHTML(\'beforeend\',\'<div id=m role=dialog aria-modal=true style=position:fixed;inset:0;background:#000><button id=f aria-label=Fermer onclick=this.parentNode.remove()>x</button></div>\')">ouvrir</button><button id="apres">suite</button>');
+  ok('fenêtre ouverte : rien à fermer quand rien n\'est ouvert', (await pm.evaluate(fermerFenetreOuverte)) === false);
+  await pm.click('#ouvre');
+  let bloque = false; try { await pm.locator('#apres').click({ timeout: 600 }); } catch (e) { bloque = true; }
+  ok('fenêtre ouverte : elle empêche bien le toucher suivant (le défaut mesuré sur apex-ai)', bloque);
+  ok('fenêtre ouverte : fermerFenetreOuverte la referme', (await pm.evaluate(fermerFenetreOuverte)) === true && (await pm.locator('#m').count()) === 0);
+  let suite = true; try { await pm.locator('#apres').click({ timeout: 600 }); } catch (e) { suite = false; }
+  ok('fenêtre ouverte : le toucher suivant passe ensuite', suite);
+  const src2 = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  ok('le grand robot referme la fenêtre ouverte après chaque toucher', /explo\.cache \+= m2\.cache[^\n]*\n[^\n]*\n\s*await page\.evaluate\(fermerFenetreOuverte\)/.test(src2)); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

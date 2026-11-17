@@ -216,6 +216,15 @@ export function raisonToucher(message) {
   if (lignes.some((l) => /outside of the viewport/.test(l))) return 'hors de l\'écran';
   return lignes[0].replace(/\d{6,}/g, '…').slice(0, 60);
 }
+/* 17.11 : referme la fenêtre modale (aria-modal) qu'un toucher vient d'ouvrir : bouton « Fermer / × », sinon Échap. Rend true si elle en a fermé une. */
+export function fermerFenetreOuverte() {
+  const vis = (e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; };
+  const m = [...document.querySelectorAll('[aria-modal="true"], dialog[open]')].find(vis);
+  if (!m) return false;
+  const b = [...m.querySelectorAll('button, [role="button"]')].find((x) => /^(×|✕|✖|x|fermer|close|annuler)$/i.test((x.textContent || '').trim()) || /ferm|close|annul/i.test(x.getAttribute('aria-label') || ''));
+  if (b) b.click(); else document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  return true;
+}
 export function candidatsNavigation() {
   const DANGER = /supprim|effac|envoy|valid|achet|pay|commander|déconnex|deconnex|logout|quitter|réinit|reinit|publier|signer|accepter|refuser|bloquer|bannir/i;
   const vis = (e) => { const r = e.getBoundingClientRect(); const st = getComputedStyle(e); return r.width > 8 && r.height > 8 && st.visibility !== 'hidden' && st.display !== 'none' && r.top < innerHeight && r.bottom > 0; };
@@ -360,6 +369,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               if (changePage && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après ' + (nomCible || 'n°' + k) + ' (' + (await page.evaluate(() => location.pathname).catch(() => '?')) + ')'); }
               explo.cache += m2.cache; explo.haut += m2.haut; explo.deborde = Math.max(explo.deborde, m2.deborde); explo.js += js.length - jsAvant;
               if (m2.cache && explo.ex.length < 4) explo.ex.push('caché après n°' + k + ' : ' + m2.cacheEx[0]);
+              await page.evaluate(fermerFenetreOuverte).catch(() => false);   /* 17.11 (apex-ai : « mémoire d'Apex » ouverte par un toucher couvrait les 7 boutons suivants → « toucher impossible ») : une fenêtre VOULUE ouverte par un toucher se referme avant le suivant */
               /* 17.11 (kit « déborde 102 » après un toucher, deux passages de suite, sans dire QUOI ni sur quelle page) : on nomme ce qui déborde et le chemin de la page atteinte */
               if (m2.deborde && m2.debordeEx && m2.debordeEx.length && !explo.ex.some((x) => x.startsWith('déborde après'))) explo.ex.push('déborde après ' + (nomCible || 'n°' + k) + ' (' + (await page.evaluate(() => location.pathname).catch(() => '?')) + ') : ' + m2.debordeEx.slice(0, 2).join(' | '));
               /* 17.11 (lingua « 7 onglets sans réaction », tous réactifs en local) : après le rechargement on attend comme à la première ouverture (écran de démarrage parti, accueil fermé),

@@ -96,7 +96,12 @@ async function essayer(nom, fn) { try { await fn(); } catch (e) { noter(nom, fal
 /* ---------- la suite ---------- */
 const codes = [0, 1, 2].map(() => 'rb' + lettres(3) + String(1000 + (randomBytes(2).readUInt16BE() % 9000)));
 const noms = ['A', 'B', 'C'].map((x) => 'Temps Reel' + x + lettres(5));
-const uids = []; let H, navigateur;
+const uids = []; let H, navigateur; const personnes = []; let lignesEffacees = false;
+/* 16.11 (run 43908208361 : « une personne n'a pas pu entrer » a sauté le nettoyage placé en fin de suite → 2 lignes « temps-reel » restées dans Apex Chat) : l'effacement des lignes Apex Chat vit ICI, appelé en fin de suite ET dans `finally`, pour chaque personne entrée, une seule fois. */
+async function effacerLignesApex() {
+  if (lignesEffacees) return; lignesEffacees = true;
+  for (const x of personnes) { if (!x.ouvert) continue; await x.p.evaluate(async (api) => { try { const r = await fetch(api + '/api/users/me', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + K.token }, body: JSON.stringify({ confirm: 'SUPPRIMER' }) }); return r.status; } catch (e) { return 'erreur'; } }, API).then((st) => noter('Nettoyage : ligne Apex Chat de ' + x.etiquette, st === 200, 'HTTP ' + st)).catch(() => noter('Nettoyage : ligne Apex Chat de ' + x.etiquette, false, 'page illisible')); }
+}
 try {
   H = await admin();
   for (let i = 0; i < 3; i++) {
@@ -106,7 +111,9 @@ try {
     uids.push(c.j.uid);
   }
   navigateur = await chromium.launch({ executablePath: process.env.PW_EXE || undefined, proxy: process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY } : undefined, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
-  const [B, C, A] = [await entrer(navigateur, noms[1], codes[1], 'B'), await entrer(navigateur, noms[2], codes[2], 'C'), await entrer(navigateur, noms[0], codes[0], 'A')];
+  const B = await entrer(navigateur, noms[1], codes[1], 'B'); personnes.push(B);
+  const C = await entrer(navigateur, noms[2], codes[2], 'C'); personnes.push(C);
+  const A = await entrer(navigateur, noms[0], codes[0], 'A'); personnes.push(A);
   for (const x of [A, B, C]) noter(`Entrée de ${x.etiquette} dans Apex Chat (sans SMS)`, x.ouvert, x.ouvert ? 'compte du domaine reconnu, ' + x.id : 'PAS entré(e) : ' + x.diag);
   if (!A.ouvert || !B.ouvert || !C.ouvert) throw new Error('une personne n\'a pas pu entrer');
   await B.p.waitForTimeout(2000);
@@ -354,11 +361,12 @@ try {
   });
 
   /* 31.10 (Kevin : « tu peux créer mais efface tout après ») : chaque compte efface sa ligne Apex Chat LUI-MÊME, tout de suite (suppression de compte du serveur), au lieu d'attendre le nettoyage de 03:00 */
-  for (const x of [A, B, C]) await x.p.evaluate(async (api) => { try { const r = await fetch(api + '/api/users/me', { method: 'DELETE', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + K.token }, body: JSON.stringify({ confirm: 'SUPPRIMER' }) }); return r.status; } catch (e) { return 'erreur'; } }, API).then((st) => noter('Nettoyage : ligne Apex Chat de ' + x.etiquette, st === 200, 'HTTP ' + st)).catch(() => noter('Nettoyage : ligne Apex Chat de ' + x.etiquette, false, 'page illisible'));
+  await effacerLignesApex();
   for (const x of [A, B, C]) await x.ctx.close().catch(() => {});
 } catch (e) {
   noter('ROBOT', false, 'ERREUR : ' + String(e && e.message).slice(0, 200));
 } finally {
+  await effacerLignesApex().catch(() => {});
   if (navigateur) await navigateur.close().catch(() => {});
   /* 12.11 (run 43218577681 et 43302499959) : le nettoyage a répondu « not_found » à un compte tout juste créé, DEUX fois, et les deux fois le routeur du domaine était redéployé pendant le run (pushes 12:27/12:36 puis 20:36/20:45). Un redéploiement laisse le registre un instant muet : on redemande jusqu'à 4 fois (5 s) avant de compter un KO. Une réponse autre que not_found (admin_protege, 503…) n'est jamais rejouée. */
   for (const u of uids) if (u) {

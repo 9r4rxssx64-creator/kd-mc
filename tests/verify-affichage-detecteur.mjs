@@ -6,7 +6,7 @@
  */
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
-import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours, raisonToucher, fermerFenetreOuverte } from '../tools/plateformes/verif-affichage-domaine.mjs';
+import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours, raisonToucher, fermerFenetreOuverte, quitteLHote } from '../tools/plateformes/verif-affichage-domaine.mjs';
 
 const PIEGE = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>p</title>
 <style>body{margin:0;font:16px sans-serif} header{position:relative;top:-30px;height:60px;background:#333;color:#fff}
@@ -112,7 +112,7 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   ok('les épingles de carte ne comptent pas « < 44 px » ; la commande de zoom et le petit bouton de l\'app, si', mm.petit === 2 && !mm.petitEx.some((x) => /marker/.test(x)) && mm.petitEx.some((x) => /leaflet-control-zo/.test(x)) && mm.petitEx.some((x) => /button#mini/.test(x)), JSON.stringify([mm.petit, mm.petitEx]));
   ok('un « trop petit » dit sa taille et son parent (ex. « button#mini 30x30 dans … »)', mm.petitEx.every((x) => /\s\d+x\d+ dans \S+/.test(x)), JSON.stringify(mm.petitEx)); }
 /* 16.11 : le grand robot ferme l'écran d'accueil AVANT chaque mesure (sinon « cmcteams cache 162 » sous l'écran de bienvenue, run 43778650553) */
-{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+{ const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
   const n = (src.match(/for \(let k = 0; k < 3 && await page\.evaluate\(fermerAccueil\)[^\n]*\n\s*(?:const m2|m) = await page\.evaluate\(mesurer, tel\)/g) || []).length;
   ok('le grand robot ferme l\'accueil (jusqu\'à 3 écrans : bienvenue, consentement) avant ses 2 mesures', n === 2, String(n)); }
 /* 16.11 (apex-cloud 2540) : sous une fenêtre modale ouverte, la page derrière n'est pas « cachée » ; le même voile SANS aria-modal le reste. Et un écran de démarrage se laisse attendre. */
@@ -163,6 +163,17 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   await pf.setContent('<!doctype html><title>t</title><body><input type="file" id="f" style="display:none"><button id="choisir" onclick="document.getElementById(\'f\').click()">Choisir</button></body>');
   let vu = false; const sur = () => { vu = true; }; pf.on('filechooser', sur); await pf.click('#choisir'); await pf.waitForTimeout(300); pf.off('filechooser', sur);
   ok('vrai navigateur : un bouton « choisir un fichier » déclenche bien l\'événement écouté', vu === true); await pf.close(); }
+/* 17.11 (pont 2608 : « deborde +3 » sans nom) : un texte qui sort de sa boîte élargit la page de quelques px ; le robot doit le NOMMER */
+await p.setContent('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>t</title><style>body{margin:0}</style></head><body><div id="etroit" style="width:120px;white-space:nowrap;margin-left:0">Texte beaucoup trop long pour sa boite etroite et son voisin ici</div></body></html>');
+const mt = await p.evaluate(mesurer, true);
+ok('texte qui sort de sa boîte : le débordement est vu ET nommé', mt.deborde > 2 && mt.debordeEx.length === 1 && /div#etroit/.test(mt.debordeEx[0]), JSON.stringify([mt.deborde, mt.debordeEx]));
+/* 17.11 (pont 2608) : un bouton qui change d'APP (autre hôte) n'est pas « une page sans retour » ; un changement de page dans la même app, si */
+{ const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  const e = (u) => u + '|100|20|50:1';
+  ok('quitteLHote : light → CMCteams (autre hôte) = on a quitté l\'app', quitteLHote(e('https://cmcteams-light.kd-mc.com/'), e('https://cmcteams.kd-mc.com/')) === true);
+  ok('quitteLHote : même app, autre page = on n\'a pas quitté', quitteLHote(e('https://cmcteams.kd-mc.com/'), e('https://cmcteams.kd-mc.com/a/')) === false);
+  ok('quitteLHote : adresse illisible = on n\'efface rien (faux)', quitteLHote('?', '??') === false);
+  ok('le grand robot ne compte pas « sans retour » un bouton qui quitte l\'app', /changePage && !quitteLHote\(avant, apres\) && !\(await page\.evaluate\(aUnRetour\)\)/.test(src)); }
 /* 17.11 « toucher impossible » : le robot dit POURQUOI (raison de Playwright), avec un vrai clic raté */
 { const pt = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   await pt.setContent('<button id="cache" style="display:none">x</button><button id="sous" style="position:absolute;top:10px;left:10px;width:80px;height:40px">y</button><div id="voile" style="position:absolute;top:0;left:0;width:200px;height:100px"></div>');

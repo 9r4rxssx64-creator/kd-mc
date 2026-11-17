@@ -181,6 +181,18 @@ export function mesurer(tel) {
         if (out.some((o) => o.el.contains(e))) continue;   /* le parent déjà nommé suffit */
         out.push({ el: e, t: court(e) + ' (' + Math.round(r.left) + '→' + Math.round(r.right) + ' px)' });
       }
+      /* 17.11 (bilan n°2, pont 2608 : « deborde +3 » sur la light et departs à l'iPhone SE, AUCUN élément nommé) : un texte qui sort de sa boîte (nowrap, mot long) élargit la page
+         alors que la boîte elle-même reste dans l'écran ; aucun bord droit ne dépasse, donc la liste ci-dessus est vide. On cherche alors par élimination : le premier élément qui,
+         masqué, fait redescendre la largeur de la page — il est nommé avec la taille de son texte (scrollWidth) */
+      if (!out.length) {
+        const lg = () => Math.max(document.documentElement.scrollWidth, document.body ? document.body.scrollWidth : 0);
+        const cands = [...(document.body ? document.body.querySelectorAll('*') : [])].filter((e) => e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).display !== 'none' && getComputedStyle(e).position !== 'fixed').slice(0, 300);
+        for (const e of cands) {
+          if (out.length >= 2) break;
+          const d = e.style.display; e.style.display = 'none'; const l2 = lg(); e.style.display = d;
+          if (l2 < largeur) out.push({ el: e, t: court(e) + ' (texte ' + e.scrollWidth + ' px dans une boîte de ' + e.clientWidth + ' px)' });
+        }
+      }
       return out.map((o) => o.t);
     })() : [],
     encoche,
@@ -246,6 +258,12 @@ export function candidatsNavigation() {
     if (out.length >= 6) break;
   }
   return out.length;
+}
+/* 17.11 (bilan n°2, pont 2608 : « pas de retour après button#passBtn » sur la light et departs) : un bouton qui envoie vers une AUTRE app du domaine
+   (la passerelle « 🔗 CMCteams » ⇄ « 🔗 light ») ne laisse pas une page de CETTE app sans retour : l'autre app est mesurée pour elle-même, à son adresse.
+   `avant` / `apres` = les empreintes de empreintePage() (l'adresse complète est leur 1er champ). */
+export function quitteLHote(avant, apres) {
+  try { return new URL(String(avant).split('|')[0]).host !== new URL(String(apres).split('|')[0]).host; } catch (_) { return false; }
 }
 export function aUnRetour() {
   const RET = /^\s*(←|‹|⟵|◀|<|✕|×|✖)|retour|revenir|fermer|back|close/i;
@@ -366,7 +384,7 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */
               const m2 = await page.evaluate(mesurer, tel);
               const changePage = apres.split('|')[0] !== avant.split('|')[0];
-              if (changePage && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après ' + (nomCible || 'n°' + k) + ' (' + (await page.evaluate(() => location.pathname).catch(() => '?')) + ')'); }
+              if (changePage && !quitteLHote(avant, apres) && !(await page.evaluate(aUnRetour))) { explo.sansRetour++; if (explo.ex.length < 4) explo.ex.push('pas de retour après ' + (nomCible || 'n°' + k) + ' (' + (await page.evaluate(() => location.pathname).catch(() => '?')) + ')'); }
               explo.cache += m2.cache; explo.haut += m2.haut; explo.deborde = Math.max(explo.deborde, m2.deborde); explo.js += js.length - jsAvant;
               if (m2.cache && explo.ex.length < 4) explo.ex.push('caché après n°' + k + ' : ' + m2.cacheEx[0]);
               await page.evaluate(fermerFenetreOuverte).catch(() => false);   /* 17.11 (apex-ai : « mémoire d'Apex » ouverte par un toucher couvrait les 7 boutons suivants → « toucher impossible ») : une fenêtre VOULUE ouverte par un toucher se referme avant le suivant */

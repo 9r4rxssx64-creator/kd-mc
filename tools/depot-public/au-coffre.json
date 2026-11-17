@@ -354,6 +354,7 @@
   "tests/verify-light-equipes-firebase.mjs",
   "tests/verify-light-faceid-code.mjs",
   "tests/verify-light-fond-bleu-affiche.mjs",
+  "tests/verify-light-fond-bleu-live.mjs",
   "tests/verify-light-invite.mjs",
   "tests/verify-light-live-pdf.mjs",
   "tests/verify-light-relire-apres-jeton.mjs",

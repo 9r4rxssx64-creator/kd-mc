@@ -40,6 +40,9 @@ const srv = http.createServer((q, r) => {
     if (u === '/barre') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('<link rel="stylesheet" href="/barre.css">', '<textarea id="champ"></textarea><button id="up">↑</button><button id="reg">⚙️</button>')); }
     if (u === '/paysage.css') { r.setHeader('content-type', 'text/css'); return r.end('button{position:fixed;width:44px;height:44px;padding:0}.d{right:8px}.g{left:8px}#cache{left:0;top:195px}' + [130, 174, 218, 262, 306].map((t, i) => `#d${i}{top:${t}px}`).join('') + [130, 262, 306].map((t, i) => `#g${i}{top:${t}px}`).join('')); }
     if (u === '/paysage') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('<link rel="stylesheet" href="/paysage.css">', [0, 1, 2, 3, 4].map((i) => `<button class="d" id="d${i}">${i}</button>`).join('') + [0, 1, 2].map((i) => `<button class="g" id="g${i}">g${i}</button>`).join('') + '<button id="cache">⏱</button>')); }
+    if (u === '/liste.css') { r.setHeader('content-type', 'text/css'); return r.end('body{margin:0}.conv-item{display:flex;align-items:center;gap:12px;padding:12px 10px;border-bottom:1px solid #444;cursor:pointer}.av{width:44px;height:44px;border-radius:50%;background:#888;flex-shrink:0}.mid{flex:1;min-width:0}.conv-more{background:transparent;border:none;flex-shrink:0;min-width:44px;min-height:44px;padding:0}.tete{position:fixed;top:0;left:0;right:0;height:52px;background:#222}'); }
+    if (u === '/grille') { r.setHeader('content-type', 'text/html; charset=utf-8'); let cells = ''; for (let i = 0; i < 49; i++) cells += '<div class="mpg" onclick="void 0">' + (i + 1) + '</div>'; return r.end(appPage('<style>body{margin:0}.g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding:56px 15px 70px}.mpg{height:78px;background:#345;color:#fff;font:14px sans-serif;cursor:pointer}.nav{position:fixed;left:0;right:0;bottom:0;height:56px;background:#222;display:flex;gap:6px;padding:6px}.nav a{flex:1;background:#444;min-height:44px}.tete{position:fixed;top:0;left:0;right:0;height:48px;background:#222}</style>', '<div class="tete"></div><div class="g">' + cells + '</div><div class="nav"><a href="#a"></a><a href="#b"></a><a href="#c"></a><a href="#d"></a></div>')); }
+    if (u === '/liste') { r.setHeader('content-type', 'text/html; charset=utf-8'); let rows = ''; for (let i = 0; i < 14; i++) rows += '<div class="conv-item" onclick="void 0"><div class="av"></div><div class="mid"><b>Conversation ' + i + '</b><br>dernier message</div><div>12:0' + (i % 10) + '</div><button class="conv-more" aria-label="Actions">⋯</button></div>'; return r.end(appPage('<link rel="stylesheet" href="/liste.css">', '<div class="tete"></div><div style="height:52px"></div>' + rows)); }
     if (u === '/off') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('<meta name="kdmc-bee" content="off">')); }
     if (u === '/deja') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end(appPage('', '<div id="javis-root"></div>')); }
     if (u === '/dans-un-cadre') { r.setHeader('content-type', 'text/html; charset=utf-8'); return r.end('<!doctype html><body><iframe id="f" src="/"></iframe>'); }
@@ -421,6 +424,33 @@ console.log('F. Bee se pose sur une place libre : jamais sur un bouton, un champ
   const ouvertDefile = await etat();
   chk(ouvertDefile.op === 1 && ouvertDefile.tf === '' && ouvertDefile.w > 250, `chat OUVERT + page qui défile : le chat ne s'efface pas (opacité ${ouvertDefile.op}, ${ouvertDefile.w} px)`);
   await n.ctx.close();
+}
+
+/* ───────── G. une liste de conversations : un bouton « ⋯ » sur CHAQUE ligne (robot d'affichage 16.11, run 43783484535, Apex Chat sur iPhone 13 : « button.conv-more sous iframe[/__javis/cadre] ») ───────── */
+console.log('G. Liste de lignes à bouton « ⋯ » : le rond ne cache aucun bouton');
+{
+  ETAT.whoami = 'kevin'; ETAT.qui = 'kevin';
+  const l = await ouvre({ url: '/liste', vp: { width: 390, height: 664 } });
+  await l.page.waitForFunction(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); return f && getComputedStyle(f).display === 'block'; }, null, { timeout: 20000 }).catch(() => {});
+  await dors(9000);
+  const m = await l.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(); const cache = [...document.querySelectorAll('.conv-more')].filter((b) => { const r = b.getBoundingClientRect(); const w = Math.min(f.right, r.right) - Math.max(f.left, r.left), h = Math.min(f.bottom, r.bottom) - Math.max(f.top, r.top); return r.bottom > 0 && r.top < innerHeight && w > 2 && h > 2; }).length; return { f: [Math.round(f.left), Math.round(f.top), Math.round(f.width), Math.round(f.height)], cache }; });
+  console.log('   rond :', JSON.stringify(m));
+  chk(m.cache === 0, `390×664, 14 lignes avec « ⋯ » : aucun bouton « ⋯ » sous le rond (${m.cache} caché(s), rond en ${m.f.join(',')})`);
+  await l.ctx.close();
+}
+
+/* ───────── H. grille dense de 7 colonnes (pont 2624, robot Servi : CMCteams iPhone 13 après un toucher, 2 cases `.mpg` restaient sous le rond) ───────── */
+console.log('H. Grille dense 7 colonnes : le rond ne laisse pas de case dessous quand une place moins couvrante existe');
+{
+  ETAT.whoami = 'kevin'; ETAT.qui = 'kevin';
+  const g = await ouvre({ url: '/grille', vp: { width: 390, height: 664 } });
+  await g.page.waitForFunction(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]'); return f && getComputedStyle(f).display === 'block'; }, null, { timeout: 20000 }).catch(() => {});
+  await dors(9000);
+  await g.page.mouse.click(200, 300); await dors(1500);                      // « après un toucher » : la page est touchée, Bee se replace
+  const m = await g.page.evaluate(() => { const f = document.querySelector('iframe[src="/__javis/cadre"]').getBoundingClientRect(); const dessous = [...document.querySelectorAll('.mpg')].filter((b) => { const r = b.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return false; const w = Math.min(f.right, r.right) - Math.max(f.left, r.left), h = Math.min(f.bottom, r.bottom) - Math.max(f.top, r.top); if (w <= 2 || h <= 2) return false; const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2; return (cx > f.left && cx < f.right && cy > f.top && cy < f.bottom) || w * h > 0.2 * r.width * r.height; }).length; return { f: [Math.round(f.left), Math.round(f.top), Math.round(f.width), Math.round(f.height)], dessous }; });
+  console.log('   rond :', JSON.stringify(m));
+  chk(m.dessous === 0, `390×664, grille 7 colonnes : aucune case sous le rond (${m.dessous} cachée(s), rond en ${m.f.join(',')})`);
+  await g.ctx.close();
 }
 
 /* ───────── E. sabotage : le parent n'obéit qu'à SON cadre ───────── */

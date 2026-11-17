@@ -318,6 +318,9 @@ export async function handleAgir(request, env, outils) {
   try { r = await a.executer(env, p.c, { now, appeler: (chemin, init) => outils.appeler(request, chemin, init), armer: outils.armer ? () => outils.armer() : null, arbre: outils.arbre ? outils.arbre() : null }); }
   catch (e) { r = { ok: false, texte: 'L\'action a échoué (' + String(e && e.message || e).slice(0, 80) + ').' }; }
   try { if (outils.journal) await outils.journal({ ev: 'bee_agir', action: p.a, ok: !!r.ok }); } catch { /* le journal ne bloque jamais */ }
+  /* JOURNAL DU DOMAINE (Kevin 17.11 « qui a fait quoi, quand ») : une ligne courte quand Bee a VRAIMENT agi pour Kevin. Le TITRE de l'action seulement :
+     jamais le texte confirmé (il peut porter un code), jamais la conversation. Un journal en panne ne bloque jamais l'action. */
+  try { if (r.ok && outils.noter) await outils.noter({ type: 'modif', app: 'bee', detail: ('Bee : ' + a.titre).slice(0, 60) }, request); } catch { /* le journal ne bloque jamais */ }
   return J({ ok: !!r.ok, action: p.a, texte: r.texte || (r.ok ? 'Fait.' : 'Pas fait.') }, r.ok ? 200 : 502);
 }
 

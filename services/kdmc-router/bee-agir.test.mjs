@@ -105,6 +105,30 @@ pr = await prop('marquer_lu', { cle: 'lingua:12' });
 r = await agir({ jeton: pr.jeton, confirme: true }, { o: { appeler: async () => ({ ok: false, status: 403, reason: 'admin_requis' }) } }); jr = await r.json();
 ok(r.status === 502 && jr.ok === false && /pas pu/.test(jr.texte), '3p. la porte admin refuse → Bee le dit honnêtement (pas de faux « fait »)', JSON.stringify(jr));
 
+/* 3q-3t. JOURNAL DU DOMAINE (cloud-installer 2637) : chaque action FAITE par Bee au nom de Kevin laisse UNE ligne « Bee : … », jamais le contenu */
+{
+  const notees = [];
+  const noter = async (e) => { notees.push(e); };
+  const pj = await prop('memoriser', { texte: 'Le code est CODE : ABCD1234 pour la porte' });
+  r = await agir({ jeton: pj.jeton, confirme: true }, { o: { noter } }); jr = await r.json();
+  ok(r.status === 200 && jr.ok && notees.length === 1 && notees[0].type === 'modif' && notees[0].app === 'bee' && /^Bee : /.test(notees[0].detail) && notees[0].detail.length <= 80,
+    '3q. action réussie → UNE ligne de journal « Bee : … » (type modif, app bee)', JSON.stringify(notees));
+  ok(!/ABCD1234|CODE|porte/i.test(JSON.stringify(notees)), '3r. la ligne du journal ne contient NI le texte confirmé NI un code', JSON.stringify(notees));
+  const pe = await prop('marquer_lu', { cle: 'lingua:99' });
+  const avant = notees.length;
+  r = await agir({ jeton: pe.jeton, confirme: true }, { o: { noter, appeler: async () => ({ ok: false, status: 403 }) } });
+  ok(r.status === 502 && notees.length === avant, '3s. action ÉCHOUÉE → aucune ligne (le journal ne ment pas)', notees.length);
+  const pk = await prop('marquer_lu', { cle: 'lingua:100' });
+  r = await agir({ jeton: pk.jeton, confirme: true }, { o: { noter: async () => { throw new Error('journal en panne'); } } });
+  ok(r.status === 200 && (await r.json()).ok, '3t. un journal en panne ne bloque jamais l\'action');
+}
+
+{ /* 3u. le câblage : outilsBee() du Worker fournit `noter`, classé par la session prouvée, vers activite.noter */
+  const { readFileSync } = await import('node:fs');
+  const w = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
+  const bloc = (w.match(/function outilsBee\(env, ctx\) \{[\s\S]{0,1800}/) || [''])[0];
+  ok(/noter: async \(ev, request\)/.test(bloc) && /personneDe\(env, request\)/.test(bloc) && /activite\.noter\(env,/.test(bloc), '3u. outilsBee() câble `noter` : session prouvée → activite.noter (journal du domaine)');
+}
 /* ───────── 4. les actions font vraiment leur travail ───────── */
 ok(monacoVersMs('2026-10-05 09:30') === Date.UTC(2026, 9, 5, 7, 30), '4. 9 h 30 à Monaco en octobre (été, UTC+2) = 7 h 30 UTC');
 ok(monacoVersMs('2026-12-24 20:00') === Date.UTC(2026, 11, 24, 19, 0), '4b. 20 h à Monaco en décembre (hiver, UTC+1) = 19 h UTC');

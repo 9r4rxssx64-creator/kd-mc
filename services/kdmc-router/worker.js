@@ -5066,6 +5066,8 @@ function outilsBee(env, ctx) {
     now: () => Date.now(),
     armer: () => armerHorloge(env),
     journal: (e) => audLog(env, e),
+    /* JOURNAL DU DOMAINE (« qui a fait quoi ») : la ligne est classée au nom de la session prouvée (Kevin), jamais sans personne. */
+    noter: async (ev, request) => { const qui = await personneDe(env, request); if (qui) await activite.noter(env, Object.assign({ uid: qui.uid, nom: qui.nom, appareil: appareilLabel(request.headers.get('user-agent') || '') }, ev)); },
     /* L'ARBRE, en écriture (BEE_ARBRE_ECRIRE = '0' coupe) : le nuage de l'arbre, joint avec l'empreinte du code famille lue chez le domaine (jamais écrite ni affichée). */
     arbre: () => (String(env && env.BEE_ARBRE_ECRIRE) !== '0' && env && env.ACCOUNTS ? nuageArbre({ fetchFn: (u, o) => fetch(u, o), codehash: () => arbreCodehash(env) }) : null),
     doublon: async (prenom, nom) => { try { return chercherDoublon((await arbreSeedOut(env)).seed, prenom, nom); } catch (_) { return ''; } },

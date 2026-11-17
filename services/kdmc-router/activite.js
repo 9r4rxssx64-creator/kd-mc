@@ -16,6 +16,8 @@ export const TYPES = {
 };
 export const LIM = { jourParCompte: 400, garde: 90 * 864e5, purgeMs: 36e5, detail: 200, question: 160, fil: 14 };
 /* fenêtre anti-doublon par type : la même chose faite deux fois de suite ne s'ajoute pas (« ne se multiplie pas ») */
+/* ce que le domaine note de lui-même à chaque page servie — compté à part de ce qu'une personne fait (plafond par classe) */
+export const AUTOMATIQUES = ['visite', 'connexion', 'lieu', 'appareil'];
 const DEDUP = { visite: 10 * 60e3, connexion: 30 * 60e3, lieu: 36e5, appareil: 36e5, question: 60e3, modif: 36e5, message: 0, contact: 0 };
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS activite (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT, nom TEXT, ts INTEGER, type TEXT, app TEXT, detail TEXT, lieu TEXT, appareil TEXT)`,
@@ -45,7 +47,14 @@ export async function noter(env, ev, now) {
       if (d) return 'doublon';
     }
     const j = new Date(now); j.setUTCHours(0, 0, 0, 0);
-    const c = await db.prepare('SELECT COUNT(*) AS n FROM activite WHERE uid = ? AND ts >= ?').bind(ev.uid, j.getTime()).first();
+    /* 17.11 soir (robot verif-live-journal, run 44193027093 : la porte du journal répondait « plafond » sur 10 apps sur 10) : le compte admin avait ses 400 lignes
+       du jour dès 04h09 UTC — 257 passages de robots d'affichage + 143 connexions / pages — et TOUT ce que Kevin a fait ensuite (17 h) a été jeté sans un mot.
+       Le plafond se compte donc PAR CLASSE : ce que le domaine note tout seul (pages, connexions, lieux, appareils) ne peut plus étouffer ce qu'une personne
+       fait (enregistrement, message, question) ; et les lignes d'un appareil de robot ne comptent que contre les robots. */
+    const classe = AUTOMATIQUES.includes(ev.type) ? AUTOMATIQUES : Object.keys(TYPES).filter((t) => !AUTOMATIQUES.includes(t));
+    const robot = estAppareilRobot(ev.appareil);
+    const c = await db.prepare('SELECT COUNT(*) AS n FROM activite WHERE uid = ? AND ts >= ? AND type IN (' + classe.map(() => '?').join(',') + ') AND ' + (robot ? '' : 'NOT ') + '(' + ROBOT_SQL.map(() => "COALESCE(appareil, '') LIKE ?").join(' OR ') + ')')
+      .bind(ev.uid, j.getTime(), ...classe, ...ROBOT_SQL).first();
     if (((c && c.n) || 0) >= LIM.jourParCompte) return 'plafond';
     await db.prepare('INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(ev.uid, propre(ev.nom, 60), now, ev.type, app, detail, propre(ev.lieu, 80), propre(ev.appareil, 90)).run();
     if (now - purgeLe > LIM.purgeMs) { purgeLe = now; await db.prepare('DELETE FROM activite WHERE ts < ?').bind(now - LIM.garde).run().catch(() => {}); }

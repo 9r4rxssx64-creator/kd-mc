@@ -210,5 +210,22 @@ console.log('\nLe fil du domaine\n');
 /* 6. aucune écriture KV pour tout ça */
 ok(!kvEcrit.some((k) => /activ|perso|fil:/.test(k)) && envB.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n > 30, '6. le fil d\'activité n\'écrit RIEN au KV : tout vit en D1 (' + envB.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n + ' lignes), les écritures KV restantes sont celles d\'avant (fiches, journal, limites)');
 ok(Object.keys(TYPES).length === 8, '7. les 8 types d\'activité sont déclarés (visite, connexion, lieu, appareil, question, modif, message, contact)');
+
+/* 10. LE PLAFOND PAR CLASSE (17.11 soir, robot verif-live-journal : « plafond » sur 10 apps sur 10 — le compte admin était plein de passages de robots dès 04h09 UTC). */
+{
+  const e = mk(); const ROBOT = 'Pixel 7 · Android 14 · Chrome 131', VRAI = 'iPhone · iOS 18.7 · Safari 27';
+  await noter(e, { uid: 'amorce', type: 'visite', app: 'a', detail: '/' }, T0);   /* crée la table */
+  const ins = e.CERCLE_DB._s.prepare('INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  for (let i = 0; i < LIM.jourParCompte; i++) ins.run('kev', 'K', T0 + i, i % 2 ? 'visite' : 'connexion', 'kd-mc.com', '/r' + i, '', ROBOT);
+  ok(await noter(e, { uid: 'kev', type: 'modif', app: 'cmcteams.kd-mc.com', detail: 'planning importé', appareil: VRAI }, T0 + 9e5) === 'ajoute', '10a. ' + LIM.jourParCompte + ' passages de robots sur le compte : ce que la personne enregistre ensuite est NOTÉ (avant : « plafond », 17 h de journal perdues)');
+  ok(await noter(e, { uid: 'kev', type: 'visite', app: 'kd-mc.com', detail: '/admin/', appareil: VRAI }, T0 + 9e5) === 'ajoute', '10b. … et sa vraie page consultée aussi : les lignes d\'un robot ne comptent que contre les robots');
+  ok(await noter(e, { uid: 'kev', type: 'visite', app: 'kd-mc.com', detail: '/encore', appareil: ROBOT }, T0 + 9e5) === 'plafond', '10c. le robot, lui, reste plafonné (une boucle ne remplit pas la base)');
+  for (let i = 0; i < LIM.jourParCompte; i++) ins.run('lea', 'L', T0 + i, 'visite', 'lingua.kd-mc.com', '/p' + i, '', VRAI);
+  ok(await noter(e, { uid: 'lea', type: 'visite', app: 'lingua.kd-mc.com', detail: '/une-de-plus', appareil: VRAI }, T0 + 9e5) === 'plafond', '10d. ' + LIM.jourParCompte + ' pages consultées par une vraie personne : la suivante est plafonnée');
+  ok(await noter(e, { uid: 'lea', type: 'message', app: 'apex-chat.kd-mc.com', detail: 'message privé envoyé', appareil: VRAI }, T0 + 9e5) === 'ajoute', '10e. … mais son message est noté : les pages consultées n\'étouffent jamais « qui a fait quoi »');
+  for (let i = 0; i < LIM.jourParCompte; i++) ins.run('bcl', 'B', T0 + i, 'modif', 'a', 'm' + i, '', VRAI);
+  ok(await noter(e, { uid: 'bcl', type: 'message', app: 'a', detail: 'x', appareil: VRAI }, T0 + 9e5) === 'plafond', '10f. ' + LIM.jourParCompte + ' enregistrements déclarés : la boucle d\'une app reste plafonnée');
+}
+
 console.log(`\n${pass} OK · ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

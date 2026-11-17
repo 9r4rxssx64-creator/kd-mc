@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.025 + light v1.156 — pastille de secteur à côté de chaque nom, d'après les lettres de compétences (2026-11-17)
+- Demande de Kevin : « devant chaque nom, une série de lettres donne l'appartenance au secteur ; groupe ouvert, groupe fermé ; chef, employé ». Pastille Am / Eu / Ba / GO (infobulle : secteur · rôle · lettres) dans CMCteams (colonne des noms) et la light (cellule du nom). Lettres gardées par mois (`post`), rien inventé : sans lettres, pas de pastille.
+- Module partagé `secteur.js` (CMCteams = light), import unique `_mois-import.mjs`, correction de la recopie des personnes qui jetait `post` dans la light. Garde `npm run test:secteur` (35 contrôles, sabotage rouge), dans `test:ci`.
+
 ## CMCteams v10.024 + light v1.155 — Kevin ajoute les matricules SBM au fur et à mesure sur les fiches (2026-11-17)
 - Demande de Kevin : « ajouter les identifiants SBM quand je le sais, au fur et à mesure, sur les comptes ». Avant : champ limité aux id `U`+chiffres, saisie par `prompt()`, rien dans la light.
 - Maintenant : champ + bouton « Ajouter » / « Corriger » (≥ 44 px) sur la fiche (CMCteams) et dans la carte « 👤 nom » de la light (admin seulement), pour tout id interne ; `U` + 3 à 6 chiffres, vide = effacer ; le domaine refuse un matricule déjà pris par une autre personne.

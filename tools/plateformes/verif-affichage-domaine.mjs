@@ -90,6 +90,10 @@ export function mesurer(tel) {
     return encore;
   };
   for (const e of cliquables) {
+    /* 17.11 (apex-cloud 2592, apex-ai « caché 2 · petit 1 » : button#apex-version-badge 70x18 en pointer-events:none ; run 43973722309, cartes : a 51x14 dans div.leaflet-control-attribution) :
+       ce qui ne reçoit AUCUN toucher ne peut être ni « recouvert » ni « trop petit pour le doigt » ; le crédit d'une carte est une mention légale posée par la bibliothèque, pas un bouton de l'app. */
+    if (getComputedStyle(e).pointerEvents === 'none') continue;
+    if (e.closest && e.closest('.leaflet-control-attribution, .maplibregl-ctrl-attrib')) continue;
     const r = e.getBoundingClientRect();
     const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
     if (cx < 0 || cy < 0 || cx >= W || cy >= H) continue;          // hors de l'écran : pas jugé (défilement)
@@ -193,6 +197,11 @@ export function empreintePage() {
   const t = (document.body && document.body.innerText) || '';
   let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
   return location.href + '|' + document.body.innerHTML.length + '|' + document.querySelectorAll('*').length + '|' + t.length + ':' + h;
+}
+/* Nom d'un bouton pour le journal public : balise, id, 2 premières classes, position — JAMAIS son texte (une liste peut porter des noms de personnes). */
+export function nomSansTexte(e) {
+  const r = e.getBoundingClientRect(), cl = typeof e.className === 'string' ? e.className.trim().split(/\s+/).filter(Boolean).slice(0, 2) : [];
+  return e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (cl.length ? '.' + cl.join('.') : '') + ' @' + Math.round(r.left) + ',' + Math.round(r.top);
 }
 export function candidatsNavigation() {
   const DANGER = /supprim|effac|envoy|valid|achet|pay|commander|déconnex|deconnex|logout|quitter|réinit|reinit|publier|signer|accepter|refuser|bloquer|bannir/i;
@@ -314,12 +323,13 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
               const avant = await page.evaluate(empreintePage);
               const cible = page.locator('[data-kdmc-explo="' + k + '"]').first();
               if (!(await cible.count())) continue;
+              const nomCible = await cible.evaluate(nomSansTexte).catch(() => '');   /* 17.11 (apex-cloud 2592) : « n°2 » ne dit pas QUEL bouton ; on le nomme, sans son texte (jamais un nom de personne au journal public) */
               const jsAvant = js.length;
               await cible.click({ timeout: 4000, trial: false });
               await page.waitForTimeout(1200);
               explo.touches++;
               const apres = await page.evaluate(empreintePage);
-              if (apres === avant) { explo.morts++; if (explo.ex.length < 4) explo.ex.push('sans réaction : n°' + k); }
+              if (apres === avant) { explo.morts++; if (explo.ex.length < 4) explo.ex.push('sans réaction : ' + (nomCible || 'n°' + k)); }
               await page.evaluate(fermerFeuilleInstalleur).catch(() => false);
               for (let k = 0; k < 3 && await page.evaluate(fermerAccueil).catch(() => ''); k++) await page.waitForTimeout(500);   /* jusqu'à 3 : bienvenue PUIS bannière de consentement (run 43782748507 : 47 « sous div#cmc-cookie-banner ») */
               const m2 = await page.evaluate(mesurer, tel);

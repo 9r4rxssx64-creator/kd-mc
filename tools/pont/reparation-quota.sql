@@ -22,6 +22,9 @@ BEGIN
       OR (';' || a || ';' LIKE '%;' || NEW.de || ';%'
           AND (' ' || NEW.sujet || ' ' || NEW.corps || ' ') GLOB '*[^0-9]' || id || '[^0-9]*'));
 END;
--- (17.11, apex-cloud) une date écrite en secondes est remise en millisecondes, sinon le message est trié tout en bas.
-CREATE TRIGGER IF NOT EXISTS ts_en_millisecondes AFTER INSERT ON messages WHEN NEW.ts < 100000000000
-BEGIN UPDATE messages SET ts = NEW.ts*1000 WHERE id = NEW.id; END;
+-- 17.11 : l'heure d'un message est celle du PONT. Trois messages portaient une heure fausse (un an plus tôt, six jours plus tard, ou en secondes) : triés ailleurs, donc « perdus ».
+-- Toute heure qui s'écarte de plus de 10 minutes de l'heure réelle est remplacée par l'heure réelle (remplace ts_en_millisecondes d'apex-cloud, même idée, plus large).
+DROP TRIGGER IF EXISTS ts_en_millisecondes;
+CREATE TRIGGER IF NOT EXISTS ts_serveur AFTER INSERT ON messages
+WHEN abs(NEW.ts - CAST(strftime('%s','now') AS INTEGER)*1000) > 600000
+BEGIN UPDATE messages SET ts = CAST(strftime('%s','now') AS INTEGER)*1000 WHERE id = NEW.id; END;

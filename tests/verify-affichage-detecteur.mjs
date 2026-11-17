@@ -124,6 +124,19 @@ ok('le recouvrement par Bee est nommé : élément + positions', Array.isArray(m
   const { estPlantage } = await import('../tools/plateformes/verif-affichage-domaine.mjs');
   ok('plantage reconnu (« Page crashed », « context or browser has been closed ») ; une erreur de page ne l\'est pas', estPlantage('page.goto: Page crashed') && estPlantage(new Error('page.evaluate: Target page, context or browser has been closed')) && !estPlantage('page.goto: Timeout 30000ms exceeded') && !estPlantage('net::ERR_NAME_NOT_RESOLVED'));
   ok('le grand robot : page morte → navigateur relancé avant l\'adresse ; plantage → adresse rejouée UNE fois (2 essais au plus)', /if \(!\(await page\.evaluate\(\(\) => 1\)\.catch\(\(\) => 0\)\)\) \{ await ouvrir\(\);/.test(src) && /for \(let essai = 0; essai < 2; essai\+\+\)/.test(src) && /if \(!err \|\| essai \|\| !estPlantage\(err\)\) break;/.test(src) && /debrancher\(\); await ouvrir\(\); brancher\(\);/.test(src)); }
+/* 17.11 (apex-cloud 2592 + run 43973722309) : un bouton en pointer-events:none et le crédit d'une carte ne sont ni « cachés » ni « petits » ; les mêmes sans ces marques le restent. Et un bouton sans réaction est NOMMÉ sans son texte. */
+{ const pn = await (await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })).newPage();
+  const page1 = (stylePastille, classeCredit) => '<!doctype html><title>t</title><body style="margin:0"><button id="pastille" style="position:fixed;left:10px;top:300px;width:70px;height:18px;' + stylePastille + '">v1</button><div style="position:fixed;left:0;top:290px;width:200px;height:40px;background:#123"></div><div class="' + classeCredit + '" style="position:fixed;right:0;bottom:0"><a href="https://exemple.test" style="display:inline-block;width:51px;height:14px">©</a></div></body>';
+  await pn.setContent(page1('pointer-events:none', 'leaflet-control-attribution')); const ign = await pn.evaluate(mesurer, true);
+  await pn.setContent(page1('', 'credit')); const vu = await pn.evaluate(mesurer, true);
+  ok('pointer-events:none et crédit de carte : 0 caché, 0 petit ; les mêmes sans ces marques : 1 caché, 2 petits', ign.cache === 0 && ign.petit === 0 && vu.cache === 1 && vu.petit === 2, JSON.stringify([ign.cache, ign.petit, vu.cache, vu.petit]));
+  const { nomSansTexte } = await import('../tools/plateformes/verif-affichage-domaine.mjs');
+  await pn.setContent('<!doctype html><title>t</title><body style="margin:0"><button id="tabPlus" class="tab gros autre" style="position:absolute;left:12px;top:40px;width:80px;height:44px">Jean Dupont</button></body>');
+  const nom = await pn.locator('#tabPlus').evaluate(nomSansTexte);
+  ok('un bouton sans réaction est nommé par balise, id, classes et position, jamais par son texte', nom === 'button#tabPlus.tab.gros @12,40', nom);
+  const { readFileSync } = await import('node:fs'); const src = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
+  ok('le grand robot écrit le nom du bouton sans réaction', /cible\.evaluate\(nomSansTexte\)/.test(src) && /'sans réaction : ' \+ \(nomCible \|\| 'n°' \+ k\)/.test(src));
+  await pn.close(); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

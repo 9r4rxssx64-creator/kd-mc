@@ -4,6 +4,10 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## light v1.153 — la barre du haut ne dépasse plus de 3 px sur iPhone SE (2026-11-17)
+- Robot d'affichage (WebKit, 320 px) : le texte coupé du choix d'équipe `select#boardSel` (308 px dans 290) élargissait la page de 3 px. `header select{overflow:hidden;white-space:nowrap}` + `header{overflow-x:clip}`.
+- Garde `tests/verify-light-entete-largeur.mjs` : 4 largeurs (320, 375, 390, 412), règle exigée, rouge sans (`SABOTAGE=1`).
+
 ## light v1.152 — « Séances de cette équipe » se touche sur 44 px (2026-11-17)
 - Bilan d'affichage n°2 (pc-config, pont 2608) : le résumé repliable « Séances de cette équipe » faisait 726×32 px ; il passe à `min-height:44px` (règle des cibles tactiles).
 - Garde `tests/verify-light-resume-44.mjs` (`npm run test:light-resume-44` + `test:light-resume-44-sabotage`, dans `test:ci`), rouge sous sabotage.

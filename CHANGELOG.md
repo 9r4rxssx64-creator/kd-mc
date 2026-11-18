@@ -17,6 +17,20 @@ Historique complet des versions. Les 5 dernières versions restent dans `CLAUDE.
 
 ---
 
+## CMCteams v10.028 + light v1.159 — la recherche ne saute plus, retrouve par prénom, et l'app ne change plus de page toute seule (18.11.2026)
+
+Demande de Kevin (18.11) : « L'app n'est pas stable. Quand on fait une recherche, à chaque lettre ça saute. Il ne retrouve pas par prénom. L'app saute sur différentes pages de temps en temps. Trop d'infos mélangées partout. »
+- **Causes mesurées** : (1) chaque pause de frappe refaisait toute la page (`dc()` → `innerHTML`) et DÉTRUISAIT le champ de recherche ; (2) le planning ne garde que « NOM I », le prénom ne vient que du compte du domaine ou de la fiche ; (3) un rechargement (mise à jour, nouveau service worker) pouvait tomber PENDANT la frappe et ramenait à l'accueil ; (4) cinq boutons rares en haut de la liste des employés.
+- **Correctifs** : `dc()` garde le même champ (même nœud, même curseur) ; la recherche lit aussi le prénom du compte du domaine (`_cmcCompteNomDe`, `cmcMotsTrouves`), dans CMCteams ET la light (la light précharge depuis `BOARDS[k].people`) ; les rechargements notent la page (`_cmcSaveView`) et attendent la fin de la frappe (`_cmcEnSaisie`) ; liste des employés : ☑ Sélection + ➕ Ajouter restent, le reste est rangé sous « ⋯ Plus » (boutons ≥ 44 px).
+- **Garde** : `npm run test:recherche-stable` (17 contrôles en vrai Chromium 390 px, faux domaine) et `test:recherche-stable-sabotage` (rouge si le champ est remplacé) — dans `test:ci`.
+
+## CMCteams v10.026 + light v1.157 — la fiche d'une personne dit UNE seule vérité sur son compte, et on peut lui écrire (18.11.2026)
+
+Demande de Kevin (18.11) : « Sur la fiche de Davy il y a beaucoup d'incohérences. Matricule, etc. Je n'y comprends rien, pas assez clair, trop d'infos mélangées. Il est inscrit avec un code pourtant ça dit le contraire. Vérifie toutes les fiches. Pas moyen d'envoyer le message par la fiche. »
+- **Cause** : la fiche devinait « inscrit / pas inscrit » depuis des copies locales (nom + prénom saisis, mot de passe local) qui ne disent pas ce que sait le DOMAINE ; le matricule s'affichait trois fois sous trois noms ; aucun bouton d'écriture dans la fiche.
+- **Correctif** : nouvelle brique `tools/shared/compte-statut.js` (copie identique `tools/departs/`) — le domaine est la vérité (`/__admin/accounts` + `/__dep/matricules`, lus UNE fois par 10 min, seulement à l'ouverture d'une fiche d'admin) ; une ligne « Compte sur le domaine » honnête (✅ inscrite avec un code · ⏳ sans code · ⏳ en attente · ⛔ refusée · ⚪ pas de compte · ⚠️ plusieurs · lecture impossible) et un gros bouton « 💬 Écrire un message » (44 px) qui ouvre le mini-chat direct. Fiche d'admin de CMCteams : 3 rubriques repliables (code de l'app « copie locale », identité, renseignements / RH), un seul bloc matricule. Light : même ligne + même bouton dans la carte de la personne.
+- **Garde** : `npm run test:fiche-claire` (40 contrôles : états, homonymes, audit des 40 fiches de test, bouton, lecture du domaine une fois par 10 min, branchement CMCteams + light, copies identiques) et `test:fiche-claire-sabotage` (rouge sous `SABOTAGE=1`) — dans `test:ci`.
+
 ## CMCteams v10.025 + light v1.156 — pastille de secteur à côté de chaque nom, d'après les lettres de compétences (2026-11-17)
 - Demande de Kevin : « devant chaque nom, une série de lettres donne l'appartenance au secteur ; groupe ouvert, groupe fermé ; chef, employé ». Pastille Am / Eu / Ba / GO (infobulle : secteur · rôle · lettres) dans CMCteams (colonne des noms) et la light (cellule du nom). Lettres gardées par mois (`post`), rien inventé : sans lettres, pas de pastille.
 - Module partagé `secteur.js` (CMCteams = light), import unique `_mois-import.mjs`, correction de la recopie des personnes qui jetait `post` dans la light. Garde `npm run test:secteur` (35 contrôles, sabotage rouge), dans `test:ci`.

@@ -303,6 +303,7 @@
     demarrer();
   }
   function renderCodeObligatoire(s) {
+    retirerAnticipe();   /* 18.11 : l'accueil montré en avance (v1.0.94) disparaît : le domaine a dit « crée ton code » */
     var old = document.getElementById('code-oblig'); if (old) old.remove();
     if (!s || !s.uid || !window.kdmcSSO || !window.kdmcSSO.issueDetail) return;
     var box = document.createElement('div'); box.id = 'code-oblig'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Crée ton code');
@@ -1313,7 +1314,7 @@
        « Crée ton code » n'était jamais atteint depuis une app (?code=1&return=…). On lit l'état détaillé : code_requis → l'écran. */
     if (window.kdmcSSO && window.kdmcSSO.whoamiResult) {
       (frais ? window.kdmcSSO.whoamiResult({ frais: true }) : window.kdmcSSO.whoamiResult()).then(function (r) {
-        if (r && r.state === 'code_requis') { retirerAnticipe(); renderCodeObligatoire(r.session); return; }
+        if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
         if (r && r.state === 'tel_a_confirmer') { retirerAnticipe(); renderTelObligatoire(r.session); return; }   /* 13.10 */
         if (r && (r.state === 'neterr' || r.state === 'hors_perimetre')) { retirerAnticipe(); renderIndisponible(r, acc); return; }
         done(r && r.state === 'session' ? r.session : null, r);

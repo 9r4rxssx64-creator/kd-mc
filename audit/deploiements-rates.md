@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 18/11/2026 02:26 UTC
+
+- **Branche** : `main` · **Commit** : `6b419660` · **Run** : `44223063574`
+- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/44223063574
+- **Ce que la machine a dit** :
+
+```
+59 OK · 0 échec(s)
+  ✅ un robot inexistant est refusé
+  ✅ un réglage inconnu est refusé
+  ✅ une valeur hors bornes est refusée
+  ✅ un entier attendu, un décimal reçu → refusé
+  ✅ EMA rapide ≥ EMA lente (en tenant compte des réglages actuels) → refusé
+  ✅ une paire hors liste liquide est refusée
+  ✅ plus de 4 changements à la fois → refusé
+  ✅ une réponse sans JSON est refusée proprement
+  ✅ risque 4 % par trade → refusé (borne 2 % depuis le 8.10 : beaucoup de petites mises)
+  ✅ position 60 % → refusée, 40 % → acceptée (borne 40 %)
+88 OK · 0 échec(s)
+bot.test.mjs : 61 OK / 0 FAIL
+  ✅ S2. une politique qui gardait aussi les pages HTML cacherait une mise à jour pendant 5 min — refusé
+17 OK / 0 échec(s)
+  ✅ un lien dans un message est refusé (hameçonnage)
+  ✅ 4e cadeau du jour refusé (3 max)
+=== 60 OK / 0 FAIL ===
+9 OK / 0 échec(s)
+  ✅ 2g. un mauvais code reste refusé
+  ✅ 4b. le nom seul reste refusé
+20 OK / 0 échec(s)
+  ✅ 1. PC Windows à Stockholm, nom seul → refusé, aucune session (la faille du 7.10 est fermée)
+  ✅ 3b. REFUSER : la demande disparaît, rien ne change, journal « code_refuse »
+  ✅ 4b. le code refusé par Kevin (555555), depuis Stockholm → refusé
+  ✅ 4c. et le nom seul reste refusé (compte protégé)
+  ✅ 6. SABOTAGE : coupe-circuit à 0 → le nom seul ouvre la session (l'ancien monde) ; par défaut → refusé. C'est la règle qui protège.
+  ✅ 6b. créer un compte sans code → refusé, aucune fiche (code obligatoire à l'inscription)
+37 OK / 1 échec(s)
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

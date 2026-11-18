@@ -26,7 +26,7 @@ async function base(db) {
 export const ACTIONS_TACHES = {
   tache_code: {
     titre: 'Déposer une tâche pour Claude Code', icone: '🧑‍💻', risque: 'moyen',
-    aide: 'champs : titre (court), consigne (ce que Claude Code doit faire, complète et claire, ≤ 1200 signes) — rien n\'est exécuté tout de suite',
+    aide: 'champs : titre (court), consigne (complète, ≤ 1200 signes)',
     valider(c) {
       const titre = nettoyer(c.titre, 80), consigne = nettoyer(c.consigne, MAX_CONSIGNE);
       if (titre.length < 3) return { erreur: 'Il me manque le titre de la tâche (quelques mots).' };

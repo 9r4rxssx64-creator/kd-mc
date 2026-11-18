@@ -11,7 +11,7 @@ export const MAX_MESSAGE = 500;
 export const ACTIONS_MESSAGES_DIRECTS = {
   message_direct: {
     titre: 'Écrire à une personne', icone: '✉️', risque: 'moyen',
-    aide: 'champs : nom (prénom ET nom de la personne, comme dans CMCteams), texte (≤ 500 signes) — la personne le lira à sa prochaine ouverture de CMCteams ou de la light et pourra répondre',
+    aide: 'champs : nom (prénom ET nom), texte (≤ 500 signes)',
     valider(c) {
       const nom = propre(c.nom, 80), texte = propre(c.texte, MAX_MESSAGE);
       if (nom.split(/[\s-]+/).filter((m) => m.length > 0).length < 2) return { erreur: 'Il me faut le prénom ET le nom de la personne.' };

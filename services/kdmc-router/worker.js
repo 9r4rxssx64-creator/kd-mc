@@ -41,7 +41,7 @@ import { outilsAtelier, imageGratuite, RE_ATELIER, REGLES_ATELIER } from './bee-
 import { outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, intentionOuvrir, intentionSuite, intentionFiche, homonymesArbre, reponseFiche, estSuiteOuverture, corrigerTexte } from './bee-ouvrir.js';   // Bee OUVRE n'importe quelle app du domaine sur l'écran de Kevin (Kevin 17.10)
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
 import { REGLES_TACHES } from './bee-taches.js';   // Bee dépose les tâches de code pour Claude Code (derrière ✅)
-import { REGLES_MESSAGES_DIRECTS } from './bee-messages-directs.js';   // Bee écrit à une personne (derrière ✅)
+import { REGLES_MESSAGES_DIRECTS, RE_MESSAGES_DIRECTS } from './bee-messages-directs.js';   // Bee écrit à une personne (derrière ✅)
 import { avecJournal, bilanDiag } from './bee-diag.js';   // le journal des demandes à Bee + son test de bout en bout (Kevin 16.10 : « je ne peux rien lui faire faire »)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
 import { PORTES_DROITS_MAX, droitsMaxOuverts } from './bee-droits-max.js';   // Kevin 23.10 « Ferme pour l'instant » : ces 2 portes restent fermées sauf BEE_DROITS_MAX = "1"
@@ -4826,7 +4826,7 @@ async function handleBeeIa(request, env, ctx) {
        Question simple (« quel temps demain ? ») : l'IA à outils répond seule, vite. */
     const complexe = questionComplexe(messages[messages.length - 1].content);
     const rt = await repondreAvecOutils(env, {
-      messages, system: caractere + REGLES_OUTILS + (veutAgir ? REGLES_AGIR + REGLES_TACHES + REGLES_MESSAGES_DIRECTS : '') + (veutArbre ? REGLES_ARBRE : '') + (veutArbre && bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (veutVoir ? REGLES_VOIR : '') + (veutOuvrir ? REGLES_OUVRIR : '') + (veutAtelier ? REGLES_ATELIER : ''), extra, finMs: debut + (complexe ? 8000 : 13000), trace: traceOutils,
+      messages, system: caractere + REGLES_OUTILS + (veutAgir ? REGLES_AGIR + REGLES_TACHES + (RE_MESSAGES_DIRECTS.test(dernierMsg) ? REGLES_MESSAGES_DIRECTS : '') : '') + (veutArbre ? REGLES_ARBRE : '') + (veutArbre && bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (veutVoir ? REGLES_VOIR : '') + (veutOuvrir ? REGLES_OUVRIR : '') + (veutAtelier ? REGLES_ATELIER : ''), extra, finMs: debut + (complexe ? 8000 : 13000), trace: traceOutils,
       ctx: { planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)) },
     });
     if (rt && rt.text) {

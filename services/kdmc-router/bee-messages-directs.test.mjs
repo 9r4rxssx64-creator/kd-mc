@@ -111,6 +111,7 @@ ok(/const PORTES_BEE = \[[^\]]*'\/__dm\/admin\/ecrire'/.test(W), '6b. la porte d
 ok(/REGLES_MESSAGES_DIRECTS/.test(W.replace(/import[^\n]*\n/, '')), '6c. les règles de Bee pour écrire sont dans son prompt');
 for (const q of ['écris à Davy que son planning est prêt', 'envoie-lui un message', 'dis à Marie de passer', 'préviens-le', 'écris un message direct à Léa']) ok(RE_AGIR.test(q) && RE_MESSAGES_DIRECTS.test(q), '6d. prend les mains : « ' + q + ' »');
 ok(/proposer_action avec l'action message_direct/.test(REGLES_MESSAGES_DIRECTS) && /Ne dis jamais « envoyé » avant le ✅/.test(REGLES_MESSAGES_DIRECTS), '6e. Bee doit passer par la carte ✅ et ne jamais dire « envoyé » avant');
+ok(/RE_MESSAGES_DIRECTS\.test\(dernierMsg\) \? REGLES_MESSAGES_DIRECTS/.test(W), '6g. les règles ne sont ajoutées au prompt QUE si la demande parle d\'écrire (sinon +200 jetons à chaque demande d\'action : plafond de bee-allege dépassé, 18.11)');
 ok(!Object.keys(ACTIONS_MESSAGES_DIRECTS).some((a) => /tous|all|broadcast|diffus/i.test(a)), '6f. aucune action « à tout le monde » : un message = une personne');
 const M = readFileSync(join(base, 'bee-messages-directs.js'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 ok(!/fetch\(/.test(M) && !/ghp_|api\.github\.com/.test(M), '6g. le module n\'appelle aucun service : il ne fait que rappeler la porte du mini-chat');

@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## CMCteams v10.035 + light v1.164 — groupe ouvert par la date d'entrée, horaires aménagés seuls (2026-11-18)
+- **18.11 (cmcteams-pdf, Kevin « Tous les employés rentrés dans les jeux après la convention sont groupe ouvert… Salomé GO tout comme ceux en école craps »)** : `cmcEstGroupeOuvert` (`tools/shared/secteur.js` ⇄ `tools/departs/secteur.js`) : entrée aux jeux ≥ 1.04.2015 (date lue dans la fiche, jamais inventée), ‹employé›, école CRAPS. CMCteams : `dateEntreeJeux`/`dateEntreeSbm` (sans `firstSeenAt`) ; light : année de la fiche de la personne connectée. Libellé « 🕘 Horaires aménagés » seul. Gardes `test:secteur` 61/0, `test:horaires-amenages` 37/0.
+
 ## CMCteams v10.034 + light v1.163 — horaires aménagés : seulement « Horaires aménagés » (2026-11-18)
 - **18.11 (cmcteams-pdf, Kevin « Juste horaires aménagées pas le reste aussi dans l'affichage. Ça prend trop de place »)** : le libellé sous le nom et le bandeau de groupe n'affichent plus que « 🕘 Horaires aménagés » (« · sans départ » pour une personne seule, n° du groupe s'il y en a plusieurs) ; fini la liste des autres, « départs entre eux », « n personnes » et les explications. `tools/shared/horaires-amenages.js` = `tools/departs/horaires-amenages.js`. Garde `test:horaires-amenages` 37/0 (rouge sur l'ancien code).
 

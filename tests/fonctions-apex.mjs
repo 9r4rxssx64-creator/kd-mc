@@ -33,7 +33,7 @@ async function entrer(browser, nomComplet, code, etiquette) {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], locale: 'fr-FR', permissions: ['microphone', 'camera', 'notifications'] });
   await ctx.addInitScript(() => {   // journal des types de messages WebSocket (aucun contenu) pour comprendre un appel qui ne sonne pas
     const WS = window.WebSocket; window.__wsLog = [];
-    const noter = (sens, d) => { try { const j = JSON.parse(typeof d === 'string' ? d : ''); if (window.__wsLog.length < 80) window.__wsLog.push(sens + ':' + (j.type || '?') + (j.to ? '>' + String(j.to).slice(0, 6) : '')); } catch { /* binaire */ } };
+    const noter = (sens, d) => { try { const j = JSON.parse(typeof d === 'string' ? d : ''); if (window.__wsLog.length < 80) window.__wsLog.push(sens + ':' + (j.type || '?') + (j.to ? '>' + String(j.to).slice(0, 6) : '') + (j.type === 'error' ? '(' + String(j.code || j.message || '?').slice(0, 70) + ')' : ''));   /* 18.11 : une erreur du serveur dit POURQUOI (code ou message), plus seulement « r:error » */ } catch { /* binaire */ } };
     window.WebSocket = function (...a) { const w = new WS(...a); const send = w.send.bind(w); w.send = (d) => { noter('s', d); return send(d); }; w.addEventListener('message', (e) => noter('r', e.data)); return w; };
     window.WebSocket.prototype = WS.prototype; Object.assign(window.WebSocket, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 });
   });

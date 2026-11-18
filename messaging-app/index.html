@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.369",
+  "softwareVersion": "v1.1.370",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -517,7 +517,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.369';
+const __APEX_CHAT_VERSION__ = 'v1.1.370';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -864,7 +864,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.369" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.369</div>
+  <div id="splash-version" data-ver="v1.1.370" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -878,7 +878,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.369</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.360</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -15915,6 +15915,8 @@ async function renderAdminLiveUsers(app){
     allUsers = [...preconfig, ...invited];
   }
 
+  /* 18.11 (Kevin via cloud-installer 2741 : « les informations les plus récentes en premier ») : la dernière activité en haut, ceux qui n'ont jamais ouvert l'app en dernier. */
+  allUsers.sort((x, y) => (y.last_seen || 0) - (x.last_seen || 0));
   const onlineCount = allUsers.filter(u => u.last_seen && Date.now() - u.last_seen < 300000).length;
   const bannedCount = allUsers.filter(u => u.is_banned).length;
 
@@ -15951,7 +15953,7 @@ async function renderAdminPremium(app){
   let backendErr = null;
   try{
     const r = await K._api('GET', '/api/admin/premium-requests');
-    if(r && r.ok && Array.isArray(r.requests)) reqs = r.requests;
+    if(r && r.ok && Array.isArray(r.requests)) reqs = r.requests.slice().sort((x, y) => (y.ts || 0) - (x.ts || 0));   /* 18.11 : la demande la plus récente en haut */
   }catch(e){ backendErr = e.message; }
   const fmt = ts => ts ? new Date(ts).toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
   const rows = reqs.map(q => `
@@ -16076,7 +16078,7 @@ K._renderLiveUserCard = function(u){
           ${esc(nom[0].toUpperCase())}
           <span class="dot ${isOnline ? '' : 'dot-off'}" style="position:absolute;bottom:0;right:0;border:2px solid var(--ax-bg-2)"></span>
         </div>
-        <div style="flex:1;min-width:0">
+        <div style="flex:1;min-width:0;min-height:44px;cursor:pointer" role="button" tabindex="0" onclick="K._openContactSheet('${esc(u.id)}')" onkeydown="if(event.key==='Enter')K._openContactSheet('${esc(u.id)}')" aria-label="Ouvrir la fiche de ${esc(nom)}">
           <div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nom)}${isMe ? ' <span class="chip or">toi</span>' : ''}${u.is_admin ? ' <span class="chip or">👑 Admin</span>' : ''}${banned ? ' <span class="chip ko">🚫 Banni</span>' : ''}</div>
           <div style="font-size:.76em;color:var(--ax-text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${esc(u.pseudo || '?')}${u.phone ? ' · ' + esc(u.phone) : ''}</div>
           <div style="font-size:.74em;color:var(--ax-text-3);margin-top:3px">${etat}${u.last_geo_label ? ' <span class="chip">📍 ' + esc(u.last_geo_label) + '</span>' : ''}${u.conv_count ? ' <span class="chip">💬 ' + u.conv_count + '</span>' : ''}</div>

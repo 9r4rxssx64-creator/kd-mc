@@ -111,6 +111,9 @@ Demande de Kevin (18.11) : « Sur la fiche de Davy il y a beaucoup d'incohérenc
 - Robot d'affichage : `button.ax-toast-close` mesurait 43×43 en paysage (rétréci dans le flex par un long texte) → `flex: 0 0 auto` + min 44 px.
 - Garde `tests/unit/journal-domaine.test.ts` : 7 OK ; 4 rouges sans les modifications de source. Paquet `apex-ai-v13/` reconstruit (`npm run build`), `sw.js` copié à part et identique.
 
+## Apex Chat v1.1.370 — Listes admin du plus récent au plus ancien, nom cliquable (2026-11-18)
+- Kevin via cloud-installer (2741 : « les informations les plus récentes en premier, de partout » et « chaque information cliquable ») : « Tous les comptes » est trié par dernière activité (jamais-vu en dernier), les demandes Premium de la plus récente à la plus ancienne, et le nom d'une personne ouvre sa fiche (zone de 63 px, plus seulement le petit bouton « Fiche »). Garde : `test:admin-listes` (6 verts ; 5 rouges sur l'ancien fichier).
+
 ## Apex Chat v1.1.369 — Le journal du domaine dit « qui a fait quoi » dans Apex Chat (2026-11-17)
 - cloud-installer (pont 2632 / 2637, Kevin : « qui a fait quoi, de tout le domaine, chaque app ») : Apex Chat écrit au journal du domaine (`window.kdmcJournal`, posé par le routeur) après un enregistrement RÉUSSI : message envoyé (« dans le groupe … » ou « message privé envoyé », jamais le texte), groupe créé, profil modifié, action admin sur un compte, Premium activé. Jamais sur un échec, jamais un identifiant ni un code ; sans le script, aucune erreur.
 - Garde `tests/verify-chat-journal.mjs` (`npm run test:chat-journal`, dans `test:ci`) : 12 OK ; sous `SABOTAGE=1` 11 rouges.

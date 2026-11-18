@@ -5,7 +5,7 @@
  * jamais d'adresse IP ; zéro écriture KV pour tout ça. node services/kdmc-router/activite.test.mjs */
 import { DatabaseSync } from 'node:sqlite';
 import mod, { enrich } from './worker.js';
-import { noter, fil, actives, resume, LIM, TYPES, _resetPurge, filDomaine, parApp, estAppareilRobot } from './activite.js';
+import { noter, fil, actives, resume, LIM, TYPES, _resetPurge, filDomaine, parApp, estAppareilRobot, noterNotif } from './activite.js';
 import { lireBoite, handleBoite, _viderMemo } from './boite.js';
 import { handleCercle, ADMIN, schema as schemaCercle } from './cercle.js';
 
@@ -209,7 +209,7 @@ console.log('\nLe fil du domaine\n');
 
 /* 6. aucune écriture KV pour tout ça */
 ok(!kvEcrit.some((k) => /activ|perso|fil:/.test(k)) && envB.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n > 30, '6. le fil d\'activité n\'écrit RIEN au KV : tout vit en D1 (' + envB.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n + ' lignes), les écritures KV restantes sont celles d\'avant (fiches, journal, limites)');
-ok(Object.keys(TYPES).length === 8, '7. les 8 types d\'activité sont déclarés (visite, connexion, lieu, appareil, question, modif, message, contact)');
+ok(Object.keys(TYPES).length === 9, '7. les 9 types d\'activité sont déclarés (visite, connexion, lieu, appareil, question, modif, message, contact, notif)');
 
 /* 11. DEUX REQUÊTES ENSEMBLE (18.11, capture de Kevin : la même connexion notée 3 fois à la même seconde) : le doublon se décide dans l'écriture elle-même. */
 {
@@ -236,6 +236,21 @@ ok(Object.keys(TYPES).length === 8, '7. les 8 types d\'activité sont déclarés
   ok(await noter(e, { uid: 'lea', type: 'message', app: 'apex-chat.kd-mc.com', detail: 'message privé envoyé', appareil: VRAI }, T0 + 9e5) === 'ajoute', '10e. … mais son message est noté : les pages consultées n\'étouffent jamais « qui a fait quoi »');
   for (let i = 0; i < LIM.jourParCompte; i++) ins.run('bcl', 'B', T0 + i, 'modif', 'a', 'm' + i, '', VRAI);
   ok(await noter(e, { uid: 'bcl', type: 'message', app: 'a', detail: 'x', appareil: VRAI }, T0 + 9e5) === 'plafond', '10f. ' + LIM.jourParCompte + ' enregistrements déclarés : la boucle d\'une app reste plafonnée');
+}
+
+/* 12. LES NOTIFICATIONS ENVOYÉES (18.11, audit des tableaux de bord : aucune trace de qui a été prévenu, quand, de quoi). */
+{
+  const e = mk(); await noter(e, { uid: 'nina', nom: 'Nina', type: 'connexion', app: 'kd-mc.com', detail: 'kd-mc.com' }, T0);
+  ok(await noterNotif(e, 'nina', '💬 Message de l\'administrateur', 'https://lingua.kd-mc.com/', T0 + 1000) === 'ajoute', '12a. une notification partie est notée');
+  const l = e.CERCLE_DB._s.prepare("SELECT nom, app, detail FROM activite WHERE uid = 'nina' AND type = 'notif'").get();
+  ok(l && l.nom === 'Nina' && l.app === 'lingua.kd-mc.com' && /Message de l'administrateur/.test(l.detail), '12b. avec le nom connu de la personne, l\'app visée et le TITRE seulement', l);
+  ok(await noterNotif(e, 'nina', '💬 Message de l\'administrateur', 'https://lingua.kd-mc.com/', T0 + 2000) === 'doublon', '12c. le même titre deux fois dans la minute (plusieurs appareils) ne se multiplie pas');
+  ok(await noterNotif(e, '', 'x', '') === 'ignore' && await noterNotif(e, 'nina', '', '') === 'ignore' && await noterNotif(null, 'nina', 'x', '') === 'ignore', '12d. sans personne, sans titre ou sans base : rien, et jamais d\'exception');
+  await noterNotif(e, 'seulement-prevenue', 'Titre', 'https://lingua.kd-mc.com/', T0 + 3000);
+  const act = await actives(e.CERCLE_DB, T0 - 1, 50), pa = await parApp(e.CERCLE_DB, T0 - 1);
+  ok(!act.some((x) => x.uid === 'seulement-prevenue') && !JSON.stringify(pa).includes('lingua'), '12f. recevoir une notification ne rend pas quelqu\'un « actif » et ne fait pas « bouger » une app', [act.map((x) => x.uid), pa]);
+  const f = await filDomaine(e.CERCLE_DB, { types: ['notif'] });
+  ok(f && (f.lignes || f.events || f).length !== 0, '12e. le Journal du domaine sait filtrer sur les notifications');
 }
 
 console.log(`\n${pass} OK · ${fail} échec(s)`);

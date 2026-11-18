@@ -13,12 +13,13 @@
 export const TYPES = {
   visite: '🌐 a consulté', connexion: '🔓 s\'est connecté', lieu: '📍 nouveau lieu', appareil: '📱 nouvel appareil',
   question: '❓ a posé une question', modif: '✏️ a enregistré', message: '💬 a écrit', contact: '✉️ a écrit à l\'admin',
+  notif: '🔔 a reçu une notification',
 };
 export const LIM = { jourParCompte: 400, garde: 90 * 864e5, purgeMs: 36e5, detail: 200, question: 160, fil: 14 };
 /* fenêtre anti-doublon par type : la même chose faite deux fois de suite ne s'ajoute pas (« ne se multiplie pas ») */
 /* ce que le domaine note de lui-même à chaque page servie — compté à part de ce qu'une personne fait (plafond par classe) */
 export const AUTOMATIQUES = ['visite', 'connexion', 'lieu', 'appareil'];
-const DEDUP = { visite: 10 * 60e3, connexion: 30 * 60e3, lieu: 36e5, appareil: 36e5, question: 60e3, modif: 36e5, message: 0, contact: 0 };
+const DEDUP = { visite: 10 * 60e3, connexion: 30 * 60e3, lieu: 36e5, appareil: 36e5, question: 60e3, modif: 36e5, message: 0, contact: 0, notif: 60e3 };
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS activite (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT, nom TEXT, ts INTEGER, type TEXT, app TEXT, detail TEXT, lieu TEXT, appareil TEXT)`,
   `CREATE INDEX IF NOT EXISTS act_uid ON activite (uid, ts)`,
@@ -69,6 +70,18 @@ export async function noter(env, ev, now) {
 }
 export function _resetPurge() { purgeLe = 0; }
 
+/** 18.11 (audit des tableaux de bord : « aucune trace des notifications envoyées ») : note qu'une notification est PARTIE vers une personne — son titre seulement,
+    jamais son texte. Le nom est repris de la dernière ligne connue de cette personne. Ne lève JAMAIS : une panne ici n'empêche aucun envoi. */
+export async function noterNotif(env, uid, titre, url, now) {
+  try {
+    if (!dispo(env) || !uid || !titre) return 'ignore';
+    await table(env.CERCLE_DB);
+    const d = await env.CERCLE_DB.prepare("SELECT nom FROM activite WHERE uid = ? AND COALESCE(nom, '') != '' ORDER BY ts DESC LIMIT 1").bind(String(uid)).first();
+    let app = 'domaine'; try { app = new URL(String(url || '')).hostname || 'domaine'; } catch { app = 'domaine'; }
+    return await noter(env, { uid: String(uid), nom: (d && d.nom) || '', type: 'notif', app, detail: titre }, now);
+  } catch { return 'ignore'; }
+}
+
 /** Le fil d'UNE personne, du plus ancien au plus récent (les `limite` derniers). */
 export async function fil(db, uid, limite) {
   await table(db);
@@ -104,7 +117,7 @@ export async function filDomaine(db, o) {
 /** Chaque app du domaine : sa dernière activité, combien de lignes et de personnes depuis `depuis` (robots écartés). */
 export async function parApp(db, depuis) {
   await table(db);
-  const r = await db.prepare('SELECT app, appareil, uid, MAX(ts) AS dernier, COUNT(*) AS n FROM activite WHERE ts > ? GROUP BY app, appareil, uid').bind(depuis).all();
+  const r = await db.prepare('SELECT app, appareil, uid, MAX(ts) AS dernier, COUNT(*) AS n FROM activite WHERE ts > ? AND type != \'notif\' GROUP BY app, appareil, uid').bind(depuis).all();
   const m = new Map();
   for (const l of (r && r.results) || []) {
     if (estAppareilRobot(l.appareil)) continue;
@@ -115,9 +128,10 @@ export async function parApp(db, depuis) {
   return [...m.values()].map((e) => ({ app: e.app, dernier: e.dernier, n: e.n, personnes: e.uids.size })).sort((x, y) => y.dernier - x.dernier);
 }
 /** Les personnes actives depuis `depuis` : { uid, nom, dernier, n }, la plus récente d'abord. */
+/* une notification REÇUE n'est pas quelque chose que la personne a fait : elle ne la rend ni « active » ni « en alerte » (boîte), et ne fait pas « bouger » une app */
 export async function actives(db, depuis, limite) {
   await table(db);
-  const r = await db.prepare('SELECT uid, MAX(nom) AS nom, MAX(ts) AS dernier, COUNT(*) AS n FROM activite WHERE ts > ? GROUP BY uid ORDER BY dernier DESC LIMIT ?').bind(depuis, limite || 20).all();
+  const r = await db.prepare('SELECT uid, MAX(nom) AS nom, MAX(ts) AS dernier, COUNT(*) AS n FROM activite WHERE ts > ? AND type != \'notif\' GROUP BY uid ORDER BY dernier DESC LIMIT ?').bind(depuis, limite || 20).all();
   return (r && r.results) || [];
 }
 /** Résumé d'une personne : compte par type, apps et pages les plus consultées, lieux, dernière question. */

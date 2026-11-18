@@ -155,7 +155,7 @@
     return '<div class="pill kdmc-in" data-va="#list"><b>' + accounts.length + '</b> comptes clients</div>'
       + '<div class="pill kdmc-in" id="pill-limites" data-va="#list" title="Personnes qui n\'ont accès qu\'aux applications cochées sur leur fiche"><b>' + limites + '</b> limité' + (limites > 1 ? 's' : '') + ' à une app</div>'
       + '<div class="pill kdmc-in" data-va="#list"><b>' + withCgu + '</b> CGU acceptées</div>'
-      + '<div class="pill kdmc-in" data-va="#audsec"><b>' + hits + '</b> connexions cumulées</div>';
+      + '<div class="pill kdmc-in" data-va="cat:Historique des connexions"><b>' + hits + '</b> connexions cumulées</div>';
   }
   function presence(accounts) {
     var now = Date.now();
@@ -322,12 +322,14 @@
       + kvp('État du compte', etatCompte)
       + (a.externe ? kvp('Type', 'Compte invité (créé par toi)') : '')
       + '</div>' + ficheRens(a.fiche);
+    /* 18.11 (audit) : « Connexions / Appareils / Lieux » menaient au Journal ADMIN, qui ne contient pas les connexions (« aucun événement »).
+       Ils ouvrent maintenant le Journal du domaine filtré sur CETTE personne (connexions, pages, lieux, appareils, enregistrements), le plus récent en haut. */
     var activite = '<div class="kv">'
-      + kvp('Connexions', String(a.hits || 0), 'journal:' + a.uid)
-      + kvp('Dernière connexion', dt(a.last_seen), 'journal:' + a.uid)
+      + kvp('Connexions', String(a.hits || 0), 'fil:' + a.uid + '|' + (a.name || ''))
+      + kvp('Dernière connexion', dt(a.last_seen), 'fil:' + a.uid + '|' + (a.name || ''))
       + kvp('Sites utilisés', appsDetail(a.apps))
-      + kvp('Appareils', devs, 'journal:' + a.uid)
-      + kvp('Lieux', places, 'journal:' + a.uid)
+      + kvp('Appareils', devs, 'fil:' + a.uid + '|' + (a.name || ''))
+      + kvp('Lieux', places, 'fil:' + a.uid + '|' + (a.name || ''))
       + '</div>';
     var droits = blocAcces(a)
       + '<button class="etatcompte" data-uid="' + esc(a.uid) + '" type="button" title="Dit pourquoi cette personne est bloquée (ou pas), et permet de l\'ouvrir.">🔎 État du compte</button>'
@@ -339,7 +341,9 @@
       + '<summary class="fhead"><span class="fqui"><h3>' + esc(a.name || a.uid) + '</h3>'
       + '<span class="fres">' + esc(ago(a.last_seen)) + ' · ' + (a.hits || 0) + ' connexion' + ((a.hits || 0) > 1 ? 's' : '') + ' · ' + etatCodeCourt(a) + (a.anomaly && a.anomaly.at ? ' · <b class="fsusp">⚠️ suspecte</b>' : '') + '</span></span>'
       + '<span class="fchev" aria-hidden="true">›</span></summary>'
-      + '<div class="fcorps"><div class="uid">' + esc(a.uid) + ' · <span class="lien-info" data-va="journal:' + esc(a.uid) + '">journal</span></div>'
+      /* 18.11 (audit d'amélioration : « voir ce qu'une personne a fait » = 3 à 5 touchers, caché derrière « Connexions › ») : un bouton en tête de fiche */
+      + '<div class="fcorps"><button class="savacc tout-fait" type="button" data-va="fil:' + esc(a.uid) + '|' + esc(a.name || '') + '" style="margin:6px 0 8px;width:100%">🕘 Tout ce qu\'elle a fait (le plus récent en haut)</button>'
+      + '<div class="uid">' + esc(a.uid) + ' · <span class="lien-info" data-va="journal:' + esc(a.uid) + '">alertes admin</span></div>'
       + anom
       + (a.uid === 'kdmc_admin' ? '' : '<button class="savacc ouvrir-compte" data-uid="' + esc(a.uid) + '" type="button" style="margin:6px 0 10px" title="Ouvre ce compte : la personne n\'attend plus ton accord.">✅ Ouvrir ce compte</button>')
       + rubrique('rub-id', '🪪 Identité', esc(etatCompte), identite)
@@ -832,6 +836,7 @@
     if (!det || det._ok) return; det._ok = true;
     var liste = document.getElementById('attendus-liste');
     function dessiner(l) {
+      l = (l || []).slice().sort(function (x, y) { return (y.at || 0) - (x.at || 0); });   /* 18.11 : le plus récent en haut */
       liste.innerHTML = l.length ? l.map(function (x) {
         return '<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span style="flex:1">' + esc(x.nom) + ' <span class="d">· ajouté ' + esc(dt(x.at)) + '</span></span>'
           + '<button class="savacc attendu-retirer" data-nom="' + esc(x.nom) + '" type="button">✖ Retirer</button></div>';
@@ -955,6 +960,16 @@
     });
   }
 
+  /* 18.11 (audit : la date de création existe mais ne se lisait que dans chaque fiche) : les 6 derniers comptes créés, le plus RÉCENT en haut ;
+     un toucher ouvre la fiche. */
+  function blocDerniersInscrits(accounts) {
+    var l = (accounts || []).filter(function (a) { return a.created && a.uid !== 'kdmc_admin'; }).sort(function (a, b) { return b.created - a.created; }).slice(0, 6);
+    if (!l.length) return '';
+    return '<h2 class="cat">🆕 Derniers inscrits</h2><div class="inscrits" id="derniers-inscrits">' + l.map(function (a) {
+      return '<button type="button" class="inscrit" data-va="fiche:' + esc(a.uid) + '"><b>' + esc(a.name || a.uid) + '</b>'
+        + '<span class="d">inscrit ' + esc(ago(a.created)) + '</span><span class="arr" aria-hidden="true">›</span></button>';
+    }).join('') + '</div>';
+  }
   function render(accounts, kv) {
     app.innerHTML =
       '<div id="presence">' + presence(accounts) + '</div>'
@@ -965,6 +980,7 @@
       + blocCreer()
       + blocLot(accounts)
       + blocBannis()
+      + blocDerniersInscrits(accounts)
       + '<h2 class="cat">📊 Tous les comptes</h2>'
       + '<div class="stat" id="gstat">' + globalPills(accounts) + '</div>'
       + histSection(accounts)

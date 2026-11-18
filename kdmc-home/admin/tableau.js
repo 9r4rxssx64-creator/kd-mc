@@ -319,15 +319,25 @@
   function cibleVa(v) {
     v = String(v || '');
     if (v.indexOf('journal:') === 0) { if (global.kdmcFiltreJournal) global.kdmcFiltreJournal(v.slice(8)); return document.getElementById('audsec') || '#audsec'; }
-    if (v.indexOf('fiche:') === 0) { if (global.kdmcFiltreJournal) global.kdmcFiltreJournal(''); return document.getElementById('fiche-' + v.slice(6)); }
+    /* 18.11 (Kevin : « chaque information cliquable et atterrir au bon endroit, à l'information » ; audit : lignes de message → la boîte en général, clic muet
+       quand la fiche n'est pas chargée, app / « Moi » sans cible) : un message ouvre CE message ; une app filtre le Journal sur CETTE app ; « ce qu'a fait
+       une personne » filtre le Journal sur ELLE ; une fiche pas encore chargée ne reste plus muette, elle montre le Journal de la personne. */
+    if (v.indexOf('msg:') === 0 || v.indexOf('filapp:') === 0 || v.indexOf('fil:') === 0) return v;
+    if (v.indexOf('fiche:') === 0) { if (global.kdmcFiltreJournal) global.kdmcFiltreJournal(''); return document.getElementById('fiche-' + v.slice(6)) || ('fil:' + v.slice(6)); }
     if (v.indexOf('cat:') !== 0) return v;
     var mot = sansAccent(v.slice(4)), hs = document.querySelectorAll('h2.cat');
     for (var i = 0; i < hs.length; i++) if (sansAccent(titreSeul(hs[i])).indexOf(mot) >= 0) return hs[i];
     return null;
   }
+  function avertir(txt) {
+    var t = document.getElementById('tb-avis'); if (!t) { t = document.createElement('div'); t.id = 'tb-avis'; t.setAttribute('role', 'status'); t.className = 'tb-avis'; document.body.appendChild(t); }
+    t.textContent = txt; t.hidden = false; clearTimeout(avertir._t); avertir._t = setTimeout(function () { t.hidden = true; }, 3500);
+  }
   function aller(cible) {
     if (cible && cible.nodeType === 1 && cible.tagName === 'DETAILS' && cible.classList.contains('fiche')) cible.open = true;   /* fiche repliée par défaut : celle qu'on vise s'ouvre */
     if (cible === 'boite') { if (global.kdmcBoite) global.kdmcBoite.ouvrir(); return; }
+    if (typeof cible === 'string' && cible.indexOf('msg:') === 0) { if (global.kdmcBoite) global.kdmcBoite.ouvrir(cible.slice(4)); return; }
+    if (typeof cible === 'string' && (cible.indexOf('filapp:') === 0 || cible.indexOf('fil:') === 0)) { filtrerFil(cible); return; }
     var el = cible && cible.nodeType === 1 ? cible : null;
     if (el) cible = '';
     if (cible === 'livrer') {
@@ -338,6 +348,14 @@
     if (!el && /^https:\/\/admin\.kd-mc\.com\//.test(cible) && global.kdmcOuvrirAvecPass) { global.kdmcOuvrirAvecPass(cible); return; }
     if (!el && /^(https?:)?\//.test(cible)) { location.href = cible; return; }
     if (!el && cible) { try { el = document.querySelector(cible); } catch (e) { el = null; } }
+    /* 18.11 (audit d'amélioration) : une cible pas encore dessinée (comptes en cours de lecture) envoyait dans « Commerce ». On réessaie 6 fois (3 s),
+       puis on le dit — jamais une autre rubrique à la place. */
+    if (!el && cible && cible !== '#commerce') {
+      var nEssai = (aller._n = (aller._c === cible ? (aller._n || 0) + 1 : 1)); aller._c = cible;
+      if (nEssai <= 6) { setTimeout(function () { aller(cible); }, 500); return; }
+      aller._n = 0; avertir('Cette partie n\'est pas encore chargée. Réessaie dans un instant.'); return;
+    }
+    aller._n = 0;
     if (!el) el = document.getElementById('commerce');
     var sec = el.closest && el.closest('details.sec');
     if (!sec) return;
@@ -356,7 +374,7 @@
   function dessinerCompteurs() {
     var vieux = !BOITE && !!INST;   /* chiffres d'un relevé précédent, en attendant la boîte : jamais présentés comme neufs */
     var cs = compteurs(BOITE, LIVE, LIVE_LU, INST), z = document.getElementById('tb-cpts'); if (!z) return;
-    var total = 0;
+    var total = 0, nonLu = !!BOITE && cs.some(function (c) { return !c.cache && c.n == null; });
     z.textContent = '';
     cs.forEach(function (c) {
       var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-compteur', c.id);
@@ -377,8 +395,10 @@
     var sous = document.getElementById('tb-sous');
     if (sous) sous.textContent = !BOITE
       ? (INST ? 'Dernier relevé ' + ilYa(INST.ts) + (total ? ' : ' + total + ' chose' + (total > 1 ? 's' : '') + '.' : ' : rien en attente.') + ' Mise à jour en cours…' : 'Lecture en cours…')
-      : total ? total + ' chose' + (total > 1 ? 's' : '') + ' t\'attend' + (total > 1 ? 'ent' : '') + '. Touche un chiffre pour y aller.' : '✅ Rien en attente pour l\'instant.';
-    var secT = document.getElementById('a-traiter'); if (secT) secT.classList.toggle('rien', !!BOITE && !total);
+      : total ? total + ' chose' + (total > 1 ? 's' : '') + ' t\'attend' + (total > 1 ? 'ent' : '') + '. Touche un chiffre pour y aller.'
+        /* 18.11 (audit d'amélioration : boîte lue mais caisse muette → « ✅ Rien en attente », l'écran mentait) : un chiffre non lu se DIT, et sa carte reste montrée */
+        : nonLu ? '⚠️ Rien vu en attente — mais un chiffre n\'a pas pu être lu (carte « — » ci-dessous).' : '✅ Rien en attente pour l\'instant.';
+    var secT = document.getElementById('a-traiter'); if (secT) secT.classList.toggle('rien', !!BOITE && !total && !nonLu);
     try { document.title = (BOITE && total ? '(' + total + ') ' : '') + 'KDMC — Tableau de bord admin'; } catch (e) { /* */ }
     resumes(cs); badgesOnglets();
     var nav = document.querySelector('[data-nav="personnes"]');
@@ -476,8 +496,19 @@
     function maj() {
       var l = filtrer(q.value);
       r.textContent = '';
+      /* 18.11 (audit d'amélioration : fiche d'une personne hors ligne = 3 touchers + 1,3 écran) : la recherche de l'accueil trouve aussi les PERSONNES */
+      var mq = sansAccent(q.value).trim(), pers = [];
+      if (mq.length >= 2) Array.prototype.forEach.call(document.querySelectorAll('details.fiche[id^="fiche-"]'), function (f) {
+        var h = f.querySelector('h3'), nom = h ? h.textContent : ''; if (pers.length < 6 && sansAccent(nom).indexOf(mq) >= 0) pers.push({ uid: f.id.slice(6), nom: nom });
+      });
+      pers.forEach(function (x) {
+        var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-personne', x.uid); b.textContent = '👤 ' + x.nom;
+        var sp = document.createElement('span'); sp.textContent = 'sa fiche ›'; b.appendChild(sp);
+        b.onclick = function () { q.value = ''; r.hidden = true; r.textContent = ''; aller(cibleVa('fiche:' + x.uid)); };
+        r.appendChild(b);
+      });
       if (!q.value.trim()) { r.hidden = true; return; }
-      if (!l.length) { var p = document.createElement('div'); p.className = 'rien'; p.textContent = 'Rien trouvé. Essaie un autre mot (ex. « inscription », « vente », « code »).'; r.appendChild(p); }
+      if (!l.length && !pers.length) { var p = document.createElement('div'); p.className = 'rien'; p.textContent = 'Rien trouvé. Essaie un autre mot (ex. « inscription », « vente », « code »).'; r.appendChild(p); }
       l.slice(0, 8).forEach(function (a) {
         var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-action', a.go);
         b.textContent = a.t;
@@ -565,9 +596,9 @@
   /* ── LE JOURNAL DU DOMAINE (17.11) ─────────────────────────────────────────────────────────────────────────────────
      Tout est construit en DOM (textContent) : un nom, un détail viennent d'un visiteur. Aucune donnée n'est gardée dans le navigateur. */
   var FIL_QUI = [['autres', '👥 Les autres'], ['moi', '🙂 Moi'], ['tous', 'Tous']];
-  var FIL_QUOI = [['essentiel', '⭐ Essentiel', 'connexion,lieu,appareil,modif,message,contact,question'], ['connexions', '🔓 Connexions', 'connexion,lieu,appareil'],
-    ['modifs', '✏️ Modifs', 'modif,message,contact,question'], ['pages', '🌐 Pages', 'visite']];
-  var FIL = { qui: 'autres', quoi: 'essentiel', app: '', lignes: [], suite: 0, maj: 0, enCours: false, vus: 0 };
+  var FIL_QUOI = [['essentiel', '⭐ Essentiel', 'connexion,lieu,appareil,modif,message,contact,question,notif'], ['connexions', '🔓 Connexions', 'connexion,lieu,appareil'],
+    ['modifs', '✏️ Modifs', 'modif,message,contact,question'], ['notifs', '🔔 Notifs', 'notif'], ['pages', '🌐 Pages', 'visite']];
+  var FIL = { qui: 'autres', quoi: 'essentiel', app: '', uid: '', nomUid: '', apps: [], lignes: [], suite: 0, maj: 0, enCours: false, vus: 0 };
   function filTypes() { for (var i = 0; i < FIL_QUOI.length; i++) if (FIL_QUOI[i][0] === FIL.quoi) return FIL_QUOI[i][2]; return ''; }
   function jourDe(ts) {
     var d = new Date(ts), a = new Date(), h = new Date(a.getFullYear(), a.getMonth(), a.getDate()).getTime(), j = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -580,7 +611,7 @@
   function heureDe(ts) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
   /* les messages et corrections déjà rassemblés par la boîte (Lingua, CMCteams, autres apps, Rotaplan, Arbre) entrent dans le même journal */
   function filDeLaBoite() {
-    if (!BOITE || !Array.isArray(BOITE.messages) || FIL.qui === 'moi' || (FIL.quoi !== 'essentiel' && FIL.quoi !== 'modifs')) return [];
+    if (!BOITE || !Array.isArray(BOITE.messages) || FIL.qui === 'moi' || FIL.uid || (FIL.quoi !== 'essentiel' && FIL.quoi !== 'modifs')) return [];
     return BOITE.messages.filter(function (m) { return m && m.ts && m.source !== 'alertes' && (!FIL.app || String(m.app || m.source) === FIL.app); }).map(function (m) {
       var arbre = m.source === 'arbre';
       return { id: 'b:' + m.cle, ts: m.ts, nom: m.de || 'Quelqu\'un', app: String(m.app || m.source || 'domaine'), /* 18.11 (pont 2666) : le journal dit QUI a écrit et QUAND ; le texte du message ne se lit que dans Messages (un toucher y mène) */ action: arbre ? '✏️ a corrigé une fiche' : '💬 a écrit à l\'admin', detail: '', boite: true, type: arbre ? 'modif' : 'message' };
@@ -592,6 +623,16 @@
     var vu = {}, tout = FIL.lignes.concat(filDeLaBoite()).filter(function (e) { if (vu[e.id]) return false; vu[e.id] = 1; return true; }).sort(function (x, y) { return y.ts - x.ts; });
     /* la boîte ne remonte pas plus loin que la page lue du journal : sinon de vieux messages se glisseraient sous des lignes pas encore chargées */
     var plancher = FIL.suite ? FIL.suite : 0; tout = tout.filter(function (e) { return !e.boite || e.ts >= plancher; });
+    /* le filtre en cours se LIT et s'enlève d'un toucher (on ne reste jamais coincé sur une personne ou une app sans le savoir) */
+    var pf = document.getElementById('tb-fil-filtre');
+    if (!pf) { pf = document.createElement('div'); pf.id = 'tb-fil-filtre'; pf.className = 'fil-filtre'; z.parentNode.insertBefore(pf, z); }
+    pf.textContent = ''; pf.hidden = !(FIL.uid || FIL.app);
+    if (FIL.uid || FIL.app) {
+      var bf = document.createElement('button'); bf.type = 'button'; bf.className = 'fil-c'; bf.setAttribute('data-fil-efface', '1'); bf.setAttribute('aria-pressed', 'true');
+      bf.textContent = (FIL.uid ? '👤 ' + (FIL.nomUid || 'Une personne') : '📱 ' + nomApp(FIL.app)) + '  ✕';
+      bf.setAttribute('aria-label', 'Enlever le filtre ' + (FIL.uid ? FIL.nomUid || 'personne' : nomApp(FIL.app)));
+      pf.appendChild(bf);
+    }
     if (maj) maj.textContent = FIL.erreur ? 'lecture impossible — nouvel essai dans 30 s' : FIL.maj ? 'à jour ' + ilYa(FIL.maj) : 'lecture…';
     z.textContent = '';
     if (!tout.length) { var v = document.createElement('p'); v.className = 'live-vide'; v.textContent = FIL.maj ? 'Rien pour ce choix. Change « qui » ou « quoi » ci-dessus.' : 'Lecture…'; z.appendChild(v); return; }
@@ -611,12 +652,13 @@
       var j = jourDe(e.ts);
       if (j !== jour) { jour = j; var t = document.createElement('h3'); t.className = 'fil-j'; t.textContent = j; z.appendChild(t); }
       var b = document.createElement('button'); b.type = 'button'; b.className = 'fil-e' + (e.ts > FIL.vus && FIL.vus ? ' neuf' : '');
-      if (e.boite) b.setAttribute('data-va', 'boite'); else if (e.uid && !e.moi) b.setAttribute('data-va', 'fiche:' + e.uid);
+      if (e.boite) b.setAttribute('data-va', 'msg:' + String(e.id).slice(2)); else if (e.uid && !e.moi) b.setAttribute('data-va', 'fiche:' + e.uid); else if (e.app) b.setAttribute('data-va', 'filapp:' + e.app);
       var h = document.createElement('span'); h.className = 'h'; h.textContent = heureDe(e.ts);
       var c = document.createElement('span'); c.className = 'c';
       var l1 = document.createElement('span'); l1.className = 'l1';
       var nm = document.createElement('b'); nm.textContent = e.moi ? 'Moi' : (e.nom || 'Quelqu\'un');
       var ap = document.createElement('span'); ap.className = 'app'; ap.textContent = nomApp(e.app);
+      if (e.app && !e.boite) { ap.setAttribute('data-va', 'filapp:' + e.app); ap.setAttribute('aria-label', 'Voir tout ce qui s\'est passé dans ' + nomApp(e.app)); }
       l1.appendChild(nm); l1.appendChild(ap);
       var l2 = document.createElement('span'); l2.className = 'l2'; l2.textContent = (e.action || '') + (e.detail && e.type !== 'connexion' ? ' ' + court(e.detail) : '') + (e.fois > 1 ? ' ×' + e.fois : '');
       c.appendChild(l1); c.appendChild(l2);
@@ -628,9 +670,23 @@
       z.appendChild(b);
     });
   }
+  /* Le Journal filtré sur UNE personne ou UNE app, depuis n'importe quel endroit du tableau de bord (fiche, tuile d'app, ligne). */
+  function filtrerFil(cible) {
+    var app = cible.indexOf('filapp:') === 0;
+    if (app) { FIL.app = cible.slice(7); FIL.uid = ''; FIL.nomUid = ''; }
+    else { var p = cible.slice(4).split('|'); FIL.uid = p[0]; FIL.nomUid = p[1] || nomDeFiche(p[0]); FIL.app = ''; FIL.qui = 'tous'; FIL.quoi = 'tout'; }
+    FIL.lignes = []; FIL.suite = 0; FIL.suiteDepliee = false; FIL.tout = false; FIL.vus = 0; FIL.maj = 0;
+    var sel = document.getElementById('tb-fil-app'); if (sel) sel.value = FIL.app;
+    Array.prototype.forEach.call(document.querySelectorAll('#tb-fil [data-fil-qui]'), function (x) { x.setAttribute('aria-pressed', String(x.getAttribute('data-fil-qui') === FIL.qui)); });
+    Array.prototype.forEach.call(document.querySelectorAll('#tb-fil [data-fil-quoi]'), function (x) { x.setAttribute('aria-pressed', String(x.getAttribute('data-fil-quoi') === FIL.quoi)); });
+    if (document.body.getAttribute('data-vue') !== 'accueil') location.hash = '#accueil';
+    dessinerFil(); lireFil(false);
+    setTimeout(function () { var f = document.getElementById('tb-fil'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'start' }); }, 180);
+  }
+  function nomDeFiche(uid) { var f = document.getElementById('fiche-' + uid), h = f && f.querySelector('h3'); return h ? h.textContent : ''; }
   function lireFil(suite) {
     if (FIL.enCours) return; FIL.enCours = true;
-    var u = '/__boite/admin/fil?qui=' + FIL.qui + '&types=' + encodeURIComponent(filTypes()) + (FIL.app ? '&app=' + encodeURIComponent(FIL.app) : '') + (suite && FIL.suite ? '&avant=' + FIL.suite : '') + (suite ? '' : '&apps=1') + '&limite=' + (suite ? 40 : 25);
+    var u = '/__boite/admin/fil?qui=' + FIL.qui + '&types=' + encodeURIComponent(filTypes()) + (FIL.app ? '&app=' + encodeURIComponent(FIL.app) : '') + (FIL.uid ? '&uid=' + encodeURIComponent(FIL.uid) : '') + (suite && FIL.suite ? '&avant=' + FIL.suite : '') + (suite || (FIL.appsLe && Date.now() - FIL.appsLe < 3e5) ? '' : '&apps=1') + '&limite=' + (suite ? 40 : 25);
     lireJson(u).then(function (j) {
       FIL.enCours = false;
       if (!j || !j.ok) { FIL.erreur = true; dessinerFil(); return; }
@@ -642,7 +698,9 @@
         var reste = FIL.suiteDepliee ? FIL.lignes.filter(function (e) { return e.ts < plusVieux; }) : [];
         if (FIL.lignes.length) FIL.vus = Math.max(FIL.vus, FIL.lignes[0].ts); 
         FIL.lignes = tete.concat(reste); if (!FIL.suiteDepliee) FIL.suite = j.suite || 0;
-        if (Array.isArray(j.apps)) {
+        if (Array.isArray(j.apps)) { j.apps = j.apps.slice().sort(function (x, y) { return (y.dernier || 0) - (x.dernier || 0); });   /* le plus récent en premier, quel que soit l'ordre reçu */
+          FIL.apps = j.apps; FIL.appsLe = Date.now(); dessinerActiviteApps();
+         
           var sel = document.getElementById('tb-fil-app');
           if (sel && sel.options.length !== j.apps.length + 1) { var garde = sel.value; sel.textContent = ''; var o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Toutes les apps'; sel.appendChild(o0);
             j.apps.forEach(function (x) { var o = document.createElement('option'); o.value = x.app; o.textContent = nomApp(x.app) + ' · ' + ilYa(x.dernier); sel.appendChild(o); }); sel.value = garde; }
@@ -651,10 +709,32 @@
       FIL.maj = Date.now(); dessinerFil();
     });
   }
+  /* 18.11 (audit : « activité par app » lue par le serveur — dernière activité, nombre de lignes, personnes — mais montrée seulement dans un menu) :
+     en tête de la rubrique « Apps du domaine », une ligne par app qui a bougé cette semaine, la plus RÉCENTE en haut ; un toucher = le Journal de cette app. */
+  function dessinerActiviteApps() {
+    var sec = document.getElementById('apps'), corps = sec && (sec.querySelector('.corps') || sec); if (!corps) return;
+    var z = document.getElementById('tb-apps-activite');
+    if (!z) { z = document.createElement('div'); z.id = 'tb-apps-activite'; z.className = 'apps-act'; var apres = sec.querySelector('summary'); if (apres && apres.parentNode === sec) sec.insertBefore(z, apres.nextSibling); else corps.insertBefore(z, corps.firstChild); }
+    var l = (FIL.apps || []).slice().sort(function (a, b) { return (b.dernier || 0) - (a.dernier || 0); });
+    z.textContent = ''; z.hidden = !l.length; if (!l.length) return;
+    var t = document.createElement('h2'); t.className = 'cat'; t.textContent = '🕘 Ce qui a bougé cette semaine'; z.appendChild(t);
+    l.forEach(function (x) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'app-act'; b.setAttribute('data-va', 'filapp:' + x.app);
+      var n = document.createElement('b'); n.textContent = nomApp(x.app);
+      var d = document.createElement('span'); d.className = 'q'; d.textContent = ilYa(x.dernier);
+      var c = document.createElement('span'); c.className = 'c'; c.textContent = (x.n || 0) + ' action' + ((x.n || 0) > 1 ? 's' : '') + (x.personnes ? ' · ' + x.personnes + ' personne' + (x.personnes > 1 ? 's' : '') : '');
+      b.appendChild(n); b.appendChild(c); b.appendChild(d); z.appendChild(b);
+    });
+  }
   function brancherFil() {
     var sec = document.getElementById('tb-fil'); if (!sec) return;
     var changer = function () { FIL.lignes = []; FIL.suite = 0; FIL.suiteDepliee = false; FIL.vus = 0; FIL.maj = 0; dessinerFil(); lireFil(false); };
     sec.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('[data-fil-efface]')) { FIL.uid = ''; FIL.nomUid = ''; FIL.app = ''; if (FIL.quoi === 'tout') FIL.quoi = 'essentiel'; if (FIL.qui === 'tous') FIL.qui = 'autres';
+        var sl = document.getElementById('tb-fil-app'); if (sl) sl.value = '';
+        Array.prototype.forEach.call(sec.querySelectorAll('[data-fil-qui]'), function (x) { x.setAttribute('aria-pressed', String(x.getAttribute('data-fil-qui') === FIL.qui)); });
+        Array.prototype.forEach.call(sec.querySelectorAll('[data-fil-quoi]'), function (x) { x.setAttribute('aria-pressed', String(x.getAttribute('data-fil-quoi') === FIL.quoi)); });
+        changer(); return; }
       var q = e.target.closest && e.target.closest('[data-fil-qui],[data-fil-quoi]'); if (!q) return;
       var cle = q.hasAttribute('data-fil-qui') ? 'qui' : 'quoi', val = q.getAttribute('data-fil-' + cle);
       if (FIL[cle] === val) return; FIL[cle] = val;

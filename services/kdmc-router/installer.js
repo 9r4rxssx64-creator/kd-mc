@@ -8,6 +8,7 @@
  * les abonnements vivent dans D1 (CERCLE_DB), 0 écriture KV. Un abonnement = un appareil d'un compte. Mort (404/410) = effacé.
  * Les service workers des apps reçoivent, EN PLUS, le gestionnaire « push » (ajouterPushAuSW) si leur propre fichier n'en a pas : ni modifier 25 fichiers, ni doublon. */
 import { INSTALLER_JS } from './installer-client.js';
+import { noterNotif } from './activite.js';
 import { ICON192_B64, ICON512_B64, APPLE180_B64, MASKABLE512_B64 } from './installer-icones.js';
 
 export { INSTALLER_JS };
@@ -78,7 +79,10 @@ export async function pousser(env, lignes, payload, fetchFn) {
 export async function pousserA(env, uid, payload, fetchFn) {
   try { const db = env && env.CERCLE_DB; if (!db || !uid) return { envoyes: 0, morts: 0, echecs: 0, raison: 'rien' }; await base(db);
     const lignes = (await db.prepare('SELECT id, sub, echecs FROM push_domaine WHERE uid = ? LIMIT ?').bind(String(uid), PAR_COMPTE).all()).results || [];
-    return lignes.length ? await pousser(env, lignes, payload, fetchFn) : { envoyes: 0, morts: 0, echecs: 0, raison: 'aucun_appareil' };
+    if (!lignes.length) return { envoyes: 0, morts: 0, echecs: 0, raison: 'aucun_appareil' };
+    const r = await pousser(env, lignes, payload, fetchFn);
+    if (r.envoyes > 0) await noterNotif(env, uid, payload && payload.title, payload && payload.url);   // la trace « qui a été prévenu, quand, de quoi » (Journal du domaine)
+    return r;
   } catch { return { envoyes: 0, morts: 0, echecs: 0, raison: 'erreur' }; }
 }
 
@@ -168,9 +172,10 @@ export async function handlePush(request, url, env, outils) {
       const titre = String(b.title || '').trim(), texte = String(b.body || '').trim();
       if (!titre || !texte) return R({ ok: false, reason: 'titre_et_texte_requis' }, 400);
       if (!b.uid && b.tous !== true) return R({ ok: false, reason: 'destinataire_requis' }, 400);
-      const lignes = b.tous === true ? ((await db.prepare('SELECT id, sub, echecs FROM push_domaine LIMIT ?').bind(MAX_ABONNES).all()).results || [])
-        : ((await db.prepare('SELECT id, sub, echecs FROM push_domaine WHERE uid = ? LIMIT ?').bind(String(b.uid), PAR_COMPTE).all()).results || []);
+      const lignes = b.tous === true ? ((await db.prepare('SELECT id, uid, sub, echecs FROM push_domaine LIMIT ?').bind(MAX_ABONNES).all()).results || [])
+        : ((await db.prepare('SELECT id, uid, sub, echecs FROM push_domaine WHERE uid = ? LIMIT ?').bind(String(b.uid), PAR_COMPTE).all()).results || []);
       const r = await pousser(env, lignes, { title: titre, body: texte, url: b.url, tag: b.tag });
+      if (r.envoyes > 0) for (const u of [...new Set(lignes.map((l) => l.uid).filter(Boolean))].slice(0, 200)) await noterNotif(env, u, titre, b.url);
       return R({ ok: true, destinataires: lignes.length, envoyes: r.envoyes, morts: r.morts, echecs: r.echecs });
     }
     return R({ ok: false, reason: 'introuvable' }, 404);

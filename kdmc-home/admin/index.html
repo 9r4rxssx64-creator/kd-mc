@@ -8,10 +8,10 @@
 <title>KDMC — Tableau de bord admin</title>
 <meta name="robots" content="noindex,nofollow" />
 <meta name="theme-color" content="#0b1409" />
-<link rel="stylesheet" href="/design-system.css?v=2.7.27" />
+<link rel="stylesheet" href="/design-system.css?v=2.7.28" />
 <link rel="stylesheet" href="/kdmc-boite.css?v=2.0.6" />
-<link rel="stylesheet" href="commerce.css?v=2.7.27" />
-<link rel="stylesheet" href="tableau.css?v=2.7.27" />
+<link rel="stylesheet" href="commerce.css?v=2.7.28" />
+<link rel="stylesheet" href="tableau.css?v=2.7.28" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -158,6 +158,16 @@
   .bascule.fermee{border-color:rgba(239,68,68,.7);background:rgba(239,68,68,.14)}.bascule.fermee .s{color:#fca5a5;font-weight:700}
   .bascule:disabled{opacity:.6}
   @media(max-width:420px){.bascule{flex-wrap:wrap;row-gap:0}.bascule .s{margin-left:26px;flex-basis:100%}}
+  /* 18.11 (audit « tout cliquable, le plus récent en premier ») : filtre du Journal lisible et retirable ; activité par app, la plus récente en haut */
+  .fil-filtre{margin:0 0 8px}.fil-filtre[hidden]{display:none}
+  .fil-e .app[data-va]{cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:6px 8px;margin:-6px -2px}
+  .apps-act{margin:0 0 14px}.apps-act[hidden]{display:none}
+  .app-act{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:6px 10px;margin:0 0 6px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,20,.6);color:var(--txt,#eee);font:inherit;text-align:left;cursor:pointer}
+  .app-act b{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.app-act .c{font-size:12.5px;color:var(--mut);white-space:nowrap}
+  .app-act .q{margin-left:auto;font-size:13px;color:var(--gold,#c9a227);white-space:nowrap;flex:none}
+  .inscrit{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:6px 10px;margin:0 0 6px;border-radius:12px;border:1px solid var(--line);background:rgba(17,28,20,.6);color:var(--txt,#eee);font:inherit;text-align:left;cursor:pointer}
+  .inscrit b{font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.inscrit .d{margin-left:auto;font-size:13px;color:var(--mut);white-space:nowrap;flex:none}.inscrit .arr{color:var(--mut)}
+  .tb-avis{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 110px);z-index:60;padding:12px 14px;border-radius:14px;background:#1f2a1c;border:1px solid var(--line2);color:var(--txt,#eee);font-size:14px;text-align:center}.tb-avis[hidden]{display:none}
   /* 18.11 : téléphone — rubriques et raccourcis sur une ligne chacun (placé en fin de feuille : il doit l'emporter sur les règles générales ci-dessus) */
   @media(max-width:639px){
     .tuiles-sec{gap:8px;margin-bottom:12px}
@@ -179,10 +189,10 @@
   </div>
   <script src="/kdmc-sso.js"></script>
   <script src="/kdmc-boite.js?v=2.0.12"></script>
-  <script src="admin.js?v=2.7.27"></script>
-  <script src="commerce.js?v=2.7.27"></script>
-  <script src="tableau.js?v=2.7.27"></script>
+  <script src="admin.js?v=2.7.28"></script>
+  <script src="commerce.js?v=2.7.28"></script>
+  <script src="tableau.js?v=2.7.28"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.27" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.28" data-color="#c9a227" defer></script>
 </body>
 </html>

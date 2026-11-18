@@ -3303,12 +3303,13 @@ async function notifyPush(env, title, body, opts) {
   try {
     const ctrl = new AbortController();
     const to = setTimeout(() => ctrl.abort(), 2000);
-    await fetch(url.replace(/\/$/, '') + '/send-all', {
+    const rp = await fetch(url.replace(/\/$/, '') + '/send-all', {
       method: 'POST', signal: ctrl.signal,
       headers: { 'content-type': 'application/json', authorization: 'Bearer ' + tok },
       body: JSON.stringify({ payload: { title, body, tag: (opts && opts.tag) || 'kdmc-new-device', url: (opts && opts.url) || 'https://kd-mc.com/admin/' } }),
-    }).catch(() => {});
+    }).catch(() => null);
     clearTimeout(to);
+    if (rp && rp.ok) await activite.noterNotif(env, CANON_UID, title, (opts && opts.url) || 'https://kd-mc.com/admin/');   // 18.11 : l'alerte envoyée à l'admin laisse une trace dans le Journal
   } catch { /* fail-open : jamais d'échec de connexion à cause d'une notif */ }
 }
 /* Push « nouveau message CMCteams light » → iPhone de Kevin même app fermée, via le

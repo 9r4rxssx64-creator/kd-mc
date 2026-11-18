@@ -89,7 +89,7 @@
     var qui = D ? (D.sources || []).filter(function (s) { return s.nonLus && s.id !== 'alertes'; }).map(function (s) { return s.icone + ' ' + s.nom.split(' · ')[0] + ' ' + s.nonLus; }) : [];
     if (qui.length) a.appendChild(el('span', 'qui', qui.join(' · ')));
     if (nAl) a.appendChild(el('span', 'qui', '🔔 ' + nAl + ' alerte' + (nAl > 1 ? 's' : '')));
-    a.appendChild(el('span', 'qui', '· ' + nCo + ' connecté(s)'));
+    if (nCo || n + ni || nAl) a.appendChild(el('span', 'qui', '· ' + nCo + ' connecté(s)'));   /* 18.11 (Kevin : « trop d'infos ») : carte calme et personne en ligne = une seule ligne, pas « 0 connecté(s) » */
     var hs = D ? (D.sources || []).filter(function (s) { return s.etat !== 'ok'; }) : [];
     if (hs.length) a.appendChild(el('span', 'qui warn', '⚠️ ' + hs.map(function (s) { return s.nom.split(' · ')[0]; }).join(', ') + ' indisponible'));
     if (!D) a.appendChild(el('span', 'qui', '· dernier relevé ' + quand(C.ts) + ' — mise à jour…'));

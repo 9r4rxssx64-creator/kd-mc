@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## CMCteams v10.034 + light v1.163 — horaires aménagés : seulement « Horaires aménagés » (2026-11-18)
+- **18.11 (cmcteams-pdf, Kevin « Juste horaires aménagées pas le reste aussi dans l'affichage. Ça prend trop de place »)** : le libellé sous le nom et le bandeau de groupe n'affichent plus que « 🕘 Horaires aménagés » (« · sans départ » pour une personne seule, n° du groupe s'il y en a plusieurs) ; fini la liste des autres, « départs entre eux », « n personnes » et les explications. `tools/shared/horaires-amenages.js` = `tools/departs/horaires-amenages.js`. Garde `test:horaires-amenages` 37/0 (rouge sur l'ancien code).
+
 ## CMCteams v10.033 + light v1.162 — écran Départs lisible, numéros de départ accentués (2026-11-18)
 - **18.11 (cmcteams-pdf, Kevin, capture iPhone « On voit rien, les écritures. Accentue un peu les numéros de départ »)** : cause mesurée : les titres des groupes d'absents (Maladie, Formation, Congé, Repos) prenaient les couleurs sombres de statut du PDF sur fond vert foncé, les puces étaient en gris `#8a7878` (contraste 4,3) et l'étiquette d'équipe `#6a6060` (3,0) ; dans la light l'étiquette d'équipe faisait 11 px. Corrigé : titres en couleurs claires fixes, puces claires 15 px, étiquette 14 px ; numéro de départ CMCteams 22→25 px avec chiffre 18 px et bordure pleine, badge des élèves 11→14 px ; light `.dep` 12→15 px, `.fsub` 12 px. Garde : `npm run test:lisibilite-departs` (contraste ≥ 7, tailles ; 17 OK, 10 FAIL sur l'ancien code).
 

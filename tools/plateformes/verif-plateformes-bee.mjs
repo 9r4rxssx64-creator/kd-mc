@@ -14,6 +14,7 @@
    Sabotage : BEE_DIR=<dossier d'un ancien javis/> → doit devenir rouge sur le défaut qu'il avait ; SABOTAGE=1 force un défaut (✕ minuscule) pour prouver la mesure. */
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { estBruitOutil } from './bruit-outil.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BEE = process.env.BEE_DIR ? path.resolve(process.env.BEE_DIR) : path.join(ROOT, 'javis');
@@ -78,8 +79,8 @@ const MESURE = () => {
 };
 
 async function surface(page, nom, plat, moteur, mode, tact, bruitHarnais) {
-  const erreurs = [];
-  page.on('pageerror', (e) => { const m = String(e && e.message).slice(0, 120); if (!bruitHarnais.has(m)) erreurs.push(m); });
+  const erreurs = []; const bruitOutil = [];
+  page.on('pageerror', (e) => { const m = String(e && e.message).slice(0, 120); if (estBruitOutil(e)) { bruitOutil.push(m); return; } if (!bruitHarnais.has(m)) erreurs.push(m + ' @ ' + String((e && e.stack) || '').split('\n').slice(1, 3).map((l) => l.trim().slice(0, 110)).join(' | ')); });
   const t0 = Date.now();
   await page.goto(base + (mode === 'app' ? '/' : '/hote.html'), { waitUntil: 'domcontentloaded' });
   const tag = `${plat} · ${moteur} · ${nom}`;
@@ -143,6 +144,7 @@ async function surface(page, nom, plat, moteur, mode, tact, bruitHarnais) {
   ok(await page.evaluate(() => /Coucou Kevin, tout va bien/.test(document.body.innerText)), `${tag} : la réponse s'affiche`);
   const apres = await page.evaluate(MESURE);
   ok(!apres.deborde, `${tag} : rien ne déborde après la réponse`);
+  if (bruitOutil.length) console.log(`  ℹ️  ${tag} : ${bruitOutil.length} erreur(s) venue(s) du code injecté par l'outil (« debugger eval code »), pas de Bee : « ${bruitOutil[0]} » — écartée`);
   ok(erreurs.length === 0, `${tag} : 0 erreur JavaScript${erreurs.length ? ' — ' + erreurs[0] : ''}`);
 }
 

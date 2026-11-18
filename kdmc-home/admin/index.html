@@ -8,10 +8,10 @@
 <title>KDMC — Tableau de bord admin</title>
 <meta name="robots" content="noindex,nofollow" />
 <meta name="theme-color" content="#0b1409" />
-<link rel="stylesheet" href="/design-system.css?v=2.7.23" />
+<link rel="stylesheet" href="/design-system.css?v=2.7.24" />
 <link rel="stylesheet" href="/kdmc-boite.css?v=2.0.6" />
-<link rel="stylesheet" href="commerce.css?v=2.7.23" />
-<link rel="stylesheet" href="tableau.css?v=2.7.23" />
+<link rel="stylesheet" href="commerce.css?v=2.7.24" />
+<link rel="stylesheet" href="tableau.css?v=2.7.24" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -45,8 +45,13 @@
   .fil{margin:0 0 12px;padding:12px 14px;border-radius:18px;border:1px solid var(--line2);background:rgba(17,28,20,.6)}
   body:not([data-vue="accueil"]) .fil{display:none}
   .fil h2{margin:0 0 8px;font-size:15px;color:var(--txt,#eee);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  /* 18.11 (pont 2666 : la bulle de version flottait PAR-DESSUS les filtres du Journal) : sur le tableau de bord elle vit dans l'en-tête, à côté du titre —
+     toujours cliquable (toucher = forcer la mise à jour), elle ne recouvre plus rien. tableau.js la range là dès qu'elle existe. */
+  .top{flex-wrap:wrap;row-gap:4px}
+  .top #kdmc-version-badge{position:static!important;bottom:auto!important;left:auto!important;margin:0 auto 0 4px!important;flex:none}
   .fil-maj{margin-left:auto;font-size:13px;font-weight:400;color:var(--mut)}
-  .fil-f{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
+  /* 18.11 (pont 2666, iPhone 390 px : « Tout le monde » coupé, « Mc… » illisible, rien ne disait qu'on pouvait faire défiler) : les choix passent à la ligne, tous visibles */
+  .fil-f{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:8px}
   .fil-c{flex:none;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mut);font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
   .fil-c[aria-pressed="true"]{border-color:var(--gold,#c9a227);color:var(--gold,#c9a227);background:rgba(201,162,39,.12);font-weight:700}
   .fil-app{display:block;width:100%;min-height:44px;margin:0 0 6px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--field,#0f1a12);color:var(--txt,#eee);font-size:16px}
@@ -150,10 +155,10 @@
   </div>
   <script src="/kdmc-sso.js"></script>
   <script src="/kdmc-boite.js?v=2.0.11"></script>
-  <script src="admin.js?v=2.7.23"></script>
-  <script src="commerce.js?v=2.7.23"></script>
-  <script src="tableau.js?v=2.7.23"></script>
+  <script src="admin.js?v=2.7.24"></script>
+  <script src="commerce.js?v=2.7.24"></script>
+  <script src="tableau.js?v=2.7.24"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.23" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.24" data-color="#c9a227" defer></script>
 </body>
 </html>

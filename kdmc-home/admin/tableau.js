@@ -51,8 +51,9 @@
 
   /* Raccourcis de l'accueil : les gestes les plus fréquents, un toucher chacun. */
   var RACCOURCIS = [
-    ['➕ Créer un compte', '#creer-invite'], ['🚫 Bannir ou supprimer quelqu\'un', '#list'], ['⛔ Fermer une app pour tous', '#fermgen'],
-    ['📬 Lire les messages', 'boite'], ['📦 Livrer une commande', 'livrer'], ['🎁 Inviter gratuitement', '#inviter']
+    /* 18.11 (Kevin 17.11 « trop d'infos mélangées » ; mesure d'apex-cloud, pont 2666 : messages non lus et ventes à livrer montrés 3 fois — carte « À traiter »,
+       tuile, raccourci) : un raccourci ne double plus une carte « À traiter ». « Lire les messages » et « Livrer une commande » sont les cartes du haut. */
+    ['➕ Créer un compte', '#creer-invite'], ['🚫 Bannir ou supprimer quelqu\'un', '#list'], ['⛔ Fermer une app pour tous', '#fermgen'], ['🎁 Inviter gratuitement', '#inviter']
   ];
   /* SOUS-CATÉGORIES (onglets) de « Personnes & comptes » : on range les blocs déjà construits par admin.js et la boîte, sans les refaire.
      id du bloc → onglet ; un titre (h2.cat) → l'onglet des blocs qui le suivent. Les autres rubriques sont découpées par leurs titres. */
@@ -525,6 +526,14 @@
     if (/^fiche-/.test(h)) { montrerVue('personnes', 'comptes'); var t0 = Date.now(); (function attendre() { var f = document.getElementById(h); if (f) { aller(f); return; } if (Date.now() - t0 < 8000) setTimeout(attendre, 200); })(); return; }
     montrerVue('accueil');
   }
+  /* 18.11 : la bulle de version (posée flottante par version-badge-pwa.js) rejoint l'en-tête du tableau de bord — elle ne recouvre plus aucun contenu. */
+  function rangerBulleVersion() {
+    var essais = 0, t = setInterval(function () {
+      var b = document.getElementById('kdmc-version-badge'), top = document.querySelector('.wrap > .top'), home = top && top.querySelector('.home');
+      if (b && top) { if (b.parentNode !== top) top.insertBefore(b, home || null); clearInterval(t); }
+      else if (++essais > 60) clearInterval(t);
+    }, 250);
+  }
   function badgesOnglets() {
     var b = BOITE, n = b ? (b.inscriptions || []).length + (b.codes || []).length + (Array.isArray(b.inscriptionsAdmin) ? b.inscriptionsAdmin.length : 0) : 0;
     var vals = { trancher: n, connectes: b ? b.connectes || 0 : 0 };
@@ -536,12 +545,9 @@
   function resumes(cs) {
     var b = BOITE, val = function (id) { var c = cs.filter(function (x) { return x.id === id; })[0]; return c && !c.cache ? c.n : null; };
     var trancher = (val('inscriptions') || 0) + (val('codes') || 0) + (val('sansWhatsapp') || 0);
-    var badge = { personnes: trancher, messages: val('messages') || 0, commerce: val('livrer') || 0 };
-    var txt = {
-      personnes: b ? (trancher ? trancher + ' à trancher · ' : '') + (b.connectes ? b.connectes + ' autre(s) en ligne' : 'Toi seul en ligne') : null,   /* 23.10 Kevin : « 0 connecté(s) » alors qu'il est connecté → le chiffre compte les AUTRES */
-      messages: b ? (b.nonLus ? b.nonLus + ' non lu(s)' : 'Tout est lu') : null,
-      commerce: val('livrer') != null ? (val('livrer') ? val('livrer') + ' vente(s) à livrer' : 'Rien à livrer') : null
-    };
+    /* 18.11 (règle de Kevin 29.10 « une info n'est affichée que dans une page » ; pont 2666) : les CHIFFRES vivent dans « À traiter maintenant » et
+       « En ligne maintenant », nulle part ailleurs. Une tuile dit ce qu'on y trouve ; elle ne recompte plus (ni pastille rouge, ni « 3 non lus »). */
+    var badge = {}, txt = {}; void b; void trancher;
     SECTIONS.forEach(function (s) {
       var bd = document.querySelector('[data-badge="' + s.id + '"]'); if (bd) { bd.hidden = !badge[s.id]; bd.textContent = badge[s.id] ? String(badge[s.id]) : ''; }
       var r = document.querySelector('[data-resume="' + s.id + '"]'); if (r && txt[s.id]) r.textContent = txt[s.id];
@@ -566,7 +572,7 @@
     if (!BOITE || !Array.isArray(BOITE.messages) || FIL.qui === 'moi' || (FIL.quoi !== 'essentiel' && FIL.quoi !== 'modifs')) return [];
     return BOITE.messages.filter(function (m) { return m && m.ts && m.source !== 'alertes' && (!FIL.app || String(m.app || m.source) === FIL.app); }).map(function (m) {
       var arbre = m.source === 'arbre';
-      return { id: 'b:' + m.cle, ts: m.ts, nom: m.de || 'Quelqu\'un', app: String(m.app || m.source || 'domaine'), action: arbre ? '✏️ a corrigé' : '💬 a écrit', detail: String(m.texte || '').slice(0, 140), boite: true, type: arbre ? 'modif' : 'message' };
+      return { id: 'b:' + m.cle, ts: m.ts, nom: m.de || 'Quelqu\'un', app: String(m.app || m.source || 'domaine'), /* 18.11 (pont 2666) : le journal dit QUI a écrit et QUAND ; le texte du message ne se lit que dans Messages (un toucher y mène) */ action: arbre ? '✏️ a corrigé une fiche' : '💬 a écrit à l\'admin', detail: '', boite: true, type: arbre ? 'modif' : 'message' };
     });
   }
   function dessinerFil() {
@@ -665,7 +671,7 @@
     dessinerCompteurs();
     dessinerEnAttendant();
     brancherRecherche();
-    brancherFil();
+    brancherFil(); rangerBulleVersion();
     var rac = document.querySelectorAll('[data-racc]');
     for (var ri = 0; ri < rac.length; ri++) (function (b) { b.onclick = function () { var r = RACCOURCIS[+b.getAttribute('data-racc')]; if (!r) return; if (r[1] === '#creer-invite') { var t = document.getElementById('tb-creer'); if (t) { t.click(); return; } } aller(r[1]); }; })(rac[ri]);
     /* admin.js et commerce.js redessinent leurs blocs (actualisation) : on les reclasse dans leurs onglets, sans boucle */

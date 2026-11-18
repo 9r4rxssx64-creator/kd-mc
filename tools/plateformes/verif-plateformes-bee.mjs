@@ -79,7 +79,7 @@ const MESURE = () => {
 
 async function surface(page, nom, plat, moteur, mode, tact, bruitHarnais) {
   const erreurs = [];
-  page.on('pageerror', (e) => { const m = String(e && e.message).slice(0, 120); if (!bruitHarnais.has(m)) erreurs.push(m + ' @ ' + String((e && e.stack) || '').split('\n').slice(1, 3).map((l) => l.trim().slice(0, 110)).join(' | ')); });
+  page.on('pageerror', (e) => { const m = String(e && e.message).slice(0, 120); if (!bruitHarnais.has(m)) erreurs.push(m); });
   const t0 = Date.now();
   await page.goto(base + (mode === 'app' ? '/' : '/hote.html'), { waitUntil: 'domcontentloaded' });
   const tag = `${plat} · ${moteur} · ${nom}`;

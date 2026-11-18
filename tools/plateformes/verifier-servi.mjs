@@ -218,13 +218,38 @@ export function lireVersionSw(b) {
   if (b.statut === 404 || !texte.length) return b.enregistre ? 'enregistré, fichier absent' : 'aucun';
   return b.enregistre ? 'enregistré, version non lue' : 'aucun';
 }
+/* 18.11 (run 44224183689 : CMCteams « sw cmcteams-v10.028 (fichier présent, non enregistré) » sur les 2 écrans iPhone, alors que 3 passages de la nuit le voyaient
+   inscrit ; mesuré en local sur l'app servie : elle inscrit son worker sur `load`, et l'inscription n'est visible qu'environ 1,5 s APRÈS). Le robot lisait une seule
+   fois, trop tôt, et écrivait « non enregistré » à tort — un robot qui compte faux se corrige (leçon 858). Quand le fichier /sw.js est bien servi, on sonde
+   l'inscription jusqu'à ATTENTE_SW_MS ; une page sans worker (fichier absent, porte, erreur) n'attend pas. Pur, testable avec une sonde et une horloge factices. */
+export const ATTENTE_SW_MS = 6000;
+export function fichierSwServi(b) {
+  if (!b || b.erreur || b.statut !== 200) return false;
+  const texte = String(b.texte || '');
+  if (!texte.trim()) return false;
+  return !(/text\/html/i.test(String(b.type || '')) || /^\s*<!doctype|^\s*<html/i.test(texte.slice(0, 200)));
+}
+export async function attendreInscription(sonde, { delai = ATTENTE_SW_MS, pas = 400, horloge = Date.now, pause = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  const fin = horloge() + delai;
+  const tour = async () => {
+    const v = await sonde();
+    if (v === true || v === null) return v;   /* null = navigateur sans worker : rien à attendre */
+    if (horloge() >= fin) return false;
+    await pause(pas);
+    return tour();
+  };
+  return tour();
+}
 async function versionSw(page) {
-  const brut = await page.evaluate(async () => {
+  const brut = (await page.evaluate(async () => {
     const out = { texte: '', type: '', statut: 0, enregistre: null };
     try { const rep = await fetch('/sw.js', { cache: 'no-store' }); out.statut = rep.status; out.type = rep.headers.get('content-type') || ''; out.texte = (await rep.text()).slice(0, 20000); } catch { out.erreur = true; }
-    try { if ('serviceWorker' in navigator) out.enregistre = !!(await navigator.serviceWorker.getRegistration()); } catch { /* navigateur sans worker : on garde null */ }
     return out;
-  }).catch(() => ({ erreur: true }));
+  }).catch(() => null)) || { erreur: true };   /* page morte : evaluate rend null ou rejette → « illisible », jamais un plantage du robot (garde 2aj) */
+  const sonde = () => page.evaluate(async () => {
+    try { return 'serviceWorker' in navigator ? !!(await navigator.serviceWorker.getRegistration()) : null; } catch { return null; }
+  }).catch(() => null);
+  if (!brut.erreur) brut.enregistre = await attendreInscription(sonde, { delai: fichierSwServi(brut) ? ATTENTE_SW_MS : 0 });
   return lireVersionSw(brut);
 }
 
@@ -262,9 +287,20 @@ export async function avecRepriseSiPlantage(fn, renaitre, r = {}) {
   }
 }
 /* 8.11 : la ligne du journal est une fonction (testable) ; « petit N » NOMME les cibles < 44 px (sélecteurs, sans texte), comme « cache » nomme les boutons recouverts. */
+function texteDemarrage(d) {
+  if (d === undefined || d === null) return '-';
+  return d === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : d + ' s';
+}
 export function ligneServi(a, nom, r) {
   const redir = r.redirige ? ` · REDIRIGÉ (demandé ${r.redirige}${r.chaine ? ' · chaîne : ' + r.chaine : ''}${r.parametres && r.parametres.length ? ' · paramètres : ' + r.parametres.join(', ') : ''})` : '';
-  return `${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches && r.badgesCaches.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${r.demarrage === undefined || r.demarrage === null ? '-' : r.demarrage === 'toujours' ? 'ÉCRAN DE DÉMARRAGE ENCORE LÀ après 20 s' : r.demarrage + ' s'} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'}${r.accueil ? ' · accueil fermé ' + r.accueil : ''} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx && r.cacheEx.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''}${r.aDefiler ? ' · à défiler ' + r.aDefiler + ' [' + (r.aDefilerEx || []).join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.petit && r.petitEx && r.petitEx.length ? ' [' + r.petitEx.slice(0, 3).join(' | ') + ']' : ''} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque && r.bloque.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}${redir}`;
+  return `${aCorriger(r) ? '❌' : '✅'} ${a} · ${nom} · HTTP ${r.statut ?? '?'} · hôte ${r.hoteFinal ?? '?'} · sw ${r.sw ?? '?'} · app ${r.appVer || '-'} · bee page ${r.beePage || '-'} cadre ${r.beeCadre === '' ? '-' : r.beeCadre} · badge ${(r.badges || []).join('/') || '-'} visibles ${r.badgesVisibles ?? '-'}${r.badgesVisibles > 1 ? ' [' + (r.badgesVisiblesQui || []).join(' + ') + ' dessus ' + (r.badgesDessus || []).join(' | ') + ']' : ''}${r.badgesVisibles === 0 && r.badgesCaches?.length ? ' [' + r.badgesCaches.join(' | ') + ']' : ''} ${r.reprise ? ' · ' + r.reprise : ''} · démarrage ${texteDemarrage(r.demarrage)} · pastille bas ${r.pastilleBas ?? '-'} · 1er texte ${r.premier ? r.premier.top + ' ' + r.premier.s : '-'} · sous pastille ${r.sousPastille ? 'OUI' : 'non'} · installeur ${r.installeur ? 'fermé' : 'non'}${r.accueil ? ' · accueil fermé ' + r.accueil : ''} · cache ${r.cache ?? '-'}${r.cache && r.cacheEx?.length ? ' [' + r.cacheEx.join(' | ') + ']' : ''}${r.aDefiler ? ' · à défiler ' + r.aDefiler + ' [' + (r.aDefilerEx || []).join(' | ') + ']' : ''} · haut ${r.haut ?? '-'} · déborde ${r.deborde ?? '-'}${r.debordeur ? ' [' + r.debordeur.s + ' droite ' + r.debordeur.droite + ' / écran ' + r.largeurEcran + ' · largeur ' + r.debordeur.largeur + ' · parent ' + r.debordeur.parent + ']' : ''} · petit ${r.petit ?? '-'}${r.petit && r.petitEx?.length ? ' [' + r.petitEx.slice(0, 3).join(' | ') + ']' : ''} · fluidité ${r.fps ?? '-'} i/s${r.fps < 30 && r.bloque?.length ? ' [bloque ' + r.bloque.join(' | ') + ']' : ''}${r.err ? ' · ' + r.err : ''}${redir}${r.safariManque ? ' · ⚠️ Safari non mesuré (Chromium à la place de WebKit)' : ''}`;
+}
+/* 18.11 : la ligne de bilan est une fonction (testable) ; elle compte aussi les pages iPhone mesurées sans Safari. */
+export function ligneBilan(res) {
+  const ko = res.filter(aCorriger).length;
+  const sansSafari = res.filter((r) => r.safariManque).length;
+  const safari = sansSafari ? ' · ⚠️ Safari non mesuré sur ' + sansSafari + ' page(s) (WebKit absent)' : '';
+  return `=== BILAN SERVI : ${res.length} page(s) lue(s), ${ko} à corriger${safari} ===`;
 }
 /* 7.11 : la ligne du journal d'UNE vue d'administration d'Apex Chat (sélecteurs seulement, jamais de texte : dépôt public). */
 export function ligneVueAdmin(a, nom, x) {
@@ -348,6 +384,10 @@ export const CONNEXIONS_SERVI = ['https://apex-chat-api.9r4rxssx64.workers.dev/a
 export async function verifierServi({ adresses, hash = '', journal = console.log }) {
   const b = await chromium.launch({ headless: true });
   const bw = process.env.WEBKIT === '1' ? await webkit.launch({ headless: true }).catch(() => null) : null;
+  /* 18.11 (run 44224183689 : WebKit n'avait pas démarré — apt de l'hébergeur coupé — et l'iPhone a été mesuré en Chromium sans que le bilan le dise ;
+     seul l'en-tête « [chromium] » le trahissait). Un moteur absent ne se tait jamais (règle « tout tester partout ») : la ligne de chaque page iPhone et le bilan le disent. */
+  const safariManque = process.env.WEBKIT === '1' && !bw;
+  if (safariManque) journal('⚠️ WebKit absent : iphone-13 sera mesuré en Chromium — Safari NON mesuré sur ce passage');
   const sortie = [];
   try {
     /* SERVI_ECRANS=portable,iphone-13 : ne lire que certains écrans (mesure de masse, ex. la version de Bee sur les 33 adresses) ; vide = les 5 écrans */
@@ -376,6 +416,7 @@ export async function verifierServi({ adresses, hash = '', journal = console.log
       const LIMITE_MS = Math.max(30000, Number(process.env.SERVI_ADRESSE_MAX_MS) || 240000);
       for (const a of adresses) {
         const r = { adresse: a, ecran: nom, admin };
+        if (safariManque && nom === 'iphone-13') r.safariManque = true;
         try {
           await avecRepriseSiPlantage(() => avecLimite(() => mesurerAdresse(page, a, { nom, tel, r, enCours, journal }), LIMITE_MS), renaitre, r);
         } catch (e) {
@@ -401,7 +442,6 @@ if (process.argv[1] && /(^|[\\/])verifier-servi\.mjs$/.test(process.argv[1])) {
   if (refus.length) console.log(`⚠️ ${refus.length} adresse(s) refusée(s) : seules les adresses *.kd-mc.com sont ouvertes`);
   if (!adresses.length) { console.error('Aucune adresse *.kd-mc.com à vérifier'); process.exit(2); }
   const res = await verifierServi({ adresses, hash: process.env.KDMC_ADMIN_PIN_SHA256 || '' });
-  const ko = res.filter(aCorriger).length;
-  console.log(`\n=== BILAN SERVI : ${res.length} page(s) lue(s), ${ko} à corriger ===`);
+  console.log('\n' + ligneBilan(res));
   process.exit(0);
 }

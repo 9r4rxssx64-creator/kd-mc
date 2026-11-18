@@ -1630,6 +1630,9 @@ function ficheNettoyee(b) {
   const nais = ficheTxt(src.dateNaissance, 10);
   if (ficheNaissanceOk(nais, an)) o.dateNaissance = nais;
   for (const [k, n] of FICHE_TEXTES) { const v = ficheTxt(src[k], n); if (v) o[k] = v; }
+  // Groupe fermé / ouvert (case de l'inscription, Kevin 18.11.2026) : seulement ces deux mots.
+  const grp = ficheTxt(src.groupe, 8).toLowerCase();
+  if (grp === 'ouvert' || grp === 'ferme') o.groupe = grp;
   return o;
 }
 function ssoOriginOk(origin, selfHost) {

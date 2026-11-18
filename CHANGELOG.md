@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## CMCteams v10.036 + light v1.165 — case « groupe fermé / ouvert » à la fiche d'inscription (2026-11-18)
+- **18.11 (cmcteams-pdf, Kevin « Ajoute à la fiche d'inscription, groupe fermé et ouvert à cocher, et l'admin peut modifier toujours toutes les infos »)** : deux cases à cocher « Groupe fermé » / « Groupe ouvert » dans la fiche d'inscription de CMCteams ET de la light (`reg.groupe`, `fGrp`) ; le choix coché passe avant la règle de la date d'entrée (`cmcEstGroupeOuvert`, copie identique `tools/shared` ⇄ `tools/departs`) ; le routeur garde `groupe` seulement s'il vaut « ouvert » ou « ferme » (`ficheNettoyee`) ; l'admin le change à tout moment, même fiche verrouillée (menu dans la fiche + outil IA `admin_set_reg_field`, règles Firebase : l'admin écrit toujours `cmc_reg/<uid>`) ; Lemonnier PH et Cioco S ajoutés aux chefs américains (pont 2746). Gardes : `test:secteur` (70/0), `test:fiche-groupe` (5/0, rouge sous sabotage), `verify-cadre-matricule` (horloge figée).
+
 ## CMCteams v10.035 + light v1.164 — groupe ouvert par la date d'entrée, horaires aménagés seuls (2026-11-18)
 - **18.11 (cmcteams-pdf, Kevin « Tous les employés rentrés dans les jeux après la convention sont groupe ouvert… Salomé GO tout comme ceux en école craps »)** : `cmcEstGroupeOuvert` (`tools/shared/secteur.js` ⇄ `tools/departs/secteur.js`) : entrée aux jeux ≥ 1.04.2015 (date lue dans la fiche, jamais inventée), ‹employé›, école CRAPS. CMCteams : `dateEntreeJeux`/`dateEntreeSbm` (sans `firstSeenAt`) ; light : année de la fiche de la personne connectée. Libellé « 🕘 Horaires aménagés » seul. Gardes `test:secteur` 61/0, `test:horaires-amenages` 37/0.
 

@@ -8,10 +8,10 @@
 <title>KDMC — Tableau de bord admin</title>
 <meta name="robots" content="noindex,nofollow" />
 <meta name="theme-color" content="#0b1409" />
-<link rel="stylesheet" href="/design-system.css?v=2.7.25" />
+<link rel="stylesheet" href="/design-system.css?v=2.7.26" />
 <link rel="stylesheet" href="/kdmc-boite.css?v=2.0.6" />
-<link rel="stylesheet" href="commerce.css?v=2.7.25" />
-<link rel="stylesheet" href="tableau.css?v=2.7.25" />
+<link rel="stylesheet" href="commerce.css?v=2.7.26" />
+<link rel="stylesheet" href="tableau.css?v=2.7.26" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -48,7 +48,7 @@
   .fil h2{margin:0 0 8px;font-size:15px;color:var(--txt,#eee);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   /* 18.11 : rien ne flotte plus sur le tableau de bord. « Vue admin » se range dans l'en-tête (place offerte au script du domaine) ; la bulle de version,
      toujours touchable (toucher = forcer la mise à jour), vit en bas de page — tableau.js l'y range dès qu'elle existe. */
-  .top{flex-wrap:wrap;row-gap:4px;gap:8px}
+  .top{flex-wrap:wrap;gap:4px 8px}
   .wrap > #kdmc-version-badge{position:static!important;bottom:auto!important;left:auto!important;margin:14px auto 0!important;display:flex}
   /* 18.11 (captures de Kevin, « je dois énormément descendre ») : rien à traiter = une ligne ; personne en ligne = une ligne ; rubriques sur une ligne chacune */
   .traiter.rien{padding:10px 14px;margin-bottom:8px}.traiter.rien h1{display:none}.traiter.rien .sous{margin:0;font-size:15px;color:var(--txt,#eee)}.traiter.rien .cpts{display:none}
@@ -170,10 +170,10 @@
   </div>
   <script src="/kdmc-sso.js"></script>
   <script src="/kdmc-boite.js?v=2.0.12"></script>
-  <script src="admin.js?v=2.7.25"></script>
-  <script src="commerce.js?v=2.7.25"></script>
-  <script src="tableau.js?v=2.7.25"></script>
+  <script src="admin.js?v=2.7.26"></script>
+  <script src="commerce.js?v=2.7.26"></script>
+  <script src="tableau.js?v=2.7.26"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.25" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.26" data-color="#c9a227" defer></script>
 </body>
 </html>

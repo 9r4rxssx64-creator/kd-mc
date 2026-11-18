@@ -20,7 +20,11 @@ if (!/^[0-9a-f]{64}$/.test(HASH)) { dire('❌ Code admin absent (secret CI) : v�
 const browser = await chromium.launch(process.env.PW_EXE ? { executablePath: process.env.PW_EXE } : {});
 const ctx = await browser.newContext({
   serviceWorkers: 'block', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true,
-  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+  /* 18.11 : ce robot tourne sur le poste de Kevin (runner du Lenovo), donc hors du réseau des robots : ses 10 pages ouvertes s'écrivaient dans le journal au nom
+     du compte admin (52 lignes au 1er passage, effacées à la main). Il se présente donc comme un APPAREIL DE ROBOT connu du journal (iPhone · iOS 15.0 · Safari 18,
+     `APPAREIL_ROBOT` dans services/kdmc-router/activite.js) : ses pages ne se montrent pas à Kevin et ne comptent que contre les robots. Il ne reste à effacer
+     que ses lignes d'essai. */
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
 });
 const DOMAINE = /(^|\.)kd-mc\.com$/, ECRITURE_OK = /^\/__(admin\/login|sso\/[a-z]+|boite\/journal)$/;
 await ctx.route('**/*', (r) => {
@@ -63,14 +67,8 @@ for (const hote of APPS) {
   await p.close().catch(() => {});
 }
 
-/* Relecture par la porte de l'admin : combien de lignes d'essai le journal du domaine montre-t-il vraiment, et pour combien d'apps ? */
-const fil = await page.evaluate(async (marque) => {
-  const x = await fetch('/__boite/admin/fil?qui=moi&types=modif&limite=60', { credentials: 'include', cache: 'no-store' });
-  const j = await x.json().catch(() => ({}));
-  const l = (j.evenements || []).filter((e) => String(e.detail || '').includes(marque));
-  return { st: x.status, n: l.length, apps: [...new Set(l.map((e) => e.app))].length };
-}, MARQUE).catch(() => ({ st: 0, n: 0, apps: 0 }));
-dire(`ℹ️ relecture du journal (porte admin) : HTTP ${fil.st} · ${fil.n} ligne(s) d'essai · ${fil.apps} app(s)`);
+/* Pas de relecture par l'écran : le journal de l'admin écarte les appareils de robot (c'est voulu). La preuve finale se lit dans la base, puis les lignes
+   d'essai s'effacent : DELETE FROM activite WHERE detail LIKE 'essai du robot (porte du journal)%'. */
 dire(`=== VÉRIF JOURNAL : ${bons} app(s) OK · ${mauvais} en défaut · sur ${APPS.length}`);
 if (RESUME) { try { appendFileSync(RESUME, lignes.map((l) => '- ' + l).join('\n') + '\n'); } catch (_) { /* pas de résumé */ } }
 await browser.close();

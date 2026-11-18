@@ -8,10 +8,10 @@
 <title>KDMC — Tableau de bord admin</title>
 <meta name="robots" content="noindex,nofollow" />
 <meta name="theme-color" content="#0b1409" />
-<link rel="stylesheet" href="/design-system.css?v=2.7.26" />
+<link rel="stylesheet" href="/design-system.css?v=2.7.27" />
 <link rel="stylesheet" href="/kdmc-boite.css?v=2.0.6" />
-<link rel="stylesheet" href="commerce.css?v=2.7.26" />
-<link rel="stylesheet" href="tableau.css?v=2.7.26" />
+<link rel="stylesheet" href="commerce.css?v=2.7.27" />
+<link rel="stylesheet" href="tableau.css?v=2.7.27" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -149,6 +149,15 @@
   .onglets a{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);color:var(--mut);text-decoration:none;font-size:14px;white-space:nowrap;background:rgba(10,18,12,.55)}
   .onglets a[aria-selected="true"]{border-color:var(--gold);color:#11160c;background:linear-gradient(135deg,var(--gold2),var(--gold));font-weight:700}
   .onglets a b{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:13px}
+  /* 18.11 (Kevin : « 1 clic ouvert fermé pour tous ») : un bouton par app, vert = ouverte, rouge = fermée pour tous */
+  .bascules{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+  @media(min-width:640px){.bascules{grid-template-columns:repeat(4,1fr)}}
+  .bascule{display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 10px;border-radius:14px;border:1px solid rgba(34,197,94,.45);background:rgba(34,197,94,.08);color:var(--txt,#eee);font:inherit;text-align:left;cursor:pointer;min-width:0}
+  .bascule .e{font-size:18px;flex:none}.bascule .n{font-weight:700;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bascule .s{margin-left:auto;font-size:12px;color:var(--mut);flex:none}
+  .bascule.fermee{border-color:rgba(239,68,68,.7);background:rgba(239,68,68,.14)}.bascule.fermee .s{color:#fca5a5;font-weight:700}
+  .bascule:disabled{opacity:.6}
+  @media(max-width:420px){.bascule{flex-wrap:wrap;row-gap:0}.bascule .s{margin-left:26px;flex-basis:100%}}
   /* 18.11 : téléphone — rubriques et raccourcis sur une ligne chacun (placé en fin de feuille : il doit l'emporter sur les règles générales ci-dessus) */
   @media(max-width:639px){
     .tuiles-sec{gap:8px;margin-bottom:12px}
@@ -170,10 +179,10 @@
   </div>
   <script src="/kdmc-sso.js"></script>
   <script src="/kdmc-boite.js?v=2.0.12"></script>
-  <script src="admin.js?v=2.7.26"></script>
-  <script src="commerce.js?v=2.7.26"></script>
-  <script src="tableau.js?v=2.7.26"></script>
+  <script src="admin.js?v=2.7.27"></script>
+  <script src="commerce.js?v=2.7.27"></script>
+  <script src="tableau.js?v=2.7.27"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.26" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.27" data-color="#c9a227" defer></script>
 </body>
 </html>

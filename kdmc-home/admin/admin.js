@@ -545,14 +545,21 @@
   /* ---- Fermer une ou plusieurs apps POUR TOUT LE MONDE (Kevin 13.10 : « je peux bloquer un ou plusieurs sites, général et individuel »).
      Général = ici (une liste pour tout le domaine, l'admin entre toujours) ; individuel = « 🚫 Fermer une application précise » sur chaque fiche. */
   var FERMEES_GEN = [];
+  /* 18.11 (Kevin : « possible 1 clic ouvert fermé pour tous, général, sur chaque app de mon domaine ») : UN bouton par app, qui dit son état et le change au
+     toucher — plus de cases à cocher ni de bouton « Enregistrer ». Le domaine ne modifie que l'app touchée (/__admin/app-bascule). */
+  function boutonBascule(x) {
+    var f = FERMEES_GEN.indexOf(x) >= 0;
+    return '<button type="button" class="bascule' + (f ? ' fermee' : '') + '" data-bascule="' + esc(x) + '" aria-pressed="' + (f ? 'true' : 'false') + '">'
+      + '<span class="e" aria-hidden="true">' + (f ? '🔒' : '🔓') + '</span><span class="n">' + esc(x) + '</span><span class="s">' + (f ? 'fermée pour tous' : 'ouverte') + '</span></button>';
+  }
   function blocFermees() {
     if (!APPS_LISTE.length) return '';
     var apps = APPS_LISTE.filter(function (x) { return x !== 'portail'; });
-    return '<details class="fermgen" id="fermgen"' + (FERMEES_GEN.length ? ' open' : '') + '>'
-      + '<summary>🚧 Fermer des applications pour tout le monde <b>' + (FERMEES_GEN.length ? esc(FERMEES_GEN.join(', ')) : 'aucune') + '</b></summary>'
-      + '<div class="accbody"><div class="d">Coche une ou plusieurs apps : plus personne n\'y entre, sauf toi. Pour fermer une app à UNE personne seulement, ouvre sa fiche ci-dessous.</div>'
-      + '<div class="chips">' + apps.map(function (x) { return chip('gen', 'ferme', x, FERMEES_GEN.indexOf(x) >= 0); }).join('') + '</div>'
-      + '<button class="savacc" id="fermgen-save" type="button">💾 Enregistrer</button><span class="accmsg" id="fermgen-msg"></span></div></details>';
+    return '<details class="fermgen" id="fermgen" open>'
+      + '<summary>🚧 Ouvrir / fermer une app pour tout le monde <b>' + (FERMEES_GEN.length ? esc(FERMEES_GEN.join(', ')) : 'aucune fermée') + '</b></summary>'
+      + '<div class="accbody"><div class="d">Touche une app : elle se ferme pour tout le monde (sauf toi), touche encore : elle rouvre. C\'est immédiat. Pour fermer une app à UNE personne seulement, ouvre sa fiche.</div>'
+      + '<div class="bascules">' + apps.map(boutonBascule).join('') + '</div>'
+      + '<span class="accmsg" id="fermgen-msg" role="status"></span></div></details>';
   }
   /* ---- Créer un compte INVITÉ (Kevin 13.10 : « un compte pour une personne qui ne fera peut-être pas partie du casino… accès au planning, aux départs, à MC Lite, à CMC Teams, et tout le domaine public sauf les admins ») ----
      Prénom + nom + code (+ téléphone facultatif) → POST /__admin/compte-invite. Le code n'est jamais gardé ici : on le voit UNE fois pour le donner à la personne. */
@@ -686,20 +693,25 @@
     });
   }
   function wireFermees() {
-    var b = document.getElementById('fermgen-save');
-    if (!b) return;
-    b.addEventListener('click', function () {
-      var liste = [], ins = document.querySelectorAll('#fermgen input[data-grp="ferme"]'), msg = document.getElementById('fermgen-msg');
-      for (var i = 0; i < ins.length; i++) if (ins[i].checked) liste.push(ins[i].getAttribute('data-app'));
-      b.disabled = true; msg.textContent = '…';
-      fetch('/__admin/apps-fermees', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ apps: liste }) })
+    var z = document.getElementById('fermgen'); if (!z) return;
+    z.addEventListener('click', function (ev) {
+      var b = ev.target.closest && ev.target.closest('[data-bascule]'); if (!b || b.disabled) return;
+      var app = b.getAttribute('data-bascule'), fermer = FERMEES_GEN.indexOf(app) < 0, msg = document.getElementById('fermgen-msg');
+      b.disabled = true; if (msg) msg.textContent = '…';
+      fetch('/__admin/app-bascule', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ app: app, fermee: fermer }) })
         .then(function (r) { return r.json(); })
         .then(function (j) {
           b.disabled = false;
-          if (j && j.ok) { FERMEES_GEN = j.fermees || []; msg.textContent = '✅ Enregistré'; var sb = document.querySelector('#fermgen summary b'); if (sb) sb.textContent = FERMEES_GEN.length ? FERMEES_GEN.join(', ') : 'aucune'; }
-          else msg.textContent = '⚠️ ' + ((j && (j.reason || j.message)) || 'refusé');
+          if (j && j.ok) {
+            FERMEES_GEN = j.fermees || [];
+            var f = FERMEES_GEN.indexOf(app) >= 0;
+            b.classList.toggle('fermee', f); b.setAttribute('aria-pressed', f ? 'true' : 'false');
+            b.querySelector('.e').textContent = f ? '🔒' : '🔓'; b.querySelector('.s').textContent = f ? 'fermée pour tous' : 'ouverte';
+            if (msg) msg.textContent = f ? '🔒 ' + app + ' est fermée pour tout le monde.' : '🔓 ' + app + ' est rouverte à tout le monde.';
+            var sb = document.querySelector('#fermgen summary b'); if (sb) sb.textContent = FERMEES_GEN.length ? FERMEES_GEN.join(', ') : 'aucune fermée';
+          } else if (msg) msg.textContent = '⚠️ ' + ((j && (j.reason || j.message)) || 'refusé');
         })
-        .catch(function () { b.disabled = false; msg.textContent = '⚠️ Réseau — réessaie'; });
+        .catch(function () { b.disabled = false; if (msg) msg.textContent = '⚠️ Réseau — réessaie'; });
     });
   }
 

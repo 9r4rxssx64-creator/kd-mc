@@ -53,6 +53,21 @@ ok(nv.ok === false && nv.reason === 'ferme_general', '11. se reconnecter par une
 r = await appel('kd-mc.com', '/__admin/apps-fermees', { method: 'POST', headers: H, body: JSON.stringify({ apps: [] }) });
 ok(r.ok === true && r.fermees.length === 0 && (await vu(tok, 'lingua.kd-mc.com')).ok === true, '12. l\'admin rouvre : tout le monde rentre aussitôt');
 
+/* UN TOUCHER (Kevin 18.11 : « 1 clic ouvert fermé pour tous, sur chaque app ») : /__admin/app-bascule ne touche QUE l'app nommée */
+r = await appel('kd-mc.com', '/__admin/apps-fermees', { method: 'POST', headers: H, body: JSON.stringify({ apps: ['lingua'] }) });
+const sansB = await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', body: JSON.stringify({ app: 'cmcteams', fermee: true }) });
+ok(sansB.ok !== true && (await vu(tok, 'cmcteams.kd-mc.com')).ok === true, '12a. sans preuve admin, la bascule est refusée et rien ne change', JSON.stringify(sansB).slice(0, 80));
+r = await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'cmcteams', fermee: true }) });
+ok(r.ok === true && JSON.stringify(r.fermees) === '["lingua","cmcteams"]' && (await vu(tok, 'cmcteams.kd-mc.com')).reason === 'ferme_general', '12b. un toucher ferme CMCteams pour tous, sans toucher à l\'app déjà fermée', JSON.stringify(r));
+ok((await vu(tok, 'departs.kd-mc.com')).ok === true && (await vu(tok, 'cmcteams-light.kd-mc.com')).ok === true, '12c. la light (departs) reste ouverte : c\'est une autre app');
+r = await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'cmcteams', fermee: true }) });
+ok(r.ok === true && r.fermees.filter((x) => x === 'cmcteams').length === 1, '12d. fermer deux fois ne double rien');
+r = await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'cmcteams', fermee: false }) });
+ok(r.ok === true && JSON.stringify(r.fermees) === '["lingua"]' && (await vu(tok, 'cmcteams.kd-mc.com')).ok === true && (await vu(tok, 'lingua.kd-mc.com')).reason === 'ferme_general', '12e. un toucher la rouvre : tout le monde rentre, l\'autre reste fermée', JSON.stringify(r));
+const mauv = [await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'portail', fermee: true }) }), await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'app-inventee', fermee: true }) }), await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'cmcteams' }) })];
+ok(mauv.every((x) => x.ok !== true) && (await vu(tok, 'cmcteams.kd-mc.com')).ok === true, '12f. le portail, une app inventée ou un état absent : refusés, rien ne change', mauv.map((x) => x.reason));
+r = await appel('kd-mc.com', '/__admin/apps-fermees', { method: 'POST', headers: H, body: JSON.stringify({ apps: [] }) });
+
 /* INDIVIDUEL */
 r = await appel('kd-mc.com', '/__admin/acces', { method: 'POST', headers: H, body: JSON.stringify({ uid: 'lea-martin', portee: 'domaine', bloque: ['lingua', 'chez-lolo'] }) });
 ok(r.ok === true && (await vu(tok, 'lingua.kd-mc.com')).reason === 'bloque_ici' && (await vu(tok, 'chez-lolo.kd-mc.com')).reason === 'bloque_ici', '13. individuel : plusieurs apps fermées à UNE personne', JSON.stringify(r).slice(0, 100));

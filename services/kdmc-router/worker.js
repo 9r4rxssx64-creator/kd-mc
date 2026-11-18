@@ -5742,6 +5742,22 @@ async function handleAdmin(request, url, env) {
     const apps = [...new Set(Object.values(APPS))].filter((x) => x !== 'portail').sort();
     return J({ ok: true, apps, fermees: await chargerFermees(env, true) });
   }
+  /* ── UN TOUCHER : OUVRIR / FERMER UNE APP POUR TOUS (Kevin 18.11 : « possible 1 clic ouvert fermé pour tous, général, sur chaque app de mon domaine ») ──
+     POST { app, fermee: true|false } → le domaine relit la liste, ajoute ou retire CETTE app, l'écrit, et rend la liste. Aucune autre app n'est touchée
+     (l'ancien écran envoyait toute la liste : deux écrans ouverts pouvaient s'écraser). Mêmes règles : app connue, jamais le portail, l'admin entre toujours. */
+  if (path === '/__admin/app-bascule' && request.method === 'POST') {
+    let bb = {}; try { bb = await request.json(); } catch { /* corps vide */ }
+    const appB = String(bb.app || '').trim(), connuesB = new Set(Object.values(APPS)); connuesB.delete('portail');
+    if (!connuesB.has(appB)) return J({ ok: false, reason: 'app_inconnue' }, 400);
+    if (typeof bb.fermee !== 'boolean') return J({ ok: false, reason: 'etat_requis' }, 400);
+    if (!env.ACCOUNTS) return J({ ok: false, reason: 'registre indisponible' });
+    const avantB = await chargerFermees(env, true);
+    const listeB = bb.fermee ? [...new Set(avantB.concat(appB))].slice(0, 60) : avantB.filter((x) => x !== appB);
+    try { await env.ACCOUNTS.put(CLE_FERMEES, JSON.stringify(listeB)); } catch { return J({ ok: false, reason: 'registre indisponible' }); }
+    FERMEES = { liste: listeB, t: Date.now(), kv: env.ACCOUNTS };
+    await audLog(env, { ev: 'apps_fermees', fermees: listeB, detail: (bb.fermee ? 'fermée pour tout le monde : ' : 'rouverte à tout le monde : ') + appB });
+    return J({ ok: true, app: appB, fermee: bb.fermee, fermees: listeB });
+  }
   if (path === '/__admin/apps-fermees' && request.method === 'POST') {
     let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
     const connues = new Set(Object.values(APPS)); connues.delete('portail');

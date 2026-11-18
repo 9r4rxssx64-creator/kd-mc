@@ -46,7 +46,17 @@ const page = async (html, w = 390, h = 664) => {
   const s = lire('kdmc-home/worldmonitor/index.html');
   ok(/id="briefModal"[^>]*aria-modal="true"/.test(s), 'worldmonitor : la fenêtre « Brief IA » est aria-modal');
   ok(/m\.setAttribute\("aria-modal","true"\)/.test(s), 'worldmonitor : la fenêtre « Ajouter à l\'écran d\'accueil » est aria-modal');
-  ok(/var simple=\/\^https:\\\/\\\/eonet/.test(s) && /simple\?\{signal:c\.signal\}/.test(s), 'worldmonitor : la NASA (EONET) est lue en requête simple, sans cache:no-store');
+  ok(/var simple=\/\^https:\\\/\\\/eonet/.test(s) && /simple\?\{signal:c\.signal,referrerPolicy:"no-referrer"\}/.test(s), 'worldmonitor : la NASA (EONET) est lue en requête simple, sans cache:no-store et SANS provenance (elle répond 403 à « Referer: worldmonitor.kd-mc.com »)');
+  /* 18.11 — en VRAI navigateur : la fonction getJSON de la page, telle qu'elle est écrite, appelle la NASA SANS en-tête de provenance (les autres sources la gardent). */
+  { const fn = (s.match(/async function getJSON\(url,ms\)\{[\s\S]*?finally\{clearTimeout\(t\);\}\}/) || [''])[0];
+    const src = SAB ? fn.replace(',referrerPolicy:"no-referrer"', '') : fn;
+    const pw = await b.newPage(); const vus = {};
+    await pw.route('https://worldmonitor.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>x</p>' }));
+    await pw.route(/^https:\/\/(eonet\.gsfc\.nasa\.gov|autre\.test)\//, (r) => { vus[new URL(r.request().url()).hostname] = r.request().headers().referer || ''; return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"ok":1}' }); });
+    await pw.goto('https://worldmonitor.test/');
+    const rep = await pw.evaluate(async (code) => { const g = new Function(code + '; return getJSON;')(); return [await g('https://eonet.gsfc.nasa.gov/api/v3/events?limit=1').catch(() => null), await g('https://autre.test/x').catch(() => null)]; }, src);
+    ok(!!fn && rep[0] && rep[0].ok === 1 && vus['eonet.gsfc.nasa.gov'] === '' && /worldmonitor\.test/.test(vus['autre.test'] || ''), 'worldmonitor en vrai navigateur : appel NASA sans provenance, les autres sources la gardent', vus);
+    await pw.close(); }
   ok(!/min-height:(42|38)px/.test(s), 'worldmonitor : plus de bouton à 42 ou 38 px (« Compris », « Installer »)');
 }
 

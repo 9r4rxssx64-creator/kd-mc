@@ -76,6 +76,15 @@ try {
       await page.waitForTimeout(1500);
       const apres = await page.evaluate(() => { const l = Array.from(document.querySelectorAll('.fil-e .app')); return { n: l.length, distinctes: new Set(l.map((x) => x.textContent.trim())).size }; });
       chk(apres.n > 0 && apres.distinctes === 1, `Journal filtré : ${apres.n} ligne(s), ${apres.distinctes} app distincte`);
+      /* MESURÉ le 18.11 (run 44323908411 : « sous le doigt : div (AUTRE CHOSE) ») : un navigateur NEUF voit s'ouvrir une fois la feuille « Installer et notifications »
+         (installer-client.js, 1,5 s après la connexion) et son fond plein écran recouvre la page. Kevin ne la voit qu'une fois par appareil ; le robot, lui, est neuf à
+         chaque passage. On la ferme comme une personne : en touchant le fond. */
+      const feuille = await page.waitForSelector('[data-kdmc-installer="feuille"]', { timeout: 4000 }).then(() => true).catch(() => false);
+      if (feuille) {
+        await page.evaluate(() => { const f = document.querySelector('[data-kdmc-installer="feuille"]'), fond = f && f.previousElementSibling; if (fond && fond.click) fond.click(); });
+        const fermee = await page.waitForSelector('[data-kdmc-installer="feuille"]', { state: 'detached', timeout: 4000 }).then(() => true).catch(() => false);
+        dire('ℹ️ feuille « Installer et notifications » ouverte (navigateur neuf) : ' + (fermee ? 'fermée en touchant le fond' : 'PAS fermée'));
+      }
       /* avant de toucher : ce qui se trouve VRAIMENT sous le doigt au centre de la puce (une barre collée en haut peut la recouvrir) — balises et classes seulement */
       const dessous = await page.evaluate(() => {
         const b = document.querySelector('#tb-fil-filtre [data-fil-efface]'); if (!b) return 'puce absente';

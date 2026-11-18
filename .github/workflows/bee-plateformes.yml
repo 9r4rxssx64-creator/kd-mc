@@ -23,7 +23,7 @@ jobs:
       matrix:
         moteur: [chromium, webkit, firefox]
     runs-on: ubuntu-24.04   # interrupteur Lenovo (garde test:runner-interrupteur)
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -33,9 +33,12 @@ jobs:
 
       - name: Installer le moteur ${{ matrix.moteur }}
         # Version figée, aucun script d'installation exécuté, le binaire du paquet installé (jamais npx : qualité/sécurité SonarCloud)
+        # 18.11 : sur WebKit, l'étape « --with-deps » (≈ 80 paquets système, miroir Ubuntu lent) a pris 24 min et le travail était coupé
+        # à 25 min alors que les 105 contrôles étaient verts. L'étape a son propre délai et un 2e essai, et le travail 40 min.
+        timeout-minutes: 22
         run: |
           npm i -D playwright@1.49.1 --no-audit --no-fund --ignore-scripts
-          ./node_modules/.bin/playwright install --with-deps ${{ matrix.moteur }}
+          timeout 600 ./node_modules/.bin/playwright install --with-deps ${{ matrix.moteur }} || ./node_modules/.bin/playwright install --with-deps ${{ matrix.moteur }}
 
       - name: La matrice d'appareils (iPhone, Android, tablettes, portables, grand écran)
         timeout-minutes: 20

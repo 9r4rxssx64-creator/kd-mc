@@ -22,6 +22,7 @@ import { ACTIONS_ARBRE } from './bee-arbre-ecrire.js';   // Bee modifie l'arbre 
 import { DROITS, outilsLectureDroits, RE_DROITS } from './bee-droits.js';
 import { ACTIONS_TACHES, outilsTaches, RE_TACHES, REGLES_TACHES } from './bee-taches.js';   // tâches de code déposées pour Claude Code (Kevin 16.10)
 import { DROITS_MAX, ACTIONS_DROITS_MAX, droitsMaxOuverts, TEXTE_FERME, outilsLectureMax, RE_DROITS_MAX } from './bee-droits-max.js';   // Kevin 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par lui seul), régler le robot (testnet)
+import { ACTIONS_MESSAGES_DIRECTS, RE_MESSAGES_DIRECTS } from './bee-messages-directs.js';   // écrire à une personne dans CMCteams / la light (Kevin 18.11 : « agir partout »)
 import { DROITS_PLUS, outilsLecturePlus, RE_DROITS_PLUS } from './bee-droits-plus.js';   // la suite (Kevin 16.10 : « il doit pouvoir tout faire… ») : lire plus, gérer les comptes, régler le robot — jamais le coffre, le code admin, l'argent réel   // les droits admin du domaine (Kevin 13.10 : « donne-lui tous les droits », confirmé par lui : liste + bouton ✅)
 
 export const VALIDITE_MS = 5 * 60e3;
@@ -198,7 +199,7 @@ export const CATALOGUE = {
     },
   },
 };
-Object.assign(CATALOGUE, DROITS, DROITS_PLUS, DROITS_MAX, ACTIONS_ARBRE, ACTIONS_TACHES);   /* fermer des apps, périmètre, code oublié, déconnexion, redémarrer le robot : même mécanique (propose → ✅ → exécute) */
+Object.assign(CATALOGUE, DROITS, DROITS_PLUS, DROITS_MAX, ACTIONS_ARBRE, ACTIONS_TACHES, ACTIONS_MESSAGES_DIRECTS);   /* fermer des apps, périmètre, code oublié, déconnexion, redémarrer le robot : même mécanique (propose → ✅ → exécute) */
 export const ACTIONS = Object.keys(CATALOGUE);
 
 /** PROPOSER : contrôle les champs, fabrique le résumé, signe. Rend { ok, proposition } ou { ok:false, erreur }. */
@@ -221,7 +222,7 @@ export async function proposer(env, action, champsBruts, now, ctx) {
 
 /* Une demande qui parle d'AGIR ou de lire ses affaires (rappel, mémoire, messages, boîte, robot, liens) prend le chemin « outils » d'office. */
 const RE_AGIR_BASE = /rappel|rappelle|pr[ée]viens|pr[ée]venir|notifi|programm|\bretiens\b|retenir|souviens|m[ée]moris|oublie|r[ée]ponds|r[ée]pondre|envoie|[ée]cris[- ]?(?:lui|leur|\u00e0)|marque|non lus?|messages?|bo[iî]te|courrier|arr[êe]te|stoppe|coupe le|robot|trading|\bbot\b|\blien|adresse|ouvre|\bapps?\b|application|o[ùu] (?:est|trouve)|qu'?est[- ]ce que tu (?:sais|retiens)|de moi/i;
-export const RE_AGIR = new RegExp(RE_AGIR_BASE.source + '|' + RE_DROITS.source + '|' + RE_DROITS_PLUS.source + '|' + RE_DROITS_MAX.source + '|' + RE_TACHES.source, 'i');
+export const RE_AGIR = new RegExp(RE_AGIR_BASE.source + '|' + RE_DROITS.source + '|' + RE_DROITS_PLUS.source + '|' + RE_DROITS_MAX.source + '|' + RE_TACHES.source + '|' + RE_MESSAGES_DIRECTS.source, 'i');
 /* Ce qu'on ajoute à la tête de Bee quand ses mains sont là : elle PROPOSE, Kevin confirme, le domaine exécute. */
 export const REGLES_AGIR = ' ATTENTION, ceci REMPLACE ce qui précède sur les actions : tu as des MAINS, mais tu ne peux que PROPOSER. '
   + 'Pour faire quelque chose pour Kevin (programmer un rappel, retenir ou oublier un fait, répondre à un message, marquer lu, arrêter ou redémarrer le robot de trading, fermer ou rouvrir des apps pour tout le monde ou pour une personne, régler ce qu\'une personne peut ouvrir, effacer le code oublié d\'une personne, la déconnecter de tous ses appareils, ouvrir ou supprimer un compte, autoriser de nouveau une personne bannie, ajouter ou retirer une personne attendue, mettre l\'IA pilote du robot en auto ou à l\'arrêt, la lancer ou annuler son essai, ajouter une info / une date / un commentaire à une fiche de l\'arbre ou relier deux personnes), appelle l\'outil proposer_action : '
@@ -236,6 +237,7 @@ export function outilsAdmin(env, o, sortie) {
   const defs = [
     { name: 'proposer_action', description: 'Prépare une ACTION pour Kevin (rappel, mémoire, messages, robot, apps fermées, périmètre d\'une personne, code oublié, déconnexion, modifier une fiche de l\'arbre). Tu NE PEUX PAS agir toi-même : tu proposes, Kevin touche le bouton ✅ Confirmer. Utilise-la dès que Kevin demande de faire/envoyer/programmer/retenir quelque chose. Actions : ' + ACTIONS.map((k) => k + ' (' + CATALOGUE[k].aide + ')').join(' ; ') + '.',
       parameters: { type: 'object', properties: { action: { type: 'string', enum: ACTIONS }, texte: { type: 'string' }, quand: { type: 'string', description: 'AAAA-MM-JJ HH:MM, heure de Monaco' }, cle: { type: 'string', description: 'clé du message, ex. lingua:12' },
+        nom: { type: 'string', description: 'message_direct : prénom ET nom de la personne à qui écrire' },
         uid: { type: 'string', description: 'identifiant de la personne (donné par comptes_domaine)' }, apps: { type: 'array', items: { type: 'string' }, description: 'noms d\'apps, ex. ["lingua","arbre"]' }, mode: { type: 'string', enum: ['fermer', 'rouvrir', 'auto', 'off'], description: 'fermer/rouvrir (apps) ou auto/off (IA pilote du robot)' },
         portee: { type: 'string', enum: ['domaine', 'app'] }, acces: { type: 'array', items: { type: 'string' }, description: 'apps autorisées (portée « app »)' },
         id: { type: 'string', description: 'identifiant d\'une fiche de l\'arbre (donné par l\'outil arbre)' }, id2: { type: 'string', description: 'identifiant d\'une 2ᵉ fiche existante (arbre_lien)' },

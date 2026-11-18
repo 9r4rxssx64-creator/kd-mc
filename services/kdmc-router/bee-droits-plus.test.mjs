@@ -169,7 +169,7 @@ const DP = readFileSync(new URL('./bee-droits-plus.js', import.meta.url), 'utf8'
 const PORTES = ((W.match(/const PORTES_BEE = \[([^\]]*)\]/) || [])[1] || '').split(',').map((x) => x.replace(/['\s]|\/\/.*$/g, '')).filter(Boolean).sort();
 const ATTENDUES = ['/__admin/accounts', '/__admin/acces', '/__admin/acces-lot', '/__admin/apps-fermees', '/__admin/attendus', '/__admin/audit', '/__admin/bannis', '/__admin/code', '/__admin/compte-invite', '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/debannir', '/__admin/revoke',
   '/__bot/analysis', '/__bot/config', '/__bot/fleet', '/__bot/history', '/__bot/ia', '/__bot/ia/annuler', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/kill', '/__bot/liens', '/__bot/marche', '/__bot/scan', '/__bot/start', '/__bot/status',
-  '/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__demandes'].sort();
+  '/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__demandes', '/__dm/admin/ecrire'].sort();
 ok(JSON.stringify(PORTES) === JSON.stringify(ATTENDUES), '9. la liste blanche est EXACTEMENT ces ' + ATTENDUES.length + ' portes — écart : ' + [...PORTES.filter((x) => !ATTENDUES.includes(x)).map((x) => '+' + x), ...ATTENDUES.filter((x) => !PORTES.includes(x)).map((x) => '-' + x)].join(' '));
 const FERMEES = ['/__fin/vault', '/__fin/meta', '/__admin/login', '/__admin/grant', '/__admin/logout', '/__admin/fbtoken', '/__admin/domain-log', '/__admin/me', '/__bot/reel',
   '/__arbre/seed', '/__arbre/code', '/__arbre/cle', '/__arbre/unlock', '/__arbre/correction', '/__arbre/journal', '/__arbre/status', '/__sso/login', '/__sso/issue', '/__sso/pass', '/__sso/webauthn', '/__sso/cookie', '/__sso/fbtoken',

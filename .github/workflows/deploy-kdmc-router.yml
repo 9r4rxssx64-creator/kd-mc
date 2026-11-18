@@ -516,12 +516,20 @@ jobs:
           ok=0
           for i in 1 2 3 4; do
             B=$(curl -sS -m 20 -o /tmp/bouton.js -w '%{http_code}' "https://lingua.kd-mc.com/__boite/bouton.js" || echo 000)
-            P=$(curl -sS -m 20 -L -H 'sec-fetch-dest: document' -H 'accept: text/html' -H 'x-kdmc-sonde: deploy' "https://lingua.kd-mc.com/" | grep -c '/__boite/bouton.js' || true)
+            P=$(curl -sS -m 20 -L -D /tmp/lingua-entetes.txt -H 'sec-fetch-dest: document' -H 'accept: text/html' -H 'x-kdmc-sonde: deploy' "https://lingua.kd-mc.com/" | grep -c '/__boite/bouton.js' || true)
+            # 18.11 (run 44301485289, « réseau du runner : AS16509 Amazon ») : le domaine ne laisse passer une sonde que depuis le réseau Azure de GitHub (AS8075).
+            # Quand GitHub prête une machine d'un autre réseau, Lingua répond par sa PORTE de connexion (en-tête x-kdmc-porte), qui ne porte pas la balise :
+            # le déploiement rougissait sans défaut. On n'ouvre pas le domaine à un réseau de plus : dans ce cas, la balise se vérifie sur le PORTAIL,
+            # toujours ouvert, et la porte de Lingua est comptée pour ce qu'elle est (le domaine bien fermé aux inconnus).
+            if [ "$P" -lt 1 ] && grep -qi '^x-kdmc-porte:' /tmp/lingua-entetes.txt; then
+              P=$(curl -sS -m 20 -L -H 'sec-fetch-dest: document' -H 'accept: text/html' "https://kd-mc.com/" | grep -c '/__boite/bouton.js' || true)
+              PAGE="kd-mc.com (Lingua a répondu par sa porte de connexion : ce runner n'est pas sur le réseau des sondes)"
+            else PAGE="lingua.kd-mc.com"; fi
             if [ "$B" = "200" ] && grep -q kdmcBoite /tmp/bouton.js && [ "$P" -ge 1 ]; then ok=1; break; fi
             sleep 20
           done
-          [ "$ok" = "1" ] || { echo "::error title=Bouton admin::bouton.js = HTTP $B (200 attendu), balise présente dans la page de Lingua = $P (1 attendu)"; exit 1; }
-          echo "::notice title=Bouton admin::« Écrire à l'admin » EN LIGNE — /__boite/bouton.js servi (200) et la balise est dans la page de lingua.kd-mc.com"
+          [ "$ok" = "1" ] || { echo "::error title=Bouton admin::bouton.js = HTTP $B (200 attendu), balise présente dans la page de $PAGE = $P (1 attendu)"; exit 1; }
+          echo "::notice title=Bouton admin::« Écrire à l'admin » EN LIGNE — /__boite/bouton.js servi (200) et la balise est dans la page de $PAGE"
 
           echo "::notice title=Boîte unique::EN LIGNE et fermée aux inconnus — /__boite/admin sans session = 401 admin_requis ; dépôt depuis un site hors domaine = 403 origine_refusee"
 

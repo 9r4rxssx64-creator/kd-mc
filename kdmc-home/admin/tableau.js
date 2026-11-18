@@ -208,6 +208,15 @@
       /* 16.10 soir (Kevin : « Affiche ici un visuel des connectés live ») : qui est sur le domaine EN CE MOMENT, sous « À traiter ».
          Données : la boîte (présence D1, robots exclus), relue toutes les 15 s quand la page est visible. Toucher une personne → sa fiche. */
       + '<section class="live" id="tb-live" aria-label="En ligne maintenant" aria-live="polite"><h2><span class="pt" aria-hidden="true"></span>En ligne maintenant <b id="tb-live-n">…</b></h2><div class="live-l" id="tb-live-l"><p class="live-vide">Lecture…</p></div></section>'
+      + '<nav class="tbnav" id="tb-nav" aria-label="Sections"><a class="retour-tb" href="#accueil" id="tb-retour">← Tableau de bord</a>' + SECTIONS.map(function (s) { return '<a href="#' + s.id + '" data-nav="' + s.id + '">' + s.ic + ' ' + esc(s.t.split(' ')[0]) + '</a>'; }).join('') + '</nav>'
+      + '<div class="cherche"><input id="tb-q" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" placeholder="🔎 Que veux-tu faire ?" aria-label="Que veux-tu faire ?"><div class="res" id="tb-res" hidden></div></div>'
+      /* 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien ») : un ACCUEIL de 7 grandes tuiles, puis une seule
+         rubrique à la fois, découpée en onglets (sous-catégories). Plus de longue page à descendre. */
+      + '<section class="accueil" id="tb-accueil" aria-label="Rubriques"><div class="tuiles-sec">' + SECTIONS.map(function (s) {
+        return '<a class="tuile-sec" href="#' + s.id + '" data-tuile="' + s.id + '"><span class="ic">' + s.ic + '</span><span class="tt"><b>' + esc(s.t) + '</b><span class="r" data-resume="' + s.id + '">' + esc(s.s) + '</span></span><span class="bd" data-badge="' + s.id + '" hidden></span></a>';
+      }).join('') + '</div>'
+      + '</section>'
+      /* 18.11 (Kevin : « je dois énormément descendre ») : le Journal, seule partie sans fin, passe APRÈS les 7 rubriques et les raccourcis. */
       /* 17.11 (Kevin : « j'ai du mal à trouver les infos que je cherche et voir clairement les dernières infos, notifs, connexions, modifs, qui a fait quoi ou quand,
          de tout le domaine, chaque app ») : LE JOURNAL DU DOMAINE — une seule liste, la plus récente en haut : l'heure, l'app, la personne, ce qu'elle a fait.
          Trois réglages au doigt (qui, quoi, quelle app). Source : /__boite/admin/fil (journal d'activité, robots écartés) + les messages de la boîte. Relu toutes les 30 s. */
@@ -217,13 +226,8 @@
       + '<select id="tb-fil-app" class="fil-app" aria-label="Quelle app"><option value="">Toutes les apps</option></select>'
       + '<div class="fil-l" id="tb-fil-l"><p class="live-vide">Lecture…</p></div>'
       + '<button type="button" class="fil-plus" id="tb-fil-plus" hidden>Voir plus ancien</button></section>'
-      + '<nav class="tbnav" id="tb-nav" aria-label="Sections"><a class="retour-tb" href="#accueil" id="tb-retour">← Tableau de bord</a>' + SECTIONS.map(function (s) { return '<a href="#' + s.id + '" data-nav="' + s.id + '">' + s.ic + ' ' + esc(s.t.split(' ')[0]) + '</a>'; }).join('') + '</nav>'
-      + '<div class="cherche"><input id="tb-q" type="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" placeholder="🔎 Que veux-tu faire ?" aria-label="Que veux-tu faire ?"><div class="res" id="tb-res" hidden></div></div>'
-      /* 16.10 (Kevin : « je passe mon temps à tout descendre, je trouve jamais rien ») : un ACCUEIL de 7 grandes tuiles, puis une seule
-         rubrique à la fois, découpée en onglets (sous-catégories). Plus de longue page à descendre. */
-      + '<section class="accueil" id="tb-accueil" aria-label="Rubriques"><div class="tuiles-sec">' + SECTIONS.map(function (s) {
-        return '<a class="tuile-sec" href="#' + s.id + '" data-tuile="' + s.id + '"><span class="ic">' + s.ic + '</span><span class="tt"><b>' + esc(s.t) + '</b><span class="r" data-resume="' + s.id + '">' + esc(s.s) + '</span></span><span class="bd" data-badge="' + s.id + '" hidden></span></a>';
-      }).join('') + '</div>'
+      /* 18.11 : les raccourcis passent SOUS le Journal (8 lignes) — le Journal commence ainsi dans le premier écran d'un iPhone */
+      + '<section class="accueil" id="tb-racc" aria-label="Raccourcis">'
       + '<h2 class="cat">⚡ Raccourcis</h2><div class="raccourcis">' + RACCOURCIS.map(function (r, i) { return '<button type="button" class="racc" data-racc="' + i + '">' + esc(r[0]) + '</button>'; }).join('') + '</div></section>';
     SECTIONS.forEach(function (s) {
       h += '<details class="sec hors-vue" id="' + s.id + '" open><summary><span class="ic">' + s.ic + '</span><span class="tt"><b>' + esc(s.t) + '</b><span>' + esc(s.s) + '</span></span></summary><div class="corps" id="corps-' + s.id + '"></div></details>';
@@ -359,7 +363,9 @@
       var perime = vieux && c.n != null && !(c.id === 'livrer' && LIVE);
       b.className = 'cpt' + (c.n == null ? ' inconnu' : c.n > 0 ? ' urgent' : '') + (perime ? ' perime' : '');
       if (perime) b.setAttribute('data-releve', String(INST.ts));
-      if (c.cache) b.hidden = true;
+      /* 18.11 (capture de Kevin : cinq grosses cartes « 0 » sur un écran entier, « je dois énormément descendre ») : une carte à zéro ne dit rien —
+         elle disparaît ; quand tout est à zéro il reste la seule ligne « ✅ Rien en attente ». Un chiffre encore inconnu (…) reste montré. */
+      if (c.cache || (BOITE && c.n === 0)) b.hidden = true;
       var n = document.createElement('span'); n.className = 'n'; n.textContent = c.n == null ? (c.id === 'livrer' && LIVE_LU ? '—' : '…') : String(c.n);
       var l = document.createElement('span'); l.className = 'l'; l.textContent = c.l;
       var s = document.createElement('span'); s.className = 's'; s.textContent = perime ? 'dernier relevé · ' + ilYa(INST.ts) : c.s;
@@ -372,6 +378,7 @@
     if (sous) sous.textContent = !BOITE
       ? (INST ? 'Dernier relevé ' + ilYa(INST.ts) + (total ? ' : ' + total + ' chose' + (total > 1 ? 's' : '') + '.' : ' : rien en attente.') + ' Mise à jour en cours…' : 'Lecture en cours…')
       : total ? total + ' chose' + (total > 1 ? 's' : '') + ' t\'attend' + (total > 1 ? 'ent' : '') + '. Touche un chiffre pour y aller.' : '✅ Rien en attente pour l\'instant.';
+    var secT = document.getElementById('a-traiter'); if (secT) secT.classList.toggle('rien', !!BOITE && !total);
     try { document.title = (BOITE && total ? '(' + total + ') ' : '') + 'KDMC — Tableau de bord admin'; } catch (e) { /* */ }
     resumes(cs); badgesOnglets();
     var nav = document.querySelector('[data-nav="personnes"]');
@@ -447,6 +454,7 @@
     if (!z || !n) return;
     n.textContent = String(l.length);
     if (sec) sec.classList.toggle('a-du-monde', l.length > 0);
+    if (sec) sec.classList.toggle('seul', l.length === 0);
     var e = JSON.stringify(l.map(function (x) { return [x.uid, x.app, Math.floor((Date.now() - x.ts) / 60000)]; }));
     if (e === empLive) return; empLive = e;
     z.textContent = '';
@@ -526,11 +534,11 @@
     if (/^fiche-/.test(h)) { montrerVue('personnes', 'comptes'); var t0 = Date.now(); (function attendre() { var f = document.getElementById(h); if (f) { aller(f); return; } if (Date.now() - t0 < 8000) setTimeout(attendre, 200); })(); return; }
     montrerVue('accueil');
   }
-  /* 18.11 : la bulle de version (posée flottante par version-badge-pwa.js) rejoint l'en-tête du tableau de bord — elle ne recouvre plus aucun contenu. */
+  /* 18.11 : la bulle de version (posée flottante par version-badge-pwa.js) est rangée en bas de la page — elle ne recouvre plus aucun contenu. */
   function rangerBulleVersion() {
     var essais = 0, t = setInterval(function () {
-      var b = document.getElementById('kdmc-version-badge'), top = document.querySelector('.wrap > .top'), home = top && top.querySelector('.home');
-      if (b && top) { if (b.parentNode !== top) top.insertBefore(b, home || null); clearInterval(t); }
+      var b = document.getElementById('kdmc-version-badge'), w = document.querySelector('.wrap');
+      if (b && w) { if (b.parentNode !== w) w.appendChild(b); clearInterval(t); }
       else if (++essais > 60) clearInterval(t);
     }, 250);
   }
@@ -556,9 +564,9 @@
 
   /* ── LE JOURNAL DU DOMAINE (17.11) ─────────────────────────────────────────────────────────────────────────────────
      Tout est construit en DOM (textContent) : un nom, un détail viennent d'un visiteur. Aucune donnée n'est gardée dans le navigateur. */
-  var FIL_QUI = [['autres', '👥 Les autres'], ['moi', '🙂 Moi'], ['tous', 'Tout le monde']];
-  var FIL_QUOI = [['essentiel', '⭐ L\'essentiel', 'connexion,lieu,appareil,modif,message,contact,question'], ['connexions', '🔓 Connexions', 'connexion,lieu,appareil'],
-    ['modifs', '✏️ Modifs & messages', 'modif,message,contact,question'], ['pages', '🌐 Pages vues', 'visite']];
+  var FIL_QUI = [['autres', '👥 Les autres'], ['moi', '🙂 Moi'], ['tous', 'Tous']];
+  var FIL_QUOI = [['essentiel', '⭐ Essentiel', 'connexion,lieu,appareil,modif,message,contact,question'], ['connexions', '🔓 Connexions', 'connexion,lieu,appareil'],
+    ['modifs', '✏️ Modifs', 'modif,message,contact,question'], ['pages', '🌐 Pages', 'visite']];
   var FIL = { qui: 'autres', quoi: 'essentiel', app: '', lignes: [], suite: 0, maj: 0, enCours: false, vus: 0 };
   function filTypes() { for (var i = 0; i < FIL_QUOI.length; i++) if (FIL_QUOI[i][0] === FIL.quoi) return FIL_QUOI[i][2]; return ''; }
   function jourDe(ts) {
@@ -566,6 +574,9 @@
     if (j === h) return 'Aujourd\'hui'; if (j === h - 864e5) return 'Hier';
     return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   }
+  /* « Monaco, Municipality of Monaco, MC · Monaco Telecom S.A. » → « Monaco, MC · Monaco Telecom » */
+  function court(t) { return String(t || '').replace(/, Municipality of [^,·]+/g, '').replace(/ S\.A\.S?\.?| SAS\b| S\.A\b/g, '').trim(); }
+  var FIL_COURT = 8;
   function heureDe(ts) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
   /* les messages et corrections déjà rassemblés par la boîte (Lingua, CMCteams, autres apps, Rotaplan, Arbre) entrent dans le même journal */
   function filDeLaBoite() {
@@ -582,11 +593,21 @@
     /* la boîte ne remonte pas plus loin que la page lue du journal : sinon de vieux messages se glisseraient sous des lignes pas encore chargées */
     var plancher = FIL.suite ? FIL.suite : 0; tout = tout.filter(function (e) { return !e.boite || e.ts >= plancher; });
     if (maj) maj.textContent = FIL.erreur ? 'lecture impossible — nouvel essai dans 30 s' : FIL.maj ? 'à jour ' + ilYa(FIL.maj) : 'lecture…';
-    if (plus) plus.hidden = !FIL.suite;
     z.textContent = '';
     if (!tout.length) { var v = document.createElement('p'); v.className = 'live-vide'; v.textContent = FIL.maj ? 'Rien pour ce choix. Change « qui » ou « quoi » ci-dessus.' : 'Lecture…'; z.appendChild(v); return; }
-    var jour = '';
+    /* 18.11 (capture de Kevin : « Mathieu · nouveau lieu » 3 fois de suite, « Davy · s'est connecté » 3 fois, chacune sur 4 lignes) : la même chose faite par
+       la même personne dans la même app, dans l'heure, tient en UNE ligne « ×3 » à l'heure de la dernière fois. */
+    var groupes = [], parCle = {};
     tout.forEach(function (e) {
+      var cle = [e.uid || e.nom, e.type, e.app, e.detail, e.boite ? e.id : ''].join('|'), g = parCle[cle];
+      if (g && g.ts - e.ts < 36e5 && jourDe(g.ts) === jourDe(e.ts)) { g.fois++; return; }
+      var n = {}; for (var k in e) n[k] = e[k]; n.fois = 1; parCle[cle] = n; groupes.push(n);
+    });
+    FIL.total = groupes.length;
+    var montre = FIL.tout ? groupes : groupes.slice(0, FIL_COURT);
+    if (plus) { plus.hidden = !(FIL.suite || groupes.length > montre.length); plus.textContent = groupes.length > montre.length ? 'Voir la suite (' + (groupes.length - montre.length) + ')' : 'Voir plus ancien'; }
+    var jour = '';
+    montre.forEach(function (e) {
       var j = jourDe(e.ts);
       if (j !== jour) { jour = j; var t = document.createElement('h3'); t.className = 'fil-j'; t.textContent = j; z.appendChild(t); }
       var b = document.createElement('button'); b.type = 'button'; b.className = 'fil-e' + (e.ts > FIL.vus && FIL.vus ? ' neuf' : '');
@@ -597,9 +618,10 @@
       var nm = document.createElement('b'); nm.textContent = e.moi ? 'Moi' : (e.nom || 'Quelqu\'un');
       var ap = document.createElement('span'); ap.className = 'app'; ap.textContent = nomApp(e.app);
       l1.appendChild(nm); l1.appendChild(ap);
-      var l2 = document.createElement('span'); l2.className = 'l2'; l2.textContent = (e.action || '') + (e.detail && e.type !== 'connexion' ? ' ' + e.detail : '');
+      var l2 = document.createElement('span'); l2.className = 'l2'; l2.textContent = (e.action || '') + (e.detail && e.type !== 'connexion' ? ' ' + court(e.detail) : '') + (e.fois > 1 ? ' ×' + e.fois : '');
       c.appendChild(l1); c.appendChild(l2);
-      var bas = [e.appareil, e.lieu].filter(Boolean).join(' · ');
+      /* le lieu ne se répète pas sous une ligne « nouveau lieu » ; ailleurs, appareil et ville courte sur une seule ligne coupée */
+      var bas = (e.type === 'lieu' ? [e.appareil] : [e.appareil, court(e.lieu)]).filter(Boolean).join(' · ');
       if (bas) { var l3 = document.createElement('span'); l3.className = 'l3'; l3.textContent = bas; c.appendChild(l3); }
       b.appendChild(h); b.appendChild(c);
       b.setAttribute('aria-label', heureDe(e.ts) + ', ' + nomApp(e.app) + ', ' + nm.textContent + ' ' + l2.textContent);
@@ -640,7 +662,7 @@
       changer();
     });
     var sel = document.getElementById('tb-fil-app'); if (sel) sel.onchange = function () { FIL.app = sel.value; changer(); };
-    var plus = document.getElementById('tb-fil-plus'); if (plus) plus.onclick = function () { FIL.suiteDepliee = true; lireFil(true); };
+    var plus = document.getElementById('tb-fil-plus'); if (plus) plus.onclick = function () { if (!FIL.tout && FIL.total > FIL_COURT) { FIL.tout = true; dessinerFil(); return; } FIL.tout = true; FIL.suiteDepliee = true; lireFil(true); };
     lireFil(false);
     setInterval(function () { if (document.visibilityState === 'visible' && document.body.getAttribute('data-vue') === 'accueil') lireFil(false); }, 30000);
     setInterval(function () { var m = document.getElementById('tb-fil-maj'); if (m && FIL.maj && !FIL.erreur) m.textContent = 'à jour ' + ilYa(FIL.maj); }, 15000);

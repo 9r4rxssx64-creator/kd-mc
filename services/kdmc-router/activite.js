@@ -56,7 +56,13 @@ export async function noter(env, ev, now) {
     const c = await db.prepare('SELECT COUNT(*) AS n FROM activite WHERE uid = ? AND ts >= ? AND type IN (' + classe.map(() => '?').join(',') + ') AND ' + (robot ? '' : 'NOT ') + '(' + ROBOT_SQL.map(() => "COALESCE(appareil, '') LIKE ?").join(' OR ') + ')')
       .bind(ev.uid, j.getTime(), ...classe, ...ROBOT_SQL).first();
     if (((c && c.n) || 0) >= LIM.jourParCompte) return 'plafond';
-    await db.prepare('INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(ev.uid, propre(ev.nom, 60), now, ev.type, app, detail, propre(ev.lieu, 80), propre(ev.appareil, 90)).run();
+    /* 18.11 (capture de Kevin : « nouveau lieu » 3 fois et « s'est connecté » 3 fois à la même seconde pour la même personne) : une page lance plusieurs
+       requêtes ENSEMBLE ; chacune lisait « pas encore noté » avant que l'autre n'écrive. Le contrôle du doublon et l'écriture se font donc en UNE instruction. */
+    if (fen) {
+      var w = await db.prepare('INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM activite WHERE uid = ? AND type = ? AND app = ? AND detail = ? AND ts > ?)')
+        .bind(ev.uid, propre(ev.nom, 60), now, ev.type, app, detail, propre(ev.lieu, 80), propre(ev.appareil, 90), ev.uid, ev.type, app, detail, now - fen).run();
+      if (w && w.meta && w.meta.changes === 0) return 'doublon';
+    } else await db.prepare('INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(ev.uid, propre(ev.nom, 60), now, ev.type, app, detail, propre(ev.lieu, 80), propre(ev.appareil, 90)).run();
     if (now - purgeLe > LIM.purgeMs) { purgeLe = now; await db.prepare('DELETE FROM activite WHERE ts < ?').bind(now - LIM.garde).run().catch(() => {}); }
     return 'ajoute';
   } catch { return 'ignore'; }

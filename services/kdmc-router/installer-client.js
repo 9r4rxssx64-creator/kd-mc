@@ -36,6 +36,20 @@ export const INSTALLER_JS = String.raw`(function () {
         /* 24.10 (capture de Kevin, admin v2.7.13) : le badge de version est aussi en bas à gauche — dans l'app installée ils se chevauchaient.
            Le bouton se pose AU-DESSUS de tout ce qui occupe déjà son coin (badge chargé plus tard : on revérifie). */
         var degager = function () {
+          /* PLACE-OFFERTE-DEBUT */
+          /* 18.11 (captures de Kevin, kd-mc.com/admin/ : la pastille flottante se posait sur le chiffre d'une carte, puis en languette sur l'heure d'une ligne —
+             une page pleine de cartes n'a AUCUNE place libre). Une page peut offrir une place fixe : un élément [data-kdmc-vue-place] visible (l'en-tête du tableau
+             de bord). Le bouton s'y range, ne flotte plus et ne recouvre plus rien ; sans place offerte, rien ne change. */
+          var place = document.querySelector('[data-kdmc-vue-place]');
+          if (place && place.offsetParent !== null) {
+            if (b.parentNode !== place) place.appendChild(b);
+            ['top', 'bottom', 'left', 'right', 'visibility', 'width', 'min-width', 'overflow', 'white-space'].forEach(function (c) { b.style.removeProperty(c); });
+            b.style.position = 'static'; b.style.boxShadow = 'none'; b.style.padding = '0 12px'; b.style.borderRadius = '22px';
+            if (!b.disabled && b.getAttribute('data-kdmc-vue') === 'admin') b.textContent = '👑 Admin';
+            return;
+          }
+          if (b.parentNode !== document.body) { document.body.appendChild(b); b.style.position = 'fixed'; b.style.boxShadow = '0 4px 16px rgba(0,0,0,.45)'; }
+          /* PLACE-OFFERTE-FIN */
           if (fenetrePleine()) { b.style.visibility = 'hidden'; return; }
           b.style.removeProperty('visibility');
           b.style.left = '8px'; ['width', 'min-width', 'overflow', 'white-space'].forEach(function (c) { b.style.removeProperty(c); }); b.style.padding = '0 14px'; b.style.borderRadius = '22px'; b.style.removeProperty('top'); b.style.removeProperty('right');   /* repart de la forme pleine : une languette se redéploie dès que la place se libère */
@@ -77,7 +91,20 @@ export const INSTALLER_JS = String.raw`(function () {
                 for (var j = 0; j < l.length; j++) {
                   var n = l[j]; if (n === b || n === document.body || n === document.documentElement) continue;
                   if (n.getAttribute && n.getAttribute('data-kdmc-installer')) continue;
-                  if (texte(n)) return true; break;
+                  if (texte(n)) return true;
+                  /* 18.11 (capture de Kevin, kd-mc.com/admin/ : « Vue admin » posée sur le chiffre de la carte « Ventes à livrer » et sur le texte de la tuile
+                     « Commerce ») : le point tombait sur le fond de la carte, dont le texte vit dans ses enfants. On lit donc tout le texte écrit DANS le contrôle
+                     touché (carte, tuile, bouton) : si une de ses lignes passe sous la pastille, la place n'est pas libre. */
+                  var ctl = controle(n);
+                  if (ctl && ctl !== b && document.createTreeWalker) {
+                    var tw = document.createTreeWalker(ctl, 4, null), nt, vu = 0;
+                    while ((nt = tw.nextNode()) && vu++ < 40) {
+                      if (!/\S/.test(nt.nodeValue)) continue;
+                      var rg2 = document.createRange(); rg2.selectNodeContents(nt); var rs2 = rg2.getClientRects();
+                      for (var k3 = 0; k3 < rs2.length; k3++) { var q2 = rs2[k3]; if (r.left < q2.right && r.right > q2.left && r.top < q2.bottom && r.bottom > q2.top) return true; }
+                    }
+                  }
+                  break;
                 }
               }
               return false;

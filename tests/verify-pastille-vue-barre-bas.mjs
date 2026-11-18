@@ -319,6 +319,40 @@ for (const [w, h] of [[320, 568], [844, 390]]) {
     await ctx.close();
   }
 }
+/* H. (18.11, capture de Kevin sur son iPhone, kd-mc.com/admin/ : « 👑 Vue admin » posée sur le chiffre de la carte « Ventes à livrer » puis sur le texte de la tuile
+ * « Commerce ») : des cartes larges dont le texte vit dans des enfants. La pastille n'en recouvre pas la moitié (donc pas « cachée » au sens du robot) mais elle
+ * masque ce qui est écrit, et une page pleine de cartes n'a AUCUNE place libre. La page offre donc une place fixe ([data-kdmc-vue-place], dans son en-tête) :
+ * le bouton s'y range, ne flotte plus, et aucune ligne de texte d'une carte ne passe dessous.
+ * SABOTAGE : `SABOTAGE_PLACE=1` retire la règle de la place offerte → doit être ROUGE. */
+{
+  let SRC_H = INSTALLER_JS;
+  if (process.env.SABOTAGE_PLACE === '1') SRC_H = SRC_H.replace(/\/\* PLACE-OFFERTE-DEBUT \*\/[\s\S]*?\/\* PLACE-OFFERTE-FIN \*\//, '');
+  const cartes = Array.from({ length: 14 }, (_, i) => `<button class="c"><span class="n">${i}</span><span class="l">Ventes à livrer ${i}</span><span class="s">file à valider</span></button>`).join('');
+  const PAGE_H = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;background:#0a1a0c;color:#fff;font:14px sans-serif}main{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.c{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:96px;padding:12px;border-radius:14px;border:1px solid #333;background:#101a10;color:#fff;font:inherit;text-align:left}
+.n{font-size:28px;font-weight:800}header{display:flex;align-items:center;gap:8px;padding:12px 18px 0}</style><header><b>KDMC ADMIN</b><span data-kdmc-vue-place style="margin-left:auto;display:inline-flex"></span><a href="/">← Portail</a></header><main>${cartes}</main>`;
+  for (const [w, h] of [[390, 760], [320, 568]]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block' });
+    const p = await ctx.newPage();
+    await p.route('**/__admin/vue', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, mode: 'admin' }) }));
+    await p.route('https://kdmc.test/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: PAGE_H }));
+    await p.goto('https://kdmc.test/');
+    await p.evaluate(() => { document.cookie = 'kdmc_k=1; path=/'; });
+    await p.addScriptTag({ content: SRC_H });
+    await p.waitForSelector('[data-kdmc-vue]', { timeout: 5000 }).catch(() => {});
+    await p.waitForTimeout(3600);
+    const R = await p.evaluate(() => {
+      const b = document.querySelector('[data-kdmc-vue]'); if (!b) return { absent: true };
+      const r = b.getBoundingClientRect(); let sous = 0; const ex = [];
+      document.querySelectorAll('.c span').forEach((sp) => { const rg = document.createRange(); rg.selectNodeContents(sp); for (const q of rg.getClientRects()) if (r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top) { sous++; if (ex.length < 3) ex.push(sp.textContent); } });
+      return { absent: false, sous, ex, pastille: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)], dedans: r.top >= 0 && r.bottom <= innerHeight && r.right > 20, rangee: !!b.closest('[data-kdmc-vue-place]'), pos: getComputedStyle(b).position, h: Math.round(r.height) };
+    });
+    ok(!R.absent && R.sous === 0, w + '×' + h + ' : aucune ligne de texte d\'une carte sous « Vue admin » (' + (R.sous ?? '?') + ')', R);
+    ok(!R.absent && R.rangee && R.pos === 'static' && R.h >= 44, w + '×' + h + ' : le bouton est rangé dans la place offerte, ne flotte plus, reste touchable (' + R.pos + ', ' + R.h + ' px)', R);
+    await ctx.close();
+  }
+}
 await browser.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`);
 process.exit(fail ? 1 : 0);

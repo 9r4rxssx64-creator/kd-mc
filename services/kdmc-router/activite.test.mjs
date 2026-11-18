@@ -211,6 +211,17 @@ console.log('\nLe fil du domaine\n');
 ok(!kvEcrit.some((k) => /activ|perso|fil:/.test(k)) && envB.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n > 30, '6. le fil d\'activité n\'écrit RIEN au KV : tout vit en D1 (' + envB.CERCLE_DB._s.prepare('SELECT COUNT(*) AS n FROM activite').get().n + ' lignes), les écritures KV restantes sont celles d\'avant (fiches, journal, limites)');
 ok(Object.keys(TYPES).length === 8, '7. les 8 types d\'activité sont déclarés (visite, connexion, lieu, appareil, question, modif, message, contact)');
 
+/* 11. DEUX REQUÊTES ENSEMBLE (18.11, capture de Kevin : la même connexion notée 3 fois à la même seconde) : le doublon se décide dans l'écriture elle-même. */
+{
+  const e = mk(); await noter(e, { uid: 'amorce', type: 'visite', app: 'a', detail: '/' }, T0);
+  /* base qui répond « pas encore noté » à la lecture préalable, comme quand trois requêtes lisent avant qu'aucune n'ait écrit */
+  const vraie = e.CERCLE_DB.prepare; e.CERCLE_DB.prepare = (q) => (/^SELECT 1 AS o FROM activite/.test(q) ? { bind: () => ({ first: async () => null }) } : vraie(q));
+  const ev = { uid: 'mat', nom: 'M', type: 'connexion', app: 'departs.kd-mc.com', detail: 'departs.kd-mc.com', appareil: 'iPhone · iOS 18.6 · Safari 18' };
+  const r = await Promise.all([noter(e, ev, T0 + 5), noter(e, ev, T0 + 6), noter(e, ev, T0 + 7)]);
+  const n = e.CERCLE_DB._s.prepare("SELECT COUNT(*) AS n FROM activite WHERE uid = 'mat'").get().n;
+  ok(n === 1 && r.filter((x) => x === 'ajoute').length === 1 && r.filter((x) => x === 'doublon').length === 2, '11. trois requêtes de la même connexion au même instant : UNE ligne, deux « doublon »', [n, r]);
+}
+
 /* 10. LE PLAFOND PAR CLASSE (17.11 soir, robot verif-live-journal : « plafond » sur 10 apps sur 10 — le compte admin était plein de passages de robots dès 04h09 UTC). */
 {
   const e = mk(); const ROBOT = 'Pixel 7 · Android 14 · Chrome 131', VRAI = 'iPhone · iOS 18.7 · Safari 27';

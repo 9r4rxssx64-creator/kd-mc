@@ -8,10 +8,10 @@
 <title>KDMC — Tableau de bord admin</title>
 <meta name="robots" content="noindex,nofollow" />
 <meta name="theme-color" content="#0b1409" />
-<link rel="stylesheet" href="/design-system.css?v=2.7.24" />
+<link rel="stylesheet" href="/design-system.css?v=2.7.25" />
 <link rel="stylesheet" href="/kdmc-boite.css?v=2.0.6" />
-<link rel="stylesheet" href="commerce.css?v=2.7.24" />
-<link rel="stylesheet" href="tableau.css?v=2.7.24" />
+<link rel="stylesheet" href="commerce.css?v=2.7.25" />
+<link rel="stylesheet" href="tableau.css?v=2.7.25" />
 <style>
   /* ── TABLEAU DE BORD UNIQUE (Kevin 10.10 : « Fais un seul tableau de bord admin pour tout. Regroupe tout intelligemment et
      clairement. ») — du plus urgent au moins urgent. Mobile d'abord (375 px), cibles ≥ 44 px, aucun défilement horizontal. */
@@ -44,15 +44,21 @@
   /* 17.11 — LE JOURNAL DU DOMAINE : qui a fait quoi, quand, dans quelle app */
   .fil{margin:0 0 12px;padding:12px 14px;border-radius:18px;border:1px solid var(--line2);background:rgba(17,28,20,.6)}
   body:not([data-vue="accueil"]) .fil{display:none}
+  body:not([data-vue="accueil"]) #tb-racc{display:none}
   .fil h2{margin:0 0 8px;font-size:15px;color:var(--txt,#eee);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  /* 18.11 (pont 2666 : la bulle de version flottait PAR-DESSUS les filtres du Journal) : sur le tableau de bord elle vit dans l'en-tête, à côté du titre —
-     toujours cliquable (toucher = forcer la mise à jour), elle ne recouvre plus rien. tableau.js la range là dès qu'elle existe. */
-  .top{flex-wrap:wrap;row-gap:4px}
-  .top #kdmc-version-badge{position:static!important;bottom:auto!important;left:auto!important;margin:0 auto 0 4px!important;flex:none}
+  /* 18.11 : rien ne flotte plus sur le tableau de bord. « Vue admin » se range dans l'en-tête (place offerte au script du domaine) ; la bulle de version,
+     toujours touchable (toucher = forcer la mise à jour), vit en bas de page — tableau.js l'y range dès qu'elle existe. */
+  .top{flex-wrap:wrap;row-gap:4px;gap:8px}
+  .wrap > #kdmc-version-badge{position:static!important;bottom:auto!important;left:auto!important;margin:14px auto 0!important;display:flex}
+  /* 18.11 (captures de Kevin, « je dois énormément descendre ») : rien à traiter = une ligne ; personne en ligne = une ligne ; rubriques sur une ligne chacune */
+  .traiter.rien{padding:10px 14px;margin-bottom:8px}.traiter.rien h1{display:none}.traiter.rien .sous{margin:0;font-size:15px;color:var(--txt,#eee)}.traiter.rien .cpts{display:none}
+  .live.seul{padding:10px 14px;margin-bottom:8px}.live.seul h2{margin:0}.live.seul h2 b{display:none}.live.seul .live-l{display:none}
+  .live.seul h2::after{content:"· toi seul";color:var(--mut);font-weight:400;font-size:14px}
+  .fil-e .l3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .fil-maj{margin-left:auto;font-size:13px;font-weight:400;color:var(--mut)}
   /* 18.11 (pont 2666, iPhone 390 px : « Tout le monde » coupé, « Mc… » illisible, rien ne disait qu'on pouvait faire défiler) : les choix passent à la ligne, tous visibles */
   .fil-f{display:flex;flex-wrap:wrap;gap:8px;padding-bottom:8px}
-  .fil-c{flex:none;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mut);font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
+  .fil-c{flex:none;min-height:44px;padding:0 11px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mut);font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
   .fil-c[aria-pressed="true"]{border-color:var(--gold,#c9a227);color:var(--gold,#c9a227);background:rgba(201,162,39,.12);font-weight:700}
   .fil-app{display:block;width:100%;min-height:44px;margin:0 0 6px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--field,#0f1a12);color:var(--txt,#eee);font-size:16px}
   .fil-j{margin:10px 0 4px;font-size:13px;font-weight:700;color:var(--gold,#c9a227);text-transform:capitalize}
@@ -65,7 +71,7 @@
   .fil-e .l1 b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .fil-e .app{flex:none;margin-left:auto;font-size:12px;color:var(--gold,#c9a227);border:1px solid rgba(201,162,39,.4);border-radius:999px;padding:1px 8px;white-space:nowrap}
   .fil-e .l2{font-size:14px;color:var(--txt,#eee);overflow-wrap:anywhere}
-  .fil-e .l3{font-size:12.5px;color:var(--mut);overflow-wrap:anywhere}
+  .fil-e .l3{font-size:12.5px;color:var(--mut)}
   .fil-plus{width:100%;min-height:44px;margin-top:8px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--mut);font:inherit;cursor:pointer}
   @media(min-width:640px){.cpts{grid-template-columns:repeat(5,1fr)}}
   .cpt{display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:4px;min-height:84px;padding:12px;border-radius:14px;border:1px solid var(--line);background:rgba(10,18,12,.7);color:var(--txt);font:inherit;text-align:left;cursor:pointer}
@@ -143,22 +149,31 @@
   .onglets a{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);color:var(--mut);text-decoration:none;font-size:14px;white-space:nowrap;background:rgba(10,18,12,.55)}
   .onglets a[aria-selected="true"]{border-color:var(--gold);color:#11160c;background:linear-gradient(135deg,var(--gold2),var(--gold));font-weight:700}
   .onglets a b{background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:13px}
+  /* 18.11 : téléphone — rubriques et raccourcis sur une ligne chacun (placé en fin de feuille : il doit l'emporter sur les règles générales ci-dessus) */
+  @media(max-width:639px){
+    .tuiles-sec{gap:8px;margin-bottom:12px}
+    .tuile-sec{flex-direction:row;align-items:center;gap:8px;min-height:52px;padding:8px 10px}
+    .tuile-sec .ic{font-size:20px;flex:none}.tuile-sec .tt b{font-size:14px}.tuile-sec .tt .r{display:none}
+    .raccourcis{margin-bottom:10px}.racc{min-height:44px;padding:6px 10px;font-size:13px}
+    .accueil h2.cat{margin:10px 0 6px}
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="top">
       <div class="logo">KDMC<b>ADMIN</b></div>
+      <span data-kdmc-vue-place style="margin-left:auto;display:inline-flex"></span>
       <a class="home" href="https://kd-mc.com/">← Portail</a>
     </div>
     <div id="app"><div class="msg">Vérification de l'accès…</div></div>
   </div>
   <script src="/kdmc-sso.js"></script>
   <script src="/kdmc-boite.js?v=2.0.12"></script>
-  <script src="admin.js?v=2.7.24"></script>
-  <script src="commerce.js?v=2.7.24"></script>
-  <script src="tableau.js?v=2.7.24"></script>
+  <script src="admin.js?v=2.7.25"></script>
+  <script src="commerce.js?v=2.7.25"></script>
+  <script src="tableau.js?v=2.7.25"></script>
 <!-- Bulle de version (Kevin 9.10 « chaque page a sa bulle, cliquable ») : toucher = forcer la mise à jour -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.24" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin" data-version="v2.7.25" data-color="#c9a227" defer></script>
 </body>
 </html>

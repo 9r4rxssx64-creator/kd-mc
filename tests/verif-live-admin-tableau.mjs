@@ -76,9 +76,20 @@ try {
       await page.waitForTimeout(1500);
       const apres = await page.evaluate(() => { const l = Array.from(document.querySelectorAll('.fil-e .app')); return { n: l.length, distinctes: new Set(l.map((x) => x.textContent.trim())).size }; });
       chk(apres.n > 0 && apres.distinctes === 1, `Journal filtré : ${apres.n} ligne(s), ${apres.distinctes} app distincte`);
-      await page.locator('#tb-fil-filtre [data-fil-efface]').first().click({ timeout: 8000 }).catch(() => {});
+      /* avant de toucher : ce qui se trouve VRAIMENT sous le doigt au centre de la puce (une barre collée en haut peut la recouvrir) — balises et classes seulement */
+      const dessous = await page.evaluate(() => {
+        const b = document.querySelector('#tb-fil-filtre [data-fil-efface]'); if (!b) return 'puce absente';
+        b.scrollIntoView({ block: 'center' }); const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        const nom = (x) => (x ? x.tagName.toLowerCase() + (x.id ? '#' + x.id : '') + (x.className && typeof x.className === 'string' ? '.' + x.className.trim().split(/\s+/).slice(0, 2).join('.') : '') : 'rien');
+        return 'puce ' + Math.round(r.width) + '×' + Math.round(r.height) + ' px à y=' + Math.round(r.top) + ' · sous le doigt : ' + nom(e) + (e && (e === b || b.contains(e)) ? ' (la puce)' : ' (AUTRE CHOSE)');
+      });
+      const errClic = await page.locator('#tb-fil-filtre [data-fil-efface]').first().click({ timeout: 8000 }).then(() => '').catch((e) => String(e && e.message || e).split('\n').slice(0, 6).join(' ⏎ ').replace(/[“”"][^“”"]{0,80}[“”"]/g, '«…»').slice(0, 400));
       const parti = await page.waitForSelector('#tb-fil-filtre [data-fil-efface]', { state: 'hidden', timeout: 8000 }).then(() => true).catch(() => false);
       chk(parti, 'retirer la puce défait le filtre');
+      if (!parti) {
+        const etat = await page.evaluate(() => { const p = document.getElementById('tb-fil-filtre'), s = document.getElementById('tb-fil-app'); return 'conteneur ' + (p ? (p.hidden ? 'caché' : 'visible') + ', ' + p.querySelectorAll('[data-fil-efface]').length + ' puce(s)' : 'absent') + ' · liste des apps ' + (s ? (s.value ? 'sur une app' : 'vide') : 'absente') + ' · vue ' + (document.body.getAttribute('data-vue') || '?'); });
+        dire('   ↳ ' + dessous); dire('   ↳ toucher : ' + (errClic || 'réussi')); dire('   ↳ après : ' + etat);
+      }
     }
   } else dire('ℹ️ aucune puce d\'app à l\'écran : le filtre par app n\'a pas pu être essayé');
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }

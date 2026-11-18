@@ -296,8 +296,13 @@ export function ecriturePermise(methode, url, connexions = []) {
   if (ECRITURE_PERMISE.test(u)) return true;
   return m === 'POST' && connexions.some((c) => (c instanceof RegExp ? c.test(u) : c === u));
 }
+/* 18.11 (cloud-poste-recherche 2620 / 2663, worldmonitor : les 4 appels à la NASA « not allowed by Access-Control-Allow-Origin » dans le SEUL Safari du robot,
+   alors que le service répond `Access-Control-Allow-Origin: *`) : pour trancher entre « le service refuse le robot » et « le filtre du robot casse la requête
+   dans WebKit », un hôte peut être sorti du filtre le temps d'un essai (`SANS_FILTRE`, hôtes séparés par des espaces). Vide par défaut : rien ne change. */
+export const sansFiltre = () => String(process.env.SANS_FILTRE || '').split(/[\s,]+/).map((h) => h.trim().toLowerCase()).filter(Boolean);
 export async function lectureSeule(ctx, { connexions = [] } = {}) {
-  await ctx.route('**/*', (r) => {
+  const libres = sansFiltre();
+  await ctx.route(libres.length ? (u) => !libres.includes(String(u.hostname || '').toLowerCase()) : '**/*', (r) => {
     const q = r.request();
     if (ecriturePermise(q.method(), q.url(), connexions)) return r.continue();
     /* 29.10.2026 : sans en-têtes CORS, cette fausse réponse faisait « refuser » par WebKit tout POST vers une autre origine (« due to access control checks »)
@@ -343,7 +348,20 @@ export async function verifier({ hotes = ADRESSES, ecrans = ECRANS, hash = '', j
         /* 29.10.2026 (pont 1356 : « refus CORS » vers apex-depot-relais, 146 erreurs, que le relais ne reproduit pas au curl) : noter POURQUOI (échec réseau ou réponse ≥ 400, ACAO présent ou non) — hôtes seulement, jamais de chemin ni de texte. */
         const reseau = [];
         const hote = (u) => { try { return new URL(u).host.slice(0, 40); } catch { return '?'; } };
-        const onFail = (q) => { if (reseau.length < 3) reseau.push('échec ' + hote(q.url()) + ' ' + String((q.failure() || {}).errorText || '?').slice(0, 60)); };
+        /* CONTRE-MESURE : quand le navigateur dit « refusé par le contrôle d'accès », le robot redemande la même adresse HORS du navigateur, depuis la même machine,
+           avec la même origine, et note ce que le service répond vraiment (code, en-tête d'autorisation). Une fois par hôte. */
+        const contre = new Set();
+        const onFail = (q) => {
+          const txt = String((q.failure() || {}).errorText || '?'), h = hote(q.url());
+          if (reseau.length < 3) reseau.push('échec ' + h + ' ' + txt.slice(0, 60));
+          if (/access.control/i.test(txt) && !contre.has(h) && contre.size < 2) {
+            contre.add(h);
+            let origine = ''; try { origine = new URL(page.url()).origin; } catch { origine = ''; }
+            page.context().request.get(q.url(), { headers: { origin: origine }, timeout: 15000, maxRedirects: 5 })
+              .then((r) => { reseau.push('contre-mesure ' + h + ' hors navigateur : HTTP ' + r.status() + ' acao=' + (r.headers()['access-control-allow-origin'] || 'absent') + ' adresse finale ' + hote(r.url())); })
+              .catch((e) => { reseau.push('contre-mesure ' + h + ' hors navigateur : échec ' + String(e && e.message || e).split('\n')[0].slice(0, 70)); });
+          }
+        };
         const onRep = (r) => { if (reseau.length < 3 && r.status() >= 400) reseau.push(r.status() + ' ' + hote(r.url()) + ' acao=' + (r.headers()['access-control-allow-origin'] ? 'oui' : 'non')); };
         const brancher = () => { page.on('pageerror', onErr); page.on('requestfailed', onFail); page.on('response', onRep); };
         const debrancher = () => { page.off('pageerror', onErr); page.off('requestfailed', onFail); page.off('response', onRep); };

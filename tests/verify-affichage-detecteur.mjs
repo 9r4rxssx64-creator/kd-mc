@@ -6,7 +6,7 @@
  */
 import { chromium } from 'playwright';
 import { readFileSync } from 'node:fs';
-import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours, raisonToucher, fermerFenetreOuverte, quitteLHote } from '../tools/plateformes/verif-affichage-domaine.mjs';
+import { mesurer, candidatsNavigation, aUnRetour, fermerFeuilleToujours, raisonToucher, fermerFenetreOuverte, quitteLHote, lectureSeule, sansFiltre } from '../tools/plateformes/verif-affichage-domaine.mjs';
 
 const PIEGE = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>p</title>
 <style>body{margin:0;font:16px sans-serif} header{position:relative;top:-30px;height:60px;background:#333;color:#fff}
@@ -194,6 +194,20 @@ ok('texte qui sort de sa boîte : le débordement est vu ET nommé', mt.deborde 
   ok('fenêtre ouverte : le toucher suivant passe ensuite', suite);
   const src2 = readFileSync(new URL('../tools/plateformes/verif-affichage-domaine.mjs', import.meta.url), 'utf8');
   ok('le grand robot referme la fenêtre ouverte après chaque toucher', /explo\.cache \+= m2\.cache[^\n]*\n[^\n]*\n\s*await page\.evaluate\(fermerFenetreOuverte\)/.test(src2)); }
+/* 18.11 (worldmonitor / NASA) : l'essai « sans filtre » sort UN hôte nommé du filtre de lecture seule, et seulement lui ; vide par défaut. */
+{ process.env.SANS_FILTRE = ''; ok('sans réglage, aucun hôte ne sort du filtre', sansFiltre().length === 0);
+  process.env.SANS_FILTRE = 'Libre.test  autre.test'; ok('le réglage se lit : deux hôtes, en minuscules', JSON.stringify(sansFiltre()) === '["libre.test","autre.test"]');
+  process.env.SANS_FILTRE = 'libre.test';
+  const cx = await b.newContext(); await lectureSeule(cx);
+  /* posées APRÈS le filtre : elles passent d'abord ; r.fallback() rend la main au filtre du robot, qui absorbe l'écriture — sauf pour l'hôte sorti du filtre */
+  let vuLibre = 0, vuFiltre = 0;
+  await cx.route('https://libre.test/**', (r) => { if (r.request().method() === 'POST') vuLibre++; return r.fulfill({ status: 200, contentType: 'text/plain', headers: { 'access-control-allow-origin': '*' }, body: 'vrai' }); });
+  await cx.route('https://filtre.test/**', (r) => (r.request().method() === 'POST' ? (vuFiltre++, r.fallback()) : r.fulfill({ status: 200, contentType: 'text/html', body: '<p>x</p>' })));
+  const pf = await cx.newPage(); await pf.goto('https://filtre.test/');
+  const rep = await pf.evaluate(async () => ({ filtre: await (await fetch('https://filtre.test/ecrit', { method: 'POST', body: 'a' })).text(), libre: await (await fetch('https://libre.test/ecrit', { method: 'POST', body: 'a' })).text() }));
+  ok('un hôte ordinaire reste en lecture seule (écriture absorbée par le robot)', /lecture_seule/.test(rep.filtre) && vuFiltre === 1, rep);
+  ok('l\'hôte sorti du filtre n\'est plus touché par le robot (sa vraie réponse passe)', rep.libre === 'vrai' && vuLibre === 1, rep);
+  process.env.SANS_FILTRE = ''; await cx.close(); }
 await b.close();
 console.log('\n' + (ko ? '❌ ' + ko + ' échec(s)' : '✅ Détecteur d’affichage : voit les défauts, ne crie pas au loup'));
 process.exit(ko ? 1 : 0);

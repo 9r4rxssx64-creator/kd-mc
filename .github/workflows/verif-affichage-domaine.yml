@@ -14,6 +14,10 @@ on:
         description: "Adresses à vérifier, séparées par des espaces (vide = les 33)"
         required: false
         default: ""
+      sans_filtre:
+        description: "Essai : hôtes extérieurs à sortir du filtre de lecture seule, séparés par des espaces (vide = aucun)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -45,6 +49,7 @@ jobs:
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
           WEBKIT: "1"
           APPS: ${{ inputs.apps }}
+          SANS_FILTRE: ${{ inputs.sans_filtre }}
         # `pipefail` OBLIGATOIRE : sans lui le code de sortie serait celui de `tee`.
         shell: bash -euo pipefail {0}
         run: |

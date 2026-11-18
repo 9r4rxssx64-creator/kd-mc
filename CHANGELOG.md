@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## CMCteams v10.030 — la pastille de secteur ne disparaît plus quand Firebase répond (2026-11-18)
+- **18.11 (cmcteams-pdf, Kevin « Déjanovic Dimitri européen », répété)** : CMCteams v10.030 — 2ᵉ cause de la pastille « Eu » absente : les lettres de secteur (`postHistory`, ex. DEJANOVIC D « BRTCP+KE ») sont posées par le planning importé, puis Firebase remplaçait la liste des employés par la copie d'un autre appareil SANS ces lettres → la pastille s'effaçait quelques secondes après l'ouverture. `_cmcSeedPoseEquipes` (rejouée par `_cmcSeedCompleteApresFirebase`) repose maintenant aussi les lettres manquantes, sans écraser celles modifiées par l'admin. Garde : `test:secteur` simule l'arrivée de Firebase (lettres effacées sur les 264 personnes, puis 1,1 s) : 264/264 restaurées ; rouge sur l'ancien `index.html` (0/264). La light lit le planning directement : non concernée.
+
 ## CMCteams v10.029 — la pastille de secteur (Eu, Am, Ba…) n'est plus coupée par la case du nom (2026-11-18)
 
 Kevin : « DEJANOVIC D n'a pas de pastille Eu ». Cause mesurée : la pastille était dans la page mais cachée par la case du nom (118 px, `overflow:hidden`) quand le nom est long (5 noms sur 10 de novembre). Le nom se raccourcit maintenant avec « … », les pastilles gardent leur place. La light n'était pas touchée. Garde `test:secteur` : chaque pastille doit être entière dans sa case (rouge avant, vert après, rouge sous sabotage).

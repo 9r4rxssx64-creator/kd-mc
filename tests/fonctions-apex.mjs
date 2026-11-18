@@ -173,8 +173,14 @@ try {
     });
 
     await essayer('Modification', async () => {
-      const j = 'ed-' + lettres(5), j2 = 'ed2-' + lettres(5); await A.p.locator('#msg-input').fill(j); await A.p.locator('#msg-input').press('Enter');
+      const j = 'ed-' + lettres(5), j2 = 'ed2-' + lettres(5);
+      const ack0 = await ev(A.p, () => (window.__wsLog || []).filter((x) => x === 'r:ack').length);
+      await A.p.locator('#msg-input').fill(j); await A.p.locator('#msg-input').press('Enter');
       await attendre(B.p, (x) => Object.values(K.messages || {}).flat().some((m) => JSON.stringify(m).includes(x)), j, 20000);
+      /* 18.11 (cause trouvée par le robot lui-même, run 44355258466 : « s:edit_message r:error(forbidden) » PUIS « r:ack ») : B reçoit le message par
+         diffusion AVANT que le serveur l'ait écrit et accusé ; une modification envoyée dans cet intervalle est refusée « introuvable ». Une personne
+         ne modifie pas en 50 ms : le robot attend l'accusé de SON message (6 s au plus) comme elle le ferait. */
+      await attendre(A.p, (n) => { const l = window.__wsLog || []; return l.length >= 80 || l.filter((x) => x === 'r:ack').length > n; }, typeof ack0 === 'number' ? ack0 : 0, 6000);
       const id = await ev(A.p, (x) => { const m = (K.messages[K.viewData.id] || []).find((q) => q.from === K.user.id && JSON.stringify(q).includes(x)); return m && m.id; }, j);
       await ev(A.p, (i) => K._openEditMsg(i), id); await A.p.locator('#edit-msg-input').fill(j2).catch(() => {}); await ev(A.p, (i) => K._saveEditMsg(i), id);
       const d = await attendre(B.p, (x) => Object.values(K.messages || {}).flat().some((m) => JSON.stringify(m).includes(x)), j2, 20000);

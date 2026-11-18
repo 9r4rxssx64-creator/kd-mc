@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## CMCteams v10.029 — la pastille de secteur (Eu, Am, Ba…) n'est plus coupée par la case du nom (2026-11-18)
+
+Kevin : « DEJANOVIC D n'a pas de pastille Eu ». Cause mesurée : la pastille était dans la page mais cachée par la case du nom (118 px, `overflow:hidden`) quand le nom est long (5 noms sur 10 de novembre). Le nom se raccourcit maintenant avec « … », les pastilles gardent leur place. La light n'était pas touchée. Garde `test:secteur` : chaque pastille doit être entière dans sa case (rouge avant, vert après, rouge sous sabotage).
+
 ## CMCteams v10.027 + light v1.158 + routeur — « ouvre la fiche de X » comprend l'app où tu es (2026-11-17)
 
 Bee ouvre la fiche dans l'app courante (CMCteams, light, arbre) sans qu'on la nomme, sinon dans l'arbre ; elle cherche la personne et dit clairement quand il n'y en a pas. CMCteams et la light, personne introuvable : message clair + bouton « 🌳 Chercher dans l'arbre ». Gardes `bee-ouvrir.test.mjs` (157) et `test:lien-personne` (23).

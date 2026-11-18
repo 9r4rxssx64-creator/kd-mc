@@ -9,7 +9,7 @@
  *
  * Ce que le test exige — jamais un seuil brut en millisecondes (faux sous charge) : des ORDRES d'événements.
  *   R1. toucher une tuile d'app → la tuile réagit à l'écran AVANT la réponse retardée du domaine (plus de « bouton mort ») ;
- *   R2. portail déjà connecté → UN SEUL whoami au démarrage, et l'accueil s'affiche après UN seul aller-retour (pas deux en série) ;
+ *   R2. portail déjà connecté → UN SEUL whoami au démarrage, et l'accueil s'affiche après AU PLUS un aller-retour (depuis le 18.11 : tout de suite pour une personne connue, 0 en série) ;
  *   R3. tuile touchée → on part vers l'app sans attendre un nouvel aller-retour (laissez-passer lu d'avance) ;
  *   R4. « Créer mon compte » (vérification du téléphone au domaine) → le bouton réagit avant la réponse ; R4b : et cette question
  *       est posée d'avance, à l'affichage de l'écran (un aller-retour de moins au moment du toucher) ;
@@ -208,7 +208,7 @@ try {
   const s3 = serie(ap3, tHub, /\/__/);
   note('Portail connecté : accueil (tuiles) visible', '—', p3, `whoami : ${nWho3} · allers-retours en série avant l'accueil : ${s3} · tâches longues : ${longues3.length} (max ${Math.max(0, ...longues3)} ms)`);
   ok(nWho3 === 1, 'R2. portail connecté : UN SEUL whoami au démarrage (il y en avait 3)', ap3.map((a) => a.u).join(' | '));
-  ok(s3 === 1, 'R2b. l\'accueil s\'affiche après UN aller-retour au domaine, pas deux en série', `série = ${s3}`);
+  ok(s3 <= 1, 'R2b. l\'accueil s\'affiche après AU PLUS un aller-retour au domaine, jamais deux en série', `série = ${s3}`);
 
   /* R1 : Kevin touche une tuile DÈS que l'accueil apparaît — le laissez-passer est encore en route : la tuile doit réagir quand même */
   await page.goto('https://kd-mc.com/');
@@ -235,7 +235,9 @@ try {
 
   /* ── P6. « J'ai déjà un compte — nom + code » ─────────────────────────────────────────────── */
   await page.goto('https://kd-mc.com/');
-  await page.waitForFunction(() => { const g = document.getElementById('gate'); return g && !g.hidden && g.children.length > 0; }, null, { timeout: 15000 });
+  await page.waitForFunction(() => { const g = document.getElementById('gate'), h = document.getElementById('hub'); return (g && !g.hidden && g.children.length > 0) || (h && !h.hidden); }, null, { timeout: 15000 });
+  /* 18.11 : une personne déjà connue voit l'accueil tout de suite (le domaine vérifie en parallèle) — l'écran du code n'apparaît que si le domaine refuse. */
+  await page.waitForTimeout(RETARD + 800);
   if (await page.locator('#u-other').isVisible().catch(() => false)) {   /* écran « Bonjour Albert » : on passe par le code */
     await page.fill('#u-code', '271828');
     const r6 = await toucher(page, '#u-go', () => { const h = document.getElementById('hub'); return (h && !h.hidden) || !!document.getElementById('pk-skip'); }, 15000);

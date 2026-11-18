@@ -1275,25 +1275,49 @@
       renderCreate(); show(gate);
     });
   }
+  /* 18.11 (Kevin : « c'est super long à ouvrir, écran d'accueil du domaine ») : mesuré, les tuiles n'apparaissaient qu'APRÈS la réponse
+     de /__sso/whoami (≈ 3 s sur réseau lent) ; pendant ce temps on ne voyait que « ⏳ Connexion au domaine… ».
+     Une personne DÉJÀ CONNUE sur cet appareil (compte gardé ici) voit ses tuiles tout de suite ; le domaine vérifie en parallèle.
+     Ce qu'on montre avant la preuve est le hub STATIQUE (les tuiles publiques, aucune donnée) : le tableau de bord admin et
+     « Mes appareils » restent cachés tant que le domaine n'a pas répondu (applyAdminVisibility n'est appelée qu'après).
+     Si le domaine refuse (pas de session, code à poser, hors ligne…), les tuiles sont retirées et l'écran de connexion revient. */
+  var _hubAnticipe = false;
+  function accueilPossible(acc, frais) {
+    if (!acc || !acc.uid || frais || !hub || !hello) return false;
+    if (safeReturnUrl()) return false;   /* une app attend le retour : on ne montre pas d'accueil */
+    try { if (new URLSearchParams(location.search).get('code')) return false; } catch (e) { /* */ }
+    var sauter = false; try { sauter = !!sessionStorage.getItem('kdmc_pk_skip'); } catch (e) { /* */ }
+    if (_pkSupported() && !_hasPasskey(acc.uid) && !sauter) return false;   /* l'offre Face ID passe avant le hub */
+    return true;
+  }
+  function accueilImmediat(acc) {
+    _hubAnticipe = true;
+    hello.textContent = acc.name ? ('Bonjour ' + acc.name) : 'Bienvenue';
+    hide(gate); show(hub);
+  }
+  function retirerAnticipe() { if (_hubAnticipe) { _hubAnticipe = false; hide(hub); } }
   function boot() {
     var frais = arguments[0];   /* true = « Réessayer » : une réponse NEUVE du domaine */
     var acc = lg(LS_ACCOUNT, null);
     var done = function (sess, r) {
-      if (_kevinNonProuve(sess)) { renderPreuveAdmin(); show(gate); return; }
-      if (sess && sess.uid) { _postLogin({ uid: sess.uid, name: sess.name || (acc && acc.name) }, r); return; }   /* r : whoami déjà lu → l'accueil ne le redemande pas */
+      if (_kevinNonProuve(sess)) { retirerAnticipe(); renderPreuveAdmin(); show(gate); return; }
+      if (sess && sess.uid) { if (sess.attente_admin) retirerAnticipe(); _hubAnticipe = false; _postLogin({ uid: sess.uid, name: sess.name || (acc && acc.name) }, r); return; }   /* r : whoami déjà lu → l'accueil ne le redemande pas */
+      retirerAnticipe();
       if (acc) renderUnlock(acc); else renderCreate();
       show(gate);
     };
-    if (gate && !gate.firstChild) { gate.innerHTML = '<p class="g-sub" id="g-attente" style="text-align:center">⏳ Connexion au domaine…</p>'; show(gate); }
+    var anticipe = false;
+    if (accueilPossible(acc, frais)) { accueilImmediat(acc); anticipe = true; }
+    if (!anticipe && gate && !gate.firstChild) { gate.innerHTML = '<p class="g-sub" id="g-attente" style="text-align:center">⏳ Connexion au domaine…</p>'; show(gate); }
     /* 8.10 (revue extérieure) : au démarrage, whoami() aplatissait « compte sans code » en « aucune session » → l'écran bloquant
        « Crée ton code » n'était jamais atteint depuis une app (?code=1&return=…). On lit l'état détaillé : code_requis → l'écran. */
     if (window.kdmcSSO && window.kdmcSSO.whoamiResult) {
       (frais ? window.kdmcSSO.whoamiResult({ frais: true }) : window.kdmcSSO.whoamiResult()).then(function (r) {
-        if (r && r.state === 'code_requis') { renderCodeObligatoire(r.session); return; }
-        if (r && r.state === 'tel_a_confirmer') { renderTelObligatoire(r.session); return; }   /* 13.10 */
-        if (r && (r.state === 'neterr' || r.state === 'hors_perimetre')) { renderIndisponible(r, acc); return; }
+        if (r && r.state === 'code_requis') { retirerAnticipe(); renderCodeObligatoire(r.session); return; }
+        if (r && r.state === 'tel_a_confirmer') { retirerAnticipe(); renderTelObligatoire(r.session); return; }   /* 13.10 */
+        if (r && (r.state === 'neterr' || r.state === 'hors_perimetre')) { retirerAnticipe(); renderIndisponible(r, acc); return; }
         done(r && r.state === 'session' ? r.session : null, r);
-      }).catch(function () { renderIndisponible({ state: 'neterr' }, acc); });
+      }).catch(function () { retirerAnticipe(); renderIndisponible({ state: 'neterr' }, acc); });
     } else if (window.kdmcSSO) { window.kdmcSSO.whoami().then(done); } else { done(null); }
   }
   boot();

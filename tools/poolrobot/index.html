@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v0.11.17 -->
+<!-- v0.11.18 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -342,7 +342,7 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
 </div>
 
 <script src="/CMCteams/tools/shared/version-badge-pwa.js"
-        data-project="poolrobot" data-version="v0.11.17" data-color="#39c2ff" defer></script>
+        data-project="poolrobot" data-version="v0.11.18" data-color="#39c2ff" defer></script>
 <script>
 "use strict";
 /* ============ PoolPilot — Beatbot+ companion (v0.2.0) ============
@@ -350,7 +350,7 @@ try{var _t=localStorage.getItem("pp_theme");if(_t==="light"){document.documentEl
    Couche stratégie/cartographie/analytics AUTOUR du robot.
    Pré-réglé pour Kevin : AquaSense 2 Ultra + Waterair Céline 7 (haricot).
 ================================================================= */
-var APP_VER="v0.11.17";
+var APP_VER="v0.11.18";
 function $(s,el){return (el||document).querySelector(s)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function lg(k,d){try{var v=localStorage.getItem("pr_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
@@ -411,6 +411,8 @@ var beatbot=Object.assign({relay:"https://beatbot.kd-mc.com/__beatbot/relay",hos
 var tuya=Object.assign({linked:false,region:"eu",device_id:"",device_name:""},lg("tuya",{}));
 var _bbAnalysis=null;
 var S={view:"accueil"};
+/* 18.11 (pont 2632) Journal du domaine : une phrase courte APRÈS un enregistrement réussi (jamais une valeur, un nom ni un code) ; posé par le routeur, sans lui : rien. */
+function _jr(t){try{if(typeof window.kdmcJournal==="function")window.kdmcJournal("PoolPilot : "+t);}catch(_){}}
 function save(){ls("cfg",cfg);ls("pool",pool);ls("sessions",sessions);ls("plan",plan);ls("maint",maint);ls("beatbot",beatbot);ls("tuya",tuya)}
 
 /* ---- Presets bassins ---- */
@@ -945,7 +947,7 @@ function tuyaDelay(){
   var n=Math.max(0,Math.round(+($("#tyDelayMin").value||0))),rep=$("#tyDelayRep").value;
   if(!n){toast("Indique un délai en minutes (ex : 120)");return;}
   tuyaApi("command","POST",{commands:[{code:"delay_start",value:n},{code:"delay_repeat",value:rep}]}).then(function(j){
-    if(j.ok)toast("⏰ Départ différé réglé : dans "+n+" min ("+(rep==="every_time"?"répété à chaque fois":"une seule fois")+")");
+    if(j.ok)_jr("départ différé du robot réglé");if(j.ok)toast("⏰ Départ différé réglé : dans "+n+" min ("+(rep==="every_time"?"répété à chaque fois":"une seule fois")+")");
     else toast("Échec départ différé : "+(j.detail||j.reason||"?"));
   });
 }
@@ -965,7 +967,7 @@ function tuyaCustomSave(){
   var cmds=codes.map(function(c){return {code:c,value:Math.max(0,Math.round(+($("#ty_"+c).value||0)))};});
   cmds.push({code:"mode",value:"custom"});
   tuyaApi("command","POST",{commands:cmds}).then(function(j){
-    if(j.ok){toast("🎚️ Cycle Perso enregistré (mode « custom ») — démarre avec ▶️");setTimeout(tuyaRefresh,1200);}
+    if(j.ok){_jr("cycle personnalisé du robot enregistré");toast("🎚️ Cycle Perso enregistré (mode « custom ») — démarre avec ▶️");setTimeout(tuyaRefresh,1200);}
     else toast("Échec cycle Perso : "+(j.detail||j.reason||"?"));
   });
 }
@@ -1010,7 +1012,7 @@ function vTuyaGear(){
 /* règle le mode de cycle RÉEL du robot (range mesuré : fast/surface/custom/standard/pro/cec/multi) */
 function tuyaSetMode(v){
   tuyaApi("command","POST",{commands:[{code:"mode",value:v}]}).then(function(j){
-    if(j.ok){toast("🎛️ Mode « "+tuyaLabelState(v)+" » réglé — démarre avec ▶️ ou 🌊 Ultra");setTimeout(tuyaRefresh,1200);}
+    if(j.ok){_jr("mode du robot changé");toast("🎛️ Mode « "+tuyaLabelState(v)+" » réglé — démarre avec ▶️ ou 🌊 Ultra");setTimeout(tuyaRefresh,1200);}
     else toast("Échec réglage mode : "+(j.detail||j.reason||"?"));
   });
 }
@@ -1083,7 +1085,7 @@ function tuyaCmd(code,value){
   var el=$("#tyCmdOut");if(el)el.innerHTML='<span class="mut">Envoi…</span>';
   tuyaApi("command","POST",{commands:[{code:code,value:value}]}).then(function(j){
     if(el)el.innerHTML=j.ok?'<span style="color:#5fd38a">✅ Commande envoyée au robot</span>':'<div class="note warn">'+esc(j.detail||j.reason||"Échec")+'</div>';
-    if(j.ok)setTimeout(tuyaRefresh,1500);
+    if(j.ok){_jr("commande envoyée au robot");setTimeout(tuyaRefresh,1500);}
   });
 }
 /* Mode Ultra « la totale » : aspiration MAX + démarrage du cycle complet du robot.
@@ -1378,21 +1380,21 @@ function stat(n,l){return '<div class="stat"><div class="n">'+esc(n)+'</div><div
 function field(l,id,v,type,step){return '<div><label>'+esc(l)+'</label><input id="'+id+'" type="'+(type||"text")+'"'+(step?' step="'+step+'"':'')+' value="'+esc(v)+'"></div>'}
 
 /* ============ actions ============ */
-function setModel(){cfg.model=$("#cfgModel").value;save();renderRobotTag();render()}
-function setRunH(){cfg.runHours=Math.max(0,+$("#runH").value||0);save();render()}
-function setPurch(){cfg.purchaseDate=$("#purch").value||"";save();render()}
-function resetMaint(k){maint[k]=0;save();render()}
-function delSession(id){sessions=sessions.filter(function(s){return s.id!==id});save();render()}
-function applyPreset(k){var p=PRESETS[k];if(!p)return;pool.shape=p.shape;pool.L=p.L;pool.W=p.W;pool.preset=k;save();render()}
+function setModel(){cfg.model=$("#cfgModel").value;save();_jr("modèle du robot modifié");renderRobotTag();render()}
+function setRunH(){cfg.runHours=Math.max(0,+$("#runH").value||0);save();_jr("heures de marche modifiées");render()}
+function setPurch(){cfg.purchaseDate=$("#purch").value||"";save();_jr("date d'achat modifiée");render()}
+function resetMaint(k){maint[k]=0;save();_jr("entretien remis à zéro");render()}
+function delSession(id){sessions=sessions.filter(function(s){return s.id!==id});save();_jr("séance supprimée");render()}
+function applyPreset(k){var p=PRESETS[k];if(!p)return;pool.shape=p.shape;pool.L=p.L;pool.W=p.W;pool.preset=k;save();_jr("forme du bassin choisie");render()}
 function saveLog(){
   var dur=+$("#lgDur").value||0;
   sessions.unshift({id:uid(),ts:Date.now(),mode:$("#lgMode").value,dur:dur,batt:$("#lgBatt").value?+$("#lgBatt").value:null});
   if(sessions.length>300)sessions=sessions.slice(0,300);
   var addH=Math.round(dur/60*10)/10;cfg.runHours=Math.round((cfg.runHours+addH)*10)/10;
   ["filter","brush","seal","clearwater"].forEach(function(k){maint[k]=Math.round(((maint[k]||0)+addH)*10)/10});
-  save();render();
+  save();_jr("séance enregistrée");render();
 }
-function regenPlan(){plan.mode=$("#planMode").value;plan.generatedAt=Date.now();save();render();setTimeout(drawCoverage,30)}
+function regenPlan(){plan.mode=$("#planMode").value;plan.generatedAt=Date.now();save();_jr("mode du plan modifié");render();setTimeout(drawCoverage,30)}
 function maintAlerts(){var a=[];if((maint.filter||0)>=8)a.push("filtre");if((MODELS[cfg.model]||{}).clearwater&&(maint.clearwater||0)>=40)a.push("ClearWater");if((maint.brush||0)>=60)a.push("brosses");if((maint.seal||0)>=120)a.push("joints");return a}
 
 /* ============ PERFORMANCE / RÉGLAGES ============ */
@@ -1438,10 +1440,10 @@ function effTips(){
   if(recommend().mode.indexOf("Ligne")<0)t.push("Ajoute un cycle « Ligne d'eau » de temps en temps : le rétrécissement du haricot y accumule le gras.");
   return t.slice(0,2);
 }
-function setPerf(k,v){cfg[k]=v;save();render()}
-function applyReco(){plan.mode=recommend().mode;plan.generatedAt=Date.now();save();toast("✅ Mode « "+plan.mode+" » appliqué au plan");}
-function applySeason(k){var s=SEASONS[k];if(!s)return;cfg.usage=s.usage;cfg.debris=s.debris;cfg.focus=s.focus;save();toast(s.ic+" Preset « "+s.l+" » appliqué");render()}
-function setBattery(){cfg.batteryMin=Math.max(30,+$("#battMin").value||180);save();render()}
+function setPerf(k,v){cfg[k]=v;save();_jr("réglage de performance modifié");render()}
+function applyReco(){plan.mode=recommend().mode;plan.generatedAt=Date.now();save();_jr("mode recommandé appliqué au plan");toast("✅ Mode « "+plan.mode+" » appliqué au plan");}
+function applySeason(k){var s=SEASONS[k];if(!s)return;cfg.usage=s.usage;cfg.debris=s.debris;cfg.focus=s.focus;save();_jr("préréglage de saison appliqué");toast(s.ic+" Preset « "+s.l+" » appliqué");render()}
+function setBattery(){cfg.batteryMin=Math.max(30,+$("#battMin").value||180);save();_jr("autonomie de batterie modifiée");render()}
 function optimizeDepot(){
   var poly=poolPoly(),c=polyCentroid(poly),dx=0,dy=0;
   var stairs=pool.markers.filter(function(m){return m.type==="escalier"});
@@ -1450,7 +1452,7 @@ function optimizeDepot(){
   for(var k=0.32;k>=0;k-=0.04){var px=c.x+dx*k,py=c.y+dy*k;if(pointInPoly(px,py,poly)){best={x:px,y:py};break}}
   pool.markers=pool.markers.filter(function(m){return m.type!=="depot"});
   pool.markers.push({id:uid(),type:"depot",x:best.x,y:best.y});
-  save();toast("📍 Point de dépôt optimal placé — vois-le sur ta carte 🗺️");render();
+  save();_jr("point de dépôt placé sur le bassin");toast("📍 Point de dépôt optimal placé — vois-le sur ta carte 🗺️");render();
 }
 function toast(msg){
   var t=document.createElement("div");t.textContent=msg;
@@ -1561,7 +1563,7 @@ function bindCanvas(){
     if(hit){canvasState.drag=hit;canvasState.sel=hit;showMarkerPanel();drawPool();return}
     if(S.tool&&S.tool!=="main"){
       if(S.tool==="depot"||S.tool==="pointbas")pool.markers=pool.markers.filter(function(m){return m.type!==S.tool});
-      var m={id:uid(),type:S.tool,x:p.nx,y:p.ny};pool.markers.push(m);canvasState.sel=m;save();showMarkerPanel();drawPool();
+      var m={id:uid(),type:S.tool,x:p.nx,y:p.ny};pool.markers.push(m);canvasState.sel=m;save();_jr("repère placé sur le bassin");showMarkerPanel();drawPool();
     }else{canvasState.sel=null;showMarkerPanel();drawPool()}
   }
   function move(e){if(!canvasState.drag)return;e.preventDefault();var p=canvasPos(cv,e);canvasState.drag.x=p.nx;canvasState.drag.y=p.ny;drawPool()}
@@ -1574,7 +1576,7 @@ function showMarkerPanel(){
   var names={escalier:"Escalier",pointbas:"Point bas",depot:"Dépôt robot",anglemort:"Angle mort",obstacle:"Obstacle"};
   el.innerHTML='<div class="row" style="align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:10px"><div style="flex:2">'+markerIcon(m.type)+' <b>'+esc(names[m.type]||m.type)+'</b></div><button class="btn bad sm" style="flex:1" onclick="delMarker(\''+m.id+'\')">🗑 Supprimer</button></div>';
 }
-function delMarker(id){pool.markers=pool.markers.filter(function(m){return m.id!==id});canvasState.sel=null;save();showMarkerPanel();drawPool()}
+function delMarker(id){pool.markers=pool.markers.filter(function(m){return m.id!==id});canvasState.sel=null;save();_jr("repère supprimé");showMarkerPanel();drawPool()}
 
 /* ============ Canvas: coverage heatmap ============ */
 function drawCoverage(){

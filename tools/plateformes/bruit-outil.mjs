@@ -6,7 +6,9 @@
  * (javis-widget.js, index.html, …) reste une vraie erreur de Bee. */
 export function estBruitOutil(e) {
   const pile = String((e && e.stack) || '').split('\n').map((l) => l.trim()).filter(Boolean);
-  const lignes = pile.filter((l) => !/^\w*Error\b/.test(l));
+  const msg = String((e && e.message) || '').trim();
+  // 18.11 (run 44219934002) : sur Firefox l'en-tête de la pile peut être le MESSAGE SEUL (sans « Error: ») — ce n'est pas une ligne de code.
+  const lignes = pile.filter((l) => !/^\w*Error\b/.test(l) && !(msg && l.includes(msg)));
   if (!lignes.length) return false;
   return lignes.every((l) => /debugger eval code|builtinRequestAnimationFrame|__playwright|UtilityScript/.test(l));
 }

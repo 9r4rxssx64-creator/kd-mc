@@ -34,6 +34,38 @@ export function requeteWorkers(compte, depuis, jusqua) {
     workersInvocationsAdaptive(limit: 2000, filter: { datetime_geq: $depuis, datetime_leq: $jusqua }) {
       sum { requests subrequests errors } dimensions { scriptName date } } } } }`, variables: { compte, depuis, jusqua } };
 }
+/* 19.11 (capture de Kevin : 15,41 $ débités par Cloudflare = 12,84 $ + 20 % de TVA) : le stockage de fichiers R2 est le seul service du compte facturé À L'USAGE
+   (gratuit : 10 Go stockés, 1 million d'écritures « classe A » et 10 millions de lectures « classe B » par mois ; au-delà 0,015 $ par Go et par mois,
+   4,50 $ par million de classe A, 0,36 $ par million de classe B). On le mesure par espace. */
+export const R2_GRATUIT = { go: 10, classeA: 1e6, classeB: 1e7, prixGo: 0.015, prixA: 4.5, prixB: 0.36 };
+export function requeteR2(compte, depuis, jusqua) {
+  return { query: `query ($compte: String!, $depuis: Time!, $jusqua: Time!) { viewer { accounts(filter: { accountTag: $compte }) {
+    r2StorageAdaptiveGroups(limit: 2000, filter: { datetime_geq: $depuis, datetime_leq: $jusqua }) { max { payloadSize metadataSize objectCount } dimensions { bucketName } }
+    r2OperationsAdaptiveGroups(limit: 5000, filter: { datetime_geq: $depuis, datetime_leq: $jusqua }) { sum { requests } dimensions { bucketName actionType } } } } }`, variables: { compte, depuis, jusqua } };
+}
+const CLASSE_A = /^(ListBuckets|PutBucket|ListObjects|PutObject|CopyObject|CompleteMultipartUpload|CreateMultipartUpload|ListMultipartUploads|UploadPart|UploadPartCopy|ListParts|PutBucketEncryption|PutBucketCors|PutBucketLifecycleConfiguration)/;
+const CLASSE_B = /^(HeadBucket|HeadObject|GetObject|UsageSummary|GetBucketEncryption|GetBucketLocation|GetBucketCors|GetBucketLifecycleConfiguration)/;
+/** { ok, espaces:[{ nom, go, objets, a, b }], total:{ go, a, b }, cout:{ stockage, a, b, total } } — le coût est ESTIMÉ pour 30 jours, hors TVA. */
+export function resumerR2(json, joursMesures = 7) {
+  if (!json || !json.data || !json.data.viewer) return { ok: false, erreur: erreurDe(json) };
+  const m = new Map(), e = (n) => { if (!m.has(n)) m.set(n, { nom: n, go: 0, objets: 0, a: 0, b: 0 }); return m.get(n); };
+  for (const acc of json.data.viewer.accounts || []) {
+    for (const l of acc.r2StorageAdaptiveGroups || []) { const x = e((l.dimensions || {}).bucketName || '?'), mx = l.max || {}; x.go = Math.max(x.go, ((mx.payloadSize || 0) + (mx.metadataSize || 0)) / 1e9); x.objets = Math.max(x.objets, mx.objectCount || 0); }
+    for (const l of acc.r2OperationsAdaptiveGroups || []) { const d = l.dimensions || {}, x = e(d.bucketName || '?'), n = (l.sum || {}).requests || 0; if (CLASSE_A.test(d.actionType || '')) x.a += n; else if (CLASSE_B.test(d.actionType || '')) x.b += n; }
+  }
+  const espaces = [...m.values()].sort((x, y) => y.go - x.go), total = espaces.reduce((t, x) => ({ go: t.go + x.go, a: t.a + x.a, b: t.b + x.b }), { go: 0, a: 0, b: 0 });
+  const f = 30 / Math.max(1, joursMesures), cout = { stockage: Math.max(0, total.go - R2_GRATUIT.go) * R2_GRATUIT.prixGo, a: Math.max(0, total.a * f - R2_GRATUIT.classeA) / 1e6 * R2_GRATUIT.prixA, b: Math.max(0, total.b * f - R2_GRATUIT.classeB) / 1e6 * R2_GRATUIT.prixB };
+  cout.total = cout.stockage + cout.a + cout.b;
+  return { ok: true, espaces, total, cout, jours: joursMesures };
+}
+export function texteR2(r) {
+  if (!r.ok) return `\n⚠️ Stockage R2 : non mesuré (« ${r.erreur} »).`;
+  const out = ['\nStockage de fichiers R2 (gratuit : 10 Go, 1 M d\'écritures et 10 M de lectures par mois) :', 'espace                      Go stockés   fichiers   écritures (A)   lectures (B)   sur ' + r.jours + ' jours'];
+  for (const x of r.espaces) out.push(`${x.nom.padEnd(26)} ${x.go.toFixed(2).padStart(11)} ${String(x.objets).padStart(10)} ${String(x.a).padStart(15)} ${String(x.b).padStart(14)}`);
+  out.push(`${etat(r.total.go, R2_GRATUIT.go)} total stocké : ${r.total.go.toFixed(2)} Go (${Math.round(r.total.go / R2_GRATUIT.go * 100)} % du gratuit) → dépassement facturé ≈ ${r.cout.stockage.toFixed(2)} $ par mois`);
+  out.push(`   écritures ≈ ${r.cout.a.toFixed(2)} $ · lectures ≈ ${r.cout.b.toFixed(2)} $ → R2 ESTIMÉ ≈ ${r.cout.total.toFixed(2)} $ par mois hors TVA (${(r.cout.total * 1.2).toFixed(2)} $ avec 20 % de TVA)`);
+  return out.join('\n');
+}
 /** Les requêtes SQL qui lisent le plus de lignes : { ok, top:[{ base, requete, fois, lues, parFois }] }. */
 export function resumerRequetes(json, noms = {}, n = 15) {
   if (!json || !json.data || !json.data.viewer) return { ok: false, erreur: erreurDe(json) };
@@ -123,8 +155,10 @@ if (process.argv[1] && /(^|[\\/])mesure-quotas\.mjs$/.test(process.argv[1]) && !
     abo = j && j.success ? { ok: true, liste: (j.result || []).map((x) => ((x.rate_plan && (x.rate_plan.public_name || x.rate_plan.id)) || '?') + ' ' + (x.price != null ? x.price + ' ' + (x.currency || '') : '') + (x.frequency ? ' / ' + x.frequency : '') + (x.state ? ' (' + x.state + ')' : '')) } : { ok: false, erreur: (j && j.errors && j.errors[0] && j.errors[0].message) || 'HTTP ' + r.status };
   } catch (e) { abo = { ok: false, erreur: String(e.message || e).slice(0, 80) }; }
   const t = texte(d1, ia); console.log(t);
-  const t2 = texteDetail(rq, wk, abo); console.log(t2);
+  const r2 = resumerR2(await gql(requeteR2(COMPTE, iso(debut), iso(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })), JOURS);
+  const t2 = texteDetail(rq, wk, abo) + '\n' + texteR2(r2); console.log(t2);
   console.log(`::notice title=Mesure quotas (détail)::${t2.replace(/\n/g, '%0A').slice(0, 3800)}`);
+  console.log(`::notice title=Mesure R2::${texteR2(r2).replace(/\n/g, '%0A').slice(0, 3800)}`);
   const annot = (n, m) => console.log(`::${n} title=Mesure quotas::${m.replace(/\n/g, '%0A').slice(0, 3800)}`);
   annot(!d1.ok ? 'error' : /🔴/.test(t) ? 'error' : /🟠/.test(t) ? 'warning' : 'notice', t);
   try { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, '## Mesure quotas D1 / Workers AI\n\n```\n' + t + '\n```\n'); } catch { /* */ }

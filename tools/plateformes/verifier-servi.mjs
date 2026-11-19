@@ -381,17 +381,24 @@ export async function mesurerAdresse(page, a, { nom, tel, r, enCours, journal })
 /* 17.11 (apex-cloud 2618, oui pour CE POST seulement) : la connexion d'Apex Chat que Servi laisse passer, en plus de la connexion admin du domaine.
    Adresse EXACTE (l'API d'Apex Chat est servie par son worker, pas par apex-chat.kd-mc.com) ; /api/keys/device, /api/users/me et tout autre POST restent bloqués. */
 export const CONNEXIONS_SERVI = ['https://apex-chat-api.9r4rxssx64.workers.dev/api/auth/sso-from-kdmc'];
+/* 19.11 : Safari est « non mesuré » dès que l'écran iphone-13 est au programme (liste vide = les 5 écrans) et que WebKit n'a pas démarré — sans regarder la variable WEBKIT. Pure, testable. */
+export function safariNonMesure(bw, voulus = []) {
+  const iphone = !voulus.length || voulus.includes('iphone-13');
+  return iphone && !bw;
+}
 export async function verifierServi({ adresses, hash = '', journal = console.log }) {
   const b = await chromium.launch({ headless: true });
   const bw = process.env.WEBKIT === '1' ? await webkit.launch({ headless: true }).catch(() => null) : null;
   /* 18.11 (run 44224183689 : WebKit n'avait pas démarré — apt de l'hébergeur coupé — et l'iPhone a été mesuré en Chromium sans que le bilan le dise ;
      seul l'en-tête « [chromium] » le trahissait). Un moteur absent ne se tait jamais (règle « tout tester partout ») : la ligne de chaque page iPhone et le bilan le disent. */
-  const safariManque = process.env.WEBKIT === '1' && !bw;
+  /* 19.11 (runs 44578646980 et 44586918819 : « [chromium] » pour l'iPhone sans aucun ⚠️) : quand l'hébergeur n'installe pas WebKit, le workflow passe WEBKIT vide,
+     et le test « WEBKIT === '1' » taisait l'avertissement. L'iPhone, c'est Safari : dès que l'écran iphone-13 est mesuré sans WebKit, on le dit, quel que soit l'environnement. */
+  const voulus = String(process.env.SERVI_ECRANS || '').split(',').map((x) => x.trim()).filter(Boolean);
+  const safariManque = safariNonMesure(bw, voulus);
   if (safariManque) journal('⚠️ WebKit absent : iphone-13 sera mesuré en Chromium — Safari NON mesuré sur ce passage');
   const sortie = [];
   try {
     /* SERVI_ECRANS=portable,iphone-13 : ne lire que certains écrans (mesure de masse, ex. la version de Bee sur les 33 adresses) ; vide = les 5 écrans */
-    const voulus = String(process.env.SERVI_ECRANS || '').split(',').map((x) => x.trim()).filter(Boolean);
     for (const nom of NOMS_ECRANS_SERVI.filter((n) => !voulus.length || voulus.includes(n))) {
       const ec = trouverEcranServi(nom); const { nom: _n, tel, explorer: _e, ...opts } = ec; delete opts.defaultBrowserType;
       const moteur = bw && nom === 'iphone-13' ? bw : b;

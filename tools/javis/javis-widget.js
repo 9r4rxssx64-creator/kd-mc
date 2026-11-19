@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.40';
+  var JAVIS_VER = 'v1.41';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -1853,8 +1853,49 @@
       });
       bs.appendChild(sv);
       carte.appendChild(bs); carte.appendChild(fin); list.appendChild(carte); list.scrollTop = list.scrollHeight; return;
+    } else if (c.t === 'externe' && adresseHttps(c.url)) {
+      /* PARITÉ (Kevin 18.11) : une page internet HORS domaine. Rien ne s'ouvre tout seul : c'est le toucher de Kevin qui ouvre (https seulement, jamais d'identifiants dans l'adresse). */
+      var uex = adresseHttps(c.url);
+      t.textContent = '🌐 ' + String(c.libelle || ('Ouvrir ' + uex.hostname)).slice(0, 70);
+      var exo = bouton('↗️ Ouvrir ' + uex.hostname.slice(0, 40));
+      exo.addEventListener('click', function () { try { var a = document.createElement('a'); a.href = uex.href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a); fin.textContent = '✅ Page ouverte.'; } catch (e) { fin.textContent = 'Je n\'ai pas pu ouvrir la page.'; } });
+      bs.appendChild(exo);
+    } else if (c.t === 'liste_comptes' && Array.isArray(c.lignes)) {
+      /* PARITÉ (Kevin 18.11) : la liste des comptes CMCteams (nom + identifiant SBM), fabriquée par le DOMAINE, jamais vue par l'IA. Tout en textContent. */
+      var lg = c.lignes.slice(0, 400).filter(function (x) { return x && typeof x === 'object'; }).map(function (x) { return { nom: String(x.nom || '').slice(0, 80), mat: /^U\d{3,6}$/.test(String(x.matricule || '')) ? String(x.matricule) : '' }; });
+      t.textContent = '👥 ' + String(c.titre || 'Comptes').slice(0, 60) + ' · ' + (Number(c.total) || lg.length) + (Number(c.avec_matricule) >= 0 ? ' (' + (Number(c.avec_matricule) || 0) + ' avec identifiant SBM)' : '');
+      carte.appendChild(t);
+      var bloc = document.createElement('div'); bloc.className = 'javis-liste-comptes'; bloc.style.cssText = 'max-height:260px;overflow:auto;font-size:14px;line-height:1.5;margin:6px 0;-webkit-overflow-scrolling:touch';
+      lg.forEach(function (x) { var l = document.createElement('div'); l.textContent = x.nom + (x.mat ? ' — ' + x.mat : ' — (pas d\'identifiant SBM)'); bloc.appendChild(l); });
+      carte.appendChild(bloc);
+      var cp = bouton('📋 Copier la liste');
+      cp.addEventListener('click', function () {
+        var txt = lg.map(function (x) { return x.nom + (x.mat ? '\t' + x.mat : ''); }).join('\n');
+        try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(function () { fin.textContent = '✅ Liste copiée.'; }, function () { fin.textContent = 'Je n\'ai pas pu copier : sélectionne la liste à la main.'; }); } else fin.textContent = 'Je n\'ai pas pu copier : sélectionne la liste à la main.'; } catch (e) { fin.textContent = 'Je n\'ai pas pu copier.'; }
+      });
+      bs.appendChild(cp);
+      carte.appendChild(bs); carte.appendChild(fin); list.appendChild(carte); list.scrollTop = list.scrollHeight; return;
+    } else if (c.t === 'appel' && Array.isArray(c.appels)) {
+      /* PARITÉ (Kevin 18.11) : « appelle … » = un bouton par personne, lien tel: lu par le DOMAINE dans la fiche. Kevin touche, l'iPhone compose. Le numéro n'a jamais été donné à l'IA. */
+      var ap = c.appels.slice(0, 5).filter(function (x) { return x && /^tel:\+?[0-9]{6,20}$/.test(String(x.tel || '')); });
+      if (!ap.length) return;
+      t.textContent = '📞 ' + (ap.length === 1 ? 'Appeler' : 'Qui appeler ?');
+      ap.forEach(function (x) {
+        var b = bouton('📞 Appeler ' + String(x.nom || '').slice(0, 50)); b.style.minHeight = '44px';
+        b.addEventListener('click', function () { try { var a = document.createElement('a'); a.href = String(x.tel); a.rel = 'noopener'; a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a); fin.textContent = 'Ton iPhone compose : touche « Appeler » pour valider.'; } catch (e) { fin.textContent = 'Je n\'ai pas pu lancer l\'appel.'; } });
+        bs.appendChild(b);
+      });
     } else return;
     carte.appendChild(t); carte.appendChild(bs); carte.appendChild(fin); list.appendChild(carte); list.scrollTop = list.scrollHeight;
+  }
+  /* Une adresse https hors domaine qu'on accepte d'ouvrir au toucher de Kevin : jamais d'identifiants dans l'adresse, un vrai nom d'hôte (au moins un point), pas d'IP nue ni de réseau interne. */
+  function adresseHttps(u) {
+    try {
+      var x = new URL(String(u || '')); if (x.protocol !== 'https:' || x.username || x.password) return null;
+      var h = x.hostname.toLowerCase();
+      if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(h) || /^\d+(\.\d+){3}$/.test(h) || /(^|\.)(localhost|local|internal|lan|home|corp)$/.test(h)) return null;
+      return x;
+    } catch (e) { return null; }
   }
 
   /* 🩺 TESTER BEE (Kevin 16.10 : « je ne peux rien lui faire faire ») : un test de bout en bout, dit en mots simples — ce que ce téléphone envoie, ce que le domaine

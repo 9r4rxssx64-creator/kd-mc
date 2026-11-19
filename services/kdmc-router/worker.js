@@ -37,6 +37,7 @@ import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // 
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE, trouver as trouverArbre, nomComplet as nomCompletArbre } from './bee-arbre.js';
 import { reponseDirecte } from './bee-direct.js';
 import { handleRaccourci } from './bee-raccourci.js';   // Kevin 29.10 « Go tout » : Bee appelée par Siri / Raccourcis, LECTURE SEULE, jeton par appareil (voir ce fichier)   // météo, heure, date, calcul, conversion SANS IA quand la demande est nette (Kevin 17.10)
+import { outilsParite, RE_PARITE, REGLES_PARITE } from './bee-parite.js';   // page hors domaine, liste des comptes CMCteams, bouton Appeler — Kevin seul, derrière son toucher (Kevin 18.11)
 import { outilsAtelier, imageGratuite, RE_ATELIER, REGLES_ATELIER } from './bee-atelier.js';   // documents, agenda, brouillon de mail, images — gratuit, Kevin seul (Kevin 17.10)
 import { outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, intentionOuvrir, intentionSuite, intentionFiche, homonymesArbre, reponseFiche, estSuiteOuverture, corrigerTexte } from './bee-ouvrir.js';   // Bee OUVRE n'importe quelle app du domaine sur l'écran de Kevin (Kevin 17.10)
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
@@ -4828,6 +4829,8 @@ async function handleBeeIa(request, env, ctx) {
   const ouvrirOutil = String(env && env.BEE_OUVRIR) !== '0' ? outilsOuvrir({ hotes: () => new Set(Object.keys(ROUTES)), noms: () => APPS }, sortie) : null;
   /* L'ATELIER (Kevin 17.10 : « qu'elle gère les mails, l'agenda, les documents, les images… parité totale… elle n'est que pour moi ») : fichiers à télécharger, rendez-vous .ics, brouillon de mail (Kevin envoie), image Workers AI gratuite. Même porte que tout Bee : Kevin seul. BEE_ATELIER = '0' coupe. */
   const atelierOutil = String(env && env.BEE_ATELIER) !== '0' ? outilsAtelier({ now: () => Date.now(), ia: env && env.AI ? (p) => imageGratuite(env, p) : null }, sortie) : null;
+  /* PARITÉ (Kevin 18.11 : « ouvre-moi une page internet, fais-moi la liste des comptes avec leur identifiant SBM, appelle telle personne ») : cartes fabriquées par le DOMAINE, noms / matricules / numéros jamais rendus à l'IA. BEE_PARITE = '0' coupe. */
+  const pariteOutil = String(env && env.BEE_PARITE) !== '0' ? outilsParite({ appeler: (chemin, init) => outilsBee(env, ctx).appeler(request, chemin, init) }, sortie) : null;
   /* LA TAILLE DE LA CONSIGNE COMPTE (mesuré en réel le 17.10, robot « Bee partout ») : consigne + 36 outils = ≈ 7 700 jetons PAR appel ; la boucle d'outils en fait 2 à 4 ; le palier gratuit de Groq
      plafonne à ≈ 8 000 jetons/minute → l'appel suivant était refusé, puis Mistral, puis Bee retombait sur Qwen SANS OUTILS (« je n'ai pas accès », météo inventée). Désormais chaque demande ne
      reçoit que les LOTS d'outils (et les règles qui vont avec) dont elle parle : le socle (météo, calcul, heure, fait, page, conversion, ouvrir) ≈ 2 000 jetons. `mes_pouvoirs` liste TOUJOURS tout. */
@@ -4838,19 +4841,20 @@ async function handleBeeIa(request, env, ctx) {
   const veutVoir = !!voirOutil && RE_VOIR.test(dernierMsg);
   const veutOuvrir = !!ouvrirOutil && (RE_OUVRIR.test(dernierMsg) || veutVoir || veutArbre || estSuiteOuverture(messages));
   const veutAtelier = !!atelierOutil && RE_ATELIER.test(dernierMsg);
-  const lots = [[mains, veutAgir], [arbreOutil, veutArbre], [bilanOutil, veutArbre], [voirOutil, veutVoir], [ouvrirOutil, veutOuvrir], [atelierOutil, veutAtelier]];
-  const tousLots = [mains, arbreOutil, bilanOutil, voirOutil, ouvrirOutil, atelierOutil].filter(Boolean);
+  const veutParite = !!pariteOutil && RE_PARITE.test(dernierMsg);
+  const lots = [[mains, veutAgir], [arbreOutil, veutArbre], [bilanOutil, veutArbre], [voirOutil, veutVoir], [ouvrirOutil, veutOuvrir], [atelierOutil, veutAtelier], [pariteOutil, veutParite]];
+  const tousLots = [mains, arbreOutil, bilanOutil, voirOutil, ouvrirOutil, atelierOutil, pariteOutil].filter(Boolean);
   const choisis = lots.filter(([o, oui]) => o && oui).map(([o]) => o);
   const fusion = (liste) => (liste.length ? { defs: liste.reduce((a, o) => a.concat(o.defs || []), []), exe: Object.assign({}, ...liste.map((o) => o.exe || {})) } : null);
   const extra = fusion(choisis);
   extraTout.defs = (fusion(tousLots) || { defs: [] }).defs;
-  if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)) || (arbreOutil && (RE_ARBRE.test(messages[messages.length - 1].content) || dansArbre)) || (voirOutil && RE_VOIR.test(messages[messages.length - 1].content)) || (ouvrirOutil && (RE_OUVRIR.test(messages[messages.length - 1].content) || estSuiteOuverture(messages))) || veutAtelier)) {
+  if (String(env && env.BEE_OUTILS) !== '0' && (RE_BESOIN_OUTILS.test(messages[messages.length - 1].content) || (mains && RE_AGIR.test(messages[messages.length - 1].content)) || (arbreOutil && (RE_ARBRE.test(messages[messages.length - 1].content) || dansArbre)) || (voirOutil && RE_VOIR.test(messages[messages.length - 1].content)) || (ouvrirOutil && (RE_OUVRIR.test(messages[messages.length - 1].content) || estSuiteOuverture(messages))) || veutAtelier || veutParite)) {
     /* question difficile (longue, « explique / compare / rédige… ») : les outils ramènent les FAITS en 8 s, puis la CONFÉRENCE des IA
        gratuites (règle Kevin 2.10 : toutes réfléchissent, un juge compare, la meilleure travaille) formule la réponse sur ces faits.
        Question simple (« quel temps demain ? ») : l'IA à outils répond seule, vite. */
     const complexe = questionComplexe(messages[messages.length - 1].content);
     const rt = await repondreAvecOutils(env, {
-      messages, system: caractere + REGLES_OUTILS + (veutAgir ? REGLES_AGIR + REGLES_TACHES + (RE_MESSAGES_DIRECTS.test(dernierMsg) ? REGLES_MESSAGES_DIRECTS : '') : '') + (veutArbre ? REGLES_ARBRE : '') + (veutArbre && bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (veutVoir ? REGLES_VOIR : '') + (veutOuvrir ? REGLES_OUVRIR : '') + (veutAtelier ? REGLES_ATELIER : ''), extra, finMs: debut + (complexe ? 8000 : 13000), trace: traceOutils,
+      messages, system: caractere + REGLES_OUTILS + (veutAgir ? REGLES_AGIR + REGLES_TACHES + (RE_MESSAGES_DIRECTS.test(dernierMsg) ? REGLES_MESSAGES_DIRECTS : '') : '') + (veutArbre ? REGLES_ARBRE : '') + (veutArbre && bilanOutil ? REGLES_ARBRE_ECRIRE : '') + (veutVoir ? REGLES_VOIR : '') + (veutOuvrir ? REGLES_OUVRIR : '') + (veutAtelier ? REGLES_ATELIER : '') + (veutParite ? REGLES_PARITE : ''), extra, finMs: debut + (complexe ? 8000 : 13000), trace: traceOutils,
       ctx: { planning: async () => faitsPlanning(prochainsJours(await lireSeed(env, cleKV, seedHebergeur(env)), KEVIN_MATRICULE, 14)) },
     });
     if (rt && rt.text) {
@@ -5023,6 +5027,26 @@ export function comptesCmcteams(fiches) {
   return { comptes, total: comptes.length, avec_matricule: avec, sans_matricule: comptes.length - avec };
 }
 
+/* PURE (testée seule) : « appeler <nom> » — des fiches du domaine + un nom → au plus 5 personnes avec LEUR numéro (fiche.telephone, saisi à l'inscription), sous forme tel:.
+   Le numéro ne va QU'À la carte que le domaine affiche à Kevin : jamais à une IA (règle parité du 18.11). Nom comparé sans accents ni tirets, tous les mots doivent être présents. */
+const sansAccentsNom = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[-_.']+/g, ' ').replace(/\s+/g, ' ').trim();
+export function trouverAppel(fiches, q) {
+  const mots = sansAccentsNom(q).split(' ').filter(Boolean);
+  if (!mots.length) return { trouves: [], sans_tel: 0, correspondances: 0 };
+  const trouves = []; let sansTel = 0, corr = 0;
+  for (const a of Array.isArray(fiches) ? fiches : []) {
+    if (!a || !a.uid || a.uid === CANON_UID) continue;
+    const nom = sansAccentsNom(a.name);
+    if (!nom || !mots.every((m) => nom.indexOf(m) >= 0)) continue;
+    corr++;
+    const brut = String((a.fiche && a.fiche.telephone) || '').trim();
+    const chiffres = brut.replace(/\D/g, '');
+    if (!telephoneValide(brut) || chiffres.length > 20) { sansTel++; continue; }
+    if (trouves.length < 5) trouves.push({ nom: String(a.name || '').slice(0, 80), tel: 'tel:' + (brut.startsWith('+') ? '+' : '') + chiffres });
+  }
+  return { trouves, sans_tel: sansTel, correspondances: corr };
+}
+
 /* /__dep/matricules — Kevin seul (session admin prouvée) : GET la liste des matricules rangés ; POST { id, m } corrige
    (m vide = efface). */
 async function handleMatricules(request, env) {
@@ -5076,7 +5100,7 @@ const PORTES_BEE = ['/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repon
   '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke',
   '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/bannis', '/__admin/debannir', '/__admin/attendus', '/__demandes',
   '/__bot/ia', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/ia/annuler', '/__bot/scan', '/__bot/marche', '/__bot/liens', '/__bot/fleet', '/__bot/history', '/__bot/analysis',
-  '/__admin/compte-invite', '/__bot/config', '/__dm/admin/ecrire'];   // + 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par Kevin seul), régler le robot (testnet) (bee-droits-max.js) ; /__bot/reel reste fermé   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre restent FERMÉS (bee-droits.js) ; création de compte et réglage du robot ouverts le 23.10 (bee-droits-max.js)
+  '/__admin/compte-invite', '/__bot/config', '/__dm/admin/ecrire', '/__admin/comptes-cmcteams', '/__admin/appel'];   // + 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par Kevin seul), régler le robot (testnet) (bee-droits-max.js) ; /__bot/reel reste fermé   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre restent FERMÉS (bee-droits.js) ; création de compte et réglage du robot ouverts le 23.10 (bee-droits-max.js)
 async function diagBee(request, env, session) {
   const pingIA = async () => {
     const t = Date.now();
@@ -5548,6 +5572,16 @@ async function handleAdmin(request, url, env) {
     const idxC = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
     const tous = (await Promise.all(idxC.slice(-500).map((uid) => accGet(env, uid)))).filter(Boolean);
     return J(Object.assign({ ok: true, kv: true }, comptesCmcteams(tous)));
+  }
+  /* APPELER (Kevin 18.11, parité Bee / Apex AI) — Kevin seul (session admin prouvée) : GET ?q=<nom> → { ok, trouves:[{nom, tel:"tel:+…"}], sans_tel, correspondances }.
+     Le numéro vient de la fiche du compte (saisi à l'inscription). Lecture seule. Bee en fabrique une carte « 📞 Appeler » : le numéro n'est JAMAIS donné à l'IA. */
+  if (path === '/__admin/appel' && request.method === 'GET') {
+    const q = String(new URL(request.url).searchParams.get('q') || '').slice(0, 80);
+    if (!q.trim()) return J({ ok: false, reason: 'nom_requis' }, undefined, 400);
+    if (!env.ACCOUNTS) return J({ ok: true, trouves: [], sans_tel: 0, correspondances: 0, kv: false });
+    const idxA = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
+    const tousA = (await Promise.all(idxA.slice(-500).map((uid) => accGet(env, uid)))).filter(Boolean);
+    return J(Object.assign({ ok: true, kv: true }, trouverAppel(tousA, q)));
   }
   /* Journal d'audit admin : connexions admin ok/échec, déconnexions forcées,
      nouveaux appareils, mints Firebase. FIFO 200 en KV. */

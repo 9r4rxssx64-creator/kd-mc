@@ -462,10 +462,10 @@
       "sujet": "Bee (mascotte Lingua) comme assistant de Kevin : widget, app installable javis.kd-mc.com, voix + lip-sync",
       "surfaces": [],
       "etat": "actif",
-      "maj": "2026-11-17",
+      "maj": "2026-11-19",
       "attend_kevin": "Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",
-      "note": "17.11 : fiche d'une personne = app courante (routeur), introuvable = bouton arbre (CMCteams v10.027, light v1.158), PR unique"
+      "note": "19.11 (javis-bee) : Bee v1.41 parité lignes 1·3·6 (lien_externe, comptes_cmcteams, appeler) codées + gardes ; reste 2 (moteurs web), 4 (arbre-cloud), 5 (apex-cloud, cloud-installer)"
     },
     "ld-config-printify": {
       "titre": "La Détente — config worker Printify (branche écrite par un workflow)",

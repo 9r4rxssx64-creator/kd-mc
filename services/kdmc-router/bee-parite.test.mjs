@@ -153,6 +153,12 @@ ok(/consigne toute prête/.test(REGLES_AGIR) && !/dis que c'est Apex\.'/.test(RE
 import { readFileSync, existsSync } from 'node:fs';
 { const wd = readFileSync(new URL('../../tools/javis/javis-widget.js', import.meta.url), 'utf8');
   ok(/je lis ses fiches sur ton domaine/.test(wd) && /je ne modifie une fiche que si tu touches mon bouton ✅/.test(wd) && /je ne supprime jamais rien/.test(wd) && /frankfurter\.dev/.test(wd), '4e. le ℹ️ du widget DIT que les fiches qui répondent partent à l\'IA gratuite et que les devises passent par frankfurter.dev');
+  /* 4g-4i. parité 18.11 : les 3 outils (lien_externe, comptes_cmcteams, appeler) sont dits dans les règles et leurs cartes sont revérifiées par le widget */
+  const { REGLES_PARITE } = await import('./bee-parite.js');
+  ok(['lien_externe', 'comptes_cmcteams', 'appeler'].every((n) => REGLES_PARITE.includes('`' + n + '`')) && /JAMAIS un nom de collègue/.test(REGLES_PARITE), '4g. les règles de parité nomment les 3 outils et interdisent à l\'IA de connaître noms, matricules et numéros');
+  const bloc = wd.slice(wd.indexOf("c.t === 'externe'") > 0 ? wd.indexOf("c.t === 'externe'") : 0);
+  ok(/c\.t === 'externe'/.test(wd) && /c\.t === 'liste_comptes'/.test(wd) && /c\.t === 'appel'/.test(wd), '4h. le widget sait afficher les cartes externe, liste_comptes et appel');
+  ok(/\^tel:\\\+\?\[0-9\]\{6,20\}\$/.test(wd) && /minHeight\s*=\s*'44px'|minHeight:\s*'44px'|minHeight: ?44/.test(bloc), '4i. le widget revérifie tel: (chiffres seulement) et garde des boutons ≥ 44 px');
   for (const f of ['javis', 'arbre']) { const u = new URL('../../' + f + '/javis-widget.js', import.meta.url); if (existsSync(u)) ok(readFileSync(u, 'utf8') === wd, '4f. copie ' + f + '/ identique à la source'); } }
 
 /* ───────── 5. Apex reçoit les nouveaux outils, pas les données de Kevin ───────── */

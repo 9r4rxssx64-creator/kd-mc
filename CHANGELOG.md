@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Bee v1.41 — parité : ouvrir une page, liste des comptes CMCteams, appeler (2026-11-19)
+- **19.11 (javis-bee, Kevin 18.11 « parité sur tout »)** : trois outils, tous derrière le toucher de Kevin et sans donnée de personne envoyée à l'IA : `lien_externe` (bouton « Ouvrir », https seulement), `comptes_cmcteams` (noms + identifiant SBM, carte fabriquée par le domaine, bouton Copier), `appeler` (bouton 📞 `tel:`). Interrupteur `BEE_PARITE=0`. Gardes `test:bee-parite-outils` 29/0, `test:bee-parite` 76/0. Cache `javis-v1.41`.
+
 ## Apex Chat v1.1.371 + Apex AI v13.4.401 — 19.11.2026 (apex-cloud, pc-config 2764)
 - Apex Chat : « Tous les comptes » ne montre plus les comptes supprimés (200 restes de robots noyaient la liste) ; le serveur ne les renvoie plus, la page les écarte aussi, le total ne compte que les vivants.
 - Apex AI : « Effacer le chat » et « Vider le journal » demandent confirmation DANS la page (avant : confirm() natif qui gelait l'onglet pour l'extension de contrôle).

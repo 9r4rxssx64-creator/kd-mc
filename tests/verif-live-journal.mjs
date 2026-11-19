@@ -17,6 +17,14 @@ const APPS = (process.env.APPS || 'kd-mc.com apex-chat.kd-mc.com apex-ai.kd-mc.c
 const APP_SANS_SCRIPT = 'apex-ai.kd-mc.com';
 const lignes = [];
 const dire = (t) => { console.log(t); lignes.push(t); };
+/* 19.11 (apex-cloud) : le 2e et le 3e passage réels se sont figés sans rien dire (le journal d'une étape en cours n'est lisible qu'à sa fin). Garde-fou : le robot
+   se coupe seul au bout de 4 min et écrit À QUELLE ÉTAPE il était. */
+let phase = 'départ';
+const garde = setTimeout(() => {
+  dire(`❌ VÉRIF JOURNAL INTERROMPUE après 4 min (le robot se coupe seul) — étape : ${phase}`);
+  if (RESUME) { try { appendFileSync(RESUME, lignes.map((l) => '- ' + l).join('\n') + '\n'); } catch (_) { /* pas de résumé */ } }
+  process.exit(1);
+}, 240000);
 if (!/^[0-9a-f]{64}$/.test(HASH)) { dire('❌ Code admin absent (secret CI) : vérification réelle IMPOSSIBLE — je n\'affirme rien.'); process.exit(1); }
 
 const browser = await chromium.launch(process.env.PW_EXE ? { executablePath: process.env.PW_EXE } : {});
@@ -38,6 +46,7 @@ await ctx.route('**/*', (r) => {
 
 const page = await ctx.newPage();
 await page.goto('https://kd-mc.com/sw.js', { waitUntil: 'domcontentloaded', timeout: 60000 });
+phase = 'connexion admin';
 const c = await page.evaluate(async (h) => {
   const x = await fetch('/__admin/login', { method: 'POST', credentials: 'include', cache: 'no-store', headers: { 'content-type': 'application/json', 'x-kdmc-verif': '1' }, body: JSON.stringify({ hash: h }) });
   const j = await x.json().catch(() => ({}));
@@ -48,14 +57,17 @@ if (!c.ok) { await browser.close(); process.exit(1); }
 
 let bons = 0, mauvais = 0;
 for (const hote of APPS) {
+  phase = hote + ' : ouverture de la page';
   const p = await ctx.newPage();
   let script = false, st = 0, etat = '', raison = '', preuve = null;
   try {
     await p.goto('https://' + hote + '/sw.js', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
     await p.evaluate(({ t, g }) => { try { if (t) localStorage.setItem('kdmc_sso_token', t); if (g) localStorage.setItem('kdmc_admin_grant', g); } catch (_) { /* rien */ } }, { t: c.token, g: c.grant }).catch(() => {});
     await p.goto('https://' + hote + '/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    phase = hote + ' : attente du script du domaine';
     script = await p.waitForFunction(() => typeof window.kdmcJournal === 'function', null, { timeout: 15000 }).then(() => true).catch(() => false);
     /* L'envoi passe par la MÊME porte que window.kdmcJournal, mais avec la réponse en main : l'app, elle, ne la lit jamais. */
+    phase = hote + ' : envoi de la ligne par la porte';
     const r = await p.evaluate(async (detail) => {
       const x = await fetch('/__boite/journal', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'modif', detail }) });
       const j = await x.json().catch(() => ({}));
@@ -64,12 +76,14 @@ for (const hote of APPS) {
     st = r.st; etat = r.etat; raison = r.raison;
     /* 18.11 (apex-cloud 2676) : Apex AI n'a JAMAIS le script du domaine (sa sécurité de page le refuse) ; son code écrit alors directement à la porte (v13.4.399).
        « script ABSENT » y est donc normal : ce qui compte est que LE CODE DE L'APP écrive vraiment une ligne, prouvé ici en l'exécutant dans la vraie page. */
+    phase = hote + ' : preuve du code de l app (recherche du module, appel)';
     if (hote === APP_SANS_SCRIPT) { preuve = await preuveCodeApp(p, MARQUE + ' code ' + hote); }
   } catch (e) { raison = String(e && e.message || e).split('\n')[0].slice(0, 120); }
   const porteOk = etat === 'ajoute' || etat === 'doublon';
   const ok = hote === APP_SANS_SCRIPT ? (porteOk && !!(preuve && preuve.ok)) : (script && porteOk);
   if (ok) bons++; else mauvais++;
   dire(`${ok ? '✅' : '❌'} ${hote} · script du journal ${script ? 'posé' : (hote === APP_SANS_SCRIPT ? 'absent (normal : sécurité de la page)' : 'ABSENT')} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}${preuve ? ` · CODE DE L'APP ${preuve.ok ? 'écrit une ligne (' + preuve.etat + ')' : 'N\'ÉCRIT PAS : ' + preuve.motif}` : ''}`);
+  phase = hote + ' : fermeture de la page';
   await p.close().catch(() => {});
 }
 
@@ -77,5 +91,7 @@ for (const hote of APPS) {
    d'essai s'effacent : DELETE FROM activite WHERE detail LIKE 'essai du robot (porte du journal)%'. */
 dire(`=== VÉRIF JOURNAL : ${bons} app(s) OK · ${mauvais} en défaut · sur ${APPS.length}`);
 if (RESUME) { try { appendFileSync(RESUME, lignes.map((l) => '- ' + l).join('\n') + '\n'); } catch (_) { /* pas de résumé */ } }
+clearTimeout(garde);
+phase = 'fermeture du navigateur';
 await browser.close();
 process.exit(mauvais ? 1 : 0);

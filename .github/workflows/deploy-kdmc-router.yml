@@ -567,7 +567,13 @@ jobs:
       # l'app s'affiche vide sans un seul message d'erreur. On ouvre donc les
       # fichiers eux-mêmes et on exige du vrai JavaScript.
       - name: L'app reçoit-elle vraiment ses plannings ? (bloquant)
-        run: node tools/audit/sonde-ressources-app.mjs
+        shell: bash -eo pipefail {0}
+        run: |
+          # 19.11 : le réseau de cette machine est MESURÉ ; hors du réseau des sondes (AS8075), la sonde ne peut que voir la porte du domaine (voir le script).
+          ORG=$(curl -s -m 10 https://ipinfo.io/org || echo inconnu)
+          echo "::notice::réseau du runner (plannings) : $ORG"
+          if echo "$ORG" | grep -q 'AS8075'; then HORS=0; else HORS=1; fi
+          RESEAU_HORS_SONDES=$HORS node tools/audit/sonde-ressources-app.mjs
 
       - name: D'où viennent vraiment les pages ? (preuve par repère)
         shell: bash -eo pipefail {0}

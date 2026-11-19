@@ -48,7 +48,9 @@ for (const c of CIBLES) {
        est vérifié par la publication (taille relue dans le KV) et par tests/verify-donnees-rh-app.mjs. */
     const porte = r.status === 401 && !!r.headers.get('x-kdmc-porte') && r.headers.get('x-kdmc-donnees') === 'rh';
     const bon = porte || (r.status === 200 && !estHtml && c.attendu.test(t));
-    res.push({ ...c, http: r.status, octets: t.length, estHtml, porte, bon });
+    /* la porte GÉNÉRALE du domaine (401 + x-kdmc-porte, sans « données rh ») : ce que reçoit une machine qui n'est pas sur le réseau des sondes */
+    const porteGenerale = r.status === 401 && !!r.headers.get('x-kdmc-porte') && !porte;
+    res.push({ ...c, http: r.status, octets: t.length, estHtml, porte, porteGenerale, bon });
   } catch (e) {
     res.push({ ...c, http: 0, octets: 0, erreur: String(e.message).slice(0, 50), bon: false });
   }
@@ -71,6 +73,17 @@ const ko = res.filter((r) => !r.bon);
    caractères). Une vraie panne du site serait PARTIELLE, ou renverrait un 200
    avec la page d'accueil. « Pas une seule réponse 200 » = c'est le réseau
    d'ici, pas kd-mc.com. */
+/* 19.11 (runs 44536566368 essais 1 et 2, « réseau du runner : AS16509 Amazon ») : GitHub prête parfois une machine hors de son réseau Azure (AS8075), le SEUL d'où
+   une sonde passe la porte. Le domaine répond alors par sa porte à TOUT, même à la liste des apps de l'accueil, et le déploiement rougissait sans défaut (déjà vu
+   le 18.11 sur Lingua). On n'ouvre pas le domaine à un réseau de plus. Quand le déploiement a MESURÉ qu'il n'est pas sur le réseau des sondes (RESEAU_HORS_SONDES=1)
+   et que CHAQUE adresse répond par la porte du routeur, on le dit et on ne bloque pas : le routeur répond, il garde tout fermé, le contenu n'est pas mesurable d'ici.
+   Toute autre réponse (une seule suffit) garde le contrôle bloquant. */
+if (process.env.RESEAU_HORS_SONDES === '1' && res.length && res.every((r) => r.porteGenerale || r.porte)) {
+  console.log('\n⚠️  ce runner n\'est pas sur le réseau des sondes : les ' + res.length + ' adresses répondent par la PORTE du domaine (401 + x-kdmc-porte).');
+  console.log('   Le routeur répond et garde tout fermé aux inconnus ; le contenu des fichiers n\'est PAS mesuré par ce passage.');
+  console.log('::warning title=Plannings de l app::non mesurés (runner hors réseau des sondes) — ' + res.length + ' portes sur ' + res.length + ' ; le prochain déploiement depuis le réseau des sondes les mesurera');
+  process.exit(0);
+}
 if (res.every((r) => r.http !== 200 && !r.porte)) {
   console.log('\n⚠️  aucune adresse n\'a répondu 200 : c\'est le réseau d\'ici, pas le site.');
   console.log('   Relancer depuis un runner CI (réseau ouvert) avant de conclure.');

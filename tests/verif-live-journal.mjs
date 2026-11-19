@@ -7,7 +7,7 @@
  * (DELETE FROM activite WHERE detail LIKE 'essai du robot (porte du journal)%'). Journal public : verdicts et nombres seulement, aucun nom. À la main seulement. */
 import { appendFileSync } from 'node:fs';
 import { chromium } from 'playwright';
-import { preuveCodeApp } from './lib/preuve-journal-app.mjs';
+import { trouverModuleJournal, appelerModuleJournal } from './lib/preuve-journal-app.mjs';
 
 const MARQUE = 'essai du robot (porte du journal)';
 const HASH = String(process.env.KDMC_ADMIN_PIN_SHA256 || '').trim().toLowerCase();
@@ -22,7 +22,7 @@ const dire = (t) => { console.log(t); lignes.push(t); };
 let phase = 'départ'; const durees = []; let tPhase = Date.now();
 const etape = (n) => { durees.push(`${n} ${Math.round((Date.now() - tPhase) / 1000)} s`); tPhase = Date.now(); };
 const garde = setTimeout(() => {
-  dire(`❌ VÉRIF JOURNAL INTERROMPUE après 10 min (le robot se coupe seul) — étape : ${phase}`);
+  dire(`❌ VÉRIF JOURNAL INTERROMPUE après 10 min (le robot se coupe seul) — étape : ${phase} · durées déjà mesurées : ${durees.join(', ') || '-'}`);
   if (RESUME) { try { appendFileSync(RESUME, lignes.map((l) => '- ' + l).join('\n') + '\n'); } catch (_) { /* pas de résumé */ } }
   process.exit(1);
 }, 600000);
@@ -78,7 +78,22 @@ for (const hote of APPS) {
     /* 18.11 (apex-cloud 2676) : Apex AI n'a JAMAIS le script du domaine (sa sécurité de page le refuse) ; son code écrit alors directement à la porte (v13.4.399).
        « script ABSENT » y est donc normal : ce qui compte est que LE CODE DE L'APP écrive vraiment une ligne, prouvé ici en l'exécutant dans la vraie page. */
     etape('porte'); phase = hote + ' : preuve du code de l app (recherche du module, appel)';
-    if (hote === APP_SANS_SCRIPT) { preuve = await preuveCodeApp(p, MARQUE + ' code ' + hote); }
+    if (hote === APP_SANS_SCRIPT) {
+      const suivi = (n) => { phase = hote + ' : preuve du code de l app — ' + n; };
+      const t = await trouverModuleJournal(p, { suivi });
+      if (!t.lien) preuve = { ok: false, motif: `module du journal introuvable (${t.lus} fichier(s) lus, ${t.candidats} candidat(s))`, etat: '' };
+      else {
+        /* Le module s'exécute dans une page VIERGE du même domaine (pas dans la page de l'app, qui charge des centaines de fichiers : sur un poste lent l'import y prenait
+           plus de 10 minutes, mesuré le 19.11). Sans le script du domaine : exactement la situation d'Apex AI. */
+        etape('recherche du module');
+        suivi('ouverture d\'une page vierge du domaine');
+        const p2 = await ctx.newPage();
+        try {
+          await p2.goto('https://' + hote + '/sw.js', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
+          preuve = await appelerModuleJournal(p2, t.lien, MARQUE + ' code ' + hote, { suivi });
+        } finally { await p2.close().catch(() => {}); }
+      }
+    }
   } catch (e) { raison = String(e && e.message || e).split('\n')[0].slice(0, 120); }
   const porteOk = etat === 'ajoute' || etat === 'doublon';
   const ok = hote === APP_SANS_SCRIPT ? (porteOk && !!(preuve && preuve.ok)) : (script && porteOk);

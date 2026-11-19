@@ -253,6 +253,8 @@ export async function makeMember(srv, uid, { identity, idb, localStorage, publis
     // v1.1.306 (lot D) : le média chiffré est lu par son adresse NUE (en-tête Bearer seulement).
     _mediaUrlAllowed: (u) => (typeof u === 'string' && u[0] === '/' ? API_BASE + u : ''),
     _compressMessageImage: async (x) => x, _cancelVoicePreview() {},
+    // 19.11 (apex-cloud) : _sendMsg écrit au journal du domaine (K._journal, depuis le 17.11) ; le faux client ne l'avait pas → TypeError, et la porte de déploiement du serveur restait rouge.
+    _journal() {},
   };
   K.ws = { readyState: 1, send: (s) => srv.receive(uid, JSON.parse(s)) };
   K._api = async (method, path, body) => srv.api(uid, method, path, body);

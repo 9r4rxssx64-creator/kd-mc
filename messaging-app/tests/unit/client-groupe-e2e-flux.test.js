@@ -193,7 +193,7 @@ async function makeMember(srv, uid, { identity, idb, localStorage, publish = tru
     _E2E_ENABLED: true, token: 'tok', _cryptoKeys: keys,
     _wsConvId: CONV,
     render() {}, _closeModal() {}, _clearDraft() {}, _renderReplyBanner() {},
-    _presenceLabel: () => 'LIBELLE-DM', _isDeletedLocal: () => false, _notifyIncoming() {},
+    _presenceLabel: () => 'LIBELLE-DM', _isDeletedLocal: () => false, _notifyIncoming() {}, _journal() {},
     _appendBubble: () => true, _applyWsAck() {},
   };
   K.ws = { readyState: 1, send: (s) => srv.receive(uid, JSON.parse(s)) };

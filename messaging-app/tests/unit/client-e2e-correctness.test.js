@@ -117,7 +117,7 @@ async function harness({ conv, bundlePub = null, wsOpen = true, wsConvId, e2e = 
     _E2E_ENABLED: true, token: 'tok', view: 'chat',
     _cryptoKeys: me, __bundlePub: bundlePub,
     render() {}, _closeModal() {}, _clearDraft() {}, _renderReplyBanner() {},
-    _canEditMsg: () => true,
+    _canEditMsg: () => true, _journal() {},
     _presenceLabel: () => 'LIBELLE-DM',
   };
   K._api = async (method, path) => {

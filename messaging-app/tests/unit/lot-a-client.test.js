@@ -51,7 +51,7 @@ function sandbox({ defs, withHandler = false } = {}) {
   const K = {
     user: { id: 'me' }, messages: {}, conversations: [{ id: 'c1', name: 'Groupe' }], view: 'chats', viewData: null,
     ws: { readyState: 1, send: (s) => sent.push(JSON.parse(s)) }, _wsConvId: 'c1',
-    render() {}, _updateUnreadBadge() {}, _notifyIncoming() {}, _appendBubble: () => true,
+    render() {}, _updateUnreadBadge() {}, _notifyIncoming() {}, _journal() {}, _appendBubble: () => true,
     _isBlocked: () => false, _isDeletedLocal: (c, id) => id === 'supprime_pour_moi',
     _markerFields: (t) => ({ text: t }),
     _parseLocationMarker: () => null, _parseMediaMarker: () => null, _parseContactMarker: () => null, _parsePollMarker: () => null,

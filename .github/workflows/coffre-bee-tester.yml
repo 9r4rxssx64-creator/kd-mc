@@ -15,7 +15,7 @@ on:
         description: "La question posée à Bee après le bilan"
         default: "Quelle est la date d’aujourd’hui ? Réponds en une phrase."
       attend:
-        description: "Type de carte que la réponse doit porter (externe, liste_comptes, appel) — vide = aucune exigence"
+        description: "Type de carte que la réponse doit porter (externe, liste_comptes, appel, ouvrir) — vide = aucune exigence"
         default: ""
 
 permissions:

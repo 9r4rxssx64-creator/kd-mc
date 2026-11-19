@@ -61,8 +61,31 @@ annot(repondOk ? 'notice' : 'error', 'Bee répond', repondOk ? `${q.ms} ms, IA $
 const cartes = Array.isArray(q.j.cartes) ? q.j.cartes : [];
 const parType = {};
 for (const c of cartes) { const t = /^[a-z_]{1,24}$/.test(String(c && c.t)) ? c.t : 'autre'; parType[t] = (parType[t] || 0) + 1; }
-const resume = Object.keys(parType).sort().map((t) => `${t}×${parType[t]}`).join(' ') || 'aucune';
+let resume = Object.keys(parType).sort((a, b) => a.localeCompare(b)).map((t) => `${t}×${parType[t]}`).join(' ') || 'aucune';
 console.log(`cartes : ${resume}`);
+/* Le raccourci « ouvrir » du domaine répond par une liste de liens `ouvrir` (pas par une carte) : on la compte aussi et, pour l'arbre,
+ * on lit SEULEMENT la vue et le tri demandés (liste fermée) — jamais un nom de personne ni de famille (un journal public se lit par tous). */
+const liens = Array.isArray(q.j.ouvrir) ? q.j.ouvrir : [];
+if (liens.length) {
+  parType.ouvrir = liens.length;
+  resume = Object.keys(parType).sort((a, b) => a.localeCompare(b)).map((t) => `${t}×${parType[t]}`).join(' ');
+  console.log(`liens ouvrir : ${resume}`);
+  for (const l of liens.slice(0, 3)) {
+    let h = ''; let vue = '-'; let tri = '-';
+    try {
+      const u = new URL(String(l?.url));
+      h = /(^|\.)kd-mc\.com$/.test(u.hostname) ? u.hostname : 'hors-domaine';
+      const p = new URLSearchParams(u.hash.replace(/^#/, ''));
+      const v = p.get('vue');
+      const t = p.get('tri');
+      if (['arbre', 'plan', 'paysage', 'lignee'].includes(v)) vue = v;
+      if (['alpha', 'nom', 'naissance', 'recent'].includes(t)) tri = t;
+    } catch {
+      h = 'adresse illisible'; // adresse qui ne se lit pas : on le dit, jamais son contenu (journal public)
+    }
+    console.log(`ouvrir : ${h} · vue=${vue} · tri=${tri}`);
+  }
+}
 const liste = cartes.find((c) => c && c.t === 'liste_comptes');
 if (liste) console.log(`liste_comptes : ${Array.isArray(liste.lignes) ? liste.lignes.length : 0} lignes · total ${Number(liste.total) || 0} · avec identifiant SBM ${Number(liste.avec_matricule) || 0}`);
 let attendOk = true;

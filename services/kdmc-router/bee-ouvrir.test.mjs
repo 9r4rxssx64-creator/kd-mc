@@ -233,6 +233,35 @@ ok(!kvEcrit.some((k) => /^cfg:|^cred:|^bee|^fil|^arbre:/.test(k)), '7ee. la fich
 { const rg = readFileSync(new URL('./bee-ouvrir.js', import.meta.url), 'utf8');
   ok(/dans l'app où il est|app où Kevin est/.test(rg) && /REGLES_OUVRIR/.test(rg) && /fiche d'une personne|FICHE d\\'une personne|FICHE d'une personne/.test(rg), '7ff. les règles de l\'IA connaissent la fiche d\'une personne'); }
 
+
+/* ───────── 5g. classer l'arbre autrement : #vue= et #tri= (Kevin 19.11 ; parité ligne 4 ; arbre v3.235) ───────── */
+{ const U = (a) => adresse(a, HOTES, NOMS).url;
+  ok(U({ app: 'arbre', vue: 'plan' }) === 'https://arbre.kd-mc.com/#vue=plan', '5g1. vue plan seule');
+  ok(U({ app: 'arbre', vue: 'Lignée' }) === 'https://arbre.kd-mc.com/#vue=lignee', '5g2. « Lignée » (accent, majuscule) → lignee');
+  ok(U({ app: 'arbre', tri: 'naissance' }) === 'https://arbre.kd-mc.com/#tri=naissance', '5g3. tri naissance seul');
+  ok(U({ app: 'arbre', famille: 'LORENZI', vue: 'paysage' }) === 'https://arbre.kd-mc.com/#famille=LORENZI&vue=paysage', '5g4. famille + vue combinées par &');
+  ok(U({ app: 'arbre', personne: 'Yann Lorenzi', tri: 'recent' }) === 'https://arbre.kd-mc.com/#personne=Yann%20Lorenzi&tri=recent', '5g5. personne + tri');
+  ok(U({ app: 'arbre', vue: 'plan', tri: 'nom' }) === 'https://arbre.kd-mc.com/#vue=plan', '5g6. la vue l\'emporte sur le tri');
+  ok(U({ app: 'arbre', vue: 'cube' }) === 'https://arbre.kd-mc.com/', '5g7. une vue inconnue est ignorée');
+  ok(U({ app: 'arbre', tri: '"><script>' }) === 'https://arbre.kd-mc.com/', '5g8. un tri inconnu (injection) est ignoré');
+  ok(U({ app: 'arbre', tri: 'alphabétique' }) === 'https://arbre.kd-mc.com/#tri=alpha', '5g9. synonyme alphabétique → alpha');
+  ok(U({ app: 'arbre', tri: 'nom de famille' }) === 'https://arbre.kd-mc.com/#tri=nom', '5g10. « nom de famille » → nom');
+  ok(!/vue=|tri=/.test(U({ app: 'lingua', vue: 'plan', tri: 'nom' })), '5g11. vue / tri ne passent QUE pour l\'arbre');
+  const sch = JSON.stringify(Object.keys(outilsOuvrir({}, []).defs[0].parameters.properties));
+  ok(/vue/.test(sch) && /tri/.test(sch), '5g12. l\'outil IA `ouvrir` connaît vue et tri');
+  ok(/vue = arbre, plan, paysage ou lignee/.test(REGLES_OUVRIR), '5g13. la consigne de l\'IA nomme les vues et les tris');
+  const D = (q) => Inull(q);
+  ok(D('montre-moi l\'arbre en vue plan')?.url === 'https://arbre.kd-mc.com/#vue=plan', '5g14. « montre-moi l\'arbre en vue plan »');
+  ok(D('ouvre l\'arbre en vue lignée')?.url === 'https://arbre.kd-mc.com/#vue=lignee', '5g15. « … en vue lignée »');
+  ok(D('ouvre l\'arbre de Yann Lorenzi trié par naissance')?.url === 'https://arbre.kd-mc.com/#personne=Yann%20Lorenzi&tri=naissance', '5g16. « l\'arbre de X trié par naissance » : la personne reste Yann Lorenzi');
+  ok(D('classe l\'arbre par nom')?.url === 'https://arbre.kd-mc.com/#tri=nom', '5g17. « classe l\'arbre par nom »');
+  ok(D('trie l\'arbre par ordre alphabétique')?.url === 'https://arbre.kd-mc.com/#tri=alpha', '5g18. « trie l\'arbre par ordre alphabétique »');
+  ok(D('montre-moi l\'arbre de Yann Lorenzi')?.url === 'https://arbre.kd-mc.com/#personne=Yann%20Lorenzi', '5g19. NON-RÉGRESSION : « l\'arbre de Yann Lorenzi » inchangé');
+  ok(D('montre-moi l\'arbre')?.url === 'https://arbre.kd-mc.com/', '5g20. NON-RÉGRESSION : « l\'arbre » inchangé');
+  ok(D('classe mes mails par date') === null, '5g21. « classe … » hors de l\'arbre : pas pour cette voie');
+  ok(RE_OUVRIR.test('classe l\'arbre par nom'), '5g22. « classe l\'arbre » met l\'outil à disposition de l\'IA');
+}
+
 /* ───────── 6. le widget ───────── */
 { const wd = readFileSync(new URL('../../tools/javis/javis-widget.js', import.meta.url), 'utf8');
   ok(/function carteOuvrir/.test(wd) && /j\.ouvrir/.test(wd) && /function adresseDomaine/.test(wd) && /kd-mc\\\.com/.test(wd), '6. le widget affiche le bouton et REVÉRIFIE l\'adresse (kd-mc.com)');

@@ -17,10 +17,10 @@
 
 export const MAX_OUVRIR = 3;
 /** Une demande d'ouverture (ouvre, montre-moi, affiche, emmène-moi, va sur, fais-moi voir…) : l'outil est mis à sa disposition d'office. */
-export const RE_OUVRIR = /\b(?:ouvr\w*|montre\w*|affiche\w*|emm[eè]ne\w*|am[eè]ne\w*|lance\w*|(?:va|vas|aller|allons)\s+(?:sur|dans|[àa]|vers)|naviguer?|fais[- ]moi\s+voir|je\s+(?:veux|voudrais)\s+voir|voir\s+(?:l|la|le|les|mon|ma|mes|un|une)\b|redirige\w*|bascule\w*|direction)\b/i;
+export const RE_OUVRIR = /\b(?:ouvr\w*|montre\w*|affiche\w*|emm[eè]ne\w*|am[eè]ne\w*|lance\w*|(?:va|vas|aller|allons)\s+(?:sur|dans|[àa]|vers)|naviguer?|fais[- ]moi\s+voir|je\s+(?:veux|voudrais)\s+voir|voir\s+(?:l|la|le|les|mon|ma|mes|un|une)\b|redirige\w*|bascule\w*|direction|(?:classe|classez|trie|triez)\s+(?:l|le|mon|ma)\b)\b/i;
 
 export const REGLES_OUVRIR = ' Tu peux OUVRIR n\'importe quelle app du domaine sur l\'écran de Kevin avec l\'outil ouvrir (app = son nom, ex. « arbre », « lingua », « cmcteams », « apex chat », « admin » ; '
-  + 'page = un chemin si besoin ; pour l\'ARBRE : personne = le prénom et le nom, ex. « Yann Lorenzi », ou famille = le nom de famille). '
+  + 'page = un chemin si besoin ; pour l\'ARBRE : personne = le prénom et le nom, ex. « Yann Lorenzi », ou famille = le nom de famille ; vue = arbre, plan, paysage ou lignee ; tri = alpha, nom, naissance ou recent pour classer l\'arbre autrement). '
   + 'Fiche sans app nommée : l\'app où Kevin est (CMCteams, light, arbre), sinon l\'arbre. '
   + 'Quand Kevin dit « ouvre », « montre-moi », « affiche », « emmène-moi », « va sur… », appelle ouvrir tout de suite, même s\'il est déjà dans une autre app : un bouton « Ouvrir » apparaît et l\'app s\'ouvre. '
   + 'Ne dis JAMAIS « je n\'ai pas accès » ni « c\'est Apex qui peut » : si une personne est introuvable dans ta lecture de l\'arbre, ouvre quand même l\'arbre sur son nom (l\'app la cherche dans sa copie complète). '
@@ -94,6 +94,25 @@ export function cheminSur(page) {
 
 const ARBRE = 'arbre.kd-mc.com';
 
+/* Vues et tris que l'arbre sait lire dans l'adresse (v3.235). Listes fermées : rien d'autre ne passe. */
+export const VUES_ARBRE = ['arbre', 'plan', 'paysage', 'lignee'];
+export const TRIS_ARBRE = ['alpha', 'nom', 'naissance', 'recent'];
+const TRI_LIBELLE = { alpha: 'ordre alphabétique', nom: 'nom de famille', naissance: 'naissance', recent: 'modification récente' };
+const SYN_TRI = { alphabetique: 'alpha', alpha: 'alpha', 'ordre alphabetique': 'alpha', prenom: 'alpha', 'par prenom': 'alpha', nom: 'nom', 'nom de famille': 'nom', famille: 'nom',
+  naissance: 'naissance', 'date de naissance': 'naissance', age: 'naissance', recent: 'recent', recente: 'recent', modification: 'recent', modifie: 'recent', modifiee: 'recent', modifiees: 'recent', modifies: 'recent' };
+export const normVue = (v) => { const x = sansAccent(propre(v, 30)).trim(); return VUES_ARBRE.includes(x) ? x : ''; };
+export const normTri = (v) => { const x = sansAccent(propre(v, 40)).replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim(); return SYN_TRI[x] || ''; };
+
+/** « l'arbre en vue plan », « l'arbre de X trié par naissance » : sépare la vue / le tri du reste de la demande (texte déjà sans accent). */
+export function extraireVueTri(cible) {
+  let c = cible, vue = '', tri = '';
+  let m = c.match(/\s+(?:en\s+)?(?:vue|mode|affichage)\s+(arbre|plan|paysage|lignee)$/) || c.match(/\s+en\s+(plan|paysage|lignee)$/);
+  if (m) { vue = m[1]; c = c.slice(0, m.index).trim(); }
+  m = c.match(/\s+(?:(?:trie|triee|classe|classee|range|rangee|ordonne|ordonnee)\s+)?(?:par|selon)\s+(ordre alphabetique|alphabetique|prenom|nom de famille|nom|date de naissance|naissance|age|recent|recente|modification|modifie|modifiee|modifies|modifiees)$/);
+  if (m) { tri = SYN_TRI[m[1]] || ''; c = c.slice(0, m.index).trim(); }
+  return { cible: c, vue, tri };
+}
+
 /** Fabrique l'adresse finale. Rend { url, libelle } ou { erreur }. */
 export function adresse(a, hotes, noms) {
   const r = resoudreApp(a && a.app, hotes, noms);
@@ -104,9 +123,15 @@ export function adresse(a, hotes, noms) {
   let libelle = (noms && noms[r.hote]) ? noms[r.hote] : r.hote.replace(/\.kd-mc\.com$/, '') || 'portail';
   if (r.hote === ARBRE) {
     const personne = propre(a && a.personne, 80), famille = propre(a && a.famille, 60), fiche = propre(a && a.fiche, 60);
-    if (personne) { url += '#personne=' + encodeURIComponent(personne); libelle = 'L\'arbre — ' + personne; }
-    else if (fiche && /^[A-Za-z0-9_-]{1,60}$/.test(fiche)) { url += '#fiche=' + encodeURIComponent(fiche); libelle = 'L\'arbre — fiche ' + fiche; }
-    else if (famille) { url += '#famille=' + encodeURIComponent(famille); libelle = 'L\'arbre — famille ' + famille; }
+    const frag = [];
+    if (personne) { frag.push('personne=' + encodeURIComponent(personne)); libelle = 'L\'arbre — ' + personne; }
+    else if (fiche && /^[A-Za-z0-9_-]{1,60}$/.test(fiche)) { frag.push('fiche=' + encodeURIComponent(fiche)); libelle = 'L\'arbre — fiche ' + fiche; }
+    else if (famille) { frag.push('famille=' + encodeURIComponent(famille)); libelle = 'L\'arbre — famille ' + famille; }
+    /* Kevin 19.11 : « classer l'arbre autrement » — #vue= et #tri= (arbre v3.235), listes FERMÉES ; la vue l'emporte sur le tri ; une valeur inconnue est ignorée */
+    const vue = normVue(a && a.vue), tri = vue ? '' : normTri(a && a.tri);
+    if (vue) { frag.push('vue=' + vue); libelle += (personne || fiche || famille ? ' · ' : ' — ') + 'vue ' + vue; }
+    else if (tri) { frag.push('tri=' + tri); libelle += (personne || fiche || famille ? ' · ' : ' — ') + 'trié par ' + TRI_LIBELLE[tri]; }
+    if (frag.length) url += '#' + frag.join('&');
   } else if (noms && (noms[r.hote] === 'cmcteams' || noms[r.hote] === 'departs')) {
     /* CMCteams et la light : la fiche d'une personne s'ouvre aussi par #personne= (Kevin 17.11 : « Dans cmcteams » après l'arbre de Davy Carpinelli) */
     const personne = propre(a && a.personne, 80);
@@ -120,7 +145,7 @@ export function adresse(a, hotes, noms) {
  * « va sur apex chat » → « je ne peux pas ouvrir d'applications » : un modèle gratuit n'appelle pas toujours l'outil. Une demande d'ouverture claire (verbe + app) est donc
  * comprise ICI, sans IA : instantanée, gratuite, identique à chaque fois. Tout ce qui n'est pas net (question, phrase composée) continue d'aller à l'IA et à l'outil. */
 const FILLER = '(?:m|me|bee|javis|jarvis|bourricot|stp|svp|ok|alors|dis|maintenant|s il te plait|peux tu|pourrais tu|tu peux|voudrais tu|veux tu)';
-const RE_DIRECT = new RegExp('^(?:' + FILLER + '\\s+)*(ouvre|ouvrez|ouvrir|montre|montrez|affiche|affichez|emmene|amene|va|vas|aller|allons|lance|lancez|naviguer|fais moi voir|je veux voir|je voudrais voir|je veux aller|je voudrais aller|je veux ouvrir|je voudrais ouvrir|redirige|bascule)(?:\\s+(?:moi|nous))?\\s+(.+)$');
+const RE_DIRECT = new RegExp('^(?:' + FILLER + '\\s+)*(ouvre|ouvrez|ouvrir|montre|montrez|affiche|affichez|emmene|amene|va|vas|aller|allons|lance|lancez|naviguer|fais moi voir|je veux voir|je voudrais voir|je veux aller|je voudrais aller|je veux ouvrir|je voudrais ouvrir|redirige|bascule|classe|classez|trie|triez|range|rangez)(?:\\s+(?:moi|nous))?\\s+(.+)$');
 const COMPOSEE = /\b(?:et|puis|ensuite|qui|que|quoi|combien|comment|pourquoi|quand|dis|explique|raconte|parle|cherche|compare)\b/;
 const titre = (t) => t.split(' ').filter(Boolean).map((w) => (/^(?:de|du|des|d|la|le|les|von|van|y)$/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
 
@@ -132,6 +157,7 @@ export function intentionOuvrir(message, hotes, noms) {
   let cible = m[2].replace(/\s+(?:s il te plait|stp|svp|maintenant|tout de suite|merci)$/, '').trim();
   cible = cible.replace(/^(?:(?:sur|dans|vers|a|au|aux|en|le|la|les|l|un|une|mon|ma|mes|moi|nous|app|application|appli|site|page)\s+)+/, '').trim();
   if (!cible) return null;
+  const vt = extraireVueTri(cible); cible = vt.cible;
   /* l'arbre : « l'arbre », « l'arbre de Yann Lorenzi », « la famille Lorenzi » */
   const arbre = cible.match(/^(arbre(?:\s+genealogique)?(?:\s+de\s+famille)?|famille)(?:\s+(?:de|d|du|des|a|pour)\b)?\s*(.*)$/);
   if (arbre) {
@@ -139,9 +165,12 @@ export function intentionOuvrir(message, hotes, noms) {
     const fam = arbre[1] === 'famille' ? reste : (reste.match(/^famille\s+(.+)$/) || [])[1];
     if (COMPOSEE.test(reste)) return null;
     const a = fam ? { app: 'arbre', famille: titre(fam).toUpperCase() } : reste ? { app: 'arbre', personne: titre(reste) } : { app: 'arbre' };
+    if (vt.vue) a.vue = vt.vue; else if (vt.tri) a.tri = vt.tri;
     const r = adresse(a, hotes, noms); if (r.erreur) return null;
-    return { url: r.url, libelle: r.libelle, texte: a.personne ? 'Je t\'ouvre l\'arbre sur ' + a.personne + '.' : a.famille ? 'Je t\'ouvre l\'arbre sur la famille ' + a.famille + '.' : 'Je t\'ouvre l\'arbre.' };
+    const fin = vt.vue ? ' en vue ' + vt.vue : vt.tri ? ', trié par ' + TRI_LIBELLE[vt.tri] : '';
+    return { url: r.url, libelle: r.libelle, texte: a.personne ? 'Je t\'ouvre l\'arbre sur ' + a.personne + fin + '.' : a.famille ? 'Je t\'ouvre l\'arbre sur la famille ' + a.famille + fin + '.' : 'Je t\'ouvre l\'arbre' + fin + '.' };
   }
+  if (vt.vue || vt.tri) return null;   /* « vue » ou « tri » sans l'arbre : pas pour cette voie */
   if (COMPOSEE.test(cible)) return null;
   const r0 = resoudreApp(cible, hotes, noms); if (r0.erreur || !r0.hote) return null;
   const r = adresse({ app: r0.hote }, hotes, noms); if (r.erreur) return null;
@@ -283,6 +312,8 @@ export function outilsOuvrir(o, sortie) {
         page: { type: 'string', description: 'facultatif : un chemin de page dans l\'app, ex. /liens/' },
         personne: { type: 'string', description: 'arbre seulement : prénom et nom de la personne à montrer, ex. « Yann Lorenzi »' },
         famille: { type: 'string', description: 'arbre seulement : un nom de famille à montrer, ex. « LORENZI »' },
+        vue: { type: 'string', enum: ['arbre', 'plan', 'paysage', 'lignee'], description: 'arbre seulement : la vue demandée (arbre, plan, paysage, lignée)' },
+        tri: { type: 'string', enum: ['alpha', 'nom', 'naissance', 'recent'], description: 'arbre seulement : le classement demandé (alpha = alphabétique / prénom, nom = nom de famille, naissance = date de naissance, recent = modifiées récemment)' },
         libelle: { type: 'string', description: 'facultatif : le texte du bouton' },
       }, required: ['app'] },
     }],

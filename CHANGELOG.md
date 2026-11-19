@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.403 — 19.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2769)
+- Nouvel outil `lien_externe` (admin) : « ouvre-moi cette page internet ». Une carte avec un bouton que Kevin touche ; https seulement, jamais d'identifiants dans l'adresse, pas d'adresse interne, rien ne s'ouvre tout seul. Mêmes règles que Bee.
+- Garde de parité : il ne reste à porter que `appeler`. Tests : `tests/unit/lien-externe.test.ts`.
+
 ## Apex AI v13.4.402 — 19.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2769)
 - Nouvel outil `comptes_cmcteams` (admin) : « la liste de tous ceux qui ont un compte CMCteams avec leur identifiant SBM ». Le navigateur de Kevin lit la porte du domaine `/__admin/comptes-cmcteams`, la carte s'affiche à Kevin ; l'IA ne reçoit que « liste prête (N comptes) » (jamais un nom ni un matricule).
 - Garde de parité : `tests/unit/parite-bee-apex-ai.test.ts` compare les outils de parité de Bee et ceux d'Apex AI ; restent à porter : `lien_externe`, `appeler`.

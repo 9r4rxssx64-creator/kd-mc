@@ -10,7 +10,6 @@ import { WEB_TOOLS } from '../../services/apex-tools-registry/web-tools.js';
 import { COMM_TOOLS } from '../../services/apex-tools-registry/comm-tools.js';
 
 const PAS_ENCORE_PORTES: Record<string, string> = {
-  lien_externe: 'apex-cloud (mission 2769, ligne « ouvrir une page hors domaine »)',
   appeler: 'apex-cloud (mission 2769, ligne « appeler » ; porte /__admin/appel déjà en ligne)',
 };
 
@@ -31,7 +30,8 @@ describe('parité Bee ⇄ Apex AI', () => {
     const portes = Object.keys(PAS_ENCORE_PORTES).filter((n) => outilsApexAi.has(n));
     expect(portes).toEqual([]);
   });
-  it('comptes_cmcteams est porté', () => {
+  it('comptes_cmcteams et lien_externe sont portés', () => {
     expect(outilsApexAi.has('comptes_cmcteams')).toBe(true);
+    expect(outilsApexAi.has('lien_externe')).toBe(true);
   });
 });

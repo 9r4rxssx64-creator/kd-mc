@@ -397,6 +397,11 @@ class ApexToolsDispatcher {
         const report = await apexSelfAudit.runFullAudit(brutal);
         return apexSelfAudit.formatReportMarkdown(report);
       }
+      case 'lien_externe': {
+        /* Parité Bee (Kevin 18.11) : une carte avec un bouton que Kevin touche ; rien ne s'ouvre tout seul. */
+        const { lienExterne } = await import('../admin/lien-externe.js');
+        return lienExterne(params['url'], params['libelle']);
+      }
       case 'comptes_cmcteams':
       case 'liste_comptes_cmcteams': {
         /* Parité Bee (Kevin 18.11) : la carte est fabriquée ICI à partir de la porte du domaine ; l'IA ne reçoit que « liste prête (N comptes) ». */

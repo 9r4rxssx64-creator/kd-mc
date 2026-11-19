@@ -8,6 +8,20 @@ import type { ApexTool } from '../core-svc/apex-tools-types.js';
 
 export const ADMIN_TOOLS: readonly ApexTool[] = [
   {
+    name: 'lien_externe',
+    description: 'Bouton « Ouvrir » vers une page https hors du domaine : Kevin le touche, tu n\'ouvres rien toi-même.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'adresse https complète' },
+        libelle: { type: 'string', description: 'texte court du bouton (optionnel)' },
+      },
+      required: ['url'],
+    },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
     name: 'comptes_cmcteams',
     description: 'Liste des comptes CMCteams avec identifiant SBM : le domaine l\'affiche à Kevin dans une carte, tu ne la reçois pas (jamais de noms ni de matricules pour toi). Dis seulement qu\'elle est prête.',
     inputSchema: { type: 'object', properties: {} },

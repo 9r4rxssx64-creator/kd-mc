@@ -14,6 +14,7 @@ const DOMAINE = 'https://kd-mc.com';
 const args = process.argv.slice(2);
 const val = (n, d) => (args.includes(n) ? args[args.indexOf(n) + 1] : d);
 const APP = String(val('--app', 'arbre')).replace(/[^a-z0-9-]/gi, '') || 'arbre';
+const ATTEND = String(val('--attend', '')).replace(/[^a-z_]/g, '').slice(0, 24); /* type de carte que la réponse DOIT porter (preuve des outils de parité) */
 const QUESTION = String(val('--question', 'Quelle est la date d’aujourd’hui ? Réponds en une phrase.'));
 const annot = (niveau, titre, msg) => console.log(`::${niveau} title=${titre}::${String(msg).replace(/\n/g, ' · ')}`);
 
@@ -44,4 +45,19 @@ const repondOk = q.status === 200 && texte.length > 0;
 const dateOk = repondOk && new RegExp(`\\b${jour}\\b`).test(texte);
 annot(repondOk ? 'notice' : 'error', 'Bee répond', repondOk ? `${q.ms} ms, IA ${q.j.provider || '?'}${dateOk ? ', la date du jour est juste' : ', (date du jour non reconnue dans la réponse)'}` : `pas de réponse : HTTP ${q.status} ${q.j.reason || ''}`);
 
-process.exit(diagOk && repondOk ? 0 : 1);
+/* 3. les CARTES que le domaine a fabriquées pour Kevin (liste des comptes, bouton Appeler, bouton Ouvrir…) : NOMBRES SEULEMENT.
+ * Un journal public se lit par tous : jamais un nom, un matricule, un numéro ni une adresse — seulement « type × nombre ». */
+const cartes = Array.isArray(q.j.cartes) ? q.j.cartes : [];
+const parType = {};
+for (const c of cartes) { const t = /^[a-z_]{1,24}$/.test(String(c && c.t)) ? c.t : 'autre'; parType[t] = (parType[t] || 0) + 1; }
+const resume = Object.keys(parType).sort().map((t) => `${t}×${parType[t]}`).join(' ') || 'aucune';
+console.log(`cartes : ${resume}`);
+const liste = cartes.find((c) => c && c.t === 'liste_comptes');
+if (liste) console.log(`liste_comptes : ${Array.isArray(liste.lignes) ? liste.lignes.length : 0} lignes · total ${Number(liste.total) || 0} · avec identifiant SBM ${Number(liste.avec_matricule) || 0}`);
+let attendOk = true;
+if (ATTEND) {
+  attendOk = !!parType[ATTEND];
+  annot(attendOk ? 'notice' : 'error', 'Carte de Bee', attendOk ? `la carte « ${ATTEND} » est bien là (${parType[ATTEND]})` : `la carte « ${ATTEND} » manque (cartes reçues : ${resume})`);
+} else annot('notice', 'Cartes de Bee', resume);
+
+process.exit(diagOk && repondOk && attendOk ? 0 : 1);

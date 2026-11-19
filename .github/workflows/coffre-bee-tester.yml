@@ -14,6 +14,9 @@ on:
       question:
         description: "La question posée à Bee après le bilan"
         default: "Quelle est la date d’aujourd’hui ? Réponds en une phrase."
+      attend:
+        description: "Type de carte que la réponse doit porter (externe, liste_comptes, appel) — vide = aucune exigence"
+        default: ""
 
 permissions:
   contents: read
@@ -33,5 +36,6 @@ jobs:
           # les entrées passent par env:, jamais dans le shell (garde test:workflows-shell)
           APP_DEMANDEE: ${{ inputs.app }}
           QUESTION_DEMANDEE: ${{ inputs.question }}
+          ATTEND_DEMANDE: ${{ inputs.attend }}
         shell: bash -eo pipefail {0}
-        run: node tools/smoke/bee-tester.mjs --app "$APP_DEMANDEE" --question "$QUESTION_DEMANDEE"
+        run: node tools/smoke/bee-tester.mjs --app "$APP_DEMANDEE" --question "$QUESTION_DEMANDEE" --attend "$ATTEND_DEMANDE"

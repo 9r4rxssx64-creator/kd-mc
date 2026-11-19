@@ -7,6 +7,17 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/11/2026 13:52 UTC
+
+- **Branche** : `main` · **Commit** : `798c3042` · **Run** : `44536566368`
+- **Ce qui a lâché** : deploy › L'app reçoit-elle vraiment ses plannings ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/44536566368
+- **Ce que la machine a dit** :
+
+```
+##[error]Process completed with exit code 2.
+```
+
 ## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/11/2026 13:48 UTC
 
 - **Branche** : `main` · **Commit** : `798c3042` · **Run** : `44536566368`
@@ -526,17 +537,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

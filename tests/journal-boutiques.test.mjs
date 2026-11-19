@@ -3,7 +3,7 @@
 // de sourcing, paiement enregistré. Phrase courte, jamais une adresse, un e-mail, un moyen de paiement,
 // une référence ni un code ; jamais dans une boucle.
 // SABOTAGE=1 : lit une copie sans les appels → doit être rouge.
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 const sab = process.env.SABOTAGE === '1';
 const lire = (f) => { const s = readFileSync(f, 'utf8'); return sab ? s.replace(/window\.kdmcJournal/g, 'window.autreChose') : s; };
 let ko = 0;
@@ -46,5 +46,21 @@ for (const [f, s] of Object.entries(fichiers)) {
   ok(!perso.length, f.replace('shops/', '') + ' : aucune donnée personnelle ni montant dans le journal' + (perso.length ? ' → ' + perso.join(' | ') : ''));
   const lignes = s.split('\n').filter((l) => /window\.kdmcJournal\(/.test(l));
   ok(!lignes.some((l) => /\.(forEach|map)\(function/.test(l)), f.replace('shops/', '') + ' : aucun appel dans une boucle');
+}
+/* 19.11 (robot réel verif-live-journal) : « Devenir croupier » n'envoyait rien — sa CSP (connect-src) n'autorisait que le worker de vente, donc le POST
+   /__boite/journal (même domaine) était refusé par le navigateur. Toute page qui appelle le journal (elle-même ou un de ses scripts locaux) doit autoriser 'self'. */
+const pages = [...new Set(ATTENDUS.map(([f]) => f.split('/').slice(0, 2).join('/')))]
+  .flatMap((d) => readdirSync(d).filter((n) => n.endsWith('.html')).map((n) => d + '/' + n));
+for (const html of pages) {
+  const src = readFileSync(html, 'utf8');
+  const locaux = [...src.matchAll(/<script[^>]*\ssrc="([^":]+\.js)"/g)].map((m) => m[1]).filter((s) => !s.startsWith('/'))
+    .map((s) => html.replace(/[^/]+$/, '') + s).filter((f) => existsSync(f));
+  if (!/kdmcJournal/.test(src) && !locaux.some((f) => /kdmcJournal/.test(readFileSync(f, 'utf8')))) continue;
+  const csp = (src.match(/http-equiv="Content-Security-Policy"\s+content="([^"]*)"/i) || [])[1];
+  if (!csp) { ok(true, html.replace('shops/', '') + ' : pas de CSP en page, le journal peut partir'); continue; }
+  const dir = (n) => { const m = csp.match(new RegExp('(?:^|;)\\s*' + n + '\\s+([^;]*)')); return m ? ' ' + m[1].trim() + ' ' : null; };
+  const c = dir('connect-src') ?? dir('default-src') ?? ' * ';
+  const permis = sab ? false : /\s'self'\s|\s\*\s/.test(c);
+  ok(permis, html.replace('shops/', '') + " : la CSP laisse partir le journal (connect-src 'self')");
 }
 process.exit(ko ? 1 : 0);

@@ -4,5 +4,6 @@
    node tools/docs/lecon-suivante.mjs  →  586 */
 import { readFileSync } from 'node:fs';
 /* 29.10 : les deux formats (« 583. **titre** » et « ## 781. titre ») — avant, seul le premier comptait et 781 a été donné deux fois. */
-const nums = [...readFileSync(new URL('../../LESSONS.md', import.meta.url), 'utf8').matchAll(/^(?:(\d+)\. \*\*|## (\d+)\. )/gm)].map((m) => Number(m[1] || m[2]));
+/* 19.11 : un 3e format « ## 1040 — titre » (121 entrées) n'était pas lu → l'outil a donné 1040, déjà pris (1040-1042 existaient). */
+const nums = [...readFileSync(new URL('../../LESSONS.md', import.meta.url), 'utf8').matchAll(/^(?:(\d+)\. \*\*|## (\d+)(?:\. | — ))/gm)].map((m) => Number(m[1] || m[2]));
 console.log(Math.max(0, ...nums) + 1);

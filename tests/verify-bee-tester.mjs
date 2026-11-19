@@ -15,6 +15,7 @@ dis(!/console\.log\([^)]*session\.jeton/.test(src) && /session\.masque/.test(src
 dis(!/__javis\/agir|method: 'PUT'|method: 'DELETE'/.test(src), 'lecture seule : jamais /__javis/agir, jamais d\'écriture');
 dis(/q\.j\.cartes/.test(src) && /--attend/.test(src), 'compte les CARTES de la réponse et peut EXIGER un type (--attend)');
 dis(!/console\.log\([^)]*(\.nom|\.tel|\.matricule|\.url)\b/.test(src), 'journal public : jamais un nom, un numéro, un matricule ni une adresse de carte');
+dis(!/from '\.\/session-kevin\.mjs'/.test(src), 'autonome : aucun import de session-kevin.mjs (privé : le robot public plantait, 19.11)');
 const wf = readFileSync('.github/workflows/coffre-bee-tester.yml', 'utf8');
 dis(/workflow_dispatch/.test(wf) && !/schedule:/.test(wf), 'robot à la main, jamais de cron');
 dis(/secrets\.APEX_ADMIN_PIN_SHA256/.test(wf) && /permissions:\n  contents: read/.test(wf), 'secret admin du coffre, droits en lecture seule');

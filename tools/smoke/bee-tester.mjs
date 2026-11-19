@@ -8,7 +8,18 @@
  * Verdict en annotations GitHub. Jamais le jeton ni l'empreinte dans le journal. Lecture seule : rien n'est écrit dans l'arbre.
  *
  * Usage : KDMC_ADMIN_PIN_SHA256=… node tools/smoke/bee-tester.mjs [--app arbre] [--question "…"] */
-import { passPortail } from './session-kevin.mjs';
+/* Autonome (18.10 : un robot PUBLIC ne doit jamais importer session-kevin.mjs, qui reste au coffre) : la connexion admin est ici,
+   en quelques lignes, sans rien journaliser du jeton ni de l'empreinte. */
+const masque = (s) => (!s ? '(absent)' : `(présent, ${String(s).length} car.)`);
+async function passPortail(base) {
+  const hash = String(process.env.KDMC_ADMIN_PIN_SHA256 || '').trim().toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(hash)) return { ok: false, note: 'code admin absent (secret CI)' };
+  const r = await fetch(base + '/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: base }, body: JSON.stringify({ hash }) });
+  if (!r.ok) return { ok: false, statut: r.status, note: 'le routeur a refusé /__admin/login' };
+  const d = await r.json().catch(() => ({}));
+  if (!d || !d.token) return { ok: false, note: 'réponse sans jeton' };
+  return { ok: true, jeton: d.token, masque: masque(d.token), adminProuve: d.admin === true };
+}
 
 const DOMAINE = 'https://kd-mc.com';
 const args = process.argv.slice(2);

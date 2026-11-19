@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex Chat v1.1.371 + Apex AI v13.4.401 — 19.11.2026 (apex-cloud, pc-config 2764)
+- Apex Chat : « Tous les comptes » ne montre plus les comptes supprimés (200 restes de robots noyaient la liste) ; le serveur ne les renvoie plus, la page les écarte aussi, le total ne compte que les vivants.
+- Apex AI : « Effacer le chat » et « Vider le journal » demandent confirmation DANS la page (avant : confirm() natif qui gelait l'onglet pour l'extension de contrôle).
+- Gardes : `tests/verify-admin-listes.mjs` (rouge sans le correctif), `apex-ai/v13/tests/unit/sans-confirm-natif.test.ts` (3 rouges sans).
+
 ## CMCteams v10.037 + light v1.166 — la pastille de secteur (Am / Ba / Eu) partout où un nom s'affiche (2026-11-19)
 - **19.11 (cmcteams-pdf, Kevin « Pastille partout »)** : la pastille n'était dessinée que dans le tableau du mois, et seulement quand les lettres du mois existent. Maintenant : (1) si la personne n'a pas de lettres ce mois-ci, la pastille prend celles du mois le plus récent où elle en a, et le survol le dit (« lettres de 2026-10 ») ; sans aucune lettre, rien n'est inventé ; (2) la pastille est posée à chaque affichage d'un nom — CMCteams : fiche, profil rapide, carte d'équipe, liste des personnes, « En ligne » (écran et chat), messages directs, départs, élèves ; light : « en ligne », recherche, ligne d'un élève. Source unique `tools/shared/secteur.js` ⇄ `tools/departs/secteur.js` (inchangée). Garde : `npm run test:secteur` (85 contrôles, section E « Pastille partout », `SABOTAGE=partout` rouge : 10 échecs).
 

@@ -570,14 +570,33 @@ export function render(rootEl: HTMLElement): void {
   const clearBtn = rootEl.querySelector<HTMLButtonElement>('#ax-chat-clear');
   clearBtn?.addEventListener('click', () => {
     haptic.tap();
-    if (!confirm('🗑 Effacer définitivement le chat actuel ?\n\nLes messages sont supprimés PARTOUT (local + cloud Firebase + pièces jointes) et ne reviendront pas après une mise à jour.\n\n💡 Pour garder une trace, utilise plutôt « 🌿 Nouvelle conversation » qui archive l\'ancienne dans l\'historique.')) return;
-    /* v13.4.284 — efface in-memory PUIS toutes les couches (sinon Firebase
-     * ressuscite les messages au prochain boot/MAJ — bug Kevin). */
-    conversation.length = 0;
-    renderMessages(rootEl);
-    void clearConversationEverywhere().then(() => {
-      void import('../../ui/toast.js').then(({ toast }) => {
-        toast.success('🗑 Chat effacé partout (ne reviendra plus)', { duration: 3000 });
+    /* 19.11 (pc-config 2764) : le confirm() natif GELAIT l'onglet pour l'extension de contrôle ; confirmation dans la page. */
+    void import('../../ui/modal-sheet.js').then(({ modalSheet }) => {
+      const sheet = modalSheet.open({
+        title: 'Effacer le chat',
+        content:
+          '<p>🗑 Effacer définitivement le chat actuel ?</p>' +
+          '<p style="font-size:13px">Les messages sont supprimés PARTOUT (local + cloud + pièces jointes) et ne reviendront pas après une mise à jour.</p>' +
+          '<p style="font-size:13px">💡 Pour garder une trace, utilise plutôt « 🌿 Nouvelle conversation ».</p>',
+        actions: [
+          { label: 'Annuler', variant: 'ghost', onClick: () => sheet.close() },
+          {
+            label: 'Effacer',
+            variant: 'danger',
+            onClick: () => {
+              sheet.close();
+              /* v13.4.284 — efface in-memory PUIS toutes les couches (sinon Firebase
+               * ressuscite les messages au prochain boot/MAJ — bug Kevin). */
+              conversation.length = 0;
+              renderMessages(rootEl);
+              void clearConversationEverywhere().then(() => {
+                void import('../../ui/toast.js').then(({ toast }) => {
+                  toast.success('🗑 Chat effacé partout (ne reviendra plus)', { duration: 3000 });
+                });
+              });
+            },
+          },
+        ],
       });
     });
   });

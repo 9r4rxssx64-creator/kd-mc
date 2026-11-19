@@ -145,9 +145,25 @@ export function openMemoryModal(rootEl: HTMLElement): void {
     });
   });
   overlay.querySelector<HTMLButtonElement>('#ax-mem-clear-jrn')?.addEventListener('click', () => {
-    if (!confirm('🗑 Vider DÉFINITIVEMENT le journal permanent ?\n\nTout l\'historique de ce que tu as déposé sera supprimé (local + cloud). Cette action est rare et irréversible.')) return;
-    void import('../../services/ai/chat-journal.js').then(({ chatJournal }) => {
-      void chatJournal.clearAll().then(() => { renderJournal(''); toast.success('🗑 Journal vidé'); });
+    /* 19.11 : plus de confirm() natif (il gèle l'onglet) — confirmation dans la page. */
+    void import('../../ui/modal-sheet.js').then(({ modalSheet }) => {
+      const sheet = modalSheet.open({
+        title: 'Vider le journal',
+        content: '<p>🗑 Vider DÉFINITIVEMENT le journal permanent ?</p><p style="font-size:13px">Tout l\'historique de ce que tu as déposé sera supprimé (local + cloud). Cette action est rare et irréversible.</p>',
+        actions: [
+          { label: 'Annuler', variant: 'ghost', onClick: () => sheet.close() },
+          {
+            label: 'Vider',
+            variant: 'danger',
+            onClick: () => {
+              sheet.close();
+              void import('../../services/ai/chat-journal.js').then(({ chatJournal }) => {
+                void chatJournal.clearAll().then(() => { renderJournal(''); toast.success('🗑 Journal vidé'); });
+              });
+            },
+          },
+        ],
+      });
     });
   });
 

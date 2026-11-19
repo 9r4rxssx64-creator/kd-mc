@@ -1,7 +1,7 @@
 {
   "name": "apex-v13",
   "private": true,
-  "version": "13.4.400",
+  "version": "13.4.401",
   "type": "module",
   "description": "APEX AI v13 — Rebuild propre niveau entreprise commercialisable",
   "scripts": {

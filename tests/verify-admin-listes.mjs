@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path';
 const racine = join(dirname(fileURLToPath(import.meta.url)), '..');
 let fichier = join(racine, 'messaging-app', 'index.html'), tmp = null;
 if (process.env.SABOTAGE === '1') { tmp = join(racine, 'messaging-app', '.index-ancien-listes.tmp.html'); writeFileSync(tmp, execSync(`git -C "${racine}" show ${process.env.ANCIEN_INDEX || 'origin/main'}:messaging-app/index.html`, { maxBuffer: 80e6 })); fichier = tmp; }
+import { readFileSync } from 'node:fs';
 let ko = 0; const ok = (c, m, d) => { console.log((c ? '✅ ' : '❌ ') + m + (!c && d !== undefined ? ' — ' + JSON.stringify(d).slice(0, 220) : '')); if (!c) ko++; };
 const b = await chromium.launch({ args: ['--no-sandbox'] });
 try {
@@ -22,7 +23,7 @@ try {
     K.token = 'x'; K.user = { id: 'u0', is_admin: true };
     const now = Date.now();
     const U = (id, nom, vu) => ({ id, pseudo: id, real_name: nom, last_seen: vu, is_admin: false, is_banned: false, conv_count: 1 });
-    const users = [U('b', 'Bruno Ancien', now - 5 * 86400e3), U('z', 'Zoé Jamais', null), U('a', 'Alice Récente', now - 60e3), U('m', 'Marc Hier', now - 86400e3)];
+    const users = [U('b', 'Bruno Ancien', now - 5 * 86400e3), U('z', 'Zoé Jamais', null), U('a', 'Alice Récente', now - 60e3), U('m', 'Marc Hier', now - 86400e3), { ...U('d', 'Fantome Supprime', now - 30e3), status: 'deleted' }];
     const demandes = [{ user_id: 'p1', plan: 'monthly', ts: now - 3 * 86400e3 }, { user_id: 'p2', plan: 'yearly', ts: now - 3600e3 }, { user_id: 'p3', plan: 'monthly', ts: now - 86400e3 }];
     const sorties = {};
     const div = document.createElement('div'); document.body.appendChild(div);
@@ -30,6 +31,7 @@ try {
     K.render = () => {}; K.sv = () => {};
     await renderAdminLiveUsers(div);
     sorties.ordre = [...div.querySelectorAll('#admin-live-list .card')].map((x) => (x.textContent.match(/Alice|Bruno|Zoé|Marc/) || [''])[0]);
+    sorties.supprimeVisible = /Fantome/.test(div.textContent); sorties.total = (div.textContent.match(/(\d+)\s*Total/) || [])[1] || null;
     const ouverts = []; K._openContactSheet = (id) => ouverts.push(id);
     const nomCarte = [...div.querySelectorAll('#admin-live-list .card')].find((x) => /Alice/.test(x.textContent));
     const cible = nomCarte && [...nomCarte.querySelectorAll('[onclick]')].find((e) => /Alice/.test(e.textContent) && !/Fiche/.test(e.textContent));
@@ -40,10 +42,14 @@ try {
     return sorties;
   });
   ok(r.ordre && r.ordre.join(',') === 'Alice,Marc,Bruno,Zoé', 'Tous les comptes : du plus récent au plus ancien, jamais-vu en dernier (Alice, Marc, Bruno, Zoé)', r.ordre);
+  ok(r.supprimeVisible === false, 'un compte au statut « supprimé » n\'est PAS dans « Tous les comptes » (19.11, pc-config 2764 : 200 restes de robots noyaient la liste)', r.supprimeVisible);
+  ok(r.total === '4', 'le total ne compte que les comptes vivants (4)', r.total);
   ok(r.premium && r.premium.join(',') === 'p2,p3,p1', 'Demandes Premium : la plus récente en haut (p2, p3, p1)', r.premium);
   ok(r.nomCliquable, 'le nom d\'une personne est cliquable (pas seulement « Fiche »)');
   ok(r.ouvert && r.ouvert.length === 1 && r.ouvert[0] === 'a', 'toucher le nom ouvre la fiche de CETTE personne', r.ouvert);
   ok(r.hauteur >= 44, `la zone du nom fait au moins 44 px (${r.hauteur})`, r.hauteur);
+  const w = readFileSync(join(racine, 'messaging-app', 'workers', 'api-worker.js'), 'utf8'); const h = w.slice(w.indexOf('async function handleAdminAllUsers'), w.indexOf('async function handleAdminUserAction'));
+  ok(/status IS NULL OR status != 'deleted'/.test(h), 'le serveur ne renvoie pas les comptes supprimés (sinon ils prennent des places dans les 200 de la page)');
   ok(erreurs.length === 0, 'aucune erreur JavaScript' + (erreurs.length ? ' : ' + erreurs.join(' ; ') : ''));
 } finally { await b.close(); if (tmp && existsSync(tmp)) unlinkSync(tmp); }
 process.exit(ko ? 1 : 0);

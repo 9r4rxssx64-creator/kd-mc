@@ -112,7 +112,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.370';
+export const API_VERSION = '1.1.371';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -4674,7 +4674,7 @@ async function handleAdminAllUsers(request, env) {
               created_at, last_seen, is_admin, is_banned, admin_authorized,
               last_ip_hash, last_user_agent, last_lat, last_lng, last_geo_label,
               last_device_label, premium_until, source, invited_by, status
-            FROM users WHERE 1=1 AND (source IS NULL OR source != 'e2e-test')`;
+            FROM users WHERE 1=1 AND (source IS NULL OR source != 'e2e-test') AND (status IS NULL OR status != 'deleted')`;
   const args = [];
   if (filter === 'banned') sql += ' AND is_banned=1';
   else if (filter === 'active') sql += ' AND (is_banned=0 OR is_banned IS NULL)';

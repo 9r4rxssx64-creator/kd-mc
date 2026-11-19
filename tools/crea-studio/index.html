@@ -155,8 +155,9 @@
   .mine-it .tag{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.66);
     color:#f0e0b8;font-size:10px;padding:3px 5px;text-align:center;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #camWrap{position:relative;width:100%;aspect-ratio:3/4;background:#000;border-radius:14px;
-    overflow:hidden;margin-top:10px}
+  /* 19.11 : sur ordinateur le cadre 3/4 faisait 1 707 px de haut (boutons hors écran) — il ne dépasse plus 68 % de la hauteur */
+  #camWrap{position:relative;width:100%;width:min(100%,calc(68vh*.75));width:min(100%,calc(68dvh*.75));aspect-ratio:3/4;background:#000;border-radius:14px;
+    overflow:hidden;margin:10px auto 0}
   #camView,#camShot{width:100%;height:100%;object-fit:cover;display:block}
   #camOverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   #camView.mir{transform:scaleX(-1)}
@@ -1235,7 +1236,7 @@
    100% client-side, hors-ligne, aucune dépendance externe.
    ============================================================ */
 'use strict';
-var APP_VER='v9.22.15';
+var APP_VER='v9.22.16';
 document.getElementById('vbadge').textContent=APP_VER;
 /* la pastille se pose juste au-dessus de la barre du bas, quelle que soit sa hauteur (1 ou 2 rangées) */
 function majNavH(){var b=document.getElementById('bnav');if(b&&b.offsetHeight)document.documentElement.style.setProperty('--navh',b.offsetHeight+'px');}
@@ -2460,25 +2461,56 @@ var Cam=(function(){
     box.querySelectorAll('[data-fx]').forEach(function(b){
       b.onclick=function(){fx=b.dataset.fx;chips();applyFx();};});
   }
+  /* 19.11 (pc-config, vrai Chrome du Lenovo : caméra OK en direct mais « Démarrer » laissait la vidéo à 0×0
+     avec « Prêt ✅ » affiché) : on ne dit « Prêt » qu'APRÈS avoir reçu une vraie image ; si aucune image
+     n'arrive en 3 s on relance avec une demande plus simple (sans taille idéale, puis sans micro). */
+  var NIVEAUX=['complet','simple','sans-micro'];
+  function demande(n){
+    if(n===0)return {video:{facingMode:facing,width:{ideal:1920},height:{ideal:1080}},audio:true};
+    if(n===1)return {video:{facingMode:facing},audio:true};
+    return {video:true,audio:false};
+  }
   function start(){
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
       hint('⚠️ Cet appareil ne permet pas la caméra dans le navigateur. Utilise « 📂 Importer ».');return;}
     stop(true);
-    hint('Ouverture de la caméra…');
-    navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:1920},height:{ideal:1080}},audio:true})
+    essayer(0);
+  }
+  function essayer(n){
+    hint(n===0?'Ouverture de la caméra…':'Nouvel essai de la caméra ('+NIVEAUX[n]+')…');
+    navigator.mediaDevices.getUserMedia(demande(n))
       .then(function(st){
-        stream=st;var el=v();el.srcObject=st;el.play().catch(function(){});
+        stream=st;var el=v();el.srcObject=st;
+        var p=el.play();if(p&&p.catch)p.catch(function(){});
         el.classList.toggle('mir',mirror&&facing==='user');
         applyFx();
-        attendreLumiere(st);
+        attendreImage(st,n);
       })
       .catch(function(e){
         var m=String(e&&e.name||e);
+        if(n<2&&m!=='NotAllowedError'&&m!=='SecurityError'){essayer(n+1);return;}   /* micro absent / contrainte refusée : on réessaie plus simple */
         hint(m==='NotAllowedError'
           ? '⚠️ Tu as refusé la caméra. Autorise-la dans les réglages du téléphone, ou utilise « 📂 Importer ».'
           : (m==='NotFoundError'?'⚠️ Aucune caméra trouvée sur cet appareil.'
             :'⚠️ Caméra indisponible ('+m.slice(0,40)+'). Tu peux importer une photo.'));
       });
+  }
+  function attendreImage(st,n){
+    var t0=Date.now();
+    (function boucle(){
+      if(stream!==st)return;                       /* on a quitté l'écran ou relancé : ce flux n'est plus le bon */
+      var el=v();
+      if(el&&el.videoWidth>0&&el.readyState>=2&&!el.paused){attendreLumiere(st);return;}
+      if(el&&el.paused){var p=el.play();if(p&&p.catch)p.catch(function(){});}
+      if(Date.now()-t0>3000){
+        if(n<2){                                     /* aucune image : on coupe ce flux et on redemande plus simple */
+          try{st.getTracks().forEach(function(t){t.stop();});}catch(e){}
+          stream=null;if(el)el.srcObject=null;
+          essayer(n+1);return;}
+        hint('⚠️ La caméra est allumée mais n\'envoie pas d\'image. Ferme les autres applis qui l\'utilisent, puis touche « Démarrer la caméra ». Tu peux aussi importer une photo.');
+        return;}
+      setTimeout(boucle,150);
+    })();
   }
   /* Une caméra d'ordinateur démarre SOMBRE 1 à 3 s (auto-exposition ; mesuré sur le Lenovo de Kevin 8.11 :
      25 → 33 → 39 sur 255). On le dit au lieu d'annoncer « Prêt » devant un écran noir. */
@@ -7522,6 +7554,6 @@ catch(e){ try{ toast('Comptes indisponibles : '+String(e.message||e).slice(0,60)
 <script src="avatar-persos.js" defer></script>
 <script src="avatar-studio.js" defer></script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.15" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="crea-studio" data-version="v9.22.16" data-version-global="APP_VER" data-own-badge="#vbadge" data-color="#c9a227" defer></script>
 </body>
 </html>

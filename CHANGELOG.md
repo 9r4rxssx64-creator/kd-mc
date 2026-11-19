@@ -342,6 +342,10 @@ Demande de Kevin (18.11) : « Sur la fiche de Davy il y a beaucoup d'incohérenc
 - Maintenant : on centre le COUPLE (la personne et son conjoint dessiné à côté) ; les niveaux ×0,6 · ×0,85 · ×1,2 ne dépassent jamais ce que le couple occupe en largeur (sur iPhone : ×0,6 et ×0,85) ; la personne se pose en haut de la zone libre, au-dessus du bandeau, pour qu'on voie aussi ses enfants.
 - Garde `tools/arbre/verify-lire-ici.mjs` étendue (couple sur iPhone 390 et iPad ; rouge sur v3.215 : 8 échecs).
 
+## Créa Studio v9.22.16 — la caméra ne dit « Prêt ✅ » que quand l'image arrive, et le cadre tient dans l'écran d'ordinateur (2026-11-19)
+- **Pourquoi** : mesure réelle de pc-config sur le Chrome du Lenovo : « Démarrer la caméra » laissait la vidéo à 0×0 (aucune image) avec « Prêt ✅ » affiché, et le cadre faisait 1 707 px de haut sur un écran de 1 280 px.
+- **Fait** : « Prêt ✅ » seulement quand une vraie image existe (largeur > 0, lecture en cours) ; sinon nouvel essai automatique plus simple (sans micro, puis sans taille demandée), puis message honnête « la caméra n'envoie pas d'image » ; permission refusée = un seul essai et message de refus ; cadre borné à 68 % de la hauteur de l'écran (rapport 3/4).
+- **Garde** : `npm run test:crea-camera-flux` 10 OK (Chromium ordinateur, fausse caméra, SANS réglage de lecture automatique) ; rouge (5 échecs) sur v9.22.15 (`CREA_DIR=<ancien dossier>`).
 ## Créa Studio v9.22.15 — les confirmations s'affichent dans la page, plus de fenêtre native (2026-11-12)
 - **Pourquoi** : la fenêtre native du navigateur (« Effacer ? ») gèle le pilotage automatique par pc-config et s'affiche mal sur iPhone.
 - **Fait** : `askConfirm()` = une carte dans la page (message, « Annuler » / bouton d'action, boutons de 46 px, Échap et toucher le fond = annuler). Les 8 confirmations du Studio y passent : effacer une création, « Tout effacer », oublier un cercle, supprimer un mini-moi, retirer (Photo, Vidéo, Animation), tout retirer (Montage auto).

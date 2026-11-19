@@ -101,6 +101,19 @@ try {
       }
     }
   } else dire('ℹ️ aucune puce d\'app à l\'écran : le filtre par app n\'a pas pu être essayé');
+  /* 19.11 (Kevin : « vérifie toujours tout ») : le journal admin et les boutons ouvrir / fermer, lus sur la vraie page — nombres seulement. */
+  await page.waitForSelector('#audsec .tlrow', { state: 'attached', timeout: 15000 }).catch(() => {});
+  const ja = await page.evaluate(() => {
+    const l = Array.from(document.querySelectorAll('#audsec .tlrow')), lib = l.map((r) => { const b = r.querySelector('b'); return b ? b.textContent : ''; }).filter(Boolean);
+    const f = Array.from(document.querySelectorAll('.bascule.fermee[data-bascule]'));
+    return { lignes: lib.length, code: lib.filter((t) => /_/.test(t)).length, imprevus: lib.filter((t) => /^• /.test(t)).length, cibles: l.filter((r) => r.getAttribute('data-va')).length, total: l.length,
+      plus: !!document.getElementById('aud-plus'), ouvertes: document.querySelectorAll('.bascule[data-bascule]:not(.fermee)').length, fermees: f.length,
+      datees: f.filter((b) => / · (depuis|avant) le /.test((b.querySelector('.s') || {}).textContent || '')).length };
+  });
+  chk(ja.lignes > 0 && ja.code === 0, `journal admin : ${ja.lignes} ligne(s), ${ja.code} en nom de code, ${ja.imprevus} événement(s) sans phrase prévue`);
+  chk(ja.total > 0 && ja.cibles === ja.total, `journal admin : ${ja.cibles} ligne(s) sur ${ja.total} mènent quelque part · bouton « plus anciens » : ${ja.plus ? 'oui' : 'non'}`);
+  chk(ja.fermees + ja.ouvertes > 0, `ouvrir / fermer : ${ja.ouvertes} app(s) ouverte(s), ${ja.fermees} fermée(s) pour tous`);
+  dire(`ℹ️ apps fermées qui disent depuis quand : ${ja.datees} sur ${ja.fermees} (les autres : fermeture plus ancienne que les 200 dernières lignes du journal)`);
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }
 
 dire(`=== VÉRIF TABLEAU ADMIN : ${bons} OK · ${mauvais} en défaut`);

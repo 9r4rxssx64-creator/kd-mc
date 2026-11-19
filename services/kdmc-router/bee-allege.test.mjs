@@ -72,7 +72,7 @@ for (const q of ['ferme lingua, ouvre l\'arbre de Yann, regarde la page, rappell
   const v = IA_VUES[0]; ok(!!v && taille(v) <= PLAFOND_MAX + 1500, '4. même une demande qui parle de TOUT : ' + (v ? taille(v) : '?') + ' jetons (≤ ' + (PLAFOND_MAX + 1500) + ') — les lots sont envoyés, rien de plus');
 }
 /* 4a. LA PARITÉ (Kevin 18.11, outils lien_externe / comptes_cmcteams / appeler) pèse ≈ 450 jetons : elle ne s'envoie QUE pour ses demandes (19.11 : large, elle poussait le cas « TOUT » à 8 439 jetons et le déploiement du routeur est resté rouge) */
-reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; await bee('appelle Zoé Petit');
+reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; await bee('appelle Zoé Petit demain matin');   // « appelle Zoé Petit » seul est un raccourci sans IA (bee-parite-raccourci.test.mjs) ; ici on veut l'appel à l'IA
 { const v = IA_VUES[0]; ok(!!v && ['lien_externe', 'comptes_cmcteams', 'appeler'].every((n) => v.corps.tools.some((x) => (x.function || x).name === n)) && taille(v) <= PLAFOND_MAX, '4a. une demande de parité → les 3 outils de parité, et ' + (v ? taille(v) : '?') + ' jetons (≤ ' + PLAFOND_MAX + ')'); }
 for (const q of ['ouvre l\'arbre et dis-moi qui est Yann', 'quels sont mes comptes bannis ?', 'rappelle-moi demain', 'ferme lingua pour tout le monde']) {
   reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; await bee(q, env, undefined);

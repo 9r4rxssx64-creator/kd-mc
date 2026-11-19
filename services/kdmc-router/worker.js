@@ -29,7 +29,7 @@ const URL_MESSAGES = 'https://kd-mc.com/#messages';
 /* Kevin 2026-09-05 « Qwen l'IA gratuite en principal, pareil dans mes autres projets » :
    UN routage IA commun au domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { verrouFerme, compterEchec, magasinKV, VERROU_MESSAGE } from '../_shared/verrou-code-admin.js';   // verrou global du code admin (audit 17.10)
-import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders, SECRET_NAMES as IA_SECRETS, chargerPauses, pausesActives, chatAvecOutils } from '../_shared/ia-route.js';
+import { routeText, routeSmart, FREE_PROVIDERS, detectDomain, planChain, availableProviders, SECRET_NAMES as IA_SECRETS, chargerPauses, pausesActives, chatAvecOutils, workersAiRun } from '../_shared/ia-route.js';
 import * as IA from './bot-ia.js';
 import { handleCercle } from './cercle.js';
 import { handleAppelPush, AppelReveil, armer as armerHorloge } from './appel-push.js';
@@ -6005,7 +6005,7 @@ const IA_QWEN_MODELE = '@cf/qwen/qwen3.8-27b';
 async function iaDirect(env, modele, system, prompt, maxTokens) {
   if (!env.AI || typeof env.AI.run !== 'function') throw new Error('Workers AI absent');
   const r = await Promise.race([
-    env.AI.run(modele, { messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature: 0.3 }),
+    workersAiRun(env, modele, { messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }], max_tokens: maxTokens, temperature: 0.3 }),   // 19.11 : plafond journalier de Workers AI (ia-route.js)
     new Promise((_, rej) => setTimeout(() => rej(new Error('délai 25 s')), 25000)),
   ]);
   return IA.texteReponseIa(r);

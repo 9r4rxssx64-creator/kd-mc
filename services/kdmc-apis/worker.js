@@ -181,7 +181,7 @@ function err(message, status, origin, detail) {
    le routage IA commun du domaine (Qwen Workers AI d'abord, bascule par type de question). */
 import { repondreAvecOutils, REGLES_OUTILS_APPS, SANS_PLANNING, RE_BESOIN_OUTILS, questionComplexe } from '../_shared/outils-lecture.js';
 import { handleDelegue, handleJobs, handleVision } from './delegue.js';
-import { routeText, routeSmart, analyseQuestion, detectDomain, routingStatus, chargerPauses, chargerModelesRetires, DOMAIN_PREFERENCES, QWEN_MODELS } from '../_shared/ia-route.js';
+import { routeText, routeSmart, analyseQuestion, detectDomain, routingStatus, chargerPauses, chargerModelesRetires, DOMAIN_PREFERENCES, QWEN_MODELS, workersAiRun, neuronesDuJour, plafondNeurones } from '../_shared/ia-route.js';
 
 export const KEYLESS = {
   // Météo (anticiper l'affluence casino — Convention SBM art.17.6).
@@ -620,7 +620,7 @@ async function handleAi(request, env0, origin) {
   if (env.AI && (!opts.provider || opts.provider === 'workers-ai' || opts.provider === 'qwen-cf')) {
     try {
       const model = (opts.provider === 'qwen-cf' ? QWEN_MODELS[0] : opts.model) || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
-      const out = await env.AI.run(model, { messages: opts.messages });
+      const out = await workersAiRun(env, model, { messages: opts.messages });   // 19.11 : gardé par le plafond journalier (ia-route.js) — au-delà, erreur claire, jamais de facture
       const text = (out && (out.response || (out.result && out.result.response))) || '';
       if (text) return json({ ok: true, provider: 'workers-ai', model, text }, 200, origin);
       tried.push({ provider: 'workers-ai', detail: 'réponse vide' });

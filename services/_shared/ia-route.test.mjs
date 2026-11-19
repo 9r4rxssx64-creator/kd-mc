@@ -9,10 +9,12 @@ import {
   detectDomain, planChain, routeText, stripThink, availableProviders, routingStatus,
   QWEN_MODELS, CF_RAPIDES, FREE_PROVIDERS, DOMAIN_PREFERENCES, SECRET_NAMES,
   _resetPauses, enPause, pauser, dureePause, anticiperDepuisEntetes, NIVEAU, chatAvecOutils,
+  _resetNeurones, neuronesDuJour, compterNeurones, workersAiPermis, estimerNeurones, plafondNeurones, workersAiRun, IA_NEURONES_DEFAUT,
 } from './ia-route.js';
+import { DatabaseSync } from 'node:sqlite';
 
 /* les pauses d'épuisement vivent en mémoire : chaque test repart à zéro */
-beforeEach(() => _resetPauses());
+beforeEach(() => { _resetPauses(); _resetNeurones(); });
 
 const fakeAI = (opts = {}) => ({
   calls: [],
@@ -679,4 +681,70 @@ test('outils : un modèle qui écrit TOUJOURS mal son appel d\'outil (Groq gpt-o
     const r2 = await chatAvecOutils({ GROQ_API_KEY: 'g' }, 'groq', { messages: [{ role: 'user', content: 'y' }], tools: [{ name: 'calcul', description: 'x', parameters: { type: 'object', properties: {} } }], timeoutMs: 12000 });
     assert.equal(r2.model, 'openai/gpt-oss-20b');
   } finally { m.restore(); }
+});
+
+
+/* ─────────── LE PLAFOND JOURNALIER DE WORKERS AI (19.11.2026 — facture Cloudflare : 947 470 neurones facturés, 10,43 $) ─────────── */
+const d1Neurones = () => { const b = new DatabaseSync(':memory:'); const st = (sql) => { let a = []; const o = { bind: (...x) => { a = x; return o; }, run: async () => { const r = b.prepare(sql).run(...a); return { meta: { changes: Number(r.changes) } }; }, first: async () => b.prepare(sql).get(...a) || null, all: async () => ({ results: b.prepare(sql).all(...a) }) }; return o; }; return { prepare: st, _b: b }; };
+
+test('PLAFOND Workers AI : les neurones se comptent d\'après les jetons de la réponse, sinon d\'après la longueur des textes', () => {
+  assert.equal(Math.round(estimerNeurones({ usage: { prompt_tokens: 1000, completion_tokens: 500 } }, [], '')), 110);   // 1000 × 0,06 + 500 × 0,10
+  const sans = estimerNeurones({ response: 'x' }, [{ role: 'user', content: 'a'.repeat(3000) }], 'b'.repeat(900));
+  assert.ok(sans > 80 && sans < 100, 'sans usage : ≈ 1000 jetons lus + 300 écrits = ' + sans);
+  assert.equal(plafondNeurones({}), IA_NEURONES_DEFAUT);
+  assert.equal(plafondNeurones({ IA_NEURONES_JOUR: '500' }), 500);
+});
+
+test('PLAFOND Workers AI : au-delà du plafond du jour, Workers AI n\'est PLUS appelé (0 appel = 0 neurone facturé) ; le lendemain il repart', async () => {
+  const AI = fakeAI(), env = { AI, IA_NEURONES_JOUR: '100' }, J1 = Date.UTC(2026, 10, 19, 10), J2 = Date.UTC(2026, 10, 20, 10);
+  assert.equal(await workersAiPermis(env, J1), true);
+  await compterNeurones(env, 120, J1);
+  assert.equal(Math.round(await neuronesDuJour(env, J1)), 120);
+  assert.equal(await workersAiPermis(env, J1), false);
+  assert.equal(await workersAiPermis(env, J2), true, 'un nouveau jour (UTC) repart de zéro');
+  _resetNeurones(); await compterNeurones(env, 120);
+  await assert.rejects(() => workersAiRun(env, QWEN_MODELS[0], { messages: [{ role: 'user', content: 'bonjour' }] }), /plafond Workers AI du jour atteint/);
+  assert.equal(AI.calls.length, 0, 'env.AI.run n\'a pas été appelé');
+});
+
+test('PLAFOND Workers AI : chaque appel réussi s\'ajoute au compteur ; avec une base D1 le compteur est PARTAGÉ et survit à la mémoire', async () => {
+  const db = d1Neurones(), AI = { calls: 0, run() { this.calls++; return { response: 'Bonjour', usage: { prompt_tokens: 2000, completion_tokens: 1000 } }; } };
+  const env = { AI, CERCLE_DB: db, IA_NEURONES_JOUR: '500' };
+  await workersAiRun(env, QWEN_MODELS[0], { messages: [{ role: 'user', content: 'x' }] });
+  assert.equal(Math.round(db._b.prepare('SELECT n FROM ia_neurones').get().n), 220);   // 2000 × 0,06 + 1000 × 0,10
+  _resetNeurones();   /* une AUTRE instance du Worker : sa mémoire est vide, la base dit la vérité */
+  assert.equal(Math.round(await neuronesDuJour(env)), 220);
+  await workersAiRun(env, QWEN_MODELS[0], { messages: [] }); await workersAiRun(env, QWEN_MODELS[0], { messages: [] });
+  assert.equal(AI.calls, 3);
+  await assert.rejects(() => workersAiRun(env, QWEN_MODELS[0], { messages: [] }), /plafond/);   // 660 ≥ 500
+  assert.equal(AI.calls, 3, 'le 4e appel n\'est pas parti');
+  assert.equal(db._b.prepare('SELECT COUNT(*) AS c FROM ia_neurones').get().c, 1, 'une seule ligne par jour');
+});
+
+test('PLAFOND Workers AI : la route CONTINUE vers une autre IA gratuite quand le jour est plein — la personne reçoit sa réponse', async () => {
+  const AI = fakeAI(), env = { AI, GROQ_API_KEY: 'g', IA_NEURONES_JOUR: '50' };
+  await compterNeurones(env, 80);
+  const f = mockFetch((url) => (/groq/.test(url) ? openaiReply('Réponse de Groq') : okJson({})));
+  try {
+    const r = await routeText(env, { prompt: 'quel temps fait-il à Monaco ?', system: 'Tu es Apex.' });
+    assert.equal(r.ok, true); assert.equal(r.provider, 'groq'); assert.match(r.text, /Réponse de Groq/);
+    assert.equal(AI.calls.length, 0, 'Workers AI sauté : aucun neurone dépensé');
+  } finally { f.restore(); }
+});
+
+test('PLAFOND Workers AI : une base D1 en panne ne casse rien (compteur en mémoire) et un plafond à 0 coupe Workers AI', async () => {
+  const cassee = { prepare() { throw new Error('D1 muette'); } }, env = { AI: fakeAI(), CERCLE_DB: cassee, IA_NEURONES_JOUR: '1000' };
+  await compterNeurones(env, 10);
+  assert.equal(Math.round(await neuronesDuJour(env)), 10);
+  assert.equal(await workersAiPermis({ IA_NEURONES_JOUR: '0' }), false);
+});
+
+test('PLAFOND Workers AI : garde de code — plus aucun appel direct env.AI.run hors du passage gardé, dans la route commune, la porte déléguée et l\'IA du robot', async () => {
+  const { readFileSync } = await import('node:fs');
+  const lire = (f) => readFileSync(new URL(f, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const route = lire('./ia-route.js');
+  assert.equal((route.match(/env\.AI\.run\(/g) || []).length, 2, 'dans ia-route.js : seulement les 2 appels de workersAiRun (avec et sans délai)');
+  assert.ok(!/env\.AI\.run\(/.test(lire('../kdmc-apis/worker.js')), 'kdmc-apis passe par workersAiRun');
+  const routeur = lire('../kdmc-router/worker.js'), iaDirect = routeur.slice(routeur.indexOf('async function iaDirect('), routeur.indexOf('async function iaDirect(') + 600);
+  assert.ok(/workersAiRun\(env, modele/.test(iaDirect) && !/env\.AI\.run\(modele/.test(iaDirect), 'l\'IA du robot passe par workersAiRun');
 });

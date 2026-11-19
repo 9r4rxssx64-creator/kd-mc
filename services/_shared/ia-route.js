@@ -370,6 +370,58 @@ function withTimeout(ms) {
   return { signal: ctrl.signal, done: () => clearTimeout(t) };
 }
 
+/* ───────────── LE PLAFOND JOURNALIER DE WORKERS AI (19.11.2026, Kevin : « j'ai reçu une facture Cloudflare… gratuit toujours au max ») ─────────────
+   FACTURE LUE (pont 2885) : 947 470 neurones Workers AI facturables sur le cycle 19.10 → 18.11 = 10,43 $ sur 12,84 $ HT. MESURÉ (mesure-quotas, run 44612878183) :
+   1 274 655 neurones en 31 jours dont @cf/qwen/qwen3.8-27b 1 205 510 ; 439 197 le seul 7.11 pour 10 000 gratuits par jour ; les jours de dépassement, la porte
+   déléguée kdmc-apis passait de 300 à 20 000 appels (run 44613443506). Workers AI était « gratuit, 0 clé, en tête » : gratuit seulement jusqu'à 10 000 neurones
+   par jour ; au-delà, l'offre payante du compte facture 0,011 $ les 1 000 SANS RIEN DIRE.
+   Donc : chaque appel texte à Workers AI passe par un COMPTEUR du jour. Au-delà du plafond, Workers AI est sauté comme un fournisseur en panne et la route continue
+   vers les autres IA gratuites (Groq, Cerebras…) : personne ne voit de différence, et la facture reste à 0.
+   · Le compteur vit en D1 quand le Worker en a une (partagé entre toutes ses instances), sinon en mémoire (une instance) — jamais en KV.
+   · Les neurones sont ESTIMÉS d'après les jetons de la réponse (`usage`), au tarif des gros modèles Qwen (≈ 0,06 neurone par jeton lu, 0,10 par jeton écrit) ;
+     sans `usage`, d'après la longueur du texte. L'estimation est volontairement large : mieux vaut sauter Workers AI trop tôt que payer.
+   · Plafond par Worker : IA_NEURONES_JOUR (réglage), sinon 3 000 — plusieurs Workers partagent les 10 000 du compte (routeur, porte déléguée, studio, voix). */
+export const IA_NEURONES_DEFAUT = 3000;
+const NEURONE_PAR_JETON = { lu: 0.06, ecrit: 0.10 };
+const memNeurones = { jour: '', n: 0 };
+const jourUTC = (now) => new Date(now || Date.now()).toISOString().slice(0, 10);
+const baseNeurones = (env) => { for (const k of ['IA_COMPTEUR_DB', 'CERCLE_DB', 'DELEGUE', 'DB']) { const d = env && env[k]; if (d && typeof d.prepare === 'function') return d; } return null; };
+const pretesNeurones = new WeakSet();
+async function tableNeurones(db) { if (pretesNeurones.has(db)) return; await db.prepare('CREATE TABLE IF NOT EXISTS ia_neurones (jour TEXT PRIMARY KEY, n REAL)').run(); pretesNeurones.add(db); }
+export const plafondNeurones = (env) => { const v = Number(env && env.IA_NEURONES_JOUR); return Number.isFinite(v) && v >= 0 ? v : IA_NEURONES_DEFAUT; };
+/** Combien de neurones Workers AI ce Worker a déjà (estimés) dépensés aujourd'hui. Ne lève jamais. */
+export async function neuronesDuJour(env, now) {
+  const j = jourUTC(now), db = baseNeurones(env);
+  if (db) { try { await tableNeurones(db); const r = await db.prepare('SELECT n FROM ia_neurones WHERE jour = ?').bind(j).first(); return (r && Number(r.n)) || 0; } catch (_) { /* base muette : on retombe sur la mémoire */ } }
+  return memNeurones.jour === j ? memNeurones.n : 0;
+}
+/** true = on peut encore appeler Workers AI aujourd'hui. */
+export async function workersAiPermis(env, now) { return (await neuronesDuJour(env, now)) < plafondNeurones(env); }
+/** Estime les neurones d'une réponse (usage des jetons, sinon longueur des textes). */
+export function estimerNeurones(reponse, messages, texte) {
+  const u = reponse && (reponse.usage || (reponse.result && reponse.result.usage));
+  let lu = u && Number(u.prompt_tokens), ecrit = u && Number(u.completion_tokens);
+  if (!Number.isFinite(lu) || lu <= 0) lu = Math.ceil((Array.isArray(messages) ? messages.reduce((t, m) => t + String((m && m.content) || '').length, 0) : 0) / 3);
+  if (!Number.isFinite(ecrit) || ecrit <= 0) ecrit = Math.ceil(String(texte || '').length / 3);
+  return Math.max(1, lu * NEURONE_PAR_JETON.lu + ecrit * NEURONE_PAR_JETON.ecrit);
+}
+/** Ajoute au compteur du jour. Ne lève jamais (un compteur en panne ne casse pas une réponse). */
+export async function compterNeurones(env, n, now) {
+  const j = jourUTC(now), v = Math.max(0, Number(n) || 0), db = baseNeurones(env);
+  if (memNeurones.jour !== j) { memNeurones.jour = j; memNeurones.n = 0; }
+  memNeurones.n += v;
+  if (db) { try { await tableNeurones(db); await db.prepare('INSERT INTO ia_neurones (jour, n) VALUES (?, ?) ON CONFLICT(jour) DO UPDATE SET n = n + excluded.n').bind(j, v).run(); await db.prepare('DELETE FROM ia_neurones WHERE jour < ?').bind(jourUTC((now || Date.now()) - 40 * 864e5)).run(); } catch (_) { /* compté en mémoire */ } }
+}
+export function _resetNeurones() { memNeurones.jour = ''; memNeurones.n = 0; }
+/** L'appel Workers AI gardé par le plafond : refuse (erreur claire) quand le jour est plein, compte ce qu'il dépense. */
+export async function workersAiRun(env, model, entree, delai) {
+  if (!(await workersAiPermis(env))) throw new Error('plafond Workers AI du jour atteint (gratuit préservé)');
+  const r = await (delai ? withDeadline(env.AI.run(model, entree), delai) : env.AI.run(model, entree));
+  let texte = ''; try { texte = String((r && (r.response !== undefined ? (typeof r.response === 'object' ? JSON.stringify(r.response) : r.response) : (r.result && r.result.response) || r.text)) || ''); } catch (_) { texte = ''; }
+  await compterNeurones(env, estimerNeurones(r, entree && entree.messages, texte));
+  return r;
+}
+
 /* Texte d'une réponse Workers AI (objet déjà décodé, `result`, `text` ou format OpenAI) — sans <think>. */
 function texteWorkersAi(r) {
   const brut = r && (r.response !== undefined ? r.response : (r.result && r.result.response !== undefined ? r.result.response : (r.text !== undefined ? r.text : (r.choices && r.choices[0] && r.choices[0].message ? r.choices[0].message.content : ''))));
@@ -383,7 +435,7 @@ async function callCfRapide(env, messages, o) {
     const delai = Math.min(o.rapideMs || 7000, reste);
     if (delai < 1500) { tried.push(model + ':échéance'); break; }
     try {
-      const r = await withDeadline(env.AI.run(model, { messages, max_tokens: o.maxTokens, temperature: o.temperature }), delai);
+      const r = await workersAiRun(env, model, { messages, max_tokens: o.maxTokens, temperature: o.temperature }, delai);
       const text = texteWorkersAi(r);
       if (text) return { text, model };
       tried.push(model + ':vide');
@@ -405,7 +457,7 @@ async function callQwen(env, messages, o) {
     const delai = o.finMs ? Math.min(o.qwenModelMs || 8000, reste) : Math.max(o.timeoutMs || 20000, 30000);
     if (delai < 1500) { tried.push(model + ':échéance'); break; }
     try {
-      const r = await withDeadline(env.AI.run(model, { messages, max_tokens: o.maxTokens, temperature: o.temperature }), delai);
+      const r = await workersAiRun(env, model, { messages, max_tokens: o.maxTokens, temperature: o.temperature }, delai);
       /* Workers AI rend parfois `response` DÉJÀ décodé (un objet JSON) quand le modèle répond en JSON :
          String(objet) donnait « [object Object] » (mesuré 3.10, journal D1 de l'IA crypto). */
       const brut = r && (r.response !== undefined ? r.response : (r.result && r.result.response !== undefined ? r.result.response : (r.text !== undefined ? r.text : (r.choices && r.choices[0] && r.choices[0].message ? r.choices[0].message.content : ''))));
@@ -636,7 +688,7 @@ export function freeVoices(env, max, domain) {
 async function askVoice(env, voice, messages, o) {
   const po = Object.assign({}, o, { model: voice.model });
   if (voice.provider === 'qwen') {
-    const r = await env.AI.run(voice.model, { messages, max_tokens: o.maxTokens, temperature: o.temperature });
+    const r = await workersAiRun(env, voice.model, { messages, max_tokens: o.maxTokens, temperature: o.temperature });
     const text = stripThink(r && (r.response || (r.result && r.result.response) || r.text));
     if (!text) throw new Error('réponse vide');
     return { text, model: voice.model };

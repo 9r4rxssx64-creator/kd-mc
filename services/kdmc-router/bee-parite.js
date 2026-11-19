@@ -41,6 +41,34 @@ function ajouter(sortie, carte) {
   l.push(carte);
 }
 
+/* RACCOURCI SANS IA (Kevin 19.11 : le test réel « appelle <nom> » rendait « aucune carte » quand les IA à outils étaient en pause — mesuré, run 44581200591) :
+   une demande NETTE (« appelle Zoé Petit », « liste des comptes CMCteams avec leur identifiant SBM », « ouvre https://… ») n'a pas besoin d'IA. Fonction PURE : elle
+   rend { outil, args } ou null ; le domaine exécute l'outil lui-même et fabrique la carte. Aucune donnée de personne ne part à une IA. */
+const sansAcc = (t) => String(t == null ? '' : t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const MOTS_NON_NOM = /^(?:le|la|les|un|une|mon|ma|mes|moi|toi|lui|elle|eux|ca|cela|ce|cette|quelqu|quelqu'un|tout|tous|toutes|personne)$/;
+export function intentionParite(message) {
+  const brut = String(message == null ? '' : message).trim();
+  if (!brut || brut.length > 200) return null;
+  let n = sansAcc(brut).replace(/[’'`´]/g, ' ').replace(/[^a-z0-9 .:/\-?_%=&#]+/g, ' ').replace(/\s+/g, ' ').trim();
+  n = n.replace(/-(?=(?:moi|toi|tu|lui|nous|vous|le|la|les)\b)/g, ' ');
+  n = n.replace(/^(?:(?:bee|bonjour|salut|stp|s il te plait|s il vous plait|peux tu|tu peux|pourrais tu|veux tu|vas y|va|merci)\s+)+/, '').replace(/\s+(?:stp|s il te plait|merci)\s*$/, '').replace(/[?.!]+$/, '').trim();
+  if (!n || n.split(' ').length > 22) return null;
+  /* 1. la liste des comptes CMCteams (avec l'identifiant SBM) */
+  if (/^(?:fais moi |donne moi |montre moi |affiche(?: moi)? |sors(?: moi)? |ouvre moi )?(?:la |une )?(?:liste|tableau)(?: de| des| complete)?(?: tous)?(?: les| des)? ?(?:personnes|gens|employes|utilisateurs|comptes)(?: qui ont)?(?: un| des)?(?: comptes?)? ?(?:dans |sur |de )?(?:cmc ?teams?|cmcteams|la light|light)\b/.test(n)
+    || /^(?:fais moi |donne moi |montre moi |affiche(?: moi)? )?(?:tous )?les comptes (?:de |dans |sur )?(?:cmc ?teams?|cmcteams|la light|light)\b/.test(n)
+    || /^(?:fais moi |donne moi |montre moi |affiche(?: moi)? )?(?:la )?liste (?:de )?(?:tous )?(?:les )?comptes\b.*\b(?:cmc ?teams?|cmcteams|light)\b/.test(n)) return { outil: 'comptes_cmcteams', args: {} };
+  /* 2. appelle <prénom nom> : un à quatre mots, lettres seulement, jamais « moi / le / un… » */
+  const ma = n.match(/^(?:appelle|appeler|telephone|telephoner|passe un (?:coup de )?(?:fil|telephone) a|donne un coup de fil a|contacte par telephone)(?: a)? ([a-z][a-z \-]{1,60})$/);
+  if (ma) {
+    const mots = ma[1].trim().split(/\s+/);
+    if (mots.length <= 4 && !MOTS_NON_NOM.test(mots[0]) && !mots.some((m) => /^(?:moi|tout|tous|toutes|personne|quelqu|et|puis|ou|pour|avec|qui|que|le|la|les|un|une|demain|ce|cette|ce)$/.test(m))) return { outil: 'appeler', args: { nom: mots.join(' ') } };
+  }
+  /* 3. ouvre <adresse> : une seule adresse, https ou « www. » ou « nom.tld » */
+  const ml = brut.match(/^(?:(?:bee|bonjour|salut|stp|peux[- ]tu|tu peux|va|vas[- ]y)\s+)*(?:ouvre|ouvrir|va sur|aller sur|affiche|montre|charge)(?:[- ]moi)?(?: la page| le site| la page internet| le site internet| le site web)?\s+(\S+?)[.!?]*$/i);
+  if (ml && /^(?:https?:\/\/|www\.|[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:[\/?#]|$))/i.test(ml[1]) && adresseExterne(ml[1])) return { outil: 'lien_externe', args: { url: ml[1] } };
+  return null;
+}
+
 /* o.appeler : (chemin) => Promise<{ok, ...}> — appel INTERNE d'une porte du domaine avec la session de Kevin (liste fermée PORTES_BEE). */
 export function outilsParite(o, sortie) {
   const defs = [

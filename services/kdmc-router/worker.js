@@ -38,7 +38,7 @@ import { outilsVoir, RE_VOIR, REGLES_VOIR, lireDoc } from './bee-voir.js';   // 
 import { outilsArbre, RE_ARBRE, REGLES_ARBRE, trouver as trouverArbre, nomComplet as nomCompletArbre } from './bee-arbre.js';
 import { reponseDirecte } from './bee-direct.js';
 import { handleRaccourci } from './bee-raccourci.js';   // Kevin 29.10 « Go tout » : Bee appelée par Siri / Raccourcis, LECTURE SEULE, jeton par appareil (voir ce fichier)   // météo, heure, date, calcul, conversion SANS IA quand la demande est nette (Kevin 17.10)
-import { outilsParite, RE_PARITE, REGLES_PARITE } from './bee-parite.js';   // page hors domaine, liste des comptes CMCteams, bouton Appeler — Kevin seul, derrière son toucher (Kevin 18.11)
+import { outilsParite, RE_PARITE, REGLES_PARITE, intentionParite } from './bee-parite.js';   // page hors domaine, liste des comptes CMCteams, bouton Appeler — Kevin seul, derrière son toucher (Kevin 18.11)
 import { outilsAtelier, imageGratuite, RE_ATELIER, REGLES_ATELIER } from './bee-atelier.js';   // documents, agenda, brouillon de mail, images — gratuit, Kevin seul (Kevin 17.10)
 import { outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, intentionOuvrir, intentionSuite, intentionFiche, homonymesArbre, reponseFiche, estSuiteOuverture, corrigerTexte } from './bee-ouvrir.js';   // Bee OUVRE n'importe quelle app du domaine sur l'écran de Kevin (Kevin 17.10)
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
@@ -4843,6 +4843,24 @@ async function handleBeeIa(request, env, ctx) {
   const veutOuvrir = !!ouvrirOutil && (RE_OUVRIR.test(dernierMsg) || veutVoir || veutArbre || estSuiteOuverture(messages));
   const veutAtelier = !!atelierOutil && RE_ATELIER.test(dernierMsg);
   const veutParite = !!pariteOutil && RE_PARITE.test(dernierMsg);
+  /* RACCOURCI SANS IA (Kevin 19.11, mesure réelle du 19.11 : « appelle <nom> » rendait « aucune carte » quand les IA à outils étaient en pause) :
+     une demande nette (appelle <nom> · liste des comptes CMCteams · ouvre https://…) est exécutée par le DOMAINE, qui fabrique la carte ; aucune IA ne voit
+     le nom, le matricule ni le numéro. Même porte, même bouton ✅/toucher de Kevin que par l'IA ; BEE_PARITE=0 coupe tout. */
+  if (pariteOutil) {
+    const raccourci = intentionParite(dernierMsg);
+    if (raccourci && pariteOutil.exe && pariteOutil.exe[raccourci.outil]) {
+      let retour = '', panne = false;
+      try { retour = String(await pariteOutil.exe[raccourci.outil](raccourci.args) || ''); } catch (e) { panne = true; }
+      const cartes = Array.isArray(sortie.cartes) ? sortie.cartes : [];
+      const c0 = cartes[0];
+      let texte;
+      if (panne && !c0) texte = 'Je n\u2019arrive pas à le faire pour le moment (le domaine ne répond pas à cette demande). Réessaie dans un instant.';
+      else if (raccourci.outil === 'appeler') texte = c0 ? (c0.appels && c0.appels.length > 1 ? 'Plusieurs personnes correspondent : touche la bonne pour l\u2019appeler.' : 'Voilà : touche le bouton pour appeler.') : (/aucun num/i.test(retour) ? 'Je connais le compte, mais aucun numéro n\u2019est dans sa fiche. Tu veux que je lui écrive un message direct pour le demander ?' : 'Je ne trouve aucun compte à ce nom. Écris-moi le prénom et le nom comme sur son compte.');
+      else if (raccourci.outil === 'comptes_cmcteams') texte = c0 ? 'La liste est là, avec l\u2019identifiant SBM de chacun.' : 'Je n\u2019arrive pas à lire la liste des comptes pour le moment. Réessaie dans un instant.';
+      else texte = c0 ? 'Touche le bouton pour ouvrir la page.' : 'Cette adresse n\u2019est pas ouvrable (il faut une adresse https).';
+      return JB(avec({ ok: true, text: texte, provider: 'domaine', gratuit: true, outils: [raccourci.outil] }));
+    }
+  }
   const lots = [[mains, veutAgir], [arbreOutil, veutArbre], [bilanOutil, veutArbre], [voirOutil, veutVoir], [ouvrirOutil, veutOuvrir], [atelierOutil, veutAtelier], [pariteOutil, veutParite]];
   const tousLots = [mains, arbreOutil, bilanOutil, voirOutil, ouvrirOutil, atelierOutil, pariteOutil].filter(Boolean);
   const choisis = lots.filter(([o, oui]) => o && oui).map(([o]) => o);

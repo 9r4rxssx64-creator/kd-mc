@@ -12,6 +12,7 @@
 ## Bee v1.41 — parité : ouvrir une page, liste des comptes CMCteams, appeler (2026-11-19)
 - **19.11 (javis-bee, correctif de budget)** : le lot parité ne part plus que sur ses mots (`RE_PARITE` resserré) et les textes d'outils sont plus courts : la demande « TOUT » repasse sous 8000 jetons (8470 avant, déploiement public rouge). Garde : `bee-allege.test.mjs` (4a, 4a2, plafond « TOUT »).
 - **19.11 (javis-bee, Kevin 18.11 « parité sur tout »)** : trois outils, tous derrière le toucher de Kevin et sans donnée de personne envoyée à l'IA : `lien_externe` (bouton « Ouvrir », https seulement), `comptes_cmcteams` (noms + identifiant SBM, carte fabriquée par le domaine, bouton Copier), `appeler` (bouton 📞 `tel:`). Interrupteur `BEE_PARITE=0`. Gardes `test:bee-parite-outils` 29/0, `test:bee-parite` 76/0. Cache `javis-v1.41`.
+- **19.11 (javis-bee, raccourci sans IA)** : « appelle <nom> », « liste des comptes CMCteams », « ouvre <adresse https> » sont compris par le domaine lui-même (`intentionParite`), avant les IA à outils : quand elles sont limitées (cerebras 402, mistral 429, groq 429) la carte sort quand même. Réponse `provider:'domaine'`, gratuite, aucune donnée de personne envoyée. Garde `test:bee-parite-raccourci` 16/0 (`SABOTAGE=ordre|large` rouges).
 
 ## Apex Chat v1.1.371 + Apex AI v13.4.401 — 19.11.2026 (apex-cloud, pc-config 2764)
 - Apex Chat : « Tous les comptes » ne montre plus les comptes supprimés (200 restes de robots noyaient la liste) ; le serveur ne les renvoie plus, la page les écarte aussi, le total ne compte que les vivants.

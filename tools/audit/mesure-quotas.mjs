@@ -22,6 +22,50 @@ export function requeteIA(compte, depuis, jusqua) {
     aiInferenceAdaptiveGroups(limit: 2000, filter: { datetime_geq: $depuis, datetime_leq: $jusqua }) {
       sum { totalNeurons } dimensions { modelId date } } } } }`, variables: { compte, depuis, jusqua } };
 }
+/* 19.11 (Kevin : « j'ai reçu une facture Cloudflare, regarde qui consomme et pourquoi ») : la mesure par base ne dit pas QUELLE requête lit les lignes.
+   Trois lectures de plus, toutes en lecture seule : les requêtes SQL les plus gourmandes (texte à « ? », aucune valeur), les appels par Worker, les abonnements du compte. */
+export function requeteD1Requetes(compte, depuis, jusqua) {
+  return { query: `query ($compte: String!, $depuis: Date!, $jusqua: Date!) { viewer { accounts(filter: { accountTag: $compte }) {
+    d1QueriesAdaptiveGroups(limit: 400, filter: { date_geq: $depuis, date_leq: $jusqua }, orderBy: [sum_rowsRead_DESC]) {
+      count sum { rowsRead rowsWritten } dimensions { query databaseId } } } } }`, variables: { compte, depuis, jusqua } };
+}
+export function requeteWorkers(compte, depuis, jusqua) {
+  return { query: `query ($compte: String!, $depuis: Time!, $jusqua: Time!) { viewer { accounts(filter: { accountTag: $compte }) {
+    workersInvocationsAdaptive(limit: 2000, filter: { datetime_geq: $depuis, datetime_leq: $jusqua }) {
+      sum { requests subrequests errors } dimensions { scriptName date } } } } }`, variables: { compte, depuis, jusqua } };
+}
+/** Les requêtes SQL qui lisent le plus de lignes : { ok, top:[{ base, requete, fois, lues, parFois }] }. */
+export function resumerRequetes(json, noms = {}, n = 15) {
+  if (!json || !json.data || !json.data.viewer) return { ok: false, erreur: erreurDe(json) };
+  const m = new Map();
+  for (const l of (json.data.viewer.accounts || []).flatMap((a) => a.d1QueriesAdaptiveGroups || [])) {
+    const d = l.dimensions || {}, base = noms[d.databaseId] || String(d.databaseId || '?').slice(0, 8), q = String(d.query || '').replace(/\s+/g, ' ').trim();
+    const e = m.get(base + '|' + q) || { base, requete: q, fois: 0, lues: 0 }; e.fois += l.count || 0; e.lues += (l.sum || {}).rowsRead || 0; m.set(base + '|' + q, e);
+  }
+  const top = [...m.values()].sort((a, b) => b.lues - a.lues).slice(0, n).map((e) => Object.assign(e, { parFois: e.fois ? Math.round(e.lues / e.fois) : 0 }));
+  return { ok: true, top, total: [...m.values()].reduce((s, e) => s + e.lues, 0) };
+}
+/** Appels par Worker et par jour : { ok, jours:{ jour:{ total, parScript:{} } } }. */
+export function resumerWorkers(json) {
+  if (!json || !json.data || !json.data.viewer) return { ok: false, erreur: erreurDe(json) };
+  const jours = {};
+  for (const l of (json.data.viewer.accounts || []).flatMap((a) => a.workersInvocationsAdaptive || [])) {
+    const d = l.dimensions || {}, j = String(d.date || '').slice(0, 10); if (!j) continue;
+    const e = (jours[j] ||= { total: 0, parScript: {} }), r = (l.sum || {}).requests || 0; e.total += r; e.parScript[d.scriptName || '?'] = (e.parScript[d.scriptName || '?'] || 0) + r;
+  }
+  return { ok: true, jours };
+}
+export function texteDetail(rq, wk, abo) {
+  const out = [];
+  if (!rq.ok) out.push(`\n⚠️ Requêtes SQL : non mesurées (« ${rq.erreur} »).`);
+  else { out.push('\nLes requêtes SQL qui lisent le plus (toute la période) :'); out.push('lignes lues   fois  lignes/fois  base           requête');
+    for (const e of rq.top) out.push(`${String(e.lues).padStart(11)} ${String(e.fois).padStart(6)} ${String(e.parFois).padStart(11)}  ${e.base.padEnd(14)} ${e.requete.slice(0, 150)}`); }
+  if (!wk.ok) out.push(`\n⚠️ Appels des Workers : non mesurés (« ${wk.erreur} »).`);
+  else { out.push('\nAppels des Workers par jour (plafond gratuit ' + P.workers_requetes_par_jour + ') :');
+    for (const [j, e] of Object.entries(wk.jours).sort()) out.push(`  ${etat(e.total, P.workers_requetes_par_jour)} ${j} : ${e.total} — ` + Object.entries(e.parScript).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => k + ' ' + v).join(' · ')); }
+  out.push('\nAbonnements du compte : ' + (abo.ok ? (abo.liste.length ? abo.liste.join(' · ') : 'aucun abonnement payant listé') : 'non lisibles avec ce jeton (« ' + abo.erreur + ' ») — la facture se lit dans le tableau de bord Cloudflare'));
+  return out.join('\n');
+}
 const erreurDe = (j) => (j && j.errors && j.errors[0] && j.errors[0].message) || 'réponse vide';
 const droit = (m) => /authoriz|permission|not authorized|access|unknown field|cannot query/i.test(m);
 
@@ -72,7 +116,15 @@ if (process.argv[1] && /(^|[\\/])mesure-quotas\.mjs$/.test(process.argv[1]) && !
   try { const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${COMPTE}/d1/database?per_page=100`, { headers: { authorization: 'Bearer ' + TOKEN }, signal: AbortSignal.timeout(30000) }); const j = await r.json(); for (const b of (j.result || [])) noms[b.uuid] = b.name; } catch { /* les identifiants courts suffisent */ }
   const d1 = resumerD1(await gql(requeteD1(COMPTE, jour(debut), jour(fin))), noms);
   const ia = resumerIA(await gql(requeteIA(COMPTE, iso(new Date(debut.setUTCHours(0, 0, 0, 0))), iso(fin))));
+  const rq = resumerRequetes(await gql(requeteD1Requetes(COMPTE, jour(debut), jour(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })), noms);
+  const wk = resumerWorkers(await gql(requeteWorkers(COMPTE, iso(debut), iso(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })));
+  let abo = { ok: false, erreur: 'non lu' };
+  try { const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${COMPTE}/subscriptions`, { headers: { authorization: 'Bearer ' + TOKEN }, signal: AbortSignal.timeout(30000) }); const j = await r.json();
+    abo = j && j.success ? { ok: true, liste: (j.result || []).map((x) => ((x.rate_plan && (x.rate_plan.public_name || x.rate_plan.id)) || '?') + ' ' + (x.price != null ? x.price + ' ' + (x.currency || '') : '') + (x.frequency ? ' / ' + x.frequency : '') + (x.state ? ' (' + x.state + ')' : '')) } : { ok: false, erreur: (j && j.errors && j.errors[0] && j.errors[0].message) || 'HTTP ' + r.status };
+  } catch (e) { abo = { ok: false, erreur: String(e.message || e).slice(0, 80) }; }
   const t = texte(d1, ia); console.log(t);
+  const t2 = texteDetail(rq, wk, abo); console.log(t2);
+  console.log(`::notice title=Mesure quotas (détail)::${t2.replace(/\n/g, '%0A').slice(0, 3800)}`);
   const annot = (n, m) => console.log(`::${n} title=Mesure quotas::${m.replace(/\n/g, '%0A').slice(0, 3800)}`);
   annot(!d1.ok ? 'error' : /🔴/.test(t) ? 'error' : /🟠/.test(t) ? 'warning' : 'notice', t);
   try { if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, '## Mesure quotas D1 / Workers AI\n\n```\n' + t + '\n```\n'); } catch { /* */ }

@@ -3057,7 +3057,9 @@ async function rlFail(env, ipHash) {
 }
 async function rlReset(env, ipHash) {
   if (!env || !env.ACCOUNTS || !env.ACCOUNTS.delete) return;
-  try { await env.ACCOUNTS.delete('al:' + ipHash); } catch { /* fail-open */ }
+  /* 19.11 (quotas gratuits : 1 000 suppressions par jour, 503 le 17.11) : une connexion réussie n'efface que s'il y a quelque chose à effacer — une lecture
+     (100 000 gratuites par jour) évite une suppression à chaque connexion de robot. */
+  try { if ((await env.ACCOUNTS.get('al:' + ipHash)) != null) await env.ACCOUNTS.delete('al:' + ipHash); } catch { /* fail-open */ }
 }
 
 /* ---- Quota d'INSCRIPTIONS par adresse IP (anti-épuisement du registre) -------
@@ -3434,6 +3436,9 @@ async function audLog(env, entry) {
   if (!env || !env.ACCOUNTS) return;
   try {
     const log = JSON.parse((await env.ACCOUNTS.get('aud:log')) || '[]');
+    /* 19.11 (quotas gratuits : 1 000 écritures par jour) : les connexions des ROBOTS de vérification (admin_login_verif) arrivent par rafales — une ligne par
+       demi-heure et par réseau suffit à dire « un robot s'est connecté » ; les suivantes de la même rafale n'écrivent plus. Tout autre événement s'écrit toujours. */
+    if (entry && entry.ev === 'admin_login_verif' && log.slice(0, 30).some((x) => x && x.ev === 'admin_login_verif' && x.ip === entry.ip && Date.now() - (x.ts || 0) < 30 * 60e3)) return;
     log.unshift(Object.assign({ ts: Date.now() }, entry));
     await env.ACCOUNTS.put('aud:log', JSON.stringify(log.slice(0, 200)));
   } catch { /* fail-open */ }
@@ -3616,7 +3621,8 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   const newDevice = (acc.devices || []).indexOf(devKey) < 0;
   if (newDevice) structural = true;
   acc.devices = Array.from(new Set([...(acc.devices || []), devKey])).slice(-10);
-  if (place && (acc.places || []).indexOf(place) < 0) structural = true;
+  const lieuNouveau = !!place && (acc.places || []).indexOf(place) < 0;
+  if (lieuNouveau) structural = true;
   if (place) acc.places = Array.from(new Set([...(acc.places || []), place])).slice(-20);
   /* Détection d'anomalie SIMPLE (pas de ML) : changement de PAYS entre deux
      connexions rapprochées (< 60 min) = déplacement géographiquement impossible
@@ -3674,6 +3680,11 @@ async function enrich(env, request, uid, name, cgu, pre, opts) {
   } else if (!acc.hits) {
     acc.hits = 1;
   }
+  /* 19.11 (facture Cloudflare — mesure-kv : 1 572 écritures le 17.11 et 1 099 le 16.11 pour un plafond gratuit de 1 000 ; mesuré en local : un robot de vérification
+     connecté coûte 1 écriture par app ouverte, chaque « session » s'ajoutant à la fiche de l'admin) : le passage d'un ROBOT — réseau des sondes, ou appareil de
+     navigateur de test — qui n'apporte RIEN de nouveau pour la sécurité (appareil déjà connu, lieu déjà connu, pas de déplacement suspect, fiche existante)
+     n'écrit plus la fiche. Tout ce qui est nouveau (appareil, lieu, pays incohérent) s'écrit et alerte exactement comme avant. */
+  if ((passageRobot || activite.estAppareilRobot(devFull)) && !isNew && !newDevice && !lieuNouveau && !geoAnomaly) return;
   /* THROTTLE écritures KV (quota free = 1 000 writes/jour, partagé compte) : un battement qui ne change
      rien de structurel n'écrit que si last_seen stocké a plus de ENRICH_CADENCE (voir plus haut). */
   if (!structural && now - prevSeen < ENRICH_CADENCE) return;

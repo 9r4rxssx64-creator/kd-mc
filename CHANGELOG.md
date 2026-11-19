@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.402 — 19.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2769)
+- Nouvel outil `comptes_cmcteams` (admin) : « la liste de tous ceux qui ont un compte CMCteams avec leur identifiant SBM ». Le navigateur de Kevin lit la porte du domaine `/__admin/comptes-cmcteams`, la carte s'affiche à Kevin ; l'IA ne reçoit que « liste prête (N comptes) » (jamais un nom ni un matricule).
+- Garde de parité : `tests/unit/parite-bee-apex-ai.test.ts` compare les outils de parité de Bee et ceux d'Apex AI ; restent à porter : `lien_externe`, `appeler`.
+- Tests : `tests/unit/comptes-cmcteams.test.ts` (rouge sans l'outil, rouge si un nom fuit vers l'IA).
+
 ## Apex Chat v1.1.372 — 19.11.2026 (apex-cloud, cloud-installer 2813 : quotas gratuits D1)
 - Deux requêtes lisaient toute la table des comptes à chaque appel (494 lignes × 936 appels et 522 lignes × 856 appels en 7 jours) : profil public (identifiant d'abord, puis pseudo) et nettoyage des comptes de test (trois recherches par index, migration 0029 `idx_users_source`).
 - Test sur le vrai schéma : `messaging-app/tests/unit/requetes-sans-balayage.test.js` (3 rouges sur les anciennes requêtes).

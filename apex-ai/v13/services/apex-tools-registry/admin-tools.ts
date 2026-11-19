@@ -8,6 +8,13 @@ import type { ApexTool } from '../core-svc/apex-tools-types.js';
 
 export const ADMIN_TOOLS: readonly ApexTool[] = [
   {
+    name: 'comptes_cmcteams',
+    description: 'Liste des comptes CMCteams avec identifiant SBM : le domaine l\'affiche à Kevin dans une carte, tu ne la reçois pas (jamais de noms ni de matricules pour toi). Dis seulement qu\'elle est prête.',
+    inputSchema: { type: 'object', properties: {} },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
     name: 'read_logs',
     description: 'Lit les logs runtime Apex (audit log + observability buffer + sentinels).',
     inputSchema: {

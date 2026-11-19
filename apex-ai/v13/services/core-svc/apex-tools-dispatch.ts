@@ -397,6 +397,12 @@ class ApexToolsDispatcher {
         const report = await apexSelfAudit.runFullAudit(brutal);
         return apexSelfAudit.formatReportMarkdown(report);
       }
+      case 'comptes_cmcteams':
+      case 'liste_comptes_cmcteams': {
+        /* Parité Bee (Kevin 18.11) : la carte est fabriquée ICI à partir de la porte du domaine ; l'IA ne reçoit que « liste prête (N comptes) ». */
+        const { comptesCmcteams } = await import('../admin/comptes-cmcteams.js');
+        return comptesCmcteams();
+      }
       case 'open_url':
       case 'open_browser':
       case 'navigate':

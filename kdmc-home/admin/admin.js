@@ -740,7 +740,7 @@
     inscription_attendue_ouverte: '✅ Personne attendue : compte ouvert', inscription_refusee: '🚫 Inscription refusée', journal_vide: '🧹 Journal vidé', mail_ack: '✉️ Mail : accusé reçu',
     outil_ouvert: '🧰 Outil : accès changé', tel_lie: '📱 Téléphone lié au compte', tuya_autostart: '🏊 Piscine : démarrage automatique', tuya_command: '🏊 Piscine : commande envoyée',
     tuya_link: '🏊 Piscine : compte relié', tuya_schedule_set: '🏊 Piscine : horaires changés', tuya_session_logged: '🏊 Piscine : session notée', tuya_stats_baseline: '🏊 Piscine : repère de mesure posé',
-    tuya_surface_notif: '🏊 Piscine : alerte de surface', pointage_loin: '📍 Pointage fait loin du casino', demande_chef: '🙋 Demande d\'un chef d\'équipe'
+    tuya_surface_notif: '🏊 Piscine : alerte de surface', mail_envoye_admin: '✉️ Mail envoyé par toi (Bee)', mail_admin_echec: '✉️ Mail non parti', pointage_loin: '📍 Pointage fait loin du casino', demande_chef: '🙋 Demande d\'un chef d\'équipe'
   };
   /* un événement inconnu se lit quand même : « mon_evenement » → « mon evenement » (jamais un nom de code brut à l'écran) */
   function audNom(ev) { return AUD_EV[ev] || ('• ' + String(ev || 'événement').replace(/[_.:-]+/g, ' ')); }

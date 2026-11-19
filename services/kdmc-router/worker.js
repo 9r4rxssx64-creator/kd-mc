@@ -19,6 +19,7 @@ import { handleCodesComptes, chiffrerCode, dechiffrerCode, codeAuHasard } from '
 import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret, jetonConfirmation, envoyerMailConfirmation, sha256Hex as sha256HexMail } from './mail-confirme.js';   // confirmation par MAIL de l'inscription (Kevin 17.10 : « B », pas de 2e numéro pour WhatsApp)
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
+import { handleMailAdmin } from './mail-admin.js';   // 19.11 : un mail envoyé par le domaine au nom de Kevin, derrière son ✅ (Bee)
 import { handleVoix } from './voix.js';   // 🎙️ Studio Voix : bibliothèque de voix clonées + porte d'intégration (Kevin 29.10)
 import { catalogue as catalogueVoix } from './voix-catalogue.js';
 import { handleVoixPartout, VOIX_TAG } from './voix-partout.js';   // 🎙️ la voix choisie parle dans tout le domaine (Kevin 11.11)
@@ -5100,7 +5101,7 @@ const PORTES_BEE = ['/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repon
   '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke',
   '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/bannis', '/__admin/debannir', '/__admin/attendus', '/__demandes',
   '/__bot/ia', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/ia/annuler', '/__bot/scan', '/__bot/marche', '/__bot/liens', '/__bot/fleet', '/__bot/history', '/__bot/analysis',
-  '/__admin/compte-invite', '/__bot/config', '/__dm/admin/ecrire', '/__admin/comptes-cmcteams', '/__admin/appel'];   // + 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par Kevin seul), régler le robot (testnet) (bee-droits-max.js) ; /__bot/reel reste fermé   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre restent FERMÉS (bee-droits.js) ; création de compte et réglage du robot ouverts le 23.10 (bee-droits-max.js)
+  '/__admin/compte-invite', '/__bot/config', '/__dm/admin/ecrire', '/__admin/comptes-cmcteams', '/__admin/appel', '/__admin/mail-envoyer'];   // + 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par Kevin seul), régler le robot (testnet) (bee-droits-max.js) ; /__bot/reel reste fermé   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre restent FERMÉS (bee-droits.js) ; création de compte et réglage du robot ouverts le 23.10 (bee-droits-max.js)
 async function diagBee(request, env, session) {
   const pingIA = async () => {
     const t = Date.now();
@@ -5567,6 +5568,8 @@ async function handleAdmin(request, url, env) {
      CMCteams ou la light (apps de sa fiche) OU si sa fiche porte un matricule SBM. Rend le NOM, le matricule (ou vide), les apps, la dernière visite — et les
      NOMBRES. JAMAIS : code, empreinte, adresse IP, téléphone, e-mail, appareil. Triée par nom. Bee / Apex AI n'en reçoivent que « liste prête (N comptes) » :
      la carte est fabriquée par le domaine (les noms ne partent jamais à une IA). */
+  /* ── UN MAIL À UNE PERSONNE DU DOMAINE (Kevin 19.11 « Oui go pour Bee ») : adresse lue sur SA fiche, plafond par jour, journal — voir mail-admin.js ── */
+  if (path === '/__admin/mail-envoyer') return handleMailAdmin(request, url, env, { accGet, audLog, J: (o, st) => J(o, undefined, st) });
   if (path === '/__admin/comptes-cmcteams' && request.method === 'GET') {
     if (!env.ACCOUNTS) return J({ ok: true, comptes: [], total: 0, avec_matricule: 0, sans_matricule: 0, kv: false });
     const idxC = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');

@@ -11,6 +11,10 @@ on:
         description: "Version attendue (ex. 2.7.28) — vide = on lit seulement celle qui est affichée"
         required: false
         default: ""
+      mail_essai:
+        description: "1 = envoie UN mail d'essai au compte admin lui-même (preuve de l'envoi réel) — vide = lecture seule"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -42,6 +46,7 @@ jobs:
           KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
           SANS_NOMS: "1"
           VERSION_ATTENDUE: ${{ inputs.version }}
+          MAIL_ESSAI: ${{ inputs.mail_essai }}
         # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee` (toujours 0) et un robot qui dit « ÉCHEC » ressortirait vert.
         shell: bash -euo pipefail {0}
         run: |

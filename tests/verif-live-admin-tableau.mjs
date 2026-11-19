@@ -22,7 +22,9 @@ const ctx = await browser.newContext({
      que ses lignes d'essai. */
   userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
 });
-const DOMAINE = /(^|\.)kd-mc\.com$/, ECRITURE_OK = /^\/__(admin\/login|sso\/[a-z]+)$/;
+/* MAIL_ESSAI=1 (à la main, jamais par défaut) : UN mail d'essai part au compte ADMIN lui-même, pour prouver l'envoi réel de la porte /__admin/mail-envoyer. */
+const MAIL_ESSAI = process.env.MAIL_ESSAI === '1';
+const DOMAINE = /(^|\.)kd-mc\.com$/, ECRITURE_OK = MAIL_ESSAI ? /^\/__(admin\/login|sso\/[a-z]+|admin\/mail-envoyer)$/ : /^\/__(admin\/login|sso\/[a-z]+)$/;
 await ctx.route('**/*', (r) => {
   const q = r.request(), m = q.method(); let u; try { u = new URL(q.url()); } catch (_) { return r.abort(); }
   if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return r.fallback();
@@ -126,6 +128,21 @@ try {
   });
   chk(cc.ok && cc.n === cc.total && cc.avec + cc.sans === cc.total, `comptes CMCteams : ${cc.total} compte(s), ${cc.avec} avec matricule SBM, ${cc.sans} sans · HTTP ${cc.st}`);
   chk(cc.ok && cc.tri && cc.bons === cc.n && (cc.n === 0 || cc.champs === 'apps,matricule,nom,uid,vu'), `comptes CMCteams : triés par nom, ${cc.bons} matricule(s) bien écrits ou vides sur ${cc.n}, champs rendus : ${cc.champs || '-'}`);
+  /* 19.11 (Kevin : « Oui go pour Bee ») : la porte du mail, lue en vrai sur le compte ADMIN — verdicts seulement, jamais l'adresse. */
+  const ml = await page.evaluate(async (essai) => {
+    const h = { 'content-type': 'application/json' }; try { const g = localStorage.getItem('kdmc_admin_grant') || '', t = localStorage.getItem('kdmc_sso_token') || ''; if (g) h['x-kdmc-admin'] = g; if (t) h.Authorization = 'Bearer ' + t; } catch (_) { /* rien */ }
+    const lire = async () => { const x = await fetch('/__admin/mail-envoyer?uid=kdmc_admin', { credentials: 'include', cache: 'no-store', headers: h }); const j = await x.json().catch(() => ({})); return { st: x.status, ok: !!j.ok, pret: j.pret === true, adresse: !!j.email_masque, reste: j.reste, champs: Object.keys(j).sort().join(',') }; };
+    try {
+      const avant = await lire(); let envoi = null;
+      if (essai && avant.ok && avant.pret && avant.adresse && avant.reste > 0) {
+        const x = await fetch('/__admin/mail-envoyer', { method: 'POST', credentials: 'include', headers: h, body: JSON.stringify({ uid: 'kdmc_admin', objet: 'Essai du robot — le domaine sait envoyer un mail', corps: 'Bonjour Kevin,\n\nceci est UN mail d\'essai envoyé par le robot de vérification du tableau de bord, pour prouver que le domaine sait envoyer un mail quand tu confirmes avec ✅ dans Bee.\n\nTu peux le supprimer.' }) });
+        const j = await x.json().catch(() => ({})); envoi = { st: x.status, ok: !!j.ok, raison: j.reason || '', reste: j.reste };
+      }
+      return { avant, envoi, apres: envoi ? await lire() : null };
+    } catch (e) { return { avant: { st: 0, ok: false }, envoi: null, apres: null }; }
+  }, MAIL_ESSAI);
+  chk(ml.avant.ok && ml.avant.champs === 'email_masque,name,ok,pret,reste', `porte du mail : HTTP ${ml.avant.st} · messagerie branchée : ${ml.avant.pret ? 'oui' : 'NON'} · le compte admin a une adresse : ${ml.avant.adresse ? 'oui' : 'non'} · reste aujourd'hui : ${ml.avant.reste}`);
+  if (MAIL_ESSAI) chk(!!ml.envoi && ml.envoi.ok && ml.apres && ml.apres.reste === ml.avant.reste - 1, `mail d'essai au compte admin : ${ml.envoi ? (ml.envoi.ok ? 'PARTI' : 'refusé (' + (ml.envoi.raison || 'HTTP ' + ml.envoi.st) + ')') : 'pas tenté (messagerie non branchée, pas d\'adresse ou plafond atteint)'} · reste ensuite : ${ml.apres ? ml.apres.reste : '-'}`);
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }
 
 dire(`=== VÉRIF TABLEAU ADMIN : ${bons} OK · ${mauvais} en défaut`);

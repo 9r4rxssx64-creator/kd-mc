@@ -167,7 +167,9 @@ const AVANT = JSON.stringify([...kv.entries()]);
 const W = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 const DP = readFileSync(new URL('./bee-droits-plus.js', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 const PORTES = ((W.match(/const PORTES_BEE = \[([^\]]*)\]/) || [])[1] || '').split(',').map((x) => x.replace(/['\s]|\/\/.*$/g, '')).filter(Boolean).sort();
-const ATTENDUES = ['/__admin/accounts', '/__admin/acces', '/__admin/acces-lot', '/__admin/apps-fermees', '/__admin/attendus', '/__admin/audit', '/__admin/bannis', '/__admin/code', '/__admin/compte-invite', '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/debannir', '/__admin/revoke',
+/* 19.11 (Kevin : règle « parité totale » du 18.11, puis « Oui go pour Bee ») : + la liste des comptes CMCteams avec leur matricule (lecture, carte fabriquée par le domaine),
+   + la carte « appeler », + l'envoi d'un mail à une personne du domaine derrière ✅. */
+const ATTENDUES = ['/__admin/appel', '/__admin/comptes-cmcteams', '/__admin/mail-envoyer', '/__admin/accounts', '/__admin/acces', '/__admin/acces-lot', '/__admin/apps-fermees', '/__admin/attendus', '/__admin/audit', '/__admin/bannis', '/__admin/code', '/__admin/compte-invite', '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/debannir', '/__admin/revoke',
   '/__bot/analysis', '/__bot/config', '/__bot/fleet', '/__bot/history', '/__bot/ia', '/__bot/ia/annuler', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/kill', '/__bot/liens', '/__bot/marche', '/__bot/scan', '/__bot/start', '/__bot/status',
   '/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__demandes', '/__dm/admin/ecrire'].sort();
 ok(JSON.stringify(PORTES) === JSON.stringify(ATTENDUES), '9. la liste blanche est EXACTEMENT ces ' + ATTENDUES.length + ' portes — écart : ' + [...PORTES.filter((x) => !ATTENDUES.includes(x)).map((x) => '+' + x), ...ATTENDUES.filter((x) => !PORTES.includes(x)).map((x) => '-' + x)].join(' '));

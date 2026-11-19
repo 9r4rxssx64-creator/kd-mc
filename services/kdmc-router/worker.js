@@ -286,6 +286,26 @@ export async function chargerOutilsOuverts(env, force) {
 const CLE_FERMEES = 'cfg:apps_fermees';
 const MSG_FERME_GENERAL = 'Cette application est fermée pour le moment par l\'administrateur. Elle rouvrira dès qu\'il l\'aura décidé.';
 let FERMEES = { liste: [], t: 0, kv: null };
+/* 19.11 (Kevin « vérifie toujours tout » — robot run 44533031256 : 0 app fermée sur 18 ne disait depuis quand) : la date se lisait dans le journal admin, qui ne garde
+   que 200 lignes et se remplit en moins d'un jour. Elle est donc RANGÉE à part : { app: moment de la fermeture }. Une seule écriture de plus, et seulement quand
+   on ouvre ou ferme une app. Une app fermée avant ce rangement n'a pas de date (on ne l'invente pas), sauf celle qui a été mesurée. */
+const CLE_FERMEES_DATES = 'cfg:apps_fermees_dates';
+const FERMEES_MESUREES = { cmcteams: Date.UTC(2026, 10, 18, 11, 57) };   // fermée le 18.11 à 11h57 UTC (run public 44299303636)
+async function datesFermees(env, liste) {
+  let d = {}; try { const v = JSON.parse((await env.ACCOUNTS.get(CLE_FERMEES_DATES)) || '{}'); if (v && typeof v === 'object' && !Array.isArray(v)) d = v; } catch { d = {}; }
+  const out = {}; for (const a of liste) { const t = Number(d[a]) || FERMEES_MESUREES[a] || 0; if (t > 0) out[a] = t; }
+  return out;
+}
+/* après un changement : les apps qui restent fermées gardent leur date, une app qui vient de se fermer prend « maintenant », une app rouverte perd la sienne */
+async function rangerDatesFermees(env, avant, apres, now) {
+  try {
+    const d = await datesFermees(env, avant), out = {};
+    for (const a of apres) out[a] = avant.includes(a) ? (d[a] || 0) : now;
+    for (const a of Object.keys(out)) if (!out[a]) delete out[a];
+    await env.ACCOUNTS.put(CLE_FERMEES_DATES, JSON.stringify(out));
+    return out;
+  } catch { return {}; }
+}
 async function chargerFermees(env, force) {
   const kv = env && env.ACCOUNTS;
   if (!kv) { FERMEES = { liste: [], t: 0, kv: null }; return FERMEES.liste; }
@@ -5744,7 +5764,8 @@ async function handleAdmin(request, url, env) {
      L'individuel reste /__admin/acces (`bloque`). Le portail est la réception : jamais fermable. L'admin entre toujours (voir perimetre). */
   if (path === '/__admin/apps-fermees' && request.method === 'GET') {
     const apps = [...new Set(Object.values(APPS))].filter((x) => x !== 'portail').sort();
-    return J({ ok: true, apps, fermees: await chargerFermees(env, true) });
+    const lf = await chargerFermees(env, true);
+    return J({ ok: true, apps, fermees: lf, depuis: env.ACCOUNTS ? await datesFermees(env, lf) : {} });
   }
   /* ── UN TOUCHER : OUVRIR / FERMER UNE APP POUR TOUS (Kevin 18.11 : « possible 1 clic ouvert fermé pour tous, général, sur chaque app de mon domaine ») ──
      POST { app, fermee: true|false } → le domaine relit la liste, ajoute ou retire CETTE app, l'écrit, et rend la liste. Aucune autre app n'est touchée
@@ -5760,17 +5781,18 @@ async function handleAdmin(request, url, env) {
     try { await env.ACCOUNTS.put(CLE_FERMEES, JSON.stringify(listeB)); } catch { return J({ ok: false, reason: 'registre indisponible' }); }
     FERMEES = { liste: listeB, t: Date.now(), kv: env.ACCOUNTS };
     await audLog(env, { ev: 'apps_fermees', fermees: listeB, detail: (bb.fermee ? 'fermée pour tout le monde : ' : 'rouverte à tout le monde : ') + appB });
-    return J({ ok: true, app: appB, fermee: bb.fermee, fermees: listeB });
+    return J({ ok: true, app: appB, fermee: bb.fermee, fermees: listeB, depuis: await rangerDatesFermees(env, avantB, listeB, Date.now()) });
   }
   if (path === '/__admin/apps-fermees' && request.method === 'POST') {
     let b = {}; try { b = await request.json(); } catch { /* corps vide */ }
     const connues = new Set(Object.values(APPS)); connues.delete('portail');
     const liste = [...new Set((Array.isArray(b.apps) ? b.apps : []).map((x) => String(x || '').trim()))].filter((x) => connues.has(x)).slice(0, 60);
     if (!env.ACCOUNTS) return J({ ok: false, reason: 'registre indisponible' });
+    const avantL = await chargerFermees(env, true);
     try { await env.ACCOUNTS.put(CLE_FERMEES, JSON.stringify(liste)); } catch { return J({ ok: false, reason: 'registre indisponible' }); }
     FERMEES = { liste, t: Date.now(), kv: env.ACCOUNTS };
     await audLog(env, { ev: 'apps_fermees', fermees: liste, detail: liste.length ? 'fermées pour tout le monde : ' + liste.join(', ') : 'aucune app fermée en général' });
-    return J({ ok: true, fermees: liste });
+    return J({ ok: true, fermees: liste, depuis: await rangerDatesFermees(env, avantL, liste, Date.now()) });
   }
   /* ── OUTILS « ADMIN D'ABORD » : ouvrir / refermer à tout le monde (Kevin 29.10) ── GET → { outils:{id:nom}, ouverts } · POST { id, ouvert:true|false }. */
   if (path === '/__admin/outils-ouverts' && request.method === 'GET') {

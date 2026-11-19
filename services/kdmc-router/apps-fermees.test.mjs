@@ -89,5 +89,27 @@ r = await lot({ uids: ['paul-durand'], apps: ['lingua'], action: 'rouvrir' });
 ok(r.ok === true && (await vu(autre.token, 'lingua.kd-mc.com')).ok === true && (await vu(autre.token, 'cuisine.kd-mc.com')).reason === 'bloque_ici' && (await vu(tok, 'lingua.kd-mc.com')).reason === 'bloque_ici', '20. rouvrir UNE app à UNE personne : les autres fermetures et les autres personnes ne bougent pas');
 ok((await lot({ uids: ['lea-martin'], apps: [], action: 'fermer' })).ok === false && (await lot({ uids: [], apps: ['lingua'], action: 'fermer' })).ok === false && (await lot({ uids: ['lea-martin'], apps: ['lingua'] })).ok === false, '21. sans app, sans personne ou sans action : refusé en clair (jamais « à moitié »)');
 
+/* 13. DEPUIS QUAND (19.11 — robot réel : 0 app fermée sur 18 ne disait sa date, le journal admin de 200 lignes l'avait déjà perdue) */
+{
+  await appel('kd-mc.com', '/__admin/apps-fermees', { method: 'POST', headers: H, body: JSON.stringify({ apps: [] }) });
+  const t0 = Date.now();
+  let d = await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'lingua', fermee: true }) });
+  const tL = d.depuis && d.depuis.lingua;
+  ok(d.ok === true && tL >= t0 && tL <= Date.now(), '13a. fermer une app range le moment de la fermeture', JSON.stringify(d.depuis));
+  await new Promise((r) => setTimeout(r, 15));
+  d = await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'chez-lolo', fermee: true }) });
+  ok(d.depuis.lingua === tL && d.depuis['chez-lolo'] > tL, '13b. en fermer une AUTRE ne change pas la date de la première', JSON.stringify(d.depuis));
+  const g = await appel('kd-mc.com', '/__admin/apps-fermees', { headers: H });
+  ok(g.depuis && g.depuis.lingua === tL && Object.keys(g.depuis).length === 2, '13c. la page admin relit les dates avec la liste', JSON.stringify(g.depuis));
+  d = await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'lingua', fermee: false }) });
+  ok(d.depuis.lingua === undefined && !!d.depuis['chez-lolo'], '13d. rouvrir une app efface sa date, pas celle des autres', JSON.stringify(d.depuis));
+  await new Promise((r) => setTimeout(r, 15));
+  d = await appel('kd-mc.com', '/__admin/app-bascule', { method: 'POST', headers: H, body: JSON.stringify({ app: 'lingua', fermee: true }) });
+  ok(d.depuis.lingua > tL, '13e. la refermer donne la date de la DERNIÈRE fermeture', JSON.stringify(d.depuis));
+  d = await appel('kd-mc.com', '/__admin/apps-fermees', { method: 'POST', headers: H, body: JSON.stringify({ apps: ['cmcteams', 'chez-lolo'] }) });
+  ok(d.depuis.lingua === undefined && d.depuis.cmcteams >= t0 && !!d.depuis['chez-lolo'], '13f. l\'ancien écran (toute la liste d\'un coup) range aussi les dates', JSON.stringify(d.depuis));
+  await appel('kd-mc.com', '/__admin/apps-fermees', { method: 'POST', headers: H, body: JSON.stringify({ apps: [] }) });
+}
+
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

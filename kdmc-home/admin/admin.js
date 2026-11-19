@@ -536,7 +536,7 @@
     /* les deux lectures partent ENSEMBLE (réactivité : jamais une file d'attente de plus) */
     var fermees = fetch('/__admin/apps-fermees', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
       .then(function (r) { return r.json(); })
-      .then(function (j) { if (j && j.ok) FERMEES_GEN = j.fermees || []; })
+      .then(function (j) { if (j && j.ok) { FERMEES_GEN = j.fermees || []; FERMEES_DEPUIS = j.depuis || {}; } })
       .catch(function () { /* fail-open */ });
     return fetch('/__admin/acces', { credentials: 'include', cache: 'no-store', headers: adminHeaders() })
       .then(function (r) { return r.json(); })
@@ -548,7 +548,7 @@
   }
   /* ---- Fermer une ou plusieurs apps POUR TOUT LE MONDE (Kevin 13.10 : « je peux bloquer un ou plusieurs sites, général et individuel »).
      Général = ici (une liste pour tout le domaine, l'admin entre toujours) ; individuel = « 🚫 Fermer une application précise » sur chaque fiche. */
-  var FERMEES_GEN = [];
+  var FERMEES_GEN = [], FERMEES_DEPUIS = {};   /* { app: moment de la fermeture } — rangé par le domaine (le journal admin ne garde que 200 lignes) */
   /* 18.11 (Kevin : « possible 1 clic ouvert fermé pour tous, général, sur chaque app de mon domaine ») : UN bouton par app, qui dit son état et le change au
      toucher — plus de cases à cocher ni de bouton « Enregistrer ». Le domaine ne modifie que l'app touchée (/__admin/app-bascule). */
   function boutonBascule(x) {
@@ -707,7 +707,7 @@
         .then(function (j) {
           b.disabled = false;
           if (j && j.ok) {
-            FERMEES_GEN = j.fermees || [];
+            FERMEES_GEN = j.fermees || []; FERMEES_DEPUIS = j.depuis || {};
             var f = FERMEES_GEN.indexOf(app) >= 0;
             b.classList.toggle('fermee', f); b.setAttribute('aria-pressed', f ? 'true' : 'false');
             b.querySelector('.e').textContent = f ? '🔒' : '🔓'; b.querySelector('.s').textContent = f ? 'fermée pour tous' : 'ouverte';
@@ -757,7 +757,7 @@
   var AUD_LOG = [], AUD_PAGE = 60;
   function datesFermees() {
     Array.prototype.forEach.call(document.querySelectorAll('.bascule.fermee[data-bascule]'), function (b) {
-      var d = fermeeDepuis(AUD_LOG, b.getAttribute('data-bascule')), s = b.querySelector('.s'); if (!s) return;
+      var ap = b.getAttribute('data-bascule'), d = FERMEES_DEPUIS[ap] ? { ts: FERMEES_DEPUIS[ap], avant: false } : fermeeDepuis(AUD_LOG, ap), s = b.querySelector('.s'); if (!s) return;
       s.textContent = 'fermée pour tous' + (d ? (d.avant ? ' · avant le ' : ' · depuis le ') + dt(d.ts) : '');
     });
   }

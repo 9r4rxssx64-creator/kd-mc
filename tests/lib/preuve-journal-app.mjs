@@ -58,9 +58,12 @@ export async function appelerModuleJournal(page, lien, phrase, { delaiMs = 15000
   suivi('lecture de la réponse');
   const rep = await attente;
   if (!rep) return { ok: false, motif: 'aucune requête vers /__boite/journal après l\'appel du code de l\'app', etat: '' };
-  const j = await borne(rep.json().catch(() => ({})), 5000, {});
-  const etat = j.etat || '';
-  return { ok: rep.status() === 200 && (etat === 'ajoute' || etat === 'doublon'), motif: rep.status() === 200 ? (etat ? '' : 'réponse sans état') : 'HTTP ' + rep.status(), etat };
+  const brut = await borne(rep.text().catch(() => ''), 5000, '');
+  let j = {}; try { j = JSON.parse(brut); } catch (_) { /* pas du JSON */ }
+  const etat = (j && j.etat) || '';
+  /* Si la réponse n'a pas d'état : dire CE QU'ELLE EST (statut, type, clés, raison) — jamais le texte d'une page. */
+  const nature = etat ? '' : `réponse sans état (HTTP ${rep.status()} · ${(rep.headers()['content-type'] || '?').split(';')[0]} · ${j && typeof j === 'object' && Object.keys(j).length ? 'clés ' + Object.keys(j).slice(0, 6).join(',') + (j.reason ? ' · raison ' + String(j.reason).slice(0, 40) : '') : 'pas du JSON, ' + brut.length + ' octets'})`;
+  return { ok: rep.status() === 200 && (etat === 'ajoute' || etat === 'doublon'), motif: rep.status() === 200 ? nature : 'HTTP ' + rep.status(), etat };
 }
 
 /* Les deux étapes sur la MÊME page (essais locaux). Le robot réel, lui, appelle le module dans une page vierge du même domaine : la page de l'app charge des

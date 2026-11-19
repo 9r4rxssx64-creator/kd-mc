@@ -18,13 +18,14 @@ const APP_SANS_SCRIPT = 'apex-ai.kd-mc.com';
 const lignes = [];
 const dire = (t) => { console.log(t); lignes.push(t); };
 /* 19.11 (apex-cloud) : le 2e et le 3e passage réels se sont figés sans rien dire (le journal d'une étape en cours n'est lisible qu'à sa fin). Garde-fou : le robot
-   se coupe seul au bout de 4 min et écrit À QUELLE ÉTAPE il était. */
-let phase = 'départ';
+   se coupe seul au bout de 10 min (le poste de calcul est lent : l'installation du navigateur seule a pris 8 min le 19.11) et écrit À QUELLE ÉTAPE il était. */
+let phase = 'départ'; const durees = []; let tPhase = Date.now();
+const etape = (n) => { durees.push(`${n} ${Math.round((Date.now() - tPhase) / 1000)} s`); tPhase = Date.now(); };
 const garde = setTimeout(() => {
-  dire(`❌ VÉRIF JOURNAL INTERROMPUE après 4 min (le robot se coupe seul) — étape : ${phase}`);
+  dire(`❌ VÉRIF JOURNAL INTERROMPUE après 10 min (le robot se coupe seul) — étape : ${phase}`);
   if (RESUME) { try { appendFileSync(RESUME, lignes.map((l) => '- ' + l).join('\n') + '\n'); } catch (_) { /* pas de résumé */ } }
   process.exit(1);
-}, 240000);
+}, 600000);
 if (!/^[0-9a-f]{64}$/.test(HASH)) { dire('❌ Code admin absent (secret CI) : vérification réelle IMPOSSIBLE — je n\'affirme rien.'); process.exit(1); }
 
 const browser = await chromium.launch(process.env.PW_EXE ? { executablePath: process.env.PW_EXE } : {});
@@ -64,10 +65,10 @@ for (const hote of APPS) {
     await p.goto('https://' + hote + '/sw.js', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
     await p.evaluate(({ t, g }) => { try { if (t) localStorage.setItem('kdmc_sso_token', t); if (g) localStorage.setItem('kdmc_admin_grant', g); } catch (_) { /* rien */ } }, { t: c.token, g: c.grant }).catch(() => {});
     await p.goto('https://' + hote + '/', { waitUntil: 'domcontentloaded', timeout: 45000 });
-    phase = hote + ' : attente du script du domaine';
+    etape('ouverture'); phase = hote + ' : attente du script du domaine';
     script = await p.waitForFunction(() => typeof window.kdmcJournal === 'function', null, { timeout: 15000 }).then(() => true).catch(() => false);
     /* L'envoi passe par la MÊME porte que window.kdmcJournal, mais avec la réponse en main : l'app, elle, ne la lit jamais. */
-    phase = hote + ' : envoi de la ligne par la porte';
+    etape('script'); phase = hote + ' : envoi de la ligne par la porte';
     const r = await p.evaluate(async (detail) => {
       const x = await fetch('/__boite/journal', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'modif', detail }) });
       const j = await x.json().catch(() => ({}));
@@ -76,14 +77,14 @@ for (const hote of APPS) {
     st = r.st; etat = r.etat; raison = r.raison;
     /* 18.11 (apex-cloud 2676) : Apex AI n'a JAMAIS le script du domaine (sa sécurité de page le refuse) ; son code écrit alors directement à la porte (v13.4.399).
        « script ABSENT » y est donc normal : ce qui compte est que LE CODE DE L'APP écrive vraiment une ligne, prouvé ici en l'exécutant dans la vraie page. */
-    phase = hote + ' : preuve du code de l app (recherche du module, appel)';
+    etape('porte'); phase = hote + ' : preuve du code de l app (recherche du module, appel)';
     if (hote === APP_SANS_SCRIPT) { preuve = await preuveCodeApp(p, MARQUE + ' code ' + hote); }
   } catch (e) { raison = String(e && e.message || e).split('\n')[0].slice(0, 120); }
   const porteOk = etat === 'ajoute' || etat === 'doublon';
   const ok = hote === APP_SANS_SCRIPT ? (porteOk && !!(preuve && preuve.ok)) : (script && porteOk);
   if (ok) bons++; else mauvais++;
-  dire(`${ok ? '✅' : '❌'} ${hote} · script du journal ${script ? 'posé' : (hote === APP_SANS_SCRIPT ? 'absent (normal : sécurité de la page)' : 'ABSENT')} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}${preuve ? ` · CODE DE L'APP ${preuve.ok ? 'écrit une ligne (' + preuve.etat + ')' : 'N\'ÉCRIT PAS : ' + preuve.motif}` : ''}`);
-  phase = hote + ' : fermeture de la page';
+  dire(`${ok ? '✅' : '❌'} ${hote} · script du journal ${script ? 'posé' : (hote === APP_SANS_SCRIPT ? 'absent (normal : sécurité de la page)' : 'ABSENT')} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}${preuve ? ` · CODE DE L'APP ${preuve.ok ? 'écrit une ligne (' + preuve.etat + ')' : 'N\'ÉCRIT PAS : ' + preuve.motif}` : ''} · durées : ${durees.splice(0).join(', ')}`);
+  etape('preuve'); phase = hote + ' : fermeture de la page';
   await p.close().catch(() => {});
 }
 

@@ -212,7 +212,14 @@ if (process.argv[1] && /(^|[\\/])mesure-quotas\.mjs$/.test(process.argv[1]) && !
   const debutMois = new Date(fin.getTime() - 31 * 86400000);
   const dob = resumerDO(await gql(requeteDO(COMPTE, jour(debutMois), jour(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })));
   const iaMois = resumerIAMois(await gql(requeteIA(COMPTE, iso(new Date(new Date(debutMois).setUTCHours(0, 0, 0, 0))), iso(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })));
-  const t2 = texteDetail(rq, wk, abo) + '\n' + texteR2(r2) + '\n' + texteDO(dob) + '\n' + texteIAMois(iaMois); console.log(t2);
+  /* QUI appelait l'IA les jours de dépassement ? Les appels par Worker, sur les mêmes 31 jours, pour les jours où Workers AI a dépassé le gratuit. */
+  const wkMois = resumerWorkers(await gql(requeteWorkers(COMPTE, iso(new Date(new Date(debutMois).setUTCHours(0, 0, 0, 0))), iso(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })));
+  let tQui = '';
+  if (wkMois.ok && iaMois.ok) { const l = ['\nLes jours où Workers AI a dépassé le gratuit — appels par Worker ce jour-là :'];
+    for (const [j, e] of Object.entries(iaMois.jours).sort()) if (e.total > P.workers_ai_neurones_par_jour) { const w = wkMois.jours[j]; l.push(`  ${j} (${Math.round(e.total)} neurones) : ` + (w ? Object.entries(w.parScript).sort((a, b) => b[1] - a[1]).slice(0, 7).map(([k, v]) => k + ' ' + v).join(' · ') : 'appels non disponibles')); }
+    tQui = l.join('\n'); }
+  const t2 = texteDetail(rq, wk, abo) + '\n' + texteR2(r2) + '\n' + texteDO(dob) + '\n' + texteIAMois(iaMois) + '\n' + tQui; console.log(t2);
+  if (tQui) console.log(`::notice title=Qui appelait l IA::${tQui.replace(/\n/g, '%0A').slice(0, 3800)}`);
   console.log(`::notice title=Mesure Workers AI (31 jours)::${texteIAMois(iaMois).replace(/\n/g, '%0A').slice(0, 3800)}`);
   console.log(`::notice title=Mesure Durable Objects::${texteDO(dob).replace(/\n/g, '%0A').slice(0, 3800)}`);
   console.log(`::notice title=Mesure quotas (détail)::${t2.replace(/\n/g, '%0A').slice(0, 3800)}`);

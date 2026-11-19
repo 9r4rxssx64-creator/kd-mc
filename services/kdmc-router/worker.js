@@ -5006,6 +5006,23 @@ async function handleMembre(request, env) {
   }
   return JM({ ok: v.ok });
 }
+/* PURE (testée seule) : des fiches du domaine → la liste « comptes CMCteams + matricule SBM ». Voir /__admin/comptes-cmcteams. */
+const HOTES_CMC = { 'cmcteams.kd-mc.com': 'CMCteams', 'cmcteams-light.kd-mc.com': 'light', 'departs.kd-mc.com': 'light' };
+export function comptesCmcteams(fiches) {
+  const comptes = [];
+  for (const a of Array.isArray(fiches) ? fiches : []) {
+    if (!a || !a.uid || a.uid === CANON_UID) continue;
+    const m = String((a.fiche && a.fiche.matricule) || '').toUpperCase(), matricule = /^U\d{3,6}$/.test(m) ? m : '';
+    const apps = [...new Set(Object.keys(a.apps || {}).map((h) => HOTES_CMC[String(h).toLowerCase()]).filter(Boolean))].sort();
+    if (!apps.length && !matricule) continue;
+    let vu = 0; for (const h of Object.keys(a.apps || {})) if (HOTES_CMC[String(h).toLowerCase()]) vu = Math.max(vu, Number(a.apps[h] && a.apps[h].last) || 0);
+    comptes.push({ uid: String(a.uid).slice(0, 64), nom: String(a.name || '').slice(0, 80), matricule, apps, vu });
+  }
+  comptes.sort((x, y) => x.nom.localeCompare(y.nom, 'fr', { sensitivity: 'base' }) || x.uid.localeCompare(y.uid));
+  const avec = comptes.filter((c) => c.matricule).length;
+  return { comptes, total: comptes.length, avec_matricule: avec, sans_matricule: comptes.length - avec };
+}
+
 /* /__dep/matricules — Kevin seul (session admin prouvée) : GET la liste des matricules rangés ; POST { id, m } corrige
    (m vide = efface). */
 async function handleMatricules(request, env) {
@@ -5520,6 +5537,17 @@ async function handleAdmin(request, url, env) {
       .filter((a) => a.fiche && /^U\d{3,6}$/.test(String(a.fiche.matricule || '')) && (a.fiche.anneeSbm || a.fiche.anneeJeux))
       .map((a) => ({ matricule: String(a.fiche.matricule).toUpperCase(), anneeSbm: a.fiche.anneeSbm || undefined, anneeJeux: a.fiche.anneeJeux || undefined, nom: String(a.name || '').slice(0, 80), maj: a.fiche.maj || 0 }));
     return J({ ok: true, anciennetes, count: anciennetes.length });
+  }
+  /* ── COMPTES CMCteams + MATRICULE SBM (Kevin 18.11, pont 2770 : « fais-moi la liste de toutes les personnes qui ont un compte dans CMC Teams, tu me mets la liste
+     des noms avec leur identifiant SBM à côté ») ── LECTURE SEULE, admin prouvé (comme toute cette section). Une personne « a un compte CMCteams » si elle a ouvert
+     CMCteams ou la light (apps de sa fiche) OU si sa fiche porte un matricule SBM. Rend le NOM, le matricule (ou vide), les apps, la dernière visite — et les
+     NOMBRES. JAMAIS : code, empreinte, adresse IP, téléphone, e-mail, appareil. Triée par nom. Bee / Apex AI n'en reçoivent que « liste prête (N comptes) » :
+     la carte est fabriquée par le domaine (les noms ne partent jamais à une IA). */
+  if (path === '/__admin/comptes-cmcteams' && request.method === 'GET') {
+    if (!env.ACCOUNTS) return J({ ok: true, comptes: [], total: 0, avec_matricule: 0, sans_matricule: 0, kv: false });
+    const idxC = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
+    const tous = (await Promise.all(idxC.slice(-500).map((uid) => accGet(env, uid)))).filter(Boolean);
+    return J(Object.assign({ ok: true, kv: true }, comptesCmcteams(tous)));
   }
   /* Journal d'audit admin : connexions admin ok/échec, déconnexions forcées,
      nouveaux appareils, mints Firebase. FIFO 200 en KV. */

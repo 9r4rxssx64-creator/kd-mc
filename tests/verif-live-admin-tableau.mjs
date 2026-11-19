@@ -114,6 +114,18 @@ try {
   chk(ja.total > 0 && ja.cibles === ja.total, `journal admin : ${ja.cibles} ligne(s) sur ${ja.total} mènent quelque part · bouton « plus anciens » : ${ja.plus ? 'oui' : 'non'}`);
   chk(ja.fermees + ja.ouvertes > 0, `ouvrir / fermer : ${ja.ouvertes} app(s) ouverte(s), ${ja.fermees} fermée(s) pour tous`);
   dire(`ℹ️ apps fermées qui disent depuis quand : ${ja.datees} sur ${ja.fermees} (les autres : fermeture plus ancienne que les 200 dernières lignes du journal)`);
+  /* 19.11 (pont 2770, Kevin : « la liste des personnes qui ont un compte dans CMC Teams avec leur identifiant SBM ») : la porte de lecture, mesurée en vrai —
+     NOMBRES seulement, aucun nom ni matricule au journal. */
+  const cc = await page.evaluate(async () => {
+    try { const h = {}; try { const g = localStorage.getItem('kdmc_admin_grant') || '', t = localStorage.getItem('kdmc_sso_token') || ''; if (g) h['x-kdmc-admin'] = g; if (t) h.Authorization = 'Bearer ' + t; } catch (_) { /* rien */ }
+      const x = await fetch('/__admin/comptes-cmcteams', { credentials: 'include', cache: 'no-store', headers: h }); const j = await x.json().catch(() => ({}));
+      const l = Array.isArray(j.comptes) ? j.comptes : [];
+      return { st: x.status, ok: !!j.ok, total: j.total, avec: j.avec_matricule, sans: j.sans_matricule, n: l.length, champs: [...new Set(l.flatMap((c) => Object.keys(c)))].sort().join(','),
+        tri: l.every((c, i) => i === 0 || String(l[i - 1].nom).localeCompare(String(c.nom), 'fr', { sensitivity: 'base' }) <= 0), bons: l.filter((c) => !c.matricule || /^U\d{3,6}$/.test(c.matricule)).length };
+    } catch (e) { return { st: 0, ok: false }; }
+  });
+  chk(cc.ok && cc.n === cc.total && cc.avec + cc.sans === cc.total, `comptes CMCteams : ${cc.total} compte(s), ${cc.avec} avec matricule SBM, ${cc.sans} sans · HTTP ${cc.st}`);
+  chk(cc.ok && cc.tri && cc.bons === cc.n && (cc.n === 0 || cc.champs === 'apps,matricule,nom,uid,vu'), `comptes CMCteams : triés par nom, ${cc.bons} matricule(s) bien écrits ou vides sur ${cc.n}, champs rendus : ${cc.champs || '-'}`);
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }
 
 dire(`=== VÉRIF TABLEAU ADMIN : ${bons} OK · ${mauvais} en défaut`);

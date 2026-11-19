@@ -58,6 +58,35 @@ export function resumerR2(json, joursMesures = 7) {
   cout.total = cout.stockage + cout.a + cout.b;
   return { ok: true, espaces, total, cout, jours: joursMesures };
 }
+/* Les « Durable Objects » (le serveur temps réel d'Apex Chat) n'existent QUE dans l'offre payante Workers (5 $ par mois) et s'y facturent à la DURÉE d'éveil :
+   400 000 Go-seconde et 1 million d'appels compris par mois, puis 12,50 $ par million de Go-seconde et 0,15 $ par million d'appels (un objet = 128 Mo). */
+export const DO_INCLUS = { goSec: 400000, appels: 1e6, prixGoSec: 12.5, prixAppels: 0.15, go: 0.128 };
+export function requeteDO(compte, depuis, jusqua) {
+  return { query: `query ($compte: String!, $depuis: Date!, $jusqua: Date!) { viewer { accounts(filter: { accountTag: $compte }) {
+    durableObjectsPeriodicGroups(limit: 5000, filter: { date_geq: $depuis, date_leq: $jusqua }) { sum { activeTime cpuTime } dimensions { date } }
+    durableObjectsInvocationsAdaptiveGroups(limit: 5000, filter: { date_geq: $depuis, date_leq: $jusqua }) { sum { requests } dimensions { scriptName date } } } } }`, variables: { compte, depuis, jusqua } };
+}
+/** { ok, jours:{ jour:{ sec, appels } }, goSec, appels, cout } — activeTime est en microsecondes. */
+export function resumerDO(json) {
+  if (!json || !json.data || !json.data.viewer) return { ok: false, erreur: erreurDe(json) };
+  const jours = {}; let scripts = {};
+  for (const acc of json.data.viewer.accounts || []) {
+    for (const l of acc.durableObjectsPeriodicGroups || []) { const j = (l.dimensions || {}).date; if (!j) continue; (jours[j] ||= { sec: 0, appels: 0 }).sec += ((l.sum || {}).activeTime || 0) / 1e6; }
+    for (const l of acc.durableObjectsInvocationsAdaptiveGroups || []) { const d = l.dimensions || {}, n = (l.sum || {}).requests || 0; if (d.date) (jours[d.date] ||= { sec: 0, appels: 0 }).appels += n; scripts[d.scriptName || '?'] = (scripts[d.scriptName || '?'] || 0) + n; }
+  }
+  const sec = Object.values(jours).reduce((t, x) => t + x.sec, 0), appels = Object.values(jours).reduce((t, x) => t + x.appels, 0), goSec = sec * DO_INCLUS.go;
+  const cout = Math.max(0, goSec - DO_INCLUS.goSec) / 1e6 * DO_INCLUS.prixGoSec + Math.max(0, appels - DO_INCLUS.appels) / 1e6 * DO_INCLUS.prixAppels;
+  return { ok: true, jours, sec, goSec, appels, cout, scripts, n: Object.keys(jours).length };
+}
+export function texteDO(d) {
+  if (!d.ok) return `\n⚠️ Durable Objects : non mesurés (« ${d.erreur} »).`;
+  if (!d.n) return '\nDurable Objects (serveur temps réel) : aucune activité mesurée sur la période.';
+  const out = ['\nDurable Objects — serveur temps réel, facturé à la durée d\'éveil dans l\'offre payante (' + d.n + ' jours mesurés) :'];
+  for (const [j, x] of Object.entries(d.jours).sort().slice(-10)) out.push(`  ${j} : éveillé ${(x.sec / 3600).toFixed(1)} h cumulées · ${x.appels} appels`);
+  out.push(`  total : ${(d.sec / 3600).toFixed(0)} h d'éveil = ${Math.round(d.goSec)} Go-seconde (compris : ${DO_INCLUS.goSec}) · ${d.appels} appels (compris : ${DO_INCLUS.appels}) — par programme : ` + Object.entries(d.scripts).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => k + ' ' + v).join(' · '));
+  out.push(`  ${d.cout > 0 ? '🔴' : '✅'} dépassement ESTIMÉ sur la période : ${d.cout.toFixed(2)} $ hors TVA — avec l'abonnement de 5 $ : ${(5 + d.cout).toFixed(2)} $ hors TVA, ${((5 + d.cout) * 1.2).toFixed(2)} $ avec 20 % de TVA`);
+  return out.join('\n');
+}
 export function texteR2(r) {
   if (!r.ok) return `\n⚠️ Stockage R2 : non mesuré (« ${r.erreur} »).`;
   const out = ['\nStockage de fichiers R2 (gratuit : 10 Go, 1 M d\'écritures et 10 M de lectures par mois) :', 'espace                      Go stockés   fichiers   écritures (A)   lectures (B)   sur ' + r.jours + ' jours'];
@@ -156,7 +185,11 @@ if (process.argv[1] && /(^|[\\/])mesure-quotas\.mjs$/.test(process.argv[1]) && !
   } catch (e) { abo = { ok: false, erreur: String(e.message || e).slice(0, 80) }; }
   const t = texte(d1, ia); console.log(t);
   const r2 = resumerR2(await gql(requeteR2(COMPTE, iso(debut), iso(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })), JOURS);
-  const t2 = texteDetail(rq, wk, abo) + '\n' + texteR2(r2); console.log(t2);
+  /* la période de facturation est d'un mois : les Durable Objects se lisent sur 31 jours */
+  const debutMois = new Date(fin.getTime() - 31 * 86400000);
+  const dob = resumerDO(await gql(requeteDO(COMPTE, jour(debutMois), jour(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })));
+  const t2 = texteDetail(rq, wk, abo) + '\n' + texteR2(r2) + '\n' + texteDO(dob); console.log(t2);
+  console.log(`::notice title=Mesure Durable Objects::${texteDO(dob).replace(/\n/g, '%0A').slice(0, 3800)}`);
   console.log(`::notice title=Mesure quotas (détail)::${t2.replace(/\n/g, '%0A').slice(0, 3800)}`);
   console.log(`::notice title=Mesure R2::${texteR2(r2).replace(/\n/g, '%0A').slice(0, 3800)}`);
   const annot = (n, m) => console.log(`::${n} title=Mesure quotas::${m.replace(/\n/g, '%0A').slice(0, 3800)}`);

@@ -864,8 +864,15 @@ function chPort(d){
 }
 
 /* ---------- favorites / courses ---------- */
+/* 19.11 (cloud-installer 2637 G : journal du domaine) : ce que la personne enregistre dans le livre (favoris, liste de courses)
+   part au journal du domaine, regroupé sur 6 s, sans nom de personne. Sans le script du domaine : rien, jamais d'erreur. */
+var _JR={},_JRt=null;
+function journalCuisine(cle,n){ _JR[cle]=(_JR[cle]||0)+(n||1); clearTimeout(_JRt); _JRt=setTimeout(function(){
+  var p=[]; for(var k in _JR){ p.push(k+(_JR[k]>1?' (×'+_JR[k]+')':'')); } _JR={};
+  try{ if(typeof window.kdmcJournal==='function') window.kdmcJournal('Cuisine : '+p.join(', ')); }catch(_){}
+ },6000); }
 function toggleFav(id,node){
-  if(FAV[id])delete FAV[id];else FAV[id]=1; saveFav();
+  if(FAV[id])delete FAV[id];else FAV[id]=1; saveFav(); journalCuisine(FAV[id]?'favori ajouté':'favori retiré');
   toast(FAV[id]?'♥ Ajouté aux favoris':'Retiré des favoris');
   if(STATE.view==='recipe')renderRecipe(); else if(node){node.classList.toggle('on',!!FAV[id]);node.textContent=FAV[id]?'♥':'♡';}
   if(STATE.view==='favoris')renderFav();
@@ -876,7 +883,7 @@ function toggleCourse(rid,idx,node){
   var items=splitIngredients(r.ingredients,ratio); var it=items[idx];
   var pos=-1; COURSES.forEach(function(c,i){if(c.rid===rid&&c.base===it.base)pos=i;});
   if(pos>=0){COURSES.splice(pos,1);node.classList.remove('got');}
-  else{COURSES.push({rid:rid,recipe:r.name,base:it.base,text:it.scaled,done:false});node.classList.add('got');toast('🧺 Ajouté aux courses');}
+  else{COURSES.push({rid:rid,recipe:r.name,base:it.base,text:it.scaled,done:false});node.classList.add('got');toast('🧺 Ajouté aux courses');journalCuisine('ingrédient ajouté aux courses');}
   saveCourses();
 }
 function renderFav(){
@@ -908,10 +915,10 @@ function renderCourses(){
   }
   h+='</div>'; APP.innerHTML=h;
 }
-function addCourse(){var i=el('cadd');if(!i||!i.value.trim())return;COURSES.push({rid:-1,recipe:'Ma liste',base:i.value.trim(),text:i.value.trim(),done:false});saveCourses();renderCourses();}
+function addCourse(){var i=el('cadd');if(!i||!i.value.trim())return;journalCuisine('article ajouté aux courses');COURSES.push({rid:-1,recipe:'Ma liste',base:i.value.trim(),text:i.value.trim(),done:false});saveCourses();renderCourses();}
 function toggleDone(i){COURSES[i].done=!COURSES[i].done;saveCourses();renderCourses();}
 function rmCourse(i){COURSES.splice(i,1);saveCourses();renderCourses();}
-function clearCourses(){if(confirm('Vider toute la liste de courses ?')){COURSES=[];saveCourses();renderCourses();}}
+function clearCourses(){if(confirm('Vider toute la liste de courses ?')){COURSES=[];saveCourses();renderCourses();journalCuisine('liste de courses vidée');}}
 function printCourses(){window.print();}
 function shareCourses(){
   var txt='🧺 Liste de courses — Répertoire de la Riviera\n\n';
@@ -1083,4 +1090,4 @@ render(); // build behind cover
 kdmcWhoami(); // connexion sécurisée par le domaine (fail-open)
 </script>
 <!-- 06.10 (Kevin « mise à jour automatique forcée ET manuelle partout ») : badge version touchable + mise à jour forcée -->
-<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="cuisine" data-version="v1.0.4" data-color="#c9a227" defer></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="cuisine" data-version="v1.0.5" data-color="#c9a227" defer></script>

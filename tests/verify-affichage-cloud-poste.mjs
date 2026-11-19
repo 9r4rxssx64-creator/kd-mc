@@ -108,5 +108,63 @@ for (const f of ['kdmc-home/ia/index.html', 'kdmc-home/outils/index.html', 'kdmc
   ok(/var avant=!!navigator\.serviceWorker\.controller;/.test(lire(f)) && /if\(rl\|\|!avant\|\|/.test(lire(f)), `${f} : rechargement seulement pour une vraie mise à jour`);
 }
 
+/* 7. Pont 2741 (Kevin 18.11 : « les plus récentes en premier, chaque information cliquable ») : World Monitor, vrai Chromium, fausses données.
+   Séismes et événements NASA : du plus récent au plus ancien, chaque ligne mène à sa fiche officielle ; actualités de secours (Reddit) par date. */
+{
+  let html = lire('kdmc-home/worldmonitor/index.html');
+  if (SAB) html = html.replace(/\.sort\(function\(x,y\)\{return \(y\.created_utc\|\|0\)-\(x\.created_utc\|\|0\);\}\)/, '').replace(/a class="row rowlink"/g, 'div class="row"');
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  const T = Date.now();
+  await p.route('**/*', (r) => {
+    const u = r.request().url();
+    if (u.startsWith('https://w.test/') && new URL(u).pathname === '/') return r.fulfill({ status: 200, contentType: 'text/html', body: html });
+    const J = (o) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(o) });
+    if (u.includes('earthquake.usgs.gov')) return J({ features: [
+      { id: 'a', properties: { mag: 3, place: 'ANCIEN', time: T - 3e6, url: 'https://earthquake.usgs.gov/earthquakes/eventpage/a' }, geometry: { coordinates: [1, 2, 3] } },
+      { id: 'b', properties: { mag: 4, place: 'RECENT', time: T - 1e5, url: 'https://earthquake.usgs.gov/earthquakes/eventpage/b' }, geometry: { coordinates: [1, 2, 3] } }] });
+    if (u.includes('eonet.gsfc.nasa.gov/api/v3/events?status')) return J({ events: [
+      { title: 'FEU ANCIEN', categories: [{ id: 'wildfires' }], sources: [{ url: 'https://inciweb.example/ancien' }], geometry: [{ date: new Date(T - 5e7).toISOString(), coordinates: [1, 2] }] },
+      { title: 'FEU RECENT', categories: [{ id: 'wildfires' }], sources: [{ url: 'https://inciweb.example/recent' }], geometry: [{ date: new Date(T - 1e6).toISOString(), coordinates: [1, 2] }] }] });
+    if (u.includes('api.gdeltproject.org')) return r.fulfill({ status: 500, body: '' });
+    if (u.includes('reddit.com/r/worldnews')) return J({ data: { children: [
+      { data: { title: 'NEWS ANCIENNE', created_utc: (T - 9e6) / 1000, url: 'https://ex.example/a', domain: 'ex' } },
+      { data: { title: 'NEWS RECENTE', created_utc: (T - 1e5) / 1000, url: 'https://ex.example/b', domain: 'ex' } }] } });
+    return r.fulfill({ status: 404, body: '' });
+  });
+  await p.goto('https://w.test/'); await p.waitForTimeout(6000);
+  const R = await p.evaluate(() => {
+    const txt = (sel) => [...document.querySelectorAll(sel)].map((e) => e.textContent);
+    const premier = (id, mot) => { const t = txt('#' + id + ' .t1'); return t.findIndex((x) => /RECENT/.test(x)) < t.findIndex((x) => new RegExp(mot).test(x)); };
+    return {
+      seismesOrdre: premier('quakes', 'ANCIEN'), seismesLiens: document.querySelectorAll('#quakes a.rowlink[href^="https://earthquake.usgs.gov"]').length,
+      nasaOrdre: premier('eonet', 'ANCIEN'), nasaLiens: document.querySelectorAll('#eonet a.rowlink[href^="https://inciweb.example"]').length,
+      newsOrdre: (() => { const t = txt('#news .t1'); return t.indexOf('NEWS RECENTE') > -1 && t.indexOf('NEWS RECENTE') < t.indexOf('NEWS ANCIENNE'); })(),
+      haut: Math.min(...[...document.querySelectorAll('#quakes a.rowlink, #eonet a.rowlink')].map((e) => e.getBoundingClientRect().height)),
+    };
+  });
+  ok(R.seismesOrdre && R.seismesLiens === 2, 'worldmonitor séismes : plus récent en haut, chaque ligne mène à sa fiche USGS', R);
+  ok(R.nasaOrdre && R.nasaLiens === 2, 'worldmonitor NASA : plus récent en haut, chaque ligne mène à sa source officielle', R);
+  ok(R.newsOrdre, 'worldmonitor actualités de secours (Reddit) : la plus récente en haut', R);
+  ok(R.haut >= 44, 'worldmonitor : lignes cliquables ≥ 44 px', R);
+  await ctx.close();
+}
+
+/* 8. Pont 2637 G : la cuisine écrit au journal du domaine (favori, courses), regroupé, sans nom de personne */
+{
+  let html = lire('tools/cuisine/index.html');
+  if (SAB) html = html.replace(/journalCuisine\('favori ajouté'\)|journalCuisine\(FAV\[id\]\?'favori ajouté':'favori retiré'\);/, '');
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const p = await ctx.newPage();
+  await p.addInitScript(() => { window.__j = []; window.kdmcJournal = (t) => window.__j.push(t); });
+  await p.route('**/*', (r) => { const u = r.request().url(); if (u.startsWith('https://c.test/') && new URL(u).pathname === '/') return r.fulfill({ status: 200, contentType: 'text/html', body: html }); return r.fulfill({ status: 404, body: '' }); });
+  await p.goto('https://c.test/'); await p.waitForTimeout(800);
+  await p.evaluate(() => { toggleFav(0, null); toggleFav(1, null); });
+  await p.waitForTimeout(6600);
+  const j = await p.evaluate(() => window.__j);
+  ok(j.length === 1 && /^Cuisine : favori ajouté \(×2\)$/.test(j[0]), 'cuisine : deux favoris = UNE ligne au journal du domaine', j);
+  await ctx.close();
+}
+
 await b.close();
 console.log(`\n=== ${pass} OK / ${fail} FAIL ===`); process.exit(fail ? 1 : 0);

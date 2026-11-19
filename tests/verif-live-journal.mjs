@@ -7,12 +7,14 @@
  * (DELETE FROM activite WHERE detail LIKE 'essai du robot (porte du journal)%'). Journal public : verdicts et nombres seulement, aucun nom. À la main seulement. */
 import { appendFileSync } from 'node:fs';
 import { chromium } from 'playwright';
+import { preuveCodeApp } from './lib/preuve-journal-app.mjs';
 
 const MARQUE = 'essai du robot (porte du journal)';
 const HASH = String(process.env.KDMC_ADMIN_PIN_SHA256 || '').trim().toLowerCase();
 const RESUME = process.env.GITHUB_STEP_SUMMARY || '';
 const APPS = (process.env.APPS || 'kd-mc.com apex-chat.kd-mc.com apex-ai.kd-mc.com cmcteams.kd-mc.com cmcteams-light.kd-mc.com departs.kd-mc.com arbre.kd-mc.com lingua.kd-mc.com chez-lolo.kd-mc.com dashboard.kd-mc.com')
   .split(/[\s,]+/).map((x) => x.trim().replace(/\/+$/, '')).filter((x) => /^([a-z0-9-]+\.)?kd-mc\.com$/.test(x));
+const APP_SANS_SCRIPT = 'apex-ai.kd-mc.com';
 const lignes = [];
 const dire = (t) => { console.log(t); lignes.push(t); };
 if (!/^[0-9a-f]{64}$/.test(HASH)) { dire('❌ Code admin absent (secret CI) : vérification réelle IMPOSSIBLE — je n\'affirme rien.'); process.exit(1); }
@@ -47,7 +49,7 @@ if (!c.ok) { await browser.close(); process.exit(1); }
 let bons = 0, mauvais = 0;
 for (const hote of APPS) {
   const p = await ctx.newPage();
-  let script = false, st = 0, etat = '', raison = '';
+  let script = false, st = 0, etat = '', raison = '', preuve = null;
   try {
     await p.goto('https://' + hote + '/sw.js', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
     await p.evaluate(({ t, g }) => { try { if (t) localStorage.setItem('kdmc_sso_token', t); if (g) localStorage.setItem('kdmc_admin_grant', g); } catch (_) { /* rien */ } }, { t: c.token, g: c.grant }).catch(() => {});
@@ -60,10 +62,14 @@ for (const hote of APPS) {
       return { st: x.status, etat: j.etat || '', raison: j.reason || '' };
     }, MARQUE + ' ' + hote);
     st = r.st; etat = r.etat; raison = r.raison;
+    /* 18.11 (apex-cloud 2676) : Apex AI n'a JAMAIS le script du domaine (sa sécurité de page le refuse) ; son code écrit alors directement à la porte (v13.4.399).
+       « script ABSENT » y est donc normal : ce qui compte est que LE CODE DE L'APP écrive vraiment une ligne, prouvé ici en l'exécutant dans la vraie page. */
+    if (hote === APP_SANS_SCRIPT) { preuve = await preuveCodeApp(p, MARQUE + ' code ' + hote); }
   } catch (e) { raison = String(e && e.message || e).split('\n')[0].slice(0, 120); }
-  const ok = script && (etat === 'ajoute' || etat === 'doublon');
+  const porteOk = etat === 'ajoute' || etat === 'doublon';
+  const ok = hote === APP_SANS_SCRIPT ? (porteOk && !!(preuve && preuve.ok)) : (script && porteOk);
   if (ok) bons++; else mauvais++;
-  dire(`${ok ? '✅' : '❌'} ${hote} · script du journal ${script ? 'posé' : 'ABSENT'} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}`);
+  dire(`${ok ? '✅' : '❌'} ${hote} · script du journal ${script ? 'posé' : (hote === APP_SANS_SCRIPT ? 'absent (normal : sécurité de la page)' : 'ABSENT')} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}${preuve ? ` · CODE DE L'APP ${preuve.ok ? 'écrit une ligne (' + preuve.etat + ')' : 'N\'ÉCRIT PAS : ' + preuve.motif}` : ''}`);
   await p.close().catch(() => {});
 }
 

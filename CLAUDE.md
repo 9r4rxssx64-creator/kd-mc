@@ -81,7 +81,7 @@ Détail : `CLAUDE-HISTOIRE.md` § PERSONA.
 
 ---
 
-## 📜 Les 253 règles — le texte de Kevin, une par une
+## 📜 Les 254 règles — le texte de Kevin, une par une
 
 > Chaque entrée porte **le titre exact** de la règle et **la phrase de Kevin** qui l'a créée.
 > Le détail (le pourquoi, les mesures, les incidents, les tableaux) est dans
@@ -1100,6 +1100,10 @@ Kevin : « Va au bout de tout le travail auto. Sans t'arrêter jamais, note-le. 
 ### 🏷️ RÈGLE ABSOLUE — UN SEUL NOM PAR BRANCHE, LE MÊME PARTOUT : PONT, TÉLÉPHONE, MESSAGES (Kevin 2026-11-12, ABSOLUE, TOUTES LES BRANCHES)
 **« Trop souvent, il y a des branches qui me disent de relancer des sessions d'ordinateur, mais elles n'ont jamais le même nom. Mettez-vous toutes d'accord et note et donne un nom sur mon […]
 ↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-un-seul-nom-par-branche-le-même-partout-pont-téléphone-messages-kevin-2026-11-12-absolue-toutes-les-branches)
+
+### 🤝 RÈGLE ABSOLUE — PARITÉ TOTALE : BEE ET APEX AI FONT POUR KEVIN TOUT CE QU'IL DEMANDE, DANS TOUT LE DOMAINE (Kevin 2026-11-18, ABSOLUE, TOUTES LES BRANCHES)
+**« N'oublie pas de donner la parité sur tout à Apex AI et que Javis B puisse y avoir accès aussi, pour qu'il puisse être vraiment polyvalent et autonome dans tout le domaine, quoi que je lui […]
+↳ [récit](CLAUDE-HISTOIRE.md#règle-absolue-parité-totale-bee-et-apex-ai-font-pour-kevin-tout-ce-quil-demande-dans-tout-le-domaine-kevin-2026-11-18-absolue-toutes-les-branches)
 
 ---
 

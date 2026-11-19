@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ Deploy Apex Chat (Cloudflare Workers) — 19/11/2026 13:58 UTC
+
+- **Branche** : `main` · **Commit** : `bc822d4e` · **Run** : `44538383639`
+- **Ce qui a lâché** : Tests unitaires du commit (porte avant déploiement) › Tests + seuils de couverture (vitest.config.js)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/44538383639
+- **Ce que la machine a dit** :
+
+```
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]TypeError: K._journal is not a function
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Deploy Apex Chat (Cloudflare Workers) — 19/11/2026 13:57 UTC
 
 - **Branche** : `main` · **Commit** : `bc822d4e` · **Run** : `44538379439`
@@ -555,17 +595,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ##[error]✅ cocina.kd-mc.com             200   310280 car.
 ##[error]✅ cujina.kd-mc.com             200   310280 car.
 ##[error]Process completed with exit code 1.
-```
-
-## ❌ Auto-merge Claude branches into main — 19/09/2026 02:15 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `95d153ca` · **Run** : `35414890314`
-- **Ce qui a lâché** : auto-merge › Rattraper main avant la PR (journaux fusionnés en union, jamais bloqués)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414890314
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
-##[error]Process completed with exit code 128.
 ```

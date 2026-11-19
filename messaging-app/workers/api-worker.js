@@ -112,7 +112,7 @@ export function ctEq(a, b) {
 // Version du serveur, annoncée par /api/health : le déploiement la compare à package.json pour PROUVER que le code
 // en ligne est le bon (audit 16.10.2026 : l'ancien contrôle lisait une route qui exige un compte, donc ne comparait rien).
 // Un test garde cette constante égale à la version de package.json.
-export const API_VERSION = '1.1.371';
+export const API_VERSION = '1.1.372';
 
 // Nouvelles conversations par jour et par compte (hors admin).
 export const CONV_PAR_JOUR = 30;
@@ -1385,6 +1385,13 @@ export async function handleTestLogin(request, env) {
   return json({ ok: true, token: jwt, user: { id: user.id, pseudo: user.pseudo, is_admin: !!user.is_admin } });
 }
 
+/* 19.11 (cloud-installer 2813 : « 522 lignes par appel, 856 appels en 7 jours ») : l'ancien « source=… OR phone IN (…) OR phone LIKE … » lisait TOUTE la table des comptes
+   à chaque nettoyage de robot. Trois recherches par index (source : migration 0029 ; phone : index unique), réunies : quelques lignes au lieu de toute la table. */
+export const SQL_COMPTES_E2E =
+  "SELECT id FROM users WHERE source='e2e-test' " +
+  "UNION SELECT id FROM users WHERE phone IN ('+33600000091','+33600000092') " +
+  "UNION SELECT id FROM users WHERE phone >= 'deleted' AND phone < 'deletee' AND phone LIKE 'deleted_%e2e%'";
+
 // POST /api/test/cleanup — v1.1.201. Efface DÉFINITIVEMENT les comptes de test
 // E2E (Alice/Bob = source 'e2e-test' sur les numéros fixes) + leurs traces.
 // Même verrou que /api/test/login (X-Test-Auth == APEX_CHAT_ADMIN_TOKEN).
@@ -1395,9 +1402,7 @@ export async function handleTestCleanup(request, env) {
   const DB = env.APEX_CHAT_DB;
   const removed = [];
   try {
-    const rows = (await DB.prepare(
-      "SELECT id FROM users WHERE source='e2e-test' OR phone IN ('+33600000091','+33600000092') OR phone LIKE 'deleted_%e2e%'"
-    ).all()).results || [];
+    const rows = (await DB.prepare(SQL_COMPTES_E2E).all()).results || [];
     for (const r of rows) {
       const id = r.id;
       // messages + memberships + alias + le compte
@@ -2133,6 +2138,10 @@ export async function handleUpdateMe(request, env) {
   return json({ ok: true, user });
 }
 
+const _COLONNES_PUBLIQUES = 'id, pseudo, real_name, display_name, first_name, last_name, avatar_url, bio, last_seen';
+export const SQL_PUBLIC_USER_PAR_ID = `SELECT ${_COLONNES_PUBLIQUES} FROM users WHERE id=? AND status=?`;
+export const SQL_PUBLIC_USER_PAR_PSEUDO = `SELECT ${_COLONNES_PUBLIQUES} FROM users WHERE pseudo=? COLLATE NOCASE AND status=?`;
+
 async function handleGetPublicUser(pseudoOrId, env, request) {
   // v1.1.164 — accepte id OU pseudo (frontend résout les peers via leur id).
   // Retourne real_name + display_name + first_name + last_name + avatar_url
@@ -2144,12 +2153,10 @@ async function handleGetPublicUser(pseudoOrId, env, request) {
     const auth = await getAuthUser(request, env);
     if (!auth) return err('Non authentifié', 401);
   }
-  const user = await env.APEX_CHAT_DB.prepare(
-    `SELECT id, pseudo, real_name, display_name, first_name, last_name,
-            avatar_url, bio, last_seen
-     FROM users
-     WHERE (id=? OR pseudo=? COLLATE NOCASE) AND status=?`
-  ).bind(pseudoOrId, pseudoOrId, 'active').first();
+  /* 19.11 (cloud-installer 2813 : « 494 lignes par appel, 936 appels ») : « id=? OR pseudo=? » ne passait par aucun index (toute la table lue). Deux recherches par index,
+     l'identifiant d'abord, puis le pseudo (sans tenir compte des majuscules) : une ligne lue chacune. */
+  let user = await env.APEX_CHAT_DB.prepare(SQL_PUBLIC_USER_PAR_ID).bind(pseudoOrId, 'active').first();
+  if (!user) user = await env.APEX_CHAT_DB.prepare(SQL_PUBLIC_USER_PAR_PSEUDO).bind(pseudoOrId, 'active').first();
   if (!user) return err('User introuvable', 404, 'user_not_found', { lookup: pseudoOrId });
   // Audit 16.10.2026 (annuaire ouvert) : n'importe quel compte pouvait lire le NOM RÉEL, la bio et l'heure de dernière
   // connexion de n'importe quel inscrit par son pseudo. Désormais, sans conversation en commun (ni être soi-même, ni admin),

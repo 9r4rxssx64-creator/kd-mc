@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex Chat v1.1.372 — 19.11.2026 (apex-cloud, cloud-installer 2813 : quotas gratuits D1)
+- Deux requêtes lisaient toute la table des comptes à chaque appel (494 lignes × 936 appels et 522 lignes × 856 appels en 7 jours) : profil public (identifiant d'abord, puis pseudo) et nettoyage des comptes de test (trois recherches par index, migration 0029 `idx_users_source`).
+- Test sur le vrai schéma : `messaging-app/tests/unit/requetes-sans-balayage.test.js` (3 rouges sur les anciennes requêtes).
+
 ## Bee v1.41 — parité : ouvrir une page, liste des comptes CMCteams, appeler (2026-11-19)
 - **19.11 (javis-bee, correctif de budget)** : le lot parité ne part plus que sur ses mots (`RE_PARITE` resserré) et les textes d'outils sont plus courts : la demande « TOUT » repasse sous 8000 jetons (8470 avant, déploiement public rouge). Garde : `bee-allege.test.mjs` (4a, 4a2, plafond « TOUT »).
 - **19.11 (javis-bee, Kevin 18.11 « parité sur tout »)** : trois outils, tous derrière le toucher de Kevin et sans donnée de personne envoyée à l'IA : `lien_externe` (bouton « Ouvrir », https seulement), `comptes_cmcteams` (noms + identifiant SBM, carte fabriquée par le domaine, bouton Copier), `appeler` (bouton 📞 `tel:`). Interrupteur `BEE_PARITE=0`. Gardes `test:bee-parite-outils` 29/0, `test:bee-parite` 76/0. Cache `javis-v1.41`.

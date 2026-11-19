@@ -90,7 +90,7 @@ for (const hote of APPS) {
         const p2 = await ctx.newPage();
         try {
           await p2.goto('https://' + hote + '/sw.js', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
-          preuve = await appelerModuleJournal(p2, t.lien, MARQUE + ' code ' + hote, { suivi });
+          preuve = await appelerModuleJournal(p2, t.lien, MARQUE + ' code ' + hote + ' ' + Date.now().toString(36), { suivi });   /* phrase UNIQUE : la contre-épreuve repose sur « doublon » */
         } finally { await p2.close().catch(() => {}); }
       }
     }
@@ -98,7 +98,7 @@ for (const hote of APPS) {
   const porteOk = etat === 'ajoute' || etat === 'doublon';
   const ok = hote === APP_SANS_SCRIPT ? (porteOk && !!(preuve && preuve.ok)) : (script && porteOk);
   if (ok) bons++; else mauvais++;
-  dire(`${ok ? '✅' : '❌'} ${hote} · script du journal ${script ? 'posé' : (hote === APP_SANS_SCRIPT ? 'absent (normal : sécurité de la page)' : 'ABSENT')} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}${preuve ? ` · CODE DE L'APP ${preuve.ok ? 'écrit une ligne (' + preuve.etat + ')' : 'N\'ÉCRIT PAS : ' + preuve.motif}` : ''} · durées : ${durees.splice(0).join(', ')}`);
+  dire(`${ok ? '✅' : '❌'} ${hote} · script du journal ${script ? 'posé' : (hote === APP_SANS_SCRIPT ? 'absent (normal : sécurité de la page)' : 'ABSENT')} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}${preuve ? ` · CODE DE L'APP ${preuve.ok ? 'écrit une ligne (contre-épreuve : ' + preuve.etat + ')' : 'N\'ÉCRIT PAS : ' + preuve.motif}` : ''} · durées : ${durees.splice(0).join(', ')}`);
   etape('preuve'); phase = hote + ' : fermeture de la page';
   await p.close().catch(() => {});
 }

@@ -55,15 +55,20 @@ export async function appelerModuleJournal(page, lien, phrase, { delaiMs = 15000
     return '';
   }, { u: lien, p: phrase }).catch((e) => String(e && e.message || e).slice(0, 100)), delaiMs + 5000, 'chargement du module trop lent (' + Math.round((delaiMs + 5000) / 1000) + ' s)');
   if (lance) return { ok: false, motif: lance, etat: '' };
-  suivi('lecture de la réponse');
   const rep = await attente;
+  suivi('contre-épreuve');
   if (!rep) return { ok: false, motif: 'aucune requête vers /__boite/journal après l\'appel du code de l\'app', etat: '' };
-  const brut = await borne(rep.text().catch(() => ''), 5000, '');
-  let j = {}; try { j = JSON.parse(brut); } catch (_) { /* pas du JSON */ }
-  const etat = (j && j.etat) || '';
-  /* Si la réponse n'a pas d'état : dire CE QU'ELLE EST (statut, type, clés, raison) — jamais le texte d'une page. */
-  const nature = etat ? '' : `réponse sans état (HTTP ${rep.status()} · ${(rep.headers()['content-type'] || '?').split(';')[0]} · ${j && typeof j === 'object' && Object.keys(j).length ? 'clés ' + Object.keys(j).slice(0, 6).join(',') + (j.reason ? ' · raison ' + String(j.reason).slice(0, 40) : '') : 'pas du JSON, ' + brut.length + ' octets'})`;
-  return { ok: rep.status() === 200 && (etat === 'ajoute' || etat === 'doublon'), motif: rep.status() === 200 ? nature : 'HTTP ' + rep.status(), etat };
+  if (rep.status() !== 200) return { ok: false, motif: 'HTTP ' + rep.status(), etat: '' };
+  /* Le code d'Apex AI envoie en mode « keepalive » : Playwright n'en lit pas la réponse (0 octet, mesuré le 19.11, run 44441709847). On prouve donc l'écriture par une
+     CONTRE-ÉPREUVE : le robot envoie lui-même la MÊME phrase ; la porte ignore une phrase déjà notée dans l'heure (« doublon ») — si le code de l'app a écrit, la
+     réponse est « doublon » ; sinon elle est « ajoute » (et c'est ce second envoi qui inscrit la ligne d'essai : preuve rouge). */
+  const verif = await borne(page.evaluate(async (d) => {
+    const x = await fetch('/__boite/journal', { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type: 'modif', detail: d }) });
+    const j = await x.json().catch(() => ({}));
+    return { st: x.status, etat: (j && j.etat) || '' };
+  }, phrase).catch(() => ({ st: 0, etat: '' })), 10000, { st: 0, etat: '' });
+  const ok = verif.st === 200 && verif.etat === 'doublon';
+  return { ok, etat: verif.etat, motif: ok ? '' : verif.etat === 'ajoute' ? 'la requête du code de l\'app est partie (HTTP 200) mais AUCUNE ligne n\'est inscrite : la ligne envoyée ensuite a été ajoutée' : `contre-épreuve sans résultat (HTTP ${verif.st} · ${verif.etat || 'sans état'})` };
 }
 
 /* Les deux étapes sur la MÊME page (essais locaux). Le robot réel, lui, appelle le module dans une page vierge du même domaine : la page de l'app charge des

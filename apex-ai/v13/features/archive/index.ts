@@ -570,11 +570,18 @@ export function render(rootEl: HTMLElement): void {
   logger.info('archive', 'view rendered', { total: stats.total });
 }
 
+/** 19.11 (Kevin : « rien ne manque ») : la liste montre 100 éléments au plus ET le dit (avant : coupée en silence). */
+const ARCHIVE_MAX = 100;
+
 function renderItemList(items: readonly ArchiveItem[]): string {
   if (items.length === 0) {
     return '<p class="ax-gs-213">Aucun élément.</p>';
   }
-  return items.slice(0, 100).map((it) => {
+  const reste = items.length - ARCHIVE_MAX;
+  const note = reste > 0
+    ? `<p class="ax-archive-reste" style="margin:0 0 8px;color:var(--ax-text-dim);font-size:12px">Les ${ARCHIVE_MAX} plus récents sur ${items.length} · ${reste} autre${reste > 1 ? 's' : ''} : utilise la recherche ci-dessus.</p>`
+    : '';
+  return note + items.slice(0, ARCHIVE_MAX).map((it) => {
     const meta = CATEGORY_META[it.category];
     const dateStr = new Date(it.ts).toLocaleString('fr-FR');
     return `

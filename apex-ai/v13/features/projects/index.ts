@@ -10,7 +10,7 @@ import { escapeHtml } from '../../core/escape-html.js';
 import { createCleanupScope, type CleanupScope } from '../../core/listener-cleanup.js';
 import { logger } from '../../core/logger.js';
 import { store } from '../../core/store.js';
-import { projects } from '../../services/ai/projects.js';
+import { plusRecentsDabord, projects } from '../../services/ai/projects.js';
 import { guardFeatureEnabled } from '../../services/auth/feature-guard.js';
 import { toast } from '../../ui/toast.js';
 import { journalDomaine } from '../../ui/journal.js';
@@ -35,7 +35,7 @@ export function render(rootEl: HTMLElement): void {
   const uid = user?.id ?? 'anon';
   if (!guardFeatureEnabled('module.projects', rootEl, uid)) return;
 
-  const list = projects.list(uid);
+  const list = plusRecentsDabord(projects.list(uid));
   const activeId = projects.getActiveId(uid);
   const editing = editingId ? projects.get(editingId, uid) : null;
 

@@ -61,6 +61,11 @@ function isValid(p: unknown): p is Project {
   );
 }
 
+/** 19.11 (Kevin : « le plus récent en premier ») : un projet modifié ou enrichi d'une note remonte en tête ; l'ordre de stockage ne change pas. */
+export function plusRecentsDabord<T extends { updatedAt: number }>(arr: readonly T[]): T[] {
+  return [...arr].sort((a, b) => b.updatedAt - a.updatedAt);
+}
+
 class ProjectsStore {
   list(uid: string = currentUid()): Project[] {
     try {

@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.400 — 19.11.2026 (apex-cloud, Kevin : « rien ne manque · le plus récent en premier »)
+- Mes projets : un projet modifié ou enrichi d'une note remonte en tête (avant : seule la création remontait).
+- Archive : la liste montre « Les 100 plus récents sur N » et renvoie à la recherche (avant : coupée à 100 sans le dire).
+- Test : `tests/unit/listes-ordre-complet.test.ts` (3 rouges sans le correctif, 3 verts avec).
+
 ## CMCteams v10.036 + light v1.165 — case « groupe fermé / ouvert » à la fiche d'inscription (2026-11-18)
 - **18.11 (cmcteams-pdf, Kevin « Ajoute à la fiche d'inscription, groupe fermé et ouvert à cocher, et l'admin peut modifier toujours toutes les infos »)** : deux cases à cocher « Groupe fermé » / « Groupe ouvert » dans la fiche d'inscription de CMCteams ET de la light (`reg.groupe`, `fGrp`) ; le choix coché passe avant la règle de la date d'entrée (`cmcEstGroupeOuvert`, copie identique `tools/shared` ⇄ `tools/departs`) ; le routeur garde `groupe` seulement s'il vaut « ouvert » ou « ferme » (`ficheNettoyee`) ; l'admin le change à tout moment, même fiche verrouillée (menu dans la fiche + outil IA `admin_set_reg_field`, règles Firebase : l'admin écrit toujours `cmc_reg/<uid>`) ; Lemonnier PH et Cioco S ajoutés aux chefs américains (pont 2746). Gardes : `test:secteur` (70/0), `test:fiche-groupe` (5/0, rouge sous sabotage), `verify-cadre-matricule` (horloge figée).
 

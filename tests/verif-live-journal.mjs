@@ -13,8 +13,13 @@ const MARQUE = 'essai du robot (porte du journal)';
 const HASH = String(process.env.KDMC_ADMIN_PIN_SHA256 || '').trim().toLowerCase();
 const RESUME = process.env.GITHUB_STEP_SUMMARY || '';
 const APPS = (process.env.APPS || 'kd-mc.com apex-chat.kd-mc.com apex-ai.kd-mc.com cmcteams.kd-mc.com cmcteams-light.kd-mc.com departs.kd-mc.com arbre.kd-mc.com lingua.kd-mc.com chez-lolo.kd-mc.com dashboard.kd-mc.com')
-  .split(/[\s,]+/).map((x) => x.trim().replace(/\/+$/, '')).filter((x) => /^([a-z0-9-]+\.)?kd-mc\.com$/.test(x));
+  .split(/[\s,]+/).map((x) => x.trim().replace(/\/+$/, '')).filter((x) => /^([a-z0-9-]+\.)?kd-mc\.com(\/[a-z0-9._-]+)*$/.test(x));
 const APP_SANS_SCRIPT = 'apex-ai.kd-mc.com';
+/* 19.11 (run 44584256541) : une app dont l'accueil interdit tout script (script-src 'none', connect-src 'none') ne peut jamais appeler
+   le journal depuis « / » : le robot ouvre la page qui l'appelle vraiment. Une adresse « hôte/page.html » dans APPS l'emporte. */
+const PAGE_DE_DEPART = {
+  'croupier.kd-mc.com': '/acces.html', // « / » = vitrine sans script ; le journal part d'acces.html (paiement enregistré)
+};
 const lignes = [];
 const dire = (t) => { console.log(t); lignes.push(t); };
 /* 19.11 (apex-cloud) : le 2e et le 3e passage réels se sont figés sans rien dire (le journal d'une étape en cours n'est lisible qu'à sa fin). Garde-fou : le robot
@@ -57,14 +62,17 @@ dire(`${c.ok ? '✅' : '❌'} connexion ADMIN au domaine${c.ok ? '' : ' — HTTP
 if (!c.ok) { await browser.close(); process.exit(1); }
 
 let bons = 0, mauvais = 0;
-for (const hote of APPS) {
+for (const entree of APPS) {
+  const coupe = entree.indexOf('/');
+  const hote = coupe < 0 ? entree : entree.slice(0, coupe);
+  const chemin = coupe < 0 ? (PAGE_DE_DEPART[hote] || '/') : entree.slice(coupe);
   phase = hote + ' : ouverture de la page';
   const p = await ctx.newPage();
   let script = false, st = 0, etat = '', raison = '', preuve = null;
   try {
     await p.goto('https://' + hote + '/sw.js', { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
     await p.evaluate(({ t, g }) => { try { if (t) localStorage.setItem('kdmc_sso_token', t); if (g) localStorage.setItem('kdmc_admin_grant', g); } catch (_) { /* rien */ } }, { t: c.token, g: c.grant }).catch(() => {});
-    await p.goto('https://' + hote + '/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+    await p.goto('https://' + hote + chemin, { waitUntil: 'domcontentloaded', timeout: 45000 });
     etape('ouverture'); phase = hote + ' : attente du script du domaine';
     script = await p.waitForFunction(() => typeof window.kdmcJournal === 'function', null, { timeout: 15000 }).then(() => true).catch(() => false);
     /* L'envoi passe par la MÊME porte que window.kdmcJournal, mais avec la réponse en main : l'app, elle, ne la lit jamais. */
@@ -98,7 +106,7 @@ for (const hote of APPS) {
   const porteOk = etat === 'ajoute' || etat === 'doublon';
   const ok = hote === APP_SANS_SCRIPT ? (porteOk && !!(preuve && preuve.ok)) : (script && porteOk);
   if (ok) bons++; else mauvais++;
-  dire(`${ok ? '✅' : '❌'} ${hote} · script du journal ${script ? 'posé' : (hote === APP_SANS_SCRIPT ? 'absent (normal : sécurité de la page)' : 'ABSENT')} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}${preuve ? ` · CODE DE L'APP ${preuve.ok ? 'écrit une ligne (contre-épreuve : ' + preuve.etat + ')' : 'N\'ÉCRIT PAS : ' + preuve.motif}` : ''} · durées : ${durees.splice(0).join(', ')}`);
+  dire(`${ok ? '✅' : '❌'} ${hote}${chemin !== '/' ? chemin : ''} · script du journal ${script ? 'posé' : (hote === APP_SANS_SCRIPT ? 'absent (normal : sécurité de la page)' : 'ABSENT')} · porte HTTP ${st || '?'} · réponse ${etat || raison || '-'}${preuve ? ` · CODE DE L'APP ${preuve.ok ? 'écrit une ligne (contre-épreuve : ' + preuve.etat + ')' : 'N\'ÉCRIT PAS : ' + preuve.motif}` : ''} · durées : ${durees.splice(0).join(', ')}`);
   etape('preuve'); phase = hote + ' : fermeture de la page';
   await p.close().catch(() => {});
 }

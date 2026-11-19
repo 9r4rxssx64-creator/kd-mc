@@ -63,4 +63,18 @@ for (const html of pages) {
   const permis = sab ? false : /\s'self'\s|\s\*\s/.test(c);
   ok(permis, html.replace('shops/', '') + " : la CSP laisse partir le journal (connect-src 'self')");
 }
+/* 19.11 (2e passage du robot, run 44584256541) : le robot ouvrait toujours « / ». Chez croupier, « / » est la vitrine (script-src 'none',
+   connect-src 'none') : aucun script du domaine, aucun envoi possible → ❌ à vie, alors que le journal part d'acces.html. Une boutique dont
+   l'accueil interdit les scripts doit avoir sa page de départ (celle qui appelle le journal) dans PAGE_DE_DEPART du robot. */
+const robot = sab ? '' : readFileSync('tests/verif-live-journal.mjs', 'utf8');
+const hoteDe = (d) => (d === 'kit-ia' ? 'kit' : d) + '.kd-mc.com';
+for (const d of [...new Set(ATTENDUS.map(([f]) => f.split('/')[1]))]) {
+  const accueil = 'shops/' + d + '/index.html';
+  if (!existsSync(accueil) || !/script-src 'none'/.test(readFileSync(accueil, 'utf8'))) continue;
+  const appelantes = readdirSync('shops/' + d).filter((n) => n.endsWith('.html') && n !== 'index.html');
+  const vise = (robot.match(new RegExp("'" + hoteDe(d).replace(/\./g, '\\.') + "':\\s*'/([^']+)'")) || [])[1];
+  ok(!!vise && appelantes.includes(vise), d + " : l'accueil interdit les scripts, le robot ouvre une page qui appelle le journal (" + (vise || 'aucune') + ')');
+}
+const APPS_RE = (robot.match(/filter\(\(x\) => (\/[^\n]+?\/)\.test\(x\)\)/) || [])[1] || '';
+ok(sab ? false : /\\\/|\//.test(APPS_RE.replace(/^\/|\/$/g, '')) && new RegExp(APPS_RE.slice(1, -1)).test('croupier.kd-mc.com/acces.html'), 'robot : une adresse avec un chemin (hôte/page.html) est acceptée');
 process.exit(ko ? 1 : 0);

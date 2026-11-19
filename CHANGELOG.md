@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.404 — 19.11.2026 (apex-cloud, mesure réelle de pc-config 2874)
+- « Fais-moi la liste de tous ceux qui ont un compte CMCteams avec leur identifiant SBM » partait au modèle d'IA, qui répondait qu'il n'avait pas la base et réclamait des accès Firebase : l'outil n'était jamais appelé. Le chat reconnaît maintenant cette demande lui-même, affiche la carte à Kevin et répond en une phrase sans appeler le modèle (aucun nom ni matricule ne lui est donné).
+- Test : `tests/unit/chat-outils-locaux.test.ts` (rouge sans le câblage dans le chat).
+
 ## Apex AI v13.4.403 — 19.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2769)
 - Nouvel outil `lien_externe` (admin) : « ouvre-moi cette page internet ». Une carte avec un bouton que Kevin touche ; https seulement, jamais d'identifiants dans l'adresse, pas d'adresse interne, rien ne s'ouvre tout seul. Mêmes règles que Bee.
 - Garde de parité : il ne reste à porter que `appeler`. Tests : `tests/unit/lien-externe.test.ts`.

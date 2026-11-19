@@ -307,6 +307,20 @@ export async function processQueue(rootEl: HTMLElement): Promise<void> {
     return;
   }
 
+  /* v13.4.404 (pc-config 2874) : une demande de parité claire (liste des comptes CMCteams) est traitée ICI, sans attendre que le modèle pense à l'outil. */
+  try {
+    const { repondreLocalement } = await import('./chat-outils-locaux.js');
+    const locale = await repondreLocalement(text);
+    if (locale !== null) {
+      conversation.push({ id: `u_${Date.now()}`, role: 'user', text, ts: Date.now() });
+      persistConversation(conversation);
+      journalDomaine('message envoyé à Apex', 'message');
+      pushAssistantMessage(rootEl, locale);
+      isProcessing = false;
+      return;
+    }
+  } catch (err: unknown) { logger.warn('chat', 'routage local en échec, le modèle répond', { err }); }
+
   /* WIRE smart-tools-suggester : detect intent + propose outil sur bureau
    * (Kevin demande explicite : "musique → studio mix sur bureau") */
   void detectAndSuggestTool(text, rootEl);

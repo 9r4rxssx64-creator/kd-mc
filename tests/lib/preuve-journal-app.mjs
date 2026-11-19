@@ -4,16 +4,31 @@
    module de l'app tel que la page le sert, l'appelle avec une phrase d'essai et lit la réponse de la porte.
    Retour : { ok, motif, etat } — jamais de texte de page. */
 export async function preuveCodeApp(page, phrase, { delaiMs = 15000 } = {}) {
-  const lien = await page.evaluate(async () => {
-    const noms = performance.getEntriesByType('resource').map((e) => e.name);
-    let u = noms.find((n) => /\/chunks\/journal-[\w-]+\.js/.test(n));
-    if (u) return u;
-    for (const n of noms.filter((x) => /\/chunks\/[\w.-]+\.js/.test(x))) {
-      try { const t = await (await fetch(n)).text(); const m = t.match(/(?<![\w-])journal-[\w-]+\.js/); if (m) return new URL('/chunks/' + m[0], location.origin).href; } catch (_) { /* suivant */ }
+  /* Le module du journal n'est chargé qu'à la première action d'une personne (messages, projets, réglages) : on ne le cherche donc PAS parmi les fichiers déjà
+     chargés, on suit les références à partir du fichier principal et des préchargements (au plus 120 lectures), et on garde le fichier « journal-… » qui contient
+     `kdmcJournal` (Apex AI en a deux : l'autre n'a rien à voir). Mesuré le 19.11 (run 44431598500) : « module introuvable » quand on ne regardait que le chargé. */
+  const trouve = await page.evaluate(async () => {
+    const vus = new Set(), file = [], essayes = new Set(); let lus = 0, lien = '';
+    const ajouter = (u) => { try { const a = new URL(u, location.href).href; if (!vus.has(a)) { vus.add(a); file.push(a); } } catch (_) { /* adresse invalide */ } };
+    performance.getEntriesByType('resource').map((e) => e.name).filter((n) => /\.js(\?|$)/.test(n)).forEach(ajouter);
+    document.querySelectorAll('script[src],link[rel="modulepreload"]').forEach((e) => ajouter(e.src || e.href));
+    while (file.length && lus < 120 && !lien) {
+      const u = file.shift(); lus++;
+      let t = ''; try { t = await (await fetch(u)).text(); } catch (_) { continue; }
+      if (/(^|\/)journal-[\w-]+\.js(\?|$)/.test(u) && t.indexOf('kdmcJournal') >= 0) { lien = u.split('?')[0]; break; }
+      for (const m of t.matchAll(/(?<![\w-])((?:\.{1,2}\/)(?:[\w-]+\/)*)?([\w.-]+-[A-Za-z0-9_-]{6,}\.js)(?![\w-])/g)) {
+        const cible = m[1] ? new URL(m[1] + m[2], u).href : new URL('/chunks/' + m[2], location.origin).href;
+        if (/(^|\/)journal-[\w-]+\.js$/.test(cible) && !essayes.has(cible)) {
+          essayes.add(cible);
+          try { const c = await (await fetch(cible)).text(); if (c.indexOf('kdmcJournal') >= 0) { lien = cible; break; } } catch (_) { /* suivant */ }
+        }
+        ajouter(cible);
+      }
     }
-    return '';
-  }).catch(() => '');
-  if (!lien) return { ok: false, motif: 'module du journal introuvable dans la page', etat: '' };
+    return { lien, lus, candidats: essayes.size };
+  }).catch(() => ({ lien: '', lus: 0, candidats: 0 }));
+  const lien = trouve.lien;
+  if (!lien) return { ok: false, motif: `module du journal introuvable (${trouve.lus} fichier(s) lus, ${trouve.candidats} candidat(s) journal-…)`, etat: '' };
   const attente = page.waitForResponse((r) => r.request().method() === 'POST' && new URL(r.url()).pathname === '/__boite/journal', { timeout: delaiMs }).catch(() => null);
   const lance = await page.evaluate(async ({ u, p }) => {
     const m = await import(u);

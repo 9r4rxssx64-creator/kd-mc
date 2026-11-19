@@ -6,6 +6,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import mod, { enrich } from './worker.js';
 import { noter, fil, actives, resume, LIM, TYPES, _resetPurge, filDomaine, parApp, estAppareilRobot, noterNotif } from './activite.js';
+import { readFileSync as lireSrc } from 'node:fs';
 import { lireBoite, handleBoite, _viderMemo } from './boite.js';
 import { handleCercle, ADMIN, schema as schemaCercle } from './cercle.js';
 
@@ -251,6 +252,33 @@ ok(Object.keys(TYPES).length === 9, '7. les 9 types d\'activité sont déclarés
   ok(!act.some((x) => x.uid === 'seulement-prevenue') && !JSON.stringify(pa).includes('lingua'), '12f. recevoir une notification ne rend pas quelqu\'un « actif » et ne fait pas « bouger » une app', [act.map((x) => x.uid), pa]);
   const f = await filDomaine(e.CERCLE_DB, { types: ['notif'] });
   ok(f && (f.lignes || f.events || f).length !== 0, '12e. le Journal du domaine sait filtrer sur les notifications');
+}
+
+/* 13. LES LECTURES QUI COÛTAIENT (19.11, facture Cloudflare — mesure-quotas run 44544601627 : « qui a été actif » = 7 279 lignes lues par appel, 64 % du compte ;
+   « appareil par appareil » = 448 lignes par appel). Elles lisent maintenant une ligne par personne, et une seule fois le résumé. */
+{
+  const e = mk(), db = e.CERCLE_DB, n = (sql) => db._s.prepare(sql).get().n;
+  for (let i = 0; i < 40; i++) await noter(e, { uid: 'lea', nom: 'Léa', type: 'visite', app: 'lingua.kd-mc.com', detail: '/p' + i, appareil: i % 2 ? 'iPhone · iOS 18.0' : 'Mac · macOS 15' }, T0 + i * 1000);
+  await noter(e, { uid: 'paul', nom: 'Paul', type: 'connexion', app: 'kd-mc.com', detail: 'kd-mc.com', appareil: 'iPad · iOS 17.0' }, T0 + 5000);
+  ok(n('SELECT COUNT(*) AS n FROM activite_dernier') === 2 && n("SELECT dernier AS n FROM activite_dernier WHERE uid = 'lea'") === T0 + 39000, '13a. une ligne par PERSONNE dans activite_dernier, à sa dernière activité (40 actions → 1 ligne)');
+  const a = await actives(db, T0 - 1, 20);
+  ok(a.length === 2 && a[0].uid === 'lea' && a[0].nom === 'Léa' && a[0].dernier === T0 + 39000 && a[1].uid === 'paul', '13b. « qui a été actif » : la plus récente d\'abord, avec le nom', a);
+  ok((await actives(db, T0 + 6000, 20)).map((x) => x.uid).join() === 'lea' && (await actives(db, T0 - 1, 1)).length === 1, '13c. la fenêtre de temps et la limite sont respectées');
+  await noter(e, { uid: 'lea', nom: '', type: 'modif', app: 'a', detail: 'sans nom' }, T0 + 50000);
+  ok((await actives(db, 0, 5))[0].nom === 'Léa', '13d. une action sans nom ne vide pas le nom connu');
+  await noterNotif(e, 'paul', 'Titre', 'https://kd-mc.com/', T0 + 90000);
+  ok((await actives(db, 0, 5)).find((x) => x.uid === 'paul').dernier === T0 + 5000, '13e. une notification REÇUE ne rajeunit pas la dernière activité');
+  const r = await resume(db, 'lea', T0 - 1);
+  ok(r.appareils.length === 2 && r.appareils[0].appareil === 'iPhone · iOS 18.0' && r.appareils[0].n === 20 && r.appareils[1].n === 20 && r.appareils[0].dernier === T0 + 39000, '13f. le résumé porte « appareil par appareil » (une seule lecture), le plus récent d\'abord', r.appareils);
+  /* une base qui a déjà un historique (la vraie, le jour de la mise en ligne) : la table se remplit UNE fois depuis l'historique */
+  const v = mk(); await noter(v, { uid: 'amorce', nom: 'A', type: 'visite', app: 'a', detail: '/' }, T0);
+  v.CERCLE_DB._s.prepare('DELETE FROM activite_dernier').run();
+  v.CERCLE_DB._s.prepare("INSERT INTO activite (uid, nom, ts, type, app, detail, lieu) VALUES ('ancien', 'Ancien', ?, 'visite', 'a', '/', '')").run(T0 + 10);
+  const neuf = { ...v, CERCLE_DB: Object.create(v.CERCLE_DB) };   /* un autre isolat : la préparation de la table se rejoue */
+  const b = await actives(neuf.CERCLE_DB, 0, 10);
+  ok(b.map((x) => x.uid).sort().join() === 'amorce,ancien', '13g. table vide + historique présent : remplie une fois depuis l\'historique', b);
+  const src = lireSrc(new URL('./activite.js', import.meta.url), 'utf8'), fa = src.slice(src.indexOf('export async function actives('), src.indexOf('/** Résumé d\'une personne'));
+  ok(/FROM activite_dernier/.test(fa) && !/FROM activite\b(?!_)/.test(fa) && !/parAppareil\(/.test(lireSrc(new URL('./boite.js', import.meta.url), 'utf8')), '13h. garde : « qui a été actif » ne relit plus la table du journal, et la boîte n\'appelle plus la lecture « par appareil » à part');
 }
 
 console.log(`\n${pass} OK · ${fail} échec(s)`);

@@ -283,6 +283,8 @@ const dureeFr = (ms) => { const m = Math.round((ms || 0) / 60e3); return m < 60 
 export async function ficheLignes(env, db, uid, now) {
   const l = [];
   let acc = null; try { acc = JSON.parse((await env.ACCOUNTS.get('acc:' + uid)) || 'null'); } catch { acc = null; }
+  /* 19.11 : le résumé des 7 jours est lu UNE fois ici ; il porte aussi « appareil par appareil » (une lecture de la base en moins par personne) */
+  const r = await activite.resume(db, uid, now - 7 * 864e5).catch(() => null);
   if (acc) {
     l.push('👤 ' + (acc.name || '?') + ' (' + uid + ')' + (acc.created ? ' · inscrit le ' + jourFr(acc.created) : '') + ' · ' + (acc.hits || 0) + ' session(s) · vu pour la dernière fois ' + jourFr(acc.last_seen));
     const apps = Object.entries(acc.apps || {}).sort((a, b) => (b[1].ms || 0) - (a[1].ms || 0)).slice(0, 5).map(([h, a]) => h.split('.')[0] + ' ' + (a.sessions || 0) + '× ' + dureeFr(a.ms));
@@ -296,7 +298,7 @@ export async function ficheLignes(env, db, uid, now) {
       a.n++; a.first = Math.min(a.first, h.ts); a.last = Math.max(a.last, h.end || h.ts); if (h.place) a.lieux.add(h.place.split(',')[0]); if (h.isp) a.isps.add(h.isp); if (h.vpn) a.vpn = true;
       A.set(k, a);
     }
-    const act = new Map((await activite.parAppareil(db, uid, now - 7 * 864e5).catch(() => [])).map((x) => [x.appareil, x]));
+    const act = new Map(((r && r.appareils) || []).map((x) => [x.appareil, x]));
     for (const k of act.keys()) if (!A.has(k)) A.set(k, { n: 0, first: act.get(k).dernier, last: act.get(k).dernier, lieux: new Set(), isps: new Set(), vpn: false });
     for (const [k, a] of [...A.entries()].sort((x, y) => y[1].last - x[1].last).slice(0, 5)) {
       l.push('📲 ' + k + ' — ' + (a.n ? a.n + ' session(s), ' : '') + 'du ' + jourFr(a.first) + ' au ' + jourFr(a.last) + (a.lieux.size ? ' · ' + [...a.lieux].slice(0, 3).join(', ') : '') + (a.isps.size ? ' · ' + [...a.isps].slice(0, 2).join(' / ') : '') + (a.vpn ? ' · VPN/hébergeur' : '') + (act.get(k) ? ' · ' + act.get(k).n + ' événement(s) en 7 jours' : ''));
@@ -306,7 +308,6 @@ export async function ficheLignes(env, db, uid, now) {
     if (acc.last_lang || acc.last_tz) l.push('🗣️ ' + [acc.last_lang, acc.last_tz].filter(Boolean).join(' · '));
     if (acc.portee) l.push('🔑 Portée : ' + acc.portee + ((acc.acces || []).length ? ' (' + acc.acces.join(', ') + ')' : ''));
   }
-  const r = await activite.resume(db, uid, now - 7 * 864e5).catch(() => null);
   if (r && r.total) {
     const T = r.parType, n = (k) => T[k] || 0;
     l.push('📊 7 jours : ' + [n('visite') && n('visite') + ' page(s) consultée(s)', n('question') && n('question') + ' question(s)', n('modif') && n('modif') + ' enregistrement(s)', n('message') + n('contact') && (n('message') + n('contact')) + ' message(s)', n('connexion') && n('connexion') + ' connexion(s)'].filter(Boolean).join(' · '));

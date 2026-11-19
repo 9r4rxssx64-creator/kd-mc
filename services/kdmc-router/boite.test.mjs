@@ -195,6 +195,8 @@ kv.delete('acc:laurence-saint-polit');
 /* 6r. (Kevin 8.10, capture : « Andrea CASELLA » en alerte « nouvelle connexion » ET « Andrea Casella » en carte de compte) : UNE carte par personne */
 db._s.prepare('CREATE TABLE IF NOT EXISTS activite (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT, nom TEXT, ts INTEGER, type TEXT, app TEXT, detail TEXT, lieu TEXT, appareil TEXT)').run();
 db._s.prepare('INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('andrea-casella', 'Andrea Casella', T - 1500, 'connexion', 'departs.kd-mc.com', 'departs.kd-mc.com · première connexion', 'Monaco, MC', 'iPhone · iOS 18.7');
+/* 19.11 : « qui a été actif » se lit dans activite_dernier (une ligne par personne, tenue par noter) : une ligne posée À LA MAIN dans le test doit y être aussi */
+db._s.prepare('INSERT INTO activite_dernier (uid, nom, dernier) VALUES (?, ?, ?) ON CONFLICT(uid) DO UPDATE SET dernier = excluded.dernier').run('andrea-casella', 'Andrea Casella', T - 1500);
 kv.set('acc:andrea-casella', JSON.stringify({ uid: 'andrea-casella', name: 'Andrea Casella', hits: 1 }));
 kv.set('aud:log', JSON.stringify([{ ts: T - 1000, type: 'nouvelle_connexion', app: 'departs', name: 'Andrea CASELLA', text: 'Première connexion à la light (Face ID) — matricule SBM U38373', pays: 'MC' }]));
 b = await boite();

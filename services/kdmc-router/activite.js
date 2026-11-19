@@ -24,12 +24,20 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS activite (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT, nom TEXT, ts INTEGER, type TEXT, app TEXT, detail TEXT, lieu TEXT, appareil TEXT)`,
   `CREATE INDEX IF NOT EXISTS act_uid ON activite (uid, ts)`,
   `CREATE INDEX IF NOT EXISTS act_ts ON activite (ts)`,
+  /* 19.11 (Kevin : « j'ai reçu une facture Cloudflare, regarde qui consomme ») — MESURÉ (mesure-quotas, run 44544601627, 7 jours) : « qui a été actif ? » relisait
+     TOUTE la table à chaque ouverture de la boîte admin (11,6 millions de lignes lues en 7 jours, 7 279 par appel : 64 % des lectures de tout le compte ; le 17.11 le
+     plafond gratuit de 5 millions par jour a été dépassé). La dernière activité de chaque personne est donc RANGÉE à part, une ligne par personne. */
+  `CREATE TABLE IF NOT EXISTS activite_dernier (uid TEXT PRIMARY KEY, nom TEXT, dernier INTEGER)`,
 ];
 const prets = new WeakSet();
 async function table(db) {
   if (prets.has(db)) return;
   await db.batch(SCHEMA.map((s) => db.prepare(s)));
   try { await db.prepare('ALTER TABLE activite ADD COLUMN appareil TEXT').run(); } catch { /* colonne déjà là */ }   // table créée avant l'ajout de l'appareil
+  /* la table des dernières activités se remplit UNE fois depuis l'historique (elle est vide le jour où elle apparaît) */
+  try { const v = await db.prepare('SELECT COUNT(*) AS n FROM activite_dernier').first();
+    if (!v || !v.n) await db.prepare("INSERT OR IGNORE INTO activite_dernier (uid, nom, dernier) SELECT uid, MAX(nom), MAX(ts) FROM activite WHERE type != 'notif' GROUP BY uid").run();
+  } catch { /* fail-open : « qui a été actif » sera vide plutôt que faux */ }
   prets.add(db);
 }
 export const dispo = (env) => !!(env && env.CERCLE_DB && typeof env.CERCLE_DB.prepare === 'function');
@@ -64,7 +72,10 @@ export async function noter(env, ev, now) {
         .bind(ev.uid, propre(ev.nom, 60), now, ev.type, app, detail, propre(ev.lieu, 80), propre(ev.appareil, 90), ev.uid, ev.type, app, detail, now - fen).run();
       if (w && w.meta && w.meta.changes === 0) return 'doublon';
     } else await db.prepare('INSERT INTO activite (uid, nom, ts, type, app, detail, lieu, appareil) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(ev.uid, propre(ev.nom, 60), now, ev.type, app, detail, propre(ev.lieu, 80), propre(ev.appareil, 90)).run();
-    if (now - purgeLe > LIM.purgeMs) { purgeLe = now; await db.prepare('DELETE FROM activite WHERE ts < ?').bind(now - LIM.garde).run().catch(() => {}); }
+    /* une notification REÇUE n'est pas une action de la personne : elle ne la rend pas « active » */
+    if (ev.type !== 'notif') await db.prepare("INSERT INTO activite_dernier (uid, nom, dernier) VALUES (?, ?, ?) ON CONFLICT(uid) DO UPDATE SET nom = CASE WHEN excluded.nom != '' THEN excluded.nom ELSE activite_dernier.nom END, dernier = MAX(activite_dernier.dernier, excluded.dernier)")
+      .bind(ev.uid, propre(ev.nom, 60), now).run().catch(() => {});
+    if (now - purgeLe > LIM.purgeMs) { purgeLe = now; await db.prepare('DELETE FROM activite WHERE ts < ?').bind(now - LIM.garde).run().catch(() => {}); await db.prepare('DELETE FROM activite_dernier WHERE dernier < ?').bind(now - LIM.garde).run().catch(() => {}); }
     return 'ajoute';
   } catch { return 'ignore'; }
 }
@@ -131,14 +142,18 @@ export async function parApp(db, depuis) {
 /* une notification REÇUE n'est pas quelque chose que la personne a fait : elle ne la rend ni « active » ni « en alerte » (boîte), et ne fait pas « bouger » une app */
 export async function actives(db, depuis, limite) {
   await table(db);
-  const r = await db.prepare('SELECT uid, MAX(nom) AS nom, MAX(ts) AS dernier, COUNT(*) AS n FROM activite WHERE ts > ? AND type != \'notif\' GROUP BY uid ORDER BY dernier DESC LIMIT ?').bind(depuis, limite || 20).all();
+  /* une ligne par personne (activite_dernier) : au plus quelques dizaines de lignes lues, au lieu de toute la table */
+  const r = await db.prepare('SELECT uid, nom, dernier FROM activite_dernier WHERE dernier > ? ORDER BY dernier DESC LIMIT ?').bind(depuis, limite || 20).all();
   return (r && r.results) || [];
 }
 /** Résumé d'une personne : compte par type, apps et pages les plus consultées, lieux, dernière question. */
 export async function resume(db, uid, depuis) {
   await table(db);
-  const tous = ((await db.prepare('SELECT type, app, detail, lieu, ts FROM activite WHERE uid = ? AND ts > ? ORDER BY ts DESC LIMIT 500').bind(uid, depuis).all()).results) || [];
-  const parType = {}, apps = {}, pages = {}, lieux = new Set();
+  /* 19.11 : UNE lecture au lieu de deux — « appareil par appareil » se calcule ici, sur les mêmes lignes (la requête à part lisait 448 lignes par appel,
+     3,5 millions en 7 jours). 300 lignes au plus : de quoi résumer 7 jours sans relire tout l'historique d'un compte très actif. */
+  const tous = ((await db.prepare('SELECT type, app, detail, lieu, ts, appareil FROM activite WHERE uid = ? AND ts > ? ORDER BY ts DESC LIMIT 300').bind(uid, depuis).all()).results) || [];
+  const parType = {}, apps = {}, pages = {}, lieux = new Set(), parApp_ = new Map();
+  for (const e of tous) { if (!e.appareil) continue; const a = parApp_.get(e.appareil) || { appareil: e.appareil, n: 0, dernier: 0 }; a.n++; a.dernier = Math.max(a.dernier, e.ts); parApp_.set(e.appareil, a); }
   for (const e of tous) {
     parType[e.type] = (parType[e.type] || 0) + 1;
     if (e.type === 'visite') { apps[e.app] = (apps[e.app] || 0) + 1; const k = e.app + e.detail; pages[k] = (pages[k] || 0) + 1; }
@@ -146,7 +161,8 @@ export async function resume(db, uid, depuis) {
   }
   const top = (o, n) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, n);
   const q = tous.find((e) => e.type === 'question');
-  return { total: tous.length, parType, apps: top(apps, 5), pages: top(pages, 5), lieux: [...lieux].slice(0, 5), derniereQuestion: q ? { ts: q.ts, app: q.app, texte: q.detail } : null };
+  return { total: tous.length, parType, apps: top(apps, 5), pages: top(pages, 5), lieux: [...lieux].slice(0, 5), derniereQuestion: q ? { ts: q.ts, app: q.app, texte: q.detail } : null,
+    appareils: [...parApp_.values()].sort((a, b) => b.dernier - a.dernier).slice(0, 6) };
 }
 
 /** Ce que la personne a fait, APPAREIL PAR APPAREIL : { appareil, n, dernier }, le plus récemment utilisé d'abord. */

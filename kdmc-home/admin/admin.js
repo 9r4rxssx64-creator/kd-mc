@@ -713,6 +713,7 @@
             b.querySelector('.e').textContent = f ? '🔒' : '🔓'; b.querySelector('.s').textContent = f ? 'fermée pour tous' : 'ouverte';
             if (msg) msg.textContent = f ? '🔒 ' + app + ' est fermée pour tout le monde.' : '🔓 ' + app + ' est rouverte à tout le monde.';
             var sb = document.querySelector('#fermgen summary b'); if (sb) sb.textContent = FERMEES_GEN.length ? FERMEES_GEN.join(', ') : 'aucune fermée';
+            loadAudit();   /* le journal vient de recevoir la ligne : la date « depuis le … » se met à jour */
           } else if (msg) msg.textContent = '⚠️ ' + ((j && (j.reason || j.message)) || 'refusé');
         })
         .catch(function () { b.disabled = false; if (msg) msg.textContent = '⚠️ Réseau — réessaie'; });
@@ -725,8 +726,42 @@
     revoke_sessions: '🚪 Déconnexion forcée', new_device: '📱 Nouvel appareil', fbtoken_mint: '🔥 Jeton Firebase admin émis',
     perimetre: '🔐 Périmètre modifié', apps_fermees: '🚧 Apps fermées pour tout le monde', nouvel_inscrit: '🆕 Nouvel inscrit (limité à une app)',
     geo_anomaly: '⚠️ Connexion suspecte', nouvelle_connexion: '🆕 Nouvelle connexion', quota_inscriptions_atteint: '🛑 Inscriptions suspendues',
-    matricule_refuse: '🪪 Matricule SBM refusé', matricule_corrige: '🪪 Matricule SBM corrigé', compte_invite_cree: '➕ Compte invité créé'
+    matricule_refuse: '🪪 Matricule SBM refusé', matricule_corrige: '🪪 Matricule SBM corrigé', compte_invite_cree: '➕ Compte invité créé',
+    /* 19.11 (audit des tableaux de bord : 15 événements nommés sur 55 — les autres s'affichaient en nom de code) : chaque événement écrit par le domaine a sa phrase.
+       Garde : tests/verify-admin-journal-libelles.mjs relit le routeur et refuse tout événement sans phrase. */
+    accounts_merged: '🔗 Deux comptes réunis en un', admin_grant_session: '🔓 Session admin ouverte sur une app', admin_lien_appareil_cree: '🔗 Lien « nouvel appareil » créé',
+    admin_lien_appareil_ouvert: '🔗 Lien « nouvel appareil » utilisé', arbre_cle: '🌳 Arbre : clé demandée', arbre_code_rotate: '🌳 Code de l\'arbre changé',
+    arbre_seed_publish: '🌳 Arbre publié', arbre_unlock_fail: '🌳 Code de l\'arbre refusé', arbre_unlock_ok: '🌳 Arbre déverrouillé', beatbot_relay: '🎵 BeatBot : demande relayée',
+    bee_agir: '🐝 Bee a fait une action', bot_config: '🤖 Réglage du robot changé', bot_ia_annule: '🤖 Décision du robot annulée', bot_ia_decision: '🤖 Décision du robot',
+    bot_ia_mode: '🤖 Mode du robot changé', bot_ia_verdict: '🤖 Avis du robot', code_accepte_attendu: '🔑 Code accepté (personne attendue)', code_attente: '🔑 Code en attente de ton accord',
+    code_efface: '🔑 Code effacé', code_oublie_mail: '🔑 Code oublié : mail envoyé', code_pose_admin: '🔑 Code posé par toi', code_reinit_mail: '🔑 Code remis à zéro par mail',
+    code_vu_admin: '👁 Code regardé par toi', compte_ouvert_admin: '✅ Compte ouvert par toi', compte_ouvert_mail: '✅ Compte ouvert par le lien du mail', compte_supprime: '🗑 Compte supprimé',
+    debanni: '✅ Personne débannie', fin_backup: '💾 Sauvegarde des finances', fin_backup_refuse: '💾 Sauvegarde des finances refusée', inscription_admin_attente: '⏳ Inscription en attente de ton accord',
+    inscription_attendue_ouverte: '✅ Personne attendue : compte ouvert', inscription_refusee: '🚫 Inscription refusée', journal_vide: '🧹 Journal vidé', mail_ack: '✉️ Mail : accusé reçu',
+    outil_ouvert: '🧰 Outil : accès changé', tel_lie: '📱 Téléphone lié au compte', tuya_autostart: '🏊 Piscine : démarrage automatique', tuya_command: '🏊 Piscine : commande envoyée',
+    tuya_link: '🏊 Piscine : compte relié', tuya_schedule_set: '🏊 Piscine : horaires changés', tuya_session_logged: '🏊 Piscine : session notée', tuya_stats_baseline: '🏊 Piscine : repère de mesure posé',
+    tuya_surface_notif: '🏊 Piscine : alerte de surface', pointage_loin: '📍 Pointage fait loin du casino', demande_chef: '🙋 Demande d\'un chef d\'équipe'
   };
+  /* un événement inconnu se lit quand même : « mon_evenement » → « mon evenement » (jamais un nom de code brut à l'écran) */
+  function audNom(ev) { return AUD_EV[ev] || ('• ' + String(ev || 'événement').replace(/[_.:-]+/g, ' ')); }
+  /* le NOM de la personne quand sa fiche est à l'écran, sinon son identifiant */
+  function audQui(uid) { var f = document.getElementById('fiche-' + uid), h = f && f.querySelector('h3'); return (h && h.textContent.trim()) || uid; }
+  /* QUAND une app a été fermée pour tous : la plus ancienne entrée de la dernière série « apps_fermees » qui la contient (le journal garde 200 entrées :
+     si la série touche le bout du journal, on dit « avant le … »). Rend { ts, avant } ou null. */
+  function fermeeDepuis(log, app) {
+    var l = (log || []).filter(function (e) { return e && e.ev === 'apps_fermees' && Array.isArray(e.fermees); });
+    if (!l.length || l[0].fermees.indexOf(app) < 0) return null;
+    var i = 0; while (i + 1 < l.length && l[i + 1].fermees.indexOf(app) >= 0) i++;
+    return { ts: l[i].ts, avant: i === l.length - 1 && (log || []).length >= 200 };
+  }
+  var AUD_LOG = [], AUD_PAGE = 60;
+  function datesFermees() {
+    Array.prototype.forEach.call(document.querySelectorAll('.bascule.fermee[data-bascule]'), function (b) {
+      var d = fermeeDepuis(AUD_LOG, b.getAttribute('data-bascule')), s = b.querySelector('.s'); if (!s) return;
+      s.textContent = 'fermée pour tous' + (d ? (d.avant ? ' · avant le ' : ' · depuis le ') + dt(d.ts) : '');
+    });
+  }
+  if (typeof window !== "undefined") window.kdmcDatesFermees = datesFermees;
   /* 16.10 (Kevin : « toutes infos cliquables, au bon endroit ») : depuis une fiche, « Connexions », « Appareils »… ouvrent le journal
      de CETTE personne ; « ✕ Tout voir » rend la liste entière. Rien n'est relu : on masque les lignes des autres. */
   var FILTRE_JOURNAL = '';
@@ -748,8 +783,11 @@
   }
   if (typeof window !== "undefined") window.kdmcFiltreJournal = filtrerJournal;
   function audRow(e) {
-    return '<div class="tlrow"' + (e.uid ? ' data-uid="' + esc(e.uid) + '" data-va="fiche:' + esc(e.uid) + '"' : '') + '>' + esc(dt(e.ts)) + ' · <b>' + esc(AUD_EV[e.ev] || e.ev) + '</b>'
-      + (e.uid ? ' · ' + esc(e.uid) : '') + (e.detail ? ' · ' + esc(e.detail) : '') + (e.text ? ' · ' + esc(e.text) : '')
+    /* 19.11 (audit : « chaque information cliquable ») : une ligne SANS personne mène aussi quelque part — l'app concernée, les boutons ouvrir / fermer,
+       ou le Journal du domaine (ce que l'admin a fait). */
+    var va = e.uid ? 'fiche:' + e.uid : (e.ev === 'apps_fermees' || e.ev === 'outil_ouvert') ? '#fermgen' : e.app ? 'filapp:' + e.app : /^admin_/.test(e.ev || '') ? 'fil:kdmc_admin|Moi' : '#tb-fil';
+    return '<div class="tlrow"' + (e.uid ? ' data-uid="' + esc(e.uid) + '"' : '') + ' data-va="' + esc(va) + '">' + esc(dt(e.ts)) + ' · <b>' + esc(audNom(e.ev)) + '</b>'
+      + (e.uid ? ' · ' + esc(audQui(e.uid)) : '') + (e.detail ? ' · ' + esc(e.detail) : '') + (e.text ? ' · ' + esc(e.text) : '')
       + (e.app ? ' · depuis ' + lienApp(e.app, e.app) : '') + (e.pays ? ' · ' + esc(e.pays) : '')
       + (e.ip ? ' · <span style="color:var(--subtle)">ip ' + esc(e.ip) + '</span>' : '') + '</div>';
   }
@@ -759,14 +797,18 @@
       .then(function (j) {
         var el2 = document.getElementById('audsec');
         if (!el2 || !j || !j.ok) return;
-        var log = j.log || [];
+        var log = (j.log || []).slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });   /* toujours du plus récent au plus ancien */
         /* 6.10 : « Ouvrir le journal des alertes » de la boîte arrive ici (#journal) — section dépliée et amenée à l'écran. */
         var viens = /^#(journal|alertes)$/.test(location.hash || '');
         el2.innerHTML = '<h2 class="cat" id="journal">🛡 Journal admin</h2>'
           + '<details class="histrow kdmc-card kdmc-in"' + (viens ? ' open' : '') + '><summary><span class="i">🛡</span>'
           + '<span class="ct"><span class="n">Événements sensibles</span>'
           + '<span class="d">' + log.length + ' entrée' + (log.length > 1 ? 's' : '') + ' — connexions admin, nouveaux appareils, déconnexions forcées</span></span></summary>'
-          + '<div class="timeline">' + (log.length ? log.slice(0, 60).map(audRow).join('') : '<div class="tlrow" style="color:var(--subtle)">Rien pour l\'instant.</div>') + '</div></details>';
+          + '<div class="timeline">' + (log.length ? log.slice(0, AUD_PAGE).map(audRow).join('') : '<div class="tlrow" style="color:var(--subtle)">Rien pour l\'instant.</div>') + '</div>'
+          + (log.length > AUD_PAGE ? '<button type="button" class="aud-plus" id="aud-plus">Voir les ' + (log.length - AUD_PAGE) + ' plus anciens</button>' : '') + '</details>';
+        AUD_LOG = log; datesFermees();
+        var plus = document.getElementById('aud-plus');
+        if (plus) plus.onclick = function () { AUD_PAGE = 200; loadAudit(); };
         if (viens) { try { el2.scrollIntoView({ block: 'start' }); } catch (_) { /* vieux navigateur : la section est dépliée quand même */ } }
         if (FILTRE_JOURNAL) filtrerJournal(FILTRE_JOURNAL);
       })

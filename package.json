@@ -146,6 +146,7 @@
     "test:admin-temps-reel": "node tests/verify-admin-temps-reel.mjs",
     "test:achat-simule": "node --test services/kdmc-vente/simulation.test.mjs && node tests/verify-kit-achat-simule.mjs",
     "test:admin-libelles": "node tests/verify-admin-libelles.mjs",
+    "test:admin-journal-libelles": "node tests/verify-admin-journal-libelles.mjs",
     "test:vue-admin": "node services/kdmc-router/vue-admin.test.mjs",
     "test:perimetre-apps": "node tests/verify-perimetre-apps.mjs",
     "test:sso-client": "node tests/verify-sso-client-perimetre.mjs",

@@ -6,6 +6,7 @@
  */
 import { appeler } from '../../services/admin/appeler.js';
 import { comptesCmcteams } from '../../services/admin/comptes-cmcteams.js';
+import { lienExterne } from '../../services/admin/lien-externe.js';
 
 const W = (...mots: string[]): string => `(?<![\\p{L}\\p{N}])(?:${mots.join('|')})(?![\\p{L}\\p{N}])`;
 const CMC = '(?<![\\p{L}\\p{N}])cmc\\s?-?teams?(?![\\p{L}\\p{N}])';
@@ -27,8 +28,19 @@ export function nomAAppeler(texte: string): string | null {
   return m?.[1] ? m[1].trim() : null;
 }
 
+/** PURE : « ouvre-moi <adresse> » → l'adresse, sinon null. https:// explicite, ou un nom de site avec une extension connue ; jamais un nom de fichier. */
+export function adresseAOuvrir(texte: string): string | null {
+  const m = /^\s*(?:peux-tu\s+|pourrais-tu\s+)?(?:ouvre|ouvrir|va sur|navigue sur)(?:[- ]moi)?\s+(?:la page\s+|le site\s+|le lien\s+)?((?:https?:\/\/\S+)|(?:[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|fr|ch|mc|io|eu|info|ai|app|dev|co)(?:[/?#]\S*)?))\s*[?.!]*\s*$/iu.exec(String(texte ?? '').slice(0, 2100));
+  return m?.[1] ? m[1].replace(/[?.!]+$/, '') : null;
+}
+
 /** Si la demande est connue : exécute l'outil (carte à Kevin) et rend la phrase à afficher ; sinon null (le modèle répond comme avant). */
 export async function repondreLocalement(texte: string, f: typeof fetch = fetch): Promise<string | null> {
+  const adresse = adresseAOuvrir(texte);
+  if (adresse) {
+    const t = await lienExterne(adresse);
+    return t.startsWith('Bouton prêt') ? '🔗 Le bouton « Ouvrir » est affiché dans la fenêtre : touche-le pour ouvrir la page.' : `🔗 ${t}`;
+  }
   const nom = nomAAppeler(texte);
   if (nom) {
     const t = await appeler(nom, f);

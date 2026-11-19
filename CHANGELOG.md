@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.406 — 19.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2906)
+- « ouvre-moi <adresse> » : le chat le traite lui-même et affiche une carte avec le bouton « Ouvrir » (https seulement). Avant, la phrase partait vers un lancement de robot et finissait en « Échec du lancement (HTTP 401) » sans aucune carte (mesuré par pc-config).
+- Une adresse http:// ou interne est refusée avec une phrase claire, sans carte. Rien ne s'ouvre tout seul.
+- Tests : `tests/unit/chat-outils-locaux.test.ts` (13 cas) ; sabotage (routage retiré) = 2 tests rouges.
+
 ## Apex AI v13.4.405 — 19.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2769, dernière ligne)
 - L'outil `appeler` accepte un NOM (« appelle Marie Dupont ») : le domaine lit le numéro dans la fiche du compte, un bouton « 📞 Appeler » s'affiche à Kevin qui le touche, l'iPhone compose. L'IA ne voit ni le nom ni le numéro. Avec un numéro, l'outil fait comme avant.
 - Le chat traite lui-même « appelle <nom> » (sans passer par le modèle). Le garde de parité Bee ⇄ Apex AI n'a plus rien à porter.

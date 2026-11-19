@@ -4,7 +4,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { demandeListeComptesCmcteams, repondreLocalement } from '../../features/chat/chat-outils-locaux.js';
+import { adresseAOuvrir, demandeListeComptesCmcteams, repondreLocalement } from '../../features/chat/chat-outils-locaux.js';
 
 afterEach(() => { document.body.innerHTML = ''; });
 const faux = (corps: unknown, status = 200): typeof fetch =>
@@ -51,5 +51,31 @@ describe('câblage dans le chat', () => {
     const i = s.indexOf('repondreLocalement');
     expect(i).toBeGreaterThan(0);
     expect(i).toBeLessThan(s.indexOf('detectAndSuggestTool(text, rootEl);'));
+  });
+});
+
+describe('« ouvre-moi <adresse> » (pc-config 2906 : partait vers un lancement de robot, « HTTP 401 », aucune carte)', () => {
+  it.each([
+    ['ouvre-moi https://example.org', 'https://example.org'],
+    ['Ouvre https://exemple.fr/page?a=1 !', 'https://exemple.fr/page?a=1'],
+    ['va sur exemple.fr', 'exemple.fr'],
+    ['peux-tu ouvrir le site exemple.com ?', 'exemple.com'],
+  ])('« %s » → %s', (t, a) => { expect(adresseAOuvrir(t)).toBe(a); });
+  it.each(['ouvre le fichier readme.md', 'ouvre-moi un compte', 'comment ouvrir une porte', 'ouvre la page', 'bonjour', 'ouvre https://exemple.fr et résume-la en trois lignes'])('« %s » → modèle', (t) => {
+    expect(adresseAOuvrir(t)).toBeNull();
+  });
+  it('réponse locale : un bouton, rien ne s\'ouvre seul', async () => {
+    let ouvert = 0;
+    const avant = window.open; window.open = (() => { ouvert++; return null; }) as typeof window.open;
+    const r = await repondreLocalement('ouvre-moi https://example.org', faux(REP));
+    window.open = avant;
+    expect(ouvert).toBe(0);
+    expect(document.querySelector('a.ax-lien-externe')?.getAttribute('href')).toBe('https://example.org/');
+    expect(r).toMatch(/Ouvrir/);
+  });
+  it('adresse refusée (http) : aucune carte, phrase claire', async () => {
+    const r = await repondreLocalement('ouvre-moi http://exemple.fr', faux(REP));
+    expect(r).toMatch(/Adresse refusée/);
+    expect(document.querySelector('a.ax-lien-externe')).toBeNull();
   });
 });

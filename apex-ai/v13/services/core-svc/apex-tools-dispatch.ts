@@ -475,6 +475,11 @@ class ApexToolsDispatcher {
       }
       case 'device_open_phone':
       case 'appeler': {
+        /* Parité Bee (Kevin 18.11) : avec un NOM, le domaine retrouve le numéro et Kevin touche un bouton « Appeler » ; l'IA ne voit ni nom ni numéro. */
+        if (toolName === 'appeler' && typeof params['nom'] === 'string' && params['nom'].trim() && !params['number']) {
+          const { appeler } = await import('../admin/appeler.js');
+          return appeler(params['nom']);
+        }
         const { deviceControl } = await import('../integrations/device-control.js');
         return deviceControl.openPhone(params['number'] as string ?? '');
       }

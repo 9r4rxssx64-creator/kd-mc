@@ -4,6 +4,7 @@
  * n'était jamais appelé). Une demande claire n'attend plus que le modèle pense à l'outil : le chat l'exécute lui-même, affiche la carte à Kevin, et répond
  * en une phrase SANS appeler le modèle (donc aucun nom ni matricule ne lui est donné, et aucun accès ne lui est réclamé).
  */
+import { appeler } from '../../services/admin/appeler.js';
 import { comptesCmcteams } from '../../services/admin/comptes-cmcteams.js';
 
 const W = (...mots: string[]): string => `(?<![\\p{L}\\p{N}])(?:${mots.join('|')})(?![\\p{L}\\p{N}])`;
@@ -20,8 +21,20 @@ export function demandeListeComptesCmcteams(texte: string): boolean {
   return RE_CMC.test(t) && RE_VERBE.test(t) && RE_OBJET.test(t);
 }
 
+/** PURE : « appelle <nom> » → le nom, sinon null. Une phrase qui commence par le verbe (jamais « comment appeler… », « appelle-moi un taxi »). */
+export function nomAAppeler(texte: string): string | null {
+  const m = /^\s*(?:peux-tu\s+|pourrais-tu\s+)?(?:appelle|appeler|téléphone à|telephone a|passe un appel à|passe un appel a)\s+(?!moi\b|un\b|une\b|le\b|la\b|les\b)([\p{L}][\p{L}'’ -]{1,60})\s*[?.!]*\s*$/iu.exec(String(texte ?? '').slice(0, 200));
+  return m?.[1] ? m[1].trim() : null;
+}
+
 /** Si la demande est connue : exécute l'outil (carte à Kevin) et rend la phrase à afficher ; sinon null (le modèle répond comme avant). */
 export async function repondreLocalement(texte: string, f: typeof fetch = fetch): Promise<string | null> {
+  const nom = nomAAppeler(texte);
+  if (nom) {
+    const t = await appeler(nom, f);
+    if (/^(Bouton|\d+ personnes)/.test(t)) return '📞 Le bouton « Appeler » est affiché dans la fenêtre : touche-le, ton iPhone compose.';
+    return `📞 ${t}`;
+  }
   if (!demandeListeComptesCmcteams(texte)) return null;
   const r = await comptesCmcteams(f);
   const n = /(\d+) comptes/.exec(r)?.[1];

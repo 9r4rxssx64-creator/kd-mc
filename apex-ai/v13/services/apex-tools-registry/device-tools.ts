@@ -103,11 +103,13 @@ export const DEVICE_TOOLS: readonly ApexTool[] = [
   },
   {
     name: 'appeler',
-    description: 'Ouvre app téléphone iOS/Android avec numéro pré-rempli (tel:URI).',
+    description: 'Appeler. Avec `nom` (prénom et nom d\'une personne ayant un compte) : le domaine lit le numéro, un bouton « 📞 Appeler » est affiché à Kevin, tu ne vois ni le nom ni le numéro. Avec `number` : ouvre l\'app téléphone iOS/Android avec le numéro pré-rempli (tel:URI).',
     inputSchema: {
       type: 'object',
-      properties: { number: { type: 'string' } },
-      required: ['number'],
+      properties: {
+        nom: { type: 'string', description: 'prénom et nom, comme Kevin les a dits (le domaine retrouve le numéro)' },
+        number: { type: 'string', description: 'numéro à composer (si Kevin le donne lui-même)' },
+      },
     },
     minTier: 'client_free',
     impactLevel: 'B',

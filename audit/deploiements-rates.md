@@ -7,21 +7,6 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
-## ❌ Deploy WM Brief Worker — 19/11/2026 21:02 UTC
-
-- **Branche** : `main` · **Commit** : `add2fee1` · **Run** : `44614292205`
-- **Ce qui a lâché** : deploy › Smoke test réel (leçon 95 — un deploy vert sans test live ne prouve rien)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/44614292205
-- **Ce que la machine a dit** :
-
-```
-^[[36;1mgrep -q '"hasEngine":true' /tmp/h.json || { echo "::error::Aucune IA visible par le worker (ni Workers AI, ni clé Anthropic)"; exit 1; }^[[0m
-^[[36;1mgrep -q '"brief"' /tmp/b.json || { echo "::error::Réponse /brief invalide : $(cat /tmp/b.json)"; exit 1; }^[[0m
-curl: (56) Recv failure: Connection reset by peer
-##[error]Réponse /brief invalide :
-##[error]Process completed with exit code 1.
-```
-
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -543,4 +528,17 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
+```
+
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
+
+- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
+- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
+- **Ce que la machine a dit** :
+
+```
+^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
+##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
+##[error]Process completed with exit code 1.
 ```

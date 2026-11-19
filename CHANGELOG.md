@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.405 — 19.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2769, dernière ligne)
+- L'outil `appeler` accepte un NOM (« appelle Marie Dupont ») : le domaine lit le numéro dans la fiche du compte, un bouton « 📞 Appeler » s'affiche à Kevin qui le touche, l'iPhone compose. L'IA ne voit ni le nom ni le numéro. Avec un numéro, l'outil fait comme avant.
+- Le chat traite lui-même « appelle <nom> » (sans passer par le modèle). Le garde de parité Bee ⇄ Apex AI n'a plus rien à porter.
+- Tests : `tests/unit/appeler.test.ts` ; le test `diag-tools-anthropic-validity` a trouvé un doublon de nom d'outil, corrigé.
+
 ## Apex AI v13.4.404 — 19.11.2026 (apex-cloud, mesure réelle de pc-config 2874)
 - « Fais-moi la liste de tous ceux qui ont un compte CMCteams avec leur identifiant SBM » partait au modèle d'IA, qui répondait qu'il n'avait pas la base et réclamait des accès Firebase : l'outil n'était jamais appelé. Le chat reconnaît maintenant cette demande lui-même, affiche la carte à Kevin et répond en une phrase sans appeler le modèle (aucun nom ni matricule ne lui est donné).
 - Test : `tests/unit/chat-outils-locaux.test.ts` (rouge sans le câblage dans le chat).

@@ -82,6 +82,35 @@ await E(p, () => { location.hash = '#personne=Gra%20EPSILON'; }); await p.waitFo
 ok(await E(p, () => procheId()) === 'gp', '7. app ouverte → #personne= la déplace sur la personne, sans rechargement');
 await ctx.close();
 
+console.log('\n== 7. v3.235 : #vue= · #tri= · #famille= combinables (pont 2849 · 2771) ==');
+const premiers = (pg) => E(pg, () => Array.from(document.querySelectorAll('#wrap .pc')).slice(0, 3).map((e) => e.dataset.open));
+for (const [v, st, l] of [['arbre', 'arbre', 'arbre'], ['plan', 'plan', 'plan'], ['paysage', 'paysage', 'paysage'], ['lignee', 'lignee', 'lignee'], ['lign%C3%A9e', 'lignee', 'lignée avec accent'], ['PLAN', 'plan', 'majuscules']]) {
+  ({ ctx, p } = await ouvrir({ hash: '#vue=' + v })); await p.waitForTimeout(500);
+  const r = await E(p, () => ({ vue: VIEW, st: VIEWSTYLE, corps: document.body.dataset.vue }));
+  ok(r.vue === 'tree' && r.st === st && r.corps === 'tree', '9. #vue=' + v + ' → vue ' + l + ' (' + r.st + ')');
+  await ctx.close();
+}
+({ ctx, p } = await ouvrir({ hash: '#vue=bidon' })); await p.waitForTimeout(500);
+ok(await E(p, () => VIEW) !== 'tree' || (await E(p, () => VIEWSTYLE)) !== 'bidon', '10. #vue=bidon → ignoré, aucune erreur');
+await ctx.close();
+({ ctx, p } = await ouvrir({ hash: '#tri=naissance' })); await p.waitForTimeout(500);
+ok(await E(p, () => VIEW) === 'list' && (await premiers(p))[0] === 'gp', '11. #tri=naissance → liste Personnes, la plus ancienne (Gra, 1930) en premier : ' + (await premiers(p)).join(','));
+await ctx.close();
+({ ctx, p } = await ouvrir({ hash: '#tri=nom' })); await p.waitForTimeout(500);
+ok((await premiers(p)).join() === 'en,pa,moi', '12. #tri=nom → les ALPHA d\'abord (Kid, Pér, Zéa), puis BETA : ' + (await premiers(p)).join(','));
+await ctx.close();
+({ ctx, p } = await ouvrir({ hash: '#tri=nimporte' })); await p.waitForTimeout(500);
+ok(await E(p, () => LISTTRI) === 'alpha' && await E(p, () => VIEW) !== 'list', '13. #tri=nimporte → ignoré (ordre alphabétique habituel gardé)');
+await ctx.close();
+({ ctx, p } = await ouvrir({ hash: '#famille=THETA&vue=plan&tri=recent' })); await p.waitForTimeout(600);
+const c = await E(p, () => ({ fam: FAMKEY, st: VIEWSTYLE, vue: VIEW, tri: LISTTRI }));
+ok(/THETA/.test(c.fam) && c.st === 'plan' && c.vue === 'tree' && c.tri === 'recent', '14. #famille=THETA&vue=plan&tri=recent → les trois sont lus (' + JSON.stringify(c) + ')');
+await ctx.close();
+({ ctx, p } = await ouvrir()); await E(p, () => { location.hash = '#vue=paysage'; }); await p.waitForTimeout(700);
+ok(await E(p, () => VIEWSTYLE) === 'paysage', '15. app déjà ouverte : #vue=paysage (hashchange) change la vue sans rechargement');
+ok(await E(p, () => localStorage.getItem('arbre_viewstyle2')) !== 'paysage', '16. la vue demandée n\'est PAS enregistrée comme préférence (affichage seulement)');
+await ctx.close();
+
 console.log('\n== 6. garde : lecture seule (aucune écriture au nuage ni au domaine) ==');
 { const src = fs.readFileSync(path.join(ARBRE, 'index.html'), 'utf8'); const a = src.indexOf('function ouvrirParLien'), b = src.indexOf('var _lienProfondPose');
   const corps = src.slice(a, b); ok(a > 0 && b > a && !/cloudPush|cloudDelete|saveLocal|fetch\(|XMLHttpRequest|idbSet|\.innerHTML\s*=/.test(corps), '8. ouvrirParLien ne contient ni écriture, ni réseau, ni innerHTML'); }

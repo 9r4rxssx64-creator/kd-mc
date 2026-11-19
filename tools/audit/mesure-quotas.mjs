@@ -87,6 +87,29 @@ export function texteDO(d) {
   out.push(`  ${d.cout > 0 ? '🔴' : '✅'} dépassement ESTIMÉ sur la période : ${d.cout.toFixed(2)} $ hors TVA — avec l'abonnement de 5 $ : ${(5 + d.cout).toFixed(2)} $ hors TVA, ${((5 + d.cout) * 1.2).toFixed(2)} $ avec 20 % de TVA`);
   return out.join('\n');
 }
+/* 19.11 soir (facture lue par pc-config, pont 2885 : 947 470 neurones Workers AI FACTURABLES sur le cycle 19.10 → 18.11 = 10,43 $) : la mesure sur 7 jours ne
+   voyait rien (4 452 neurones au pire jour). Workers AI se lit donc sur 31 jours, PAR JOUR et PAR MODÈLE : au-delà de 10 000 neurones par jour, l'offre payante
+   facture 0,011 $ les 1 000. */
+export const IA_PRIX_1000 = 0.011;
+export function resumerIAMois(json, gratuitJour = P.workers_ai_neurones_par_jour) {
+  if (!json || !json.data || !json.data.viewer) return { ok: false, erreur: erreurDe(json) };
+  const jours = {}, modeles = {};
+  for (const l of (json.data.viewer.accounts || []).flatMap((a) => a.aiInferenceAdaptiveGroups || [])) {
+    const d = l.dimensions || {}, j = String(d.date || '').slice(0, 10), n = (l.sum || {}).totalNeurons || 0; if (!j) continue;
+    const e = (jours[j] ||= { total: 0, parModele: {} }); e.total += n; e.parModele[d.modelId || '?'] = (e.parModele[d.modelId || '?'] || 0) + n; modeles[d.modelId || '?'] = (modeles[d.modelId || '?'] || 0) + n;
+  }
+  let factures = 0; for (const e of Object.values(jours)) factures += Math.max(0, e.total - gratuitJour);
+  return { ok: true, jours, modeles, total: Object.values(jours).reduce((t, e) => t + e.total, 0), factures, cout: factures / 1000 * IA_PRIX_1000 };
+}
+export function texteIAMois(r) {
+  if (!r.ok) return `\n⚠️ Workers AI sur 31 jours : non mesuré (« ${r.erreur} »).`;
+  const court = (m) => String(m).replace(/^@cf\//, '');
+  const out = ['\nWorkers AI sur 31 jours — 10 000 neurones gratuits par jour, puis 0,011 $ les 1 000 (offre payante) :'];
+  for (const [j, e] of Object.entries(r.jours).sort()) if (e.total > P.workers_ai_neurones_par_jour * ORANGE) out.push(`  ${etat(e.total, P.workers_ai_neurones_par_jour)} ${j} : ${Math.round(e.total)} neurones — ` + Object.entries(e.parModele).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => court(k) + ' ' + Math.round(v)).join(' · '));
+  out.push('  par modèle (31 jours) : ' + Object.entries(r.modeles).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => court(k) + ' ' + Math.round(v)).join(' · '));
+  out.push(`  ${r.factures > 0 ? '🔴' : '✅'} total ${Math.round(r.total)} neurones · au-delà du gratuit : ${Math.round(r.factures)} → ≈ ${r.cout.toFixed(2)} $ hors TVA`);
+  return out.join('\n');
+}
 export function texteR2(r) {
   if (!r.ok) return `\n⚠️ Stockage R2 : non mesuré (« ${r.erreur} »).`;
   const out = ['\nStockage de fichiers R2 (gratuit : 10 Go, 1 M d\'écritures et 10 M de lectures par mois) :', 'espace                      Go stockés   fichiers   écritures (A)   lectures (B)   sur ' + r.jours + ' jours'];
@@ -188,7 +211,9 @@ if (process.argv[1] && /(^|[\\/])mesure-quotas\.mjs$/.test(process.argv[1]) && !
   /* la période de facturation est d'un mois : les Durable Objects se lisent sur 31 jours */
   const debutMois = new Date(fin.getTime() - 31 * 86400000);
   const dob = resumerDO(await gql(requeteDO(COMPTE, jour(debutMois), jour(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })));
-  const t2 = texteDetail(rq, wk, abo) + '\n' + texteR2(r2) + '\n' + texteDO(dob); console.log(t2);
+  const iaMois = resumerIAMois(await gql(requeteIA(COMPTE, iso(new Date(new Date(debutMois).setUTCHours(0, 0, 0, 0))), iso(fin))).catch((e) => ({ errors: [{ message: String(e.message || e) }] })));
+  const t2 = texteDetail(rq, wk, abo) + '\n' + texteR2(r2) + '\n' + texteDO(dob) + '\n' + texteIAMois(iaMois); console.log(t2);
+  console.log(`::notice title=Mesure Workers AI (31 jours)::${texteIAMois(iaMois).replace(/\n/g, '%0A').slice(0, 3800)}`);
   console.log(`::notice title=Mesure Durable Objects::${texteDO(dob).replace(/\n/g, '%0A').slice(0, 3800)}`);
   console.log(`::notice title=Mesure quotas (détail)::${t2.replace(/\n/g, '%0A').slice(0, 3800)}`);
   console.log(`::notice title=Mesure R2::${texteR2(r2).replace(/\n/g, '%0A').slice(0, 3800)}`);

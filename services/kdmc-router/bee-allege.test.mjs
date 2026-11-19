@@ -71,6 +71,13 @@ for (const q of ['ferme lingua, ouvre l\'arbre de Yann, regarde la page, rappell
   reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; await bee(q, env, undefined);
   const v = IA_VUES[0]; ok(!!v && taille(v) <= PLAFOND_MAX + 1500, '4. même une demande qui parle de TOUT : ' + (v ? taille(v) : '?') + ' jetons (≤ ' + (PLAFOND_MAX + 1500) + ') — les lots sont envoyés, rien de plus');
 }
+/* 4a. LA PARITÉ (Kevin 18.11, outils lien_externe / comptes_cmcteams / appeler) pèse ≈ 450 jetons : elle ne s'envoie QUE pour ses demandes (19.11 : large, elle poussait le cas « TOUT » à 8 439 jetons et le déploiement du routeur est resté rouge) */
+reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; await bee('appelle Zoé Petit');
+{ const v = IA_VUES[0]; ok(!!v && ['lien_externe', 'comptes_cmcteams', 'appeler'].every((n) => v.corps.tools.some((x) => (x.function || x).name === n)) && taille(v) <= PLAFOND_MAX, '4a. une demande de parité → les 3 outils de parité, et ' + (v ? taille(v) : '?') + ' jetons (≤ ' + PLAFOND_MAX + ')'); }
+for (const q of ['ouvre l\'arbre et dis-moi qui est Yann', 'quels sont mes comptes bannis ?', 'rappelle-moi demain', 'ferme lingua pour tout le monde']) {
+  reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; await bee(q, env, undefined);
+  const v = IA_VUES[0]; ok(!!v && !v.corps.tools.some((x) => /^(lien_externe|comptes_cmcteams|appeler)$/.test((x.function || x).name)), '4a2. « ' + q + ' » ne porte PAS le lot parité (poids du prompt)');
+}
 /* 4b. quand les IA à outils ne répondent pas, le moteur de secours NE DOIT PAS inventer (mesuré en réel : météo, heure, planning « de tête ») */
 reset(); AI_VUES.length = 0; IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; await bee('Quel temps fait-il demain à Monaco ?');
 ok(AI_VUES.length > 0 && AI_VUES.every((x) => /n'invente JAMAIS un chiffre/.test(x)), '4b. outils muets → le moteur de secours reçoit la consigne « dis que tu n\'as pas pu consulter, n\'invente jamais un chiffre »', AI_VUES.length + ' appel(s)');

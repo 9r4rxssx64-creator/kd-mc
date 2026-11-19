@@ -10,11 +10,11 @@
 
 export const MAX_CARTES = 4;
 export const MAX_COMPTES = 400;
-export const RE_PARITE = /(?<![A-Za-z0-9À-ſ])(?:ouvre\w*|va sur|aller sur|page internet|site web|lien|https?:\/\/|www\.|comptes?|inscrit\w*|matricule\w*|sbm|identifiant\w*|liste (?:des|de tous)|appelle\w*|appeler|t[eé]l[eé]phon\w*|num[eé]ro|composer|joindre|sonne\w*)(?![A-Za-z0-9À-ſ])/i;
+export const RE_PARITE = /(?<![A-Za-z0-9À-ſ])(?:https?:\/\/|www\.|[a-z0-9-]+\.(?:com|org|net|fr|ch|mc|io|eu|info)\b|page (?:internet|web)|site (?:web|internet)|comptes?\s+(?:\w+\s+){0,2}?(?:cmc\s?teams|light|sbm)|liste (?:des|de tous(?: les)?) comptes?|inscrit\w*|matricule\w*|sbm|identifiants? sbm|appelle\w*|appeler|t[eé]l[eé]phon\w*|num[eé]ro|composer|joindre|sonne\w*)(?![A-Za-z0-9À-ſ])/i;   // étroit exprès : « ouvre l'arbre », « mes comptes bannis » ne portent PAS ce lot (poids du prompt, bee-allege.test.mjs)
 
-export const REGLES_PARITE = ' PARITÉ : page internet hors domaine → `lien_externe` (Kevin touche le bouton, tu n\'ouvres rien) ; « liste des comptes CMCteams avec identifiant SBM » → `comptes_cmcteams` '
-  + '(le domaine fabrique la liste et l\'affiche à Kevin : tu ne la vois pas, dis seulement qu\'elle est prête) ; « appelle <nom> » → `appeler` (bouton 📞 : Kevin touche, son iPhone compose). '
-  + 'Tu ne connais JAMAIS un nom de collègue, un matricule ni un numéro : n\'en invente pas, ne les demande pas, passe par l\'outil. Jamais « je ne peux pas ouvrir / appeler / lister ».';
+export const REGLES_PARITE = ' PARITÉ : page hors domaine → `lien_externe` (Kevin touche le bouton) ; liste des comptes CMCteams + identifiant SBM → `comptes_cmcteams` '
+  + '(le domaine l\'affiche à Kevin, tu ne la vois pas : dis qu\'elle est prête) ; « appelle <nom> » → `appeler` (bouton 📞, Kevin touche). '
+  + 'Tu ne connais JAMAIS un nom de collègue, un matricule ni un numéro : n\'en invente pas, ne les demande pas. Jamais « je ne peux pas ouvrir / appeler / lister ».';
 
 const s = (v, n) => String(v == null ? '' : v).slice(0, n);
 
@@ -44,11 +44,11 @@ function ajouter(sortie, carte) {
 /* o.appeler : (chemin) => Promise<{ok, ...}> — appel INTERNE d'une porte du domaine avec la session de Kevin (liste fermée PORTES_BEE). */
 export function outilsParite(o, sortie) {
   const defs = [
-    { name: 'lien_externe', description: 'Prépare un bouton « Ouvrir » vers une page internet hors du domaine (https). Kevin touche pour l\'ouvrir ; tu n\'ouvres rien toi-même.',
+    { name: 'lien_externe', description: 'Bouton « Ouvrir » vers une page https hors du domaine : Kevin le touche, tu n\'ouvres rien.',
       parameters: { type: 'object', properties: { url: { type: 'string', description: 'adresse https complète' }, libelle: { type: 'string', description: 'texte court du bouton' } }, required: ['url'] } },
-    { name: 'comptes_cmcteams', description: 'La liste de tous les comptes CMCteams avec leur identifiant SBM (matricule). Le domaine fabrique la liste et l\'affiche à Kevin : tu ne la reçois pas.',
+    { name: 'comptes_cmcteams', description: 'Liste des comptes CMCteams avec identifiant SBM : le domaine l\'affiche à Kevin, tu ne la reçois pas.',
       parameters: { type: 'object', properties: {} } },
-    { name: 'appeler', description: 'Prépare un bouton « 📞 Appeler » pour une personne qui a un compte (nom et prénom). Le domaine lit le numéro dans sa fiche ; Kevin touche, son iPhone compose. Tu ne vois jamais le numéro.',
+    { name: 'appeler', description: 'Bouton « 📞 Appeler » pour une personne ayant un compte : le domaine lit le numéro, Kevin touche. Tu ne vois jamais le numéro.',
       parameters: { type: 'object', properties: { nom: { type: 'string', description: 'prénom et nom, comme Kevin les a dits' } }, required: ['nom'] } },
   ];
   const exe = {

@@ -13,7 +13,7 @@ const dire = (r) => RAISONS[r && r.reason] || (r && (r.reason || r.status)) || '
 export const DROITS_MAIL = {
   mail_envoyer: {
     titre: 'Envoyer un mail à une personne du domaine', icone: '✉️', risque: 'moyen',
-    aide: 'uid, libelle (objet), texte — compte du domaine seulement ; sinon brouillon_mail',
+    aide: 'uid, libelle (objet), texte',
     valider(c) {
       const uid = nettoyer(c.uid, 80), objet = nettoyer(c.libelle || c.objet, 120), corps = nettoyer(c.texte || c.corps, 2000, true);
       if (!RE_UID.test(uid)) return { erreur: 'Il me manque l\'identifiant de la personne : cherche-la d\'abord avec comptes_domaine.' };

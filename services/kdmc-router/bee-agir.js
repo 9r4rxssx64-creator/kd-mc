@@ -111,7 +111,7 @@ const sansLiensDangereux = (t) => !/(?:javascript|data|vbscript):/i.test(t);
 export const CATALOGUE = {
   rappel: {
     titre: 'Programmer un rappel', icone: '⏰', risque: 'faible',
-    aide: 'champs : quand (« AAAA-MM-JJ HH:MM », heure de Monaco, dans le futur), texte',
+    aide: 'champs : quand (AAAA-MM-JJ HH:MM, Monaco, futur), texte',
     valider(c, now) {
       const texte = propre(c.texte, LIMITES.texte); const ms = monacoVersMs(c.quand);
       if (!texte) return { erreur: 'Il manque le texte du rappel.' };
@@ -165,7 +165,7 @@ export const CATALOGUE = {
   },
   repondre_message: {
     titre: 'Répondre à un message', icone: '💬', risque: 'moyen',
-    aide: 'champs : cle (la clé du message dans la boîte, ex. « lingua:12 »), texte',
+    aide: 'champs : cle (clé du message, ex. lingua:12), texte',
     valider(c) {
       const cle = propre(c.cle, 120), texte = propre(c.texte, 1000);
       if (!/^[a-z]+:[\w.-]+$/i.test(cle)) return { erreur: 'Il manque la clé du message (regarde dans la boîte des messages).' };

@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.372",
+  "softwareVersion": "v1.1.373",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -517,7 +517,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.372';
+const __APEX_CHAT_VERSION__ = 'v1.1.373';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -864,7 +864,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.372" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
+  <div id="splash-version" data-ver="v1.1.373" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -15274,6 +15274,46 @@ K._joinPendingGroup = function(){
   }catch(_e){ /* sans stockage : le lien ne marchera pas, rien d'autre ne casse */ }
 })();
 
+// v1.1.373 — Lien « message prérempli » (?to=<compte>&texte=<message>), demandé par Apex AI / Bee (parité) : l'adresse ouvre la conversation avec cette
+// personne et met le texte dans la zone de saisie. JAMAIS d'envoi automatique : les messages sont chiffrés de bout en bout côté appareil, c'est Kevin qui relit et envoie.
+function _lienDmDepuisAdresse(search){
+  try{
+    const q = new URLSearchParams(search || ''), to = (q.get('to') || '').trim(), texte = (q.get('texte') || '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').slice(0, 500);
+    if(!/^[A-Za-z0-9_.:-]{3,80}$/.test(to) || !texte.trim()) return null;
+    return { to, texte };
+  }catch(_e){ return null; }
+}
+(function(){
+  try{
+    const l = _lienDmDepuisAdresse(location.search);
+    if(l){
+      sessionStorage.setItem('apex_dm_pending', JSON.stringify({ to: l.to, texte: l.texte, at: Date.now() }));
+      const q = new URLSearchParams(location.search); q.delete('to'); q.delete('texte');
+      history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q.toString() : '') + location.hash);
+    }
+  }catch(_e){ /* sans stockage : le lien ne marchera pas, rien d'autre ne casse */ }
+})();
+K._ouvrirDmPending = async function(){
+  let p = null;
+  try{ p = JSON.parse(sessionStorage.getItem('apex_dm_pending') || 'null'); }catch(_e){ p = null; }
+  if(!p || !p.to || !p.texte || Date.now() - (p.at || 0) > 3600000) { try{ sessionStorage.removeItem('apex_dm_pending'); }catch(_e){ _safeCatch('silent', _e); } return false; }
+  if(!K.token || String(K.token).startsWith('local-')) return false;   // pas encore connecté : on garde, on réessaiera à l'entrée
+  try{ sessionStorage.removeItem('apex_dm_pending'); }catch(_e){ _safeCatch('silent', _e); }
+  try{ await K._startConvWithUser(p.to, ''); }catch(e){ _safeCatch('dm-lien', e); return false; }
+  for(let i = 0; i < 20; i++){
+    const z = document.getElementById('msg-input');
+    if(z){
+      z.value = p.texte;
+      try{ z.dispatchEvent(new Event('input', { bubbles: true })); z.focus(); }catch(_e){ _safeCatch('silent', _e); }
+      toast('✍️ Message prêt : relis-le puis envoie-le', 'ok', 4000);
+      return true;
+    }
+    await new Promise(r => setTimeout(r, 250));
+  }
+  toast('Conversation ouverte, mais le message n\'a pas pu être placé : colle-le toi-même', 'warn', 6000);
+  return false;
+};
+
 // v1.1.170 : promeut une conv locale (dm_local_) en conv serveur réelle.
 // Crée la conv côté serveur, migre messages + id local → id serveur.
 K._promoteConvToServer = async function(localConvId){
@@ -18031,7 +18071,7 @@ K._ralliementKevin = async function(){
 K._postLogin = function(){
   if(!K.user) return;
   setTimeout(() => { try { K._ralliementKevin && K._ralliementKevin(); } catch(_) {} }, 3000);
-  setTimeout(() => { try { K._joinPendingGroup && K._joinPendingGroup(); } catch(_) {} }, 2500);   // invitation de groupe reçue avant la connexion
+  setTimeout(() => { try { K._joinPendingGroup && K._joinPendingGroup(); K._ouvrirDmPending && K._ouvrirDmPending(); } catch(_) {} }, 2500);   // invitation de groupe reçue avant la connexion
   // v1.1.173 FIX P0 (audit crew) : publier la clé publique E2E dès le login —
   // couvre les users dont la clé existait déjà localement (avant cette version)
   // mais n'avait jamais été poussée au serveur. Best-effort, non bloquant.
@@ -19448,7 +19488,7 @@ async function _boot(){
     }
 
     K.render();
-    setTimeout(() => { try{ K._joinPendingGroup && K._joinPendingGroup(); }catch(_e){ _safeCatch('silent', _e); } }, 2500);   // invitation de groupe reçue (session restaurée)
+    setTimeout(() => { try{ K._joinPendingGroup && K._joinPendingGroup(); K._ouvrirDmPending && K._ouvrirDmPending(); }catch(_e){ _safeCatch('silent', _e); } }, 2500);   // invitation de groupe reçue (session restaurée)
     /* 22.10.2026 (Kevin : « toujours pas » en v1.1.342 ; prouvé en vrai Chromium, tests/runtime-ralliement-reprise.mjs) : à la RÉOUVERTURE avec une session gardée,
        la réunion des comptes ne partait jamais (seule une connexion complète appelait _postLogin). On la lance aussi ici. */
     if(K.token && !String(K.token).startsWith('local-')){

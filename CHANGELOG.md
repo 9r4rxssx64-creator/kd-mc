@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex Chat v1.1.373 — 20.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, javis-bee 2916)
+- Lien « message prérempli » : `https://apex-chat.kd-mc.com/?to=<identifiant du compte>&texte=<message>` ouvre la conversation avec cette personne et met le texte dans la zone de saisie. **Jamais d'envoi automatique** (messages chiffrés de bout en bout côté appareil : la personne relit et envoie elle-même).
+- Gardé avant la connexion, repris à l'entrée (1 h maximum), adresse nettoyée ensuite ; identifiant et texte contrôlés (texte ≤ 500 signes).
+- Test : `messaging-app/tests/unit/lien-message-prerempli.test.js` (12 cas, vrai code de la page) ; sabotages (validation retirée / envoi automatique ajouté) = rouge.
+
 ## Créa Studio — 20.11.2026 (studio-crea, signalé par cloud-installer 2942)
 - Le Worker du Studio (`services/kdmc-crea-ai/worker.js`, voie texte Gemini) appelait `gemini-2.5-flash`, nom mesuré mort (404) le 19.11 ; il appelle maintenant `gemini-flash-lite-latest` (362 à 742 ms mesurés). Les autres IA de la liste prenaient déjà le relais : rien n'était cassé pour Kevin, mais Gemini ne servait plus.
 - Garde : `npm run test:crea-gemini-nom` (dans `test:ci`, rouge sous `SABOTAGE=1`). Plafond de neurones du Studio : pas posé, décision sur la mesure du 20.11 (cloud-installer, pont 2942).

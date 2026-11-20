@@ -597,7 +597,7 @@ async function cfText(env, prompt, wantJson, famille) {
    Les noms de secrets sont ceux EXACTS de Kevin (dont la typo PERPLEXITI). */
 const TEXT_PROVIDERS = [
   { id: 'groq',       key: 'GROQ_API_KEY',       url: 'https://api.groq.com/openai/v1/chat/completions',        model: 'openai/gpt-oss-120b',            free: true },   // 2.10 : llama-3.3-70b-versatile retiré par Groq
-  { id: 'gemini',     key: 'GEMINI_API_KEY',     url: '',                                                      model: 'gemini-2.5-flash',               free: true },
+  { id: 'gemini',     key: 'GEMINI_API_KEY',     url: '',                                                      model: 'gemini-flash-lite-latest',             free: true },
   { id: 'mistral',    key: 'MISTRAL_API_KEY',    url: 'https://api.mistral.ai/v1/chat/completions',            model: 'mistral-small-latest',           free: true },
   { id: 'cohere',     key: 'COHERE_API_KEY',     url: 'https://api.cohere.ai/compatibility/v1/chat/completions', model: 'command-r-08-2024',            free: true },
   { id: 'together',   key: 'TOGETHER_API_KEY',   url: 'https://api.together.xyz/v1/chat/completions',          model: 'meta-llama/Llama-3.3-70B-Instruct-Turbo-Free', free: true },

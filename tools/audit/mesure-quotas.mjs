@@ -105,7 +105,9 @@ export function texteIAMois(r) {
   if (!r.ok) return `\n⚠️ Workers AI sur 31 jours : non mesuré (« ${r.erreur} »).`;
   const court = (m) => String(m).replace(/^@cf\//, '');
   const out = ['\nWorkers AI sur 31 jours — 10 000 neurones gratuits par jour, puis 0,011 $ les 1 000 (offre payante) :'];
-  for (const [j, e] of Object.entries(r.jours).sort()) if (e.total > P.workers_ai_neurones_par_jour * ORANGE) out.push(`  ${etat(e.total, P.workers_ai_neurones_par_jour)} ${j} : ${Math.round(e.total)} neurones — ` + Object.entries(e.parModele).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => court(k) + ' ' + Math.round(v)).join(' · '));
+  /* 20.11 : les 3 derniers jours sont toujours détaillés par modèle, même petits — sinon impossible de dire QUEL programme a consommé (compteur du plafond vide alors que Cloudflare comptait 119 neurones). */
+  const recents = new Set(Object.keys(r.jours).sort().slice(-3));
+  for (const [j, e] of Object.entries(r.jours).sort()) if (recents.has(j) || e.total > P.workers_ai_neurones_par_jour * ORANGE) out.push(`  ${etat(e.total, P.workers_ai_neurones_par_jour)} ${j} : ${Math.round(e.total)} neurones — ` + Object.entries(e.parModele).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => court(k) + ' ' + Math.round(v)).join(' · '));
   out.push('  par modèle (31 jours) : ' + Object.entries(r.modeles).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => court(k) + ' ' + Math.round(v)).join(' · '));
   out.push(`  ${r.factures > 0 ? '🔴' : '✅'} total ${Math.round(r.total)} neurones · au-delà du gratuit : ${Math.round(r.factures)} → ≈ ${r.cout.toFixed(2)} $ hors TVA`);
   return out.join('\n');

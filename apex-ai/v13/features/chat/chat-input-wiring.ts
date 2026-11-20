@@ -12,6 +12,7 @@ import { detectToolIntent } from '../../services/ai/tool-intent.js';
 import { toast } from '../../ui/toast.js';
 
 import { detectPasteKind, pushPasteCard } from './chat-paste.js';
+import { adresseAOuvrir } from './chat-outils-locaux.js';
 import { persistConversation } from './chat-persistence.js';
 import { saveCodeSnippet } from './chat-snippets.js';
 
@@ -59,7 +60,10 @@ export function wireChatInput(rootEl: HTMLElement, ctx: ChatInputCtx): void {
        * détecte une intention outil EXPLICITE (audit/pentest/web/perf) et la lance
        * automatiquement. Conservateur (0 faux positif testé) + kill localStorage. */
       {
-        const auto = detectToolIntent(value);
+        /* v13.4.407 (pc-config 2932) : « ouvre-moi <adresse> » appartient au chat (carte + bouton « Ouvrir »,
+         * chat-outils-locaux) ; sans cette garde la détection d'intention l'envoyait lire la page par un
+         * robot (/web → « Échec du lancement HTTP 401 »). */
+        const auto = adresseAOuvrir(value) ? null : detectToolIntent(value);
         if (auto && handleSlashCommand(rootEl, auto)) {
           textarea.value = '';
           textarea.style.height = 'auto';

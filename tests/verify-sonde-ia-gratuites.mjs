@@ -10,7 +10,7 @@ import { FOURNISSEURS, sonder, ligne, listerModeles } from '../tools/ia/sonder-i
 let pass = 0, fail = 0; const ok = (c, m, d) => { if (c) pass++; else fail++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d ? '  → ' + d : ''}`); };
 
 const src = readFileSync('tools/ia/sonder-ia-gratuites.mjs', 'utf8');
-ok(!/method:\s*['"](PUT|PATCH|DELETE)['"]/.test(src) && /max_tokens:\s*8\b/.test(src) && (src.match(/method:\s*'POST'/g) || []).length === 1 && (src.match(/fetchFn\(/g) || []).length === 2, '1. lecture seule : un seul POST de chat (8 jetons au plus) + un GET /models');
+ok(!/method:\s*['"](PUT|PATCH|DELETE)['"]/.test(src) && /max_tokens:\s*200\b/.test(src) && (src.match(/method:\s*'POST'/g) || []).length === 1 && (src.match(/fetchFn\(/g) || []).length === 2, '1. lecture seule : un seul POST de chat (200 jetons au plus : un modèle qui réfléchit rendait un texte vide avec 8) + un GET /models');
 const wf = readFileSync('.github/workflows/coffre-sonde-ia-gratuites.yml', 'utf8');
 const regles = JSON.parse(readFileSync('tools/depot-public/regles.json', 'utf8'));
 ok(/workflow_dispatch:/.test(wf) && !/schedule:/.test(wf) && /timeout-minutes:\s*\d+/.test(wf) && regles.workflows_prives.includes('.github/workflows/coffre-sonde-ia-gratuites.yml'), '2a. robot à la main, sans cron, borné, au coffre');

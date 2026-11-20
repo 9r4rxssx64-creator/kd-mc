@@ -13,7 +13,11 @@
    s'épuisent (on les sonde mais on ne les met PAS en tête de cascade sans l'accord de Kevin). */
 export const FOURNISSEURS = [
   { id: 'groq',       cle: 'GROQ_API_KEY',       url: 'https://api.groq.com/openai/v1/chat/completions',               modele: 'openai/gpt-oss-120b',                            palier: 'gratuit', deja: true },
-  { id: 'gemini',     cle: 'GEMINI_API_KEY',     url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', modele: 'gemini-2.5-flash',                    palier: 'gratuit', deja: true },
+  /* 20.11 (sonde 44646368488) : gemini-2.5-flash rend 404 « no longer available » ; remplaçants lus dans GET /models et mesurés (44646836681) : flash-lite-latest 588 ms, 3.5-flash-lite 427 ms ; flash-latest ne répond pas en 25 s. */
+  { id: 'gemini', cle: 'GEMINI_API_KEY', url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', modele: 'gemini-flash-lite-latest', palier: 'gratuit', deja: true },
+  { id: 'gemini-3.8', cle: 'GEMINI_API_KEY', url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', modele: 'gemini-3.8-flash', palier: 'gratuit', deja: true },
+  { id: 'gemini-lite-image', cle: 'GEMINI_API_KEY', url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', modele: 'gemini-flash-lite-latest', palier: 'gratuit', deja: true, image: true },
+  { id: 'gemini-3.5-lite', cle: 'GEMINI_API_KEY', url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', modele: 'gemini-3.5-flash-lite', palier: 'gratuit', deja: true },
   { id: 'mistral',    cle: 'MISTRAL_API_KEY',    url: 'https://api.mistral.ai/v1/chat/completions',                    modele: 'mistral-small-latest',                            palier: 'gratuit', deja: true },
   { id: 'openrouter', cle: 'OPENROUTER_API_KEY', url: 'https://openrouter.ai/api/v1/chat/completions',                 modele: 'meta-llama/llama-3.3-70b-instruct:free',          palier: 'gratuit', deja: true },
   { id: 'cerebras',   cle: 'CEREBRAS_API_KEY',   url: 'https://api.cerebras.ai/v1/chat/completions',                   modele: 'gpt-oss-120b',                                    palier: 'gratuit', deja: true },
@@ -28,13 +32,16 @@ export const FOURNISSEURS = [
   { id: 'scaleway',   cle: 'SCALEWAY_API_KEY',   url: 'https://api.scaleway.ai/v1/chat/completions',                   modele: 'llama-3.3-70b-instruct',                          palier: 'crédits' },
 ];
 const QUESTION = [{ role: 'user', content: 'Réponds uniquement par le mot : ok' }];
+/* 20.11 : les yeux du domaine (/delegue/vision) lisent des images avec Gemini — on mesure aussi qu'une image passe (carré rouge 16 px). */
+const CARRE_ROUGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAF0lEQVR4nGP4z8BAEiJN9aiGUQ1DSgMAkPn/Afnh+ngAAAAASUVORK5CYII=';
+const QUESTION_IMAGE = [{ role: 'user', content: [{ type: 'text', text: 'De quelle couleur est ce carré ? Un seul mot.' }, { type: 'image_url', image_url: { url: CARRE_ROUGE } }] }];
 
 export async function sonder(f, cle, fetchFn = fetch) {
   const t0 = Date.now();
   try {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 25000);
     const r = await fetchFn(f.url, { method: 'POST', signal: ctrl.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + cle },
-      body: JSON.stringify({ model: f.modele, messages: QUESTION, max_tokens: 8, temperature: 0 }) });
+      body: JSON.stringify({ model: f.modele, messages: f.image ? QUESTION_IMAGE : QUESTION, max_tokens: 200, temperature: 0 }) });
     clearTimeout(t);
     const txt = await r.text(); const ms = Date.now() - t0;
     if (!r.ok) {
@@ -43,7 +50,8 @@ export async function sonder(f, cle, fetchFn = fetch) {
     }
     const j = JSON.parse(txt);
     const texte = String(((j.choices || [])[0] || {}).message?.content || '').trim();
-    return { id: f.id, ok: !!texte, http: r.status, ms, modele: j.model || f.modele, texte: texte.slice(0, 20) };
+    /* 20.11 : un modèle qui réfléchit (gpt-oss) rendait un texte vide avec 8 jetons → « ❌ HTTP 200 — undefined » alors qu'il répond. */
+    return { id: f.id, ok: !!texte, http: r.status, ms, modele: j.model || f.modele, texte: texte.slice(0, 20), detail: texte ? undefined : 'HTTP 200 mais texte vide (jetons mangés par la réflexion ?)' };
   } catch (e) { return { id: f.id, ok: false, http: 0, ms: Date.now() - t0, detail: String(e && e.message || e).slice(0, 120) }; }
 }
 
@@ -56,8 +64,9 @@ export async function listerModeles(f, cle, fetchFn = fetch) {
     if (!r.ok) return { ok: false, http: r.status };
     const j = JSON.parse(await r.text());
     const ids = (Array.isArray(j.data) ? j.data : (Array.isArray(j.models) ? j.models : [])).map((m) => String(m.id || m.name || '')).filter(Boolean).sort();
-    const utiles = ids.filter((id) => /llama|qwen|gpt-oss|deepseek|mixtral|gemma|kimi|command/i.test(id) && !/whisper|tts|guard|embed|rerank|vision|audio/i.test(id));
-    return { ok: true, total: ids.length, utiles: utiles.slice(0, 15) };
+    const utiles = ids.filter((id) => /llama|qwen|gpt-oss|deepseek|mixtral|gemma|kimi|command|gemini/i.test(id) && !/whisper|tts|guard|embed|rerank|vision|audio|image|live|native|computer|robotics|veo|imagen/i.test(id));
+    /* 20.11 : « gemini » manquait au filtre → la liste ne montrait que gemma, impossible de lire le remplaçant d'un modèle retiré. */
+    return { ok: true, total: ids.length, utiles: utiles.slice(0, 40) };
   } catch (e) { return { ok: false, http: 0, detail: String(e && e.message || e).slice(0, 80) }; }
 }
 

@@ -139,7 +139,7 @@ export function _resetCompetence() { competence.clear(); }
 export const MODELES_SECOURS = {   // MESURÉ le 2.10.2026 (sonde 37061173309, GET /models) — rien d'inventé
   groq: ['openai/gpt-oss-20b', 'qwen/qwen3.8-27b'],
   cerebras: ['qwen-3.8-27b'],
-  gemini: ['gemini-2.5-flash', 'gemini-2.5-flash-lite'],   // 2.0-flash est retiré par Google : le suivant prend dans le même appel (modeleInexistant)
+  gemini: ['gemini-3.5-flash-lite', 'gemini-3.8-flash'],   // MESURÉ le 20.11.2026 (sonde 44646836681) : 2.0-flash, 2.5-flash et 2.5-flash-lite rendent 404 « no longer available » ; 3.5-flash-lite répond en 427 ms ; 3.8-flash (conseillé par Google) était saturé (503), gardé en dernier
 };
 const modelesRetires = new Map();   // provider → Set(modèles qui ont répondu « n'existe pas »)
 const CACHE_RETIRES = CACHE_PAUSE + 'modeles-retires/';
@@ -262,7 +262,7 @@ export const DEFAULT_MODELS = {
   anthropic: 'claude-haiku-4-5-20251001',
   openai: 'gpt-4o-mini',
   groq: 'openai/gpt-oss-120b',          // mesuré 2.10 (sonde 37061173309) : llama-3.3-70b-versatile retiré par Groq
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-flash-lite-latest',   // mesuré 20.11 (sonde 44646836681) : 588 ms en texte, 915 ms avec une image ; l'alias « -latest » suit Google, il ne périme pas comme 2.0-flash
   mistral: 'mistral-small-latest',
   openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
   cerebras: 'gpt-oss-120b',              // mesuré 2.10 : llama-3.3-70b retiré par Cerebras ; il reste gpt-oss-120b et qwen-3.8-27b

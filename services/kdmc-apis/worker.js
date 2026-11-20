@@ -363,7 +363,7 @@ export const AI_CHAIN = [
 ];
 
 export const AI_DEFAULT_MODEL = {
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-flash-lite-latest',   // mesuré 20.11 (sonde 44646836681) : 2.0-flash retiré par Google (404)
   groq: 'openai/gpt-oss-120b',   // 2.10 : llama-3.3-70b-versatile retiré par Groq (sonde 37061173309)
   openrouter: 'meta-llama/llama-3.3-70b-instruct:free',
   mistral: 'mistral-small-latest',

@@ -67,7 +67,7 @@ export async function handleDelegue(request, env, deps) {
    plafond par jour que /delegue (1 écriture + 1 lecture D1 par appel). Images d'actes PUBLICS seulement (la session appelante l'écrit dans sa consigne ; la file refuse les vivants). */
 export const VISION_TYPES = { 'image/jpeg': 1, 'image/png': 1, 'image/webp': 1 };
 export const VISION_MAX_B64 = 5000000;
-export const VISION_MODELE = 'gemini-2.0-flash';
+export const VISION_MODELE = 'gemini-flash-lite-latest';   // mesuré 20.11 (sonde 44646836681) : lit une image en 915 ms ; 2.0-flash retiré par Google (404)
 const VISION_CONSIGNE = 'Transcris FIDÈLEMENT tout le texte de ce document d\'état civil ou d\'archives (imprimé ou manuscrit), ligne par ligne, sans rien inventer. Pour un acte : date, lieu, noms, prénoms, âges, professions, parents, déclarants, mentions en marge, numéro d\'acte. Un mot illisible s\'écrit [illisible] ; un doute s\'écrit avec [?].';
 
 export async function handleVision(request, env, deps) {

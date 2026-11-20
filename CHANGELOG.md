@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.407 — 20.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2932)
+- Vraie cause du « ouvre-moi <adresse> » en HTTP 401 (mesurée par pc-config en vrai, la 13.4.406 ne suffisait pas) : la détection d'intention d'outil (`chat-input-wiring.ts`) passe AVANT le chat et envoyait « ouvre/va sur <url> » lire la page par un robot (`/web`). Elle laisse maintenant la phrase au chat : carte + bouton « Ouvrir ».
+- « lis <url> » (lecture explicite) reste pris par `/web`.
+- Test : `tests/unit/ouvre-adresse-avant-intention.test.ts` ; sabotage (garde retirée) = rouge.
+
 ## Apex AI v13.4.406 — 19.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, pont 2906)
 - « ouvre-moi <adresse> » : le chat le traite lui-même et affiche une carte avec le bouton « Ouvrir » (https seulement). Avant, la phrase partait vers un lancement de robot et finissait en « Échec du lancement (HTTP 401) » sans aucune carte (mesuré par pc-config).
 - Une adresse http:// ou interne est refusée avec une phrase claire, sans carte. Rien ne s'ouvre tout seul.

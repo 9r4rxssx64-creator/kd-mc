@@ -792,7 +792,7 @@ const PROVIDERS_WITH_TOOLS: ReadonlySet<Provider> = new Set<Provider>(['anthropi
  */
 /* v13.4.366 : qwen (gratuit, Workers AI) juste après anthropic — avant tout provider payant. */
 /* TOUT GRATUIT, PARTOUT (Kevin 2.10.2026) : les gratuits d'abord (Qwen, Groq, Cerebras, Gemini, OpenRouter), les payants en secours. */
-const DEFAULT_CHAIN: readonly Provider[] = ['qwen', 'groq', 'cerebras', 'gemini', 'openrouter', 'mistral', 'anthropic', 'openai', 'openclaw'];
+const DEFAULT_CHAIN: readonly Provider[] = ['qwen', 'groq', 'gemini', 'openrouter', 'mistral', 'anthropic', 'openai', 'openclaw'];
 
 /**
  * v13.3.74 H2 — Liste extensive des providers logiques supportés (incluant proxiés).

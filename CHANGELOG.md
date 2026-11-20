@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.410 — 20.11.2026 (apex-cloud, cloud-installer 2977)
+- Cerebras retiré des IA gratuites d'Apex AI (décision de Kevin « retire » : le service rend HTTP 402 « Payment required »). Il n'est plus dans la politique de choix (admin, raisonnement, code, vitesse, création), la liste des gratuits, la chaîne par défaut du routeur ni le crew : fini l'appel perdu en 3ᵉ position à chaque message. Apex Chat n'appelle pas Cerebras (vérifié : aucune occurrence hors un test).
+- Test : `tests/unit/ia-sans-cerebras.test.ts` (lit les listes réelles) ; sabotage (remis dans la chaîne) = rouge. Test de l'orchestre mis à jour.
+
 ## Apex AI v13.4.409 — 20.11.2026 (apex-cloud, pc-config 2968)
 - Un envoi de sauvegarde GitHub (Gist) RÉUSSI laisse une ligne au journal du domaine (« sauvegarde GitHub (Gist) faite : N clé(s) », jamais le jeton). Avant, Kevin collait son jeton dans son navigateur et le Lenovo lisait un autre coffre : rien ne prouvait si l'envoi était parti. Pas d'appel sur un échec (règle du journal ; la cause reste lisible sous le bouton du Coffre).
 - Test : `tests/unit/gist-preuve-ecran.test.ts` (réussite = 1 ligne sans jeton, échec = 0) ; sabotage = rouge.

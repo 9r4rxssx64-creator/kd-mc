@@ -70,9 +70,11 @@ describe('v13.4.364 — Orchestre d\'IA', () => {
     const provs = crewExperts.availableProviders();
     expect(provs[0]).toBe('qwen'); expect(provs).toContain('anthropic');
     expect(provs.length).toBeGreaterThanOrEqual(5);
-    for (const p of ['groq', 'gemini', 'openai', 'mistral', 'cerebras']) {
+    for (const p of ['groq', 'gemini', 'openai', 'mistral']) {
       expect(provs).toContain(p);
     }
+    /* 20.11.2026 (décision de Kevin « retire », Cerebras rend HTTP 402) : plus jamais proposé au crew */
+    expect(provs).not.toContain('cerebras');
     /* openrouter absent sans clé locale (non proxié) */
     expect(provs).not.toContain('openrouter');
   });

@@ -82,7 +82,7 @@ const EXPERTISE_MAP: Record<CrewProvider, string> = {
 /* v13.4.364 — Providers servis par le proxy Cloudflare (clé côté serveur, flag
  * apex_v13_use_secrets_proxy défaut ON) parmi ceux que le router sait appeler.
  * openrouter n'est PAS proxié → dispo seulement avec clé locale. */
-const PROXIED_CREW: readonly CrewProvider[] = ['anthropic', 'openai', 'groq', 'gemini', 'mistral', 'cerebras', 'qwen'];
+const PROXIED_CREW: readonly CrewProvider[] = ['anthropic', 'openai', 'groq', 'gemini', 'mistral', 'qwen'];   /* 20.11 : Cerebras retiré (402) */
 
 class CrewExpertsService {
   /**
@@ -348,7 +348,7 @@ class CrewExpertsService {
     /* v13.4.367 (Kevin 2026-09-06 « Fais une concertation d'IA gratuites ») : les VOIX du
      * crew sont les gratuites d'abord (qwen/groq/gemini/cerebras/openrouter) ; Anthropic reste
      * membre ET chef d'orchestre de la synthèse (conductorSynthesis), les payants en dernier. */
-    const order: CrewProvider[] = ['qwen', 'groq', 'gemini', 'cerebras', 'openrouter', 'anthropic', 'openai', 'mistral'];
+    const order: CrewProvider[] = ['qwen', 'groq', 'gemini', 'openrouter', 'anthropic', 'openai', 'mistral'];
     return order.filter((p) => out.has(p));
   }
 

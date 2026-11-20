@@ -72,21 +72,21 @@ const DOMAIN_PREFERENCES: Record<TaskDomain, readonly ProviderId[]> = {
   /* TOUT GRATUIT, PARTOUT, TOUJOURS (Kevin 2.10.2026 soir, « pas seulement production ») : CHAQUE domaine commence par
    * le meilleur GRATUIT ; Anthropic / OpenAI / Perplexity ne sont que des SECOURS, derrière tous les gratuits.
    * Actions (outils) : Qwen puis Groq gpt-oss-120b (il supporte les outils) ; Anthropic reste le dernier recours. */
-  admin: ['qwen', 'groq', 'cerebras', 'anthropic', 'openai', 'gemini'],
-  reasoning: ['qwen', 'groq', 'cerebras', 'gemini', 'anthropic', 'openai'],
-  code: ['qwen', 'groq', 'cerebras', 'deepseek', 'anthropic', 'openai', 'gemini'],
+  admin: ['qwen', 'groq', 'anthropic', 'openai', 'gemini'],
+  reasoning: ['qwen', 'groq', 'gemini', 'anthropic', 'openai'],
+  code: ['qwen', 'groq', 'deepseek', 'anthropic', 'openai', 'gemini'],
   vision: ['gemini', 'qwen', 'anthropic', 'openai'],
   long_context: ['gemini', 'qwen', 'groq', 'anthropic', 'openai'],
-  speed: ['groq', 'cerebras', 'qwen', 'gemini', 'openrouter', 'anthropic'],
+  speed: ['groq', 'qwen', 'gemini', 'openrouter', 'anthropic'],
   search: ['qwen', 'groq', 'gemini', 'perplexity', 'anthropic'],
   translation: ['qwen', 'gemini', 'groq', 'openrouter', 'anthropic'],
   summary: ['qwen', 'groq', 'gemini', 'openrouter', 'anthropic'],
-  creative: ['qwen', 'groq', 'cerebras', 'gemini', 'anthropic', 'openai'],
+  creative: ['qwen', 'groq', 'gemini', 'anthropic', 'openai'],
   general: ['qwen', 'groq', 'gemini', 'openrouter', 'anthropic'],
 };
 
 /* Qwen en tête : c'est lui que « gratuit d'abord » choisit quand plusieurs gratuits existent. */
-const FREE_PROVIDERS: readonly ProviderId[] = ['qwen', 'groq', 'cerebras', 'gemini', 'openrouter', 'cohere'];   /* 2.10 : Cerebras (gpt-oss-120b) et Cohere, servis par le proxy, mesurés par la sonde */
+const FREE_PROVIDERS: readonly ProviderId[] = ['qwen', 'groq', 'gemini', 'openrouter', 'cohere'];   /* 20.11 : Cerebras RETIRÉ (HTTP 402, décision de Kevin) ; Cohere servi par le proxy, mesuré par la sonde */
 
 /* v13.4.362 — Providers IA servis par le proxy Cloudflare (clé côté serveur).
  * Quand le proxy est actif (défaut), ces providers sont DISPONIBLES même sans

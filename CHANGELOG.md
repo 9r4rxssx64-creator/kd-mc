@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.409 — 20.11.2026 (apex-cloud, pc-config 2968)
+- Un envoi de sauvegarde GitHub (Gist) RÉUSSI laisse une ligne au journal du domaine (« sauvegarde GitHub (Gist) faite : N clé(s) », jamais le jeton). Avant, Kevin collait son jeton dans son navigateur et le Lenovo lisait un autre coffre : rien ne prouvait si l'envoi était parti. Pas d'appel sur un échec (règle du journal ; la cause reste lisible sous le bouton du Coffre).
+- Test : `tests/unit/gist-preuve-ecran.test.ts` (réussite = 1 ligne sans jeton, échec = 0) ; sabotage = rouge.
+
 ## Apex AI v13.4.408 — 20.11.2026 (apex-cloud, pc-config 2961)
 - Quand Kevin colle une clé ou un jeton dans le chat (ex. jeton GitHub pour la sauvegarde Gist), la zone se vidait et seules des pastilles passagères apparaissaient : il croyait qu'« Apex n'a rien répondu ». Le chat répond maintenant par une bulle : service reconnu, « chiffrée », « jamais envoyée à une IA », et, pour GitHub, le résultat de la sauvegarde Gist 8 s plus tard. Aucun morceau de clé n'y figure.
 - Test : `tests/unit/chat-cle-rangee.test.ts` ; sabotage (phrase retirée du câblage) = rouge.

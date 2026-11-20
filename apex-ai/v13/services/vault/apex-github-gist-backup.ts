@@ -87,6 +87,9 @@ export function noterResultatGist(r: { ok: boolean; clefs?: number; jeton?: stri
   try {
     localStorage.setItem(NOTE_GIST, JSON.stringify({ ts: Date.now(), ok: r.ok, ...(r.clefs !== undefined ? { clefs: r.clefs } : {}), ...(r.jeton ? { jeton: r.jeton } : {}), ...(r.ok ? {} : { erreur: String(r.erreur ?? 'inconnu').slice(0, 200) }) }));
   } catch { /* quota */ }
+  /* 20.11.2026 (pc-config 2968) : Kevin colle son jeton dans SON navigateur, le Lenovo lit un autre coffre : rien ne prouvait si l'envoi était parti.
+     Un envoi RÉUSSI laisse maintenant une ligne au journal du domaine (jamais le jeton, jamais d'appel sur un échec : règle du journal). */
+  if (r.ok) void import('../../ui/journal.js').then(({ journalDomaine }) => journalDomaine(`sauvegarde GitHub (Gist) faite${r.clefs ? ` : ${r.clefs} clé(s)` : ''}`)).catch(() => undefined);
 }
 /** Phrase pour Kevin, en français simple, à partir de la note (ou rien si aucun envoi n'a eu lieu). */
 export function phraseGist(maintenant = Date.now()): string | null {

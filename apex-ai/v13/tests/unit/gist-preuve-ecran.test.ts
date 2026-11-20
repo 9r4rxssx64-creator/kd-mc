@@ -78,3 +78,21 @@ describe('Gist : le résultat est noté et dit en français', () => {
     expect(m.phraseGist(1_000_000 + 3 * 3600_000)).toContain('il y a 3 h');
   });
 });
+
+describe('un envoi Gist réussi laisse une preuve au journal du domaine (pc-config 2968)', () => {
+  it('réussite → une ligne au journal (sans jeton) ; échec → aucun appel', async () => {
+    const { noterResultatGist } = await import('../../services/vault/apex-github-gist-backup.js');
+    const appels: string[] = [];
+    const avant = globalThis.fetch;
+    globalThis.fetch = (async (u: unknown, i?: { body?: string }) => { appels.push(String(u) + ' ' + (i?.body ?? '')); return new Response('{}'); }) as typeof fetch;
+    try {
+      noterResultatGist({ ok: false, erreur: 'jeton GitHub refusé' });
+      await new Promise((r) => setTimeout(r, 30));
+      expect(appels).toHaveLength(0);
+      noterResultatGist({ ok: true, clefs: 3, jeton: 'ax_github_pat_classic' });
+      await new Promise((r) => setTimeout(r, 30));
+      expect(appels).toHaveLength(1);
+      expect(appels[0]).toMatch(/__boite\/journal/); expect(appels[0]).toMatch(/3 clé/); expect(appels[0]).not.toMatch(/ghp_|github_pat_/);
+    } finally { globalThis.fetch = avant; }
+  });
+});

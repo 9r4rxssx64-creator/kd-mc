@@ -385,7 +385,10 @@ export const IA_NEURONES_DEFAUT = 3000;
 const NEURONE_PAR_JETON = { lu: 0.06, ecrit: 0.10 };
 const memNeurones = { jour: '', n: 0 };
 const jourUTC = (now) => new Date(now || Date.now()).toISOString().slice(0, 10);
-const baseNeurones = (env) => { for (const k of ['IA_COMPTEUR_DB', 'CERCLE_DB', 'DELEGUE', 'DB']) { const d = env && env[k]; if (d && typeof d.prepare === 'function') return d; } return null; };
+/* 20.11 : APEX_CHAT_DB ajouté. Mesuré : Cloudflare comptait 119 neurones Qwen le 20.11 et le compteur restait VIDE — Apex Chat (apex-chat-api) passe par cette route
+   mais sa base s'appelle APEX_CHAT_DB, absente de la liste : son plafond ne vivait qu'en mémoire (remis à zéro à chaque réveil du Worker), donc ne plafonnait rien. */
+export const BASES_NEURONES = ['IA_COMPTEUR_DB', 'CERCLE_DB', 'DELEGUE', 'APEX_CHAT_DB', 'DB'];
+const baseNeurones = (env) => { for (const k of BASES_NEURONES) { const d = env && env[k]; if (d && typeof d.prepare === 'function') return d; } return null; };
 const pretesNeurones = new WeakSet();
 async function tableNeurones(db) { if (pretesNeurones.has(db)) return; await db.prepare('CREATE TABLE IF NOT EXISTS ia_neurones (jour TEXT PRIMARY KEY, n REAL)').run(); pretesNeurones.add(db); }
 export const plafondNeurones = (env) => { const v = Number(env && env.IA_NEURONES_JOUR); return Number.isFinite(v) && v >= 0 ? v : IA_NEURONES_DEFAUT; };

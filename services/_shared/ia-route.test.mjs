@@ -9,7 +9,7 @@ import {
   detectDomain, planChain, routeText, stripThink, availableProviders, routingStatus,
   QWEN_MODELS, CF_RAPIDES, FREE_PROVIDERS, DOMAIN_PREFERENCES, SECRET_NAMES,
   _resetPauses, enPause, pauser, dureePause, anticiperDepuisEntetes, NIVEAU, chatAvecOutils,
-  _resetNeurones, neuronesDuJour, compterNeurones, workersAiPermis, estimerNeurones, plafondNeurones, workersAiRun, IA_NEURONES_DEFAUT,
+  _resetNeurones, neuronesDuJour, compterNeurones, workersAiPermis, estimerNeurones, plafondNeurones, workersAiRun, IA_NEURONES_DEFAUT, BASES_NEURONES,
 } from './ia-route.js';
 import { DatabaseSync } from 'node:sqlite';
 
@@ -719,6 +719,28 @@ test('PLAFOND Workers AI : chaque appel réussi s\'ajoute au compteur ; avec une
   await assert.rejects(() => workersAiRun(env, QWEN_MODELS[0], { messages: [] }), /plafond/);   // 660 ≥ 500
   assert.equal(AI.calls, 3, 'le 4e appel n\'est pas parti');
   assert.equal(db._b.prepare('SELECT COUNT(*) AS c FROM ia_neurones').get().c, 1, 'une seule ligne par jour');
+});
+
+test('PLAFOND Workers AI : la base d\'Apex Chat (APEX_CHAT_DB) porte aussi le compteur — mesuré le 20.11, il restait vide et ne plafonnait rien', async () => {
+  const db = d1Neurones(), AI = { run() { return { response: 'ok', usage: { prompt_tokens: 1000, completion_tokens: 400 } }; } };
+  const env = { AI, APEX_CHAT_DB: db };
+  await workersAiRun(env, QWEN_MODELS[0], { messages: [{ role: 'user', content: 'x' }] });
+  assert.equal(Math.round(db._b.prepare('SELECT n FROM ia_neurones').get().n), 100);   // 1000 × 0,06 + 400 × 0,10
+  _resetNeurones(); assert.equal(Math.round(await neuronesDuJour(env)), 100, 'un Worker réveillé relit la base, pas sa mémoire vide');
+});
+test('PLAFOND Workers AI : tout Worker qui passe par la route commune avec Workers AI a une base où compter (sinon son plafond s\'oublie à chaque réveil)', async () => {
+  const { readFileSync } = await import('node:fs');
+  /* wm-brief : aucune base D1, un résumé à la demande ; son plafond reste en mémoire (connu, mesuré négligeable). Toute autre absence est un défaut. */
+  const SANS_BASE = { 'tools/cloudflare/wm-brief/wrangler.toml': 1 };
+  const workers = { 'services/kdmc-router/wrangler.toml': 'services/kdmc-router/worker.js', 'services/kdmc-apis/wrangler.toml': 'services/kdmc-apis/worker.js', 'messaging-app/workers/wrangler.toml': 'messaging-app/workers/api-worker.js', 'tools/cloudflare/wm-brief/wrangler.toml': 'tools/cloudflare/wm-brief/worker.js' };
+  const racine = new URL('../../', import.meta.url);
+  for (const [toml, js] of Object.entries(workers)) {
+    const t = readFileSync(new URL(toml, racine), 'utf8'), code = readFileSync(new URL(js, racine), 'utf8');
+    assert.match(code, /ia-route\.js/, js + ' passe par la route commune');
+    if (!/^\[ai\]/m.test(t) || SANS_BASE[toml]) continue;
+    const liaisons = [...t.matchAll(/^binding\s*=\s*"([A-Z0-9_]+)"/gm)].map((m) => m[1]);
+    assert.ok(liaisons.some((b) => BASES_NEURONES.includes(b)), toml + ' : aucune de ses bases n\'est dans BASES_NEURONES (' + liaisons.join(', ') + ')');
+  }
 });
 
 test('PLAFOND Workers AI : la route CONTINUE vers une autre IA gratuite quand le jour est plein — la personne reçoit sa réponse', async () => {

@@ -48,7 +48,10 @@ async function entrer(browser, nomComplet, code, etiquette) {
   await p.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
   await p.waitForTimeout(1200);
   if (!(await p.locator('#l-nom').isVisible().catch(() => false))) { const d = p.locator('#f-deja'); if (await d.isVisible().catch(() => false)) await d.click(); }
+  const etapesEntree = [];   // 20.11 : A/B/C entrent tantôt oui tantôt non (2 passes rouges sur 12) — on note où le formulaire se perd, sans nom ni code
+  etapesEntree.push('avant:' + url() + ' nom' + ((await p.locator('#l-nom').isVisible().catch(() => false)) ? '✓' : '✗') + ' go' + ((await p.locator('#l-go').isVisible().catch(() => false)) ? '✓' : '✗'));
   await p.fill('#l-nom', nomComplet); await p.fill('#l-code', code); await p.click('#l-go');
+  etapesEntree.push('clic OK');
   for (let tour = 1; tour <= 6; tour++) {
     await p.waitForTimeout(2500);
     if (/apex-chat\./.test(url()) && !(await p.locator('button:visible', { hasText: /Accepter et continuer/i }).count())) break;
@@ -76,7 +79,7 @@ async function entrer(browser, nomComplet, code, etiquette) {
       const tok = await p.evaluate(() => localStorage.getItem('kdmc_sso_token'));
       if (tok) { const ua = await p.evaluate(() => navigator.userAgent); const rr = await fetch(API + '/api/auth/sso-from-kdmc', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': ua }, body: JSON.stringify({ kdmc_token: tok }) }); rejeu = ' · REJEU ' + rr.status + ' ' + (await rr.text()).replace(/\s+/g, ' ').slice(0, 260); const wh = await fetch(DOMAINE + '/__sso/whoami', { headers: { Authorization: 'Bearer ' + tok, 'User-Agent': ua } }); rejeu += ' · WHOAMI ' + wh.status + ' ' + (await wh.text()).replace(/\s+/g, ' ').replace(/"(uid|name|prenom|nom)":"[^"]*"/g, '"$1":"…"').slice(0, 240); }
     } catch (e) { rejeu = ' · rejeu impossible : ' + String(e.message).slice(0, 60); }
-    diag = `${url()} · ${JSON.stringify(d)} · réseau : ${reseau.slice(0, 16).join(' ; ')}${rejeu}`;
+    diag = `${url()} · ${JSON.stringify(d)} · étapes : ${etapesEntree.join(' > ')} · réseau : ${reseau.slice(0, 16).join(' ; ')}${rejeu}`;
   }
   return { ctx, p, ouvert, id, etiquette, diag };
 }

@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.408 — 20.11.2026 (apex-cloud, pc-config 2961)
+- Quand Kevin colle une clé ou un jeton dans le chat (ex. jeton GitHub pour la sauvegarde Gist), la zone se vidait et seules des pastilles passagères apparaissaient : il croyait qu'« Apex n'a rien répondu ». Le chat répond maintenant par une bulle : service reconnu, « chiffrée », « jamais envoyée à une IA », et, pour GitHub, le résultat de la sauvegarde Gist 8 s plus tard. Aucun morceau de clé n'y figure.
+- Test : `tests/unit/chat-cle-rangee.test.ts` ; sabotage (phrase retirée du câblage) = rouge.
+
 ## Apex Chat v1.1.373 — 20.11.2026 (apex-cloud, parité Bee ⇄ Apex AI, javis-bee 2916)
 - Lien « message prérempli » : `https://apex-chat.kd-mc.com/?to=<identifiant du compte>&texte=<message>` ouvre la conversation avec cette personne et met le texte dans la zone de saisie. **Jamais d'envoi automatique** (messages chiffrés de bout en bout côté appareil : la personne relit et envoie elle-même).
 - Gardé avant la connexion, repris à l'entrée (1 h maximum), adresse nettoyée ensuite ; identifiant et texte contrôlés (texte ≤ 500 signes).

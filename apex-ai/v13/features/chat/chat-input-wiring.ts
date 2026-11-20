@@ -12,6 +12,7 @@ import { detectToolIntent } from '../../services/ai/tool-intent.js';
 import { toast } from '../../ui/toast.js';
 
 import { detectPasteKind, pushPasteCard } from './chat-paste.js';
+import { phraseCleRangee, phraseCleRefusee } from './chat-cle-rangee.js';
 import { adresseAOuvrir } from './chat-outils-locaux.js';
 import { persistConversation } from './chat-persistence.js';
 import { saveCodeSnippet } from './chat-snippets.js';
@@ -98,6 +99,8 @@ export function wireChatInput(rootEl: HTMLElement, ctx: ChatInputCtx): void {
               .map(([name, count]) => count > 1 ? `${name} ×${count}` : name)
               .join(', ');
             toast.success(`🔑 ${result.stored.length} clé(s) chiffrée(s) AES-GCM-256 : ${names}`, { duration: 6000 });
+            /* 13.4.408 : une vraie réponse dans le chat (pc-config 2961 — Kevin croyait qu'« Apex n'a rien répondu »). Aucun morceau de clé n'y figure. */
+            void import('./chat-render-loop.js').then(({ pushAssistantMessage }) => pushAssistantMessage(rootEl, phraseCleRangee(result.stored.map((x) => x.pattern.name), result.stored.some((x) => /^ax_github_/.test(x.pattern.storageKey)))));
             /* v13.4.102 — Vérification asynchrone push Firebase via vault-firebase-backup.
              * Pas attendre dans le toast principal (UX rapide), mais checker 4s après. */
             /* 23.10.2026 (tâche 4) : un jeton GitHub vient d'être rangé → l'envoi au Gist part tout seul ; 8 s plus tard on DIT le résultat
@@ -109,6 +112,7 @@ export function wireChatInput(rootEl: HTMLElement, ctx: ChatInputCtx): void {
                   const { phraseGist } = await import('../../services/vault/apex-github-gist-backup.js');
                   const phrase = phraseGist();
                   if (phrase) (phrase.startsWith('☁️') ? toast.info : toast.warn)(phrase, { duration: 9000 });
+                  if (phrase) { const { pushAssistantMessage } = await import('./chat-render-loop.js'); pushAssistantMessage(rootEl, phrase); }
                 } catch { /* silent */ }
               })();
             }
@@ -131,6 +135,7 @@ export function wireChatInput(rootEl: HTMLElement, ctx: ChatInputCtx): void {
           if (result.forbidden.length > 0) {
             const names = result.forbidden.map((f) => f.pattern.name).join(', ');
             toast.error(`🚫 ${names} JAMAIS stocké (sécu Kevin)`, { duration: 8000 });
+            void import('./chat-render-loop.js').then(({ pushAssistantMessage }) => pushAssistantMessage(rootEl, phraseCleRefusee(result.forbidden.map((f) => f.pattern.name))));
           }
           if (result.failed > 0 && result.stored.length === 0) {
             toast.warn(`⚠️ ${result.failed} format inconnu — ouvre 🔐 Coffre pour coller manuellement`, { duration: 8000 });

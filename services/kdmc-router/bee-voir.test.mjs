@@ -70,23 +70,23 @@ const vraiFetch = globalThis.fetch;
 const kv = new Map(); kv.set('cfg:apps_fermees', JSON.stringify(['lingua']));
 const kvEcrit = [];
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); kvEcrit.push(k); }, delete: async (k) => { kv.delete(k); }, list: async () => ({ keys: [], list_complete: true }) };
-const IA_SCRIPT = { cerebras: [], groq: [] }; const IA_VUES = []; let reseau = [];
+const IA_SCRIPT = { groq: [], sambanova: [] }; const IA_VUES = []; let reseau = [];
 globalThis.fetch = async (url, init) => {
   const u = String((url && url.url) || url); reseau.push(u);
   const R = (corps, st, type) => new Response(typeof corps === 'string' ? corps : JSON.stringify(corps), { status: st || 200, headers: { 'content-type': type || 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) { const corps = JSON.parse(init.body); IA_VUES.push({ four, corps }); const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   if (u.startsWith(DEPOT_DOCS)) return R(DOC, 200, 'text/plain');
   if (/liens\/liens\.json/.test(u)) return R(LIENS);
   return R(PAGE, 200, 'text/html; charset=utf-8');
 };
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien chemin' }) } };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien chemin' }) } };
 const att = []; const ctx = { waitUntil: (x) => att.push(x), passThroughOnException() {} };
 const login = await mod.fetch(new Request('https://kd-mc.com/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' }, body: JSON.stringify({ code: '424242' }) }), env, ctx);
 const sc = login.headers.getSetCookie ? login.headers.getSetCookie() : [login.headers.get('set-cookie') || ''];
 const KEVIN = { cookie: sc.map((c) => c.split(';')[0]).join('; ') };
 const outil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
-const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; };
+const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_SCRIPT.sambanova = []; };
 const toolMsgs = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 const outilsVus = () => IA_VUES.flatMap((v) => (v.corps.tools || []).map((t) => t.function.name));
 async function bee(texte, e2, headers) {
@@ -94,18 +94,18 @@ async function bee(texte, e2, headers) {
   await Promise.allSettled(att.splice(0)); return { st: r.status, j: await r.json().catch(() => null) };
 }
 ok(/kdmc_sso=/.test(KEVIN.cookie), '5. connexion de Kevin (code admin prouvé)');
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'voir_page', { adresse: 'arbre' })] }, { content: 'Ton arbre a un bouton Ajouter un proche.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'voir_page', { adresse: 'arbre' })] }, { content: 'Ton arbre a un bouton Ajouter un proche.' }];
   const r = await bee('qu\'est-ce qu\'il y a sur la page de l\'arbre ?');
-  ok(r.st === 200 && r.j.ok && r.j.outils.join() === 'voir_page' && r.j.provider === 'cerebras' && r.j.gratuit === true, '5b. l\'IA ouvre la page de l\'arbre par le vrai serveur — ' + JSON.stringify(r.j));
+  ok(r.st === 200 && r.j.ok && r.j.outils.join() === 'voir_page' && r.j.provider === 'groq' && r.j.gratuit === true, '5b. l\'IA ouvre la page de l\'arbre par le vrai serveur — ' + JSON.stringify(r.j));
   const t = toolMsgs();
   ok(/DONNÉE D'OUTIL/.test(t) && /PAGE https:\/\/arbre\.kd-mc\.com\//.test(t) && /Ajouter un proche/.test(t) && /Chercher → https:\/\/arbre\.kd-mc\.com\/cherche/.test(t) && !/NE PAS LIRE/.test(t), '5c. elle reçoit titre, boutons et liens, encadrés comme DONNÉE (jamais un ordre), sans le code des scripts');
-  ok(reseau.some((u) => /arbre/.test(u) && !/cerebras|groq/.test(u)), '5d. la page est lue par le ROUTEUR lui-même (même chemin que ton navigateur)');
+  ok(reseau.some((u) => /arbre/.test(u) && !/groq|sambanova/.test(u)), '5d. la page est lue par le ROUTEUR lui-même (même chemin que ton navigateur)');
   const sys = IA_VUES[0].corps.messages[0].content;
   ok(/Tu VOIS le domaine de Kevin comme Claude Code et Apex/.test(sys) && ['voir_page', 'liens_kevin', 'docs_domaine', 'mes_pouvoirs'].every((n) => outilsVus().includes(n)) && !outilsVus().includes('proposer_action'), '5e. le caractère lui dit de regarder, et les outils de VUE sont offerts (pas ceux d\'action : consigne allégée, 17.10)'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'voir_page', { adresse: 'https://kd-mc.com/__admin/accounts' }), outil('b', 'voir_page', { adresse: 'https://evil.example/x' })] }, { content: 'Refusé.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'voir_page', { adresse: 'https://kd-mc.com/__admin/accounts' }), outil('b', 'voir_page', { adresse: 'https://evil.example/x' })] }, { content: 'Refusé.' }];
   await bee('regarde la page https://kd-mc.com/__admin/accounts');
   ok((toolMsgs().match(/ÉCHEC DE L'OUTIL/g) || []).length === 2 && !reseau.some((u) => /__admin|evil/.test(u)), '5f. une porte (/__admin/…) ou un site hors domaine : ÉCHEC DE L\'OUTIL, jamais ouvert'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'liens_kevin', { recherche: 'actions' }), outil('b', 'docs_domaine', { recherche: 'routeur' }), outil('c', 'mes_pouvoirs', {}), outil('d', 'apps_du_domaine', {})] }, { content: 'Voilà.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'liens_kevin', { recherche: 'actions' }), outil('b', 'docs_domaine', { recherche: 'routeur' }), outil('c', 'mes_pouvoirs', {}), outil('d', 'apps_du_domaine', {})] }, { content: 'Voilà.' }];
   const r = await bee('donne-moi mes liens, la doc et tes pouvoirs');
   const t = toolMsgs();
   ok(r.st === 200 && /Tous les runs : https:\/\/github\.com\/x\/actions/.test(t), '5g. liens_kevin par le vrai serveur : le lien et son adresse complète');
@@ -116,12 +116,12 @@ ok(/kdmc_sso=/.test(KEVIN.cookie), '5. connexion de Kevin (code admin prouvé)')
   ok(r.st === 403 && IA_VUES.length === 0 && !reseau.some((u) => /arbre/.test(u)), '5k. un autre compte : 403, aucune page ouverte');
   const r2 = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'montre-moi la page arbre' }] }) }), env, ctx);
   ok(r2.status === 403 && IA_VUES.length === 0, '5l. un inconnu : 403'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   await bee('montre-moi la page arbre', Object.assign({}, env, { BEE_VOIR: '0' }));
   ok(!outilsVus().includes('voir_page') && !outilsVus().includes('liens_kevin'), '5m. interrupteur BEE_VOIR=0 : les outils de vue n\'existent plus'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   await bee('donne-moi le lien de cloudflare', Object.assign({}, env, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' }));
-  ok(reseau.every((u) => !/anthropic|openai/.test(u)), '5n. 0 € : aucun appel Anthropic / OpenAI'); }
+  ok(reseau.every((u) => !/api\.anthropic\.com|api\.openai\.com/.test(u)), '5n. 0 € : aucun appel Anthropic / OpenAI'); }
 ok(!kvEcrit.some((k) => /^cfg:|^cred:|^bee|^fil|^arbre:/.test(k)) && kv.get('cfg:apps_fermees') === '["lingua"]', '5o. LECTURE seule : aucune écriture dans la configuration, les codes, la mémoire ni l\'arbre', kvEcrit.join());
 
 /* ───────── câblage statique ───────── */

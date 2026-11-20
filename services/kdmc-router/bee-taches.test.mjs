@@ -31,16 +31,16 @@ function fauxD1() {
   d.prepare = (sql) => Object.assign(rep(sql, []), { bind: (...a) => rep(sql, a) });
   return d;
 }
-const vraiFetch = globalThis.fetch; let reseau = []; const IA_SCRIPT = { cerebras: [], groq: [] };
+const vraiFetch = globalThis.fetch; let reseau = []; const IA_SCRIPT = { groq: [], sambanova: [] };
 globalThis.fetch = async (url, init) => {
   const u = String(url && url.url ? url.url : url); reseau.push(u);
   const R = (corps, st) => new Response(JSON.stringify(corps), { status: st || 200, headers: { 'content-type': 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) { const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   return R({ error: 'réseau non prévu : ' + u }, 599);
 };
 const kv = new Map(); const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const mkEnv = (db, extra) => Object.assign({ KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, CERCLE_DB: db, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien' }) } }, extra || {});
+const mkEnv = (db, extra) => Object.assign({ KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, CERCLE_DB: db, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien' }) } }, extra || {});
 const outil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
 const toolMsgs = (vues) => vues.flatMap((v) => v.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 const KEVIN = { 'x-kdmc-sso': signe('kdmc_admin') };
@@ -53,8 +53,8 @@ async function agir(env, jeton, h) {
   return { st: r.status, j: await r.json().catch(() => null) };
 }
 const vuesIA = [];
-const _f = globalThis.fetch; globalThis.fetch = async (url, init) => { const u = String(url && url.url ? url.url : url); if (/cerebras|groq/.test(u) && init && init.body) { try { vuesIA.push(JSON.parse(init.body)); } catch (_) {} } return _f(url, init); };
-async function carte(env, texte, champs) { vuesIA.length = 0; IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('p', 'proposer_action', Object.assign({ action: 'tache_code' }, champs))] }, { content: 'Prête.' }]; const r = await bee(env, texte); return { r, p: r.j && r.j.propositions && r.j.propositions[0] }; }
+const _f = globalThis.fetch; globalThis.fetch = async (url, init) => { const u = String(url && url.url ? url.url : url); if (/groq|sambanova/.test(u) && init && init.body) { try { vuesIA.push(JSON.parse(init.body)); } catch (_) {} } return _f(url, init); };
+async function carte(env, texte, champs) { vuesIA.length = 0; IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('p', 'proposer_action', Object.assign({ action: 'tache_code' }, champs))] }, { content: 'Prête.' }]; const r = await bee(env, texte); return { r, p: r.j && r.j.propositions && r.j.propositions[0] }; }
 
 const CONSIGNE = 'Dans l\'app Lingua, ajoute un bouton « Réviser mes erreurs » sur l\'écran d\'accueil qui ouvre les 10 derniers mots ratés. Ne casse pas le mode hors ligne ; lance les tests de Lingua avant de publier.';
 { const db = fauxD1(); const env = mkEnv(db);
@@ -66,7 +66,7 @@ const CONSIGNE = 'Dans l\'app Lingua, ajoute un bouton « Réviser mes erreurs �
   ok(a.st === 200 && a.j.ok && /Tâche déposée/.test(a.j.texte) && db.lignes.length === 1 && db.lignes[0].consigne === CONSIGNE && db.lignes[0].statut === 'attente' && db.lignes[0].titre.includes('Réviser'), '2. ✅ → UNE tâche en attente dans la boîte, consigne intacte — ' + JSON.stringify(a.j));
   ok((await agir(env, p.jeton)).st === 409 && db.lignes.length === 1, '2b. la même carte rejouée : 409, pas de doublon');
   /* l'outil de lecture */
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('t', 'taches_code', {})] }, { content: 'Voilà.' }]; vuesIA.length = 0;
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('t', 'taches_code', {})] }, { content: 'Voilà.' }]; vuesIA.length = 0;
   await bee(env, 'où en est ma tâche pour Claude Code ?');
   const t = toolMsgs(vuesIA); ok(/1 tâche\(s\)/.test(t) && /\[attente\]/.test(t) && /Réviser mes erreurs/.test(t), '2c. taches_code : la liste avec le statut — ' + t.slice(0, 160)); }
 { const db = fauxD1(); const env = mkEnv(db);

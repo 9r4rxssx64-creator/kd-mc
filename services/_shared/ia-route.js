@@ -45,7 +45,7 @@ export const CF_RAPIDES = [
 /* 5.11.2026 (Kevin « trouve un moyen de faire du gratuit », factures Google Cloud ~209 € depuis août) : depuis le 26.09 Google AI Studio a
    passé la clé Gemini en palier PAYANT 1 — un appel Gemini peut donc être facturé. Gemini passe en DERNIER des gratuits : il ne répond
    plus que si les 10 autres sont tombés. L'ordre des autres ne bouge pas. */
-export const FREE_PROVIDERS = ['qwen', 'groq', 'mistral', 'openrouter', 'cerebras', 'sambanova', 'nvidia', 'huggingface', 'glm', 'cohere', 'gemini'];
+export const FREE_PROVIDERS = ['qwen', 'groq', 'mistral', 'openrouter', 'sambanova', 'nvidia', 'huggingface', 'glm', 'cohere', 'gemini'];
 
 /* NIVEAU de qualité (Kevin 2.10.2026 : « quand ça s'épuise, anticipe du gratuit en relais, toujours même qualité, même
    niveau ») : 'A' = classe Llama 3.3 70B / Qwen3 30B+ / Gemini Flash ; 'B' = petits modèles (mistral-small, glm-4-flash,
@@ -225,17 +225,19 @@ export const SIMPLE_FREE_DOMAINS = ['general', 'summary', 'translation', 'speed'
    OpenAI, Perplexity) n'est JAMAIS en tête : secours seulement, derrière tous les gratuits (garde test:tout-gratuit).
    Image : Gemini (gratuit) puis Qwen — Workers AI llama-3.2-11b-vision à brancher ; recherche : Qwen puis le /search sans
    clé de kdmc-apis à brancher, Perplexity (payant) en secours seulement. */
+/* 20.11.2026 — Cerebras RETIRÉ des chaînes (décision de Kevin : « retire ») : mesuré HTTP 402 « Payment required » (sondes 44646177109 et 44647790097),
+   son palier gratuit n'existe plus pour ce compte. Ses adresses et modèles restent plus bas : le remettre = le rajouter ici et dans FREE_PROVIDERS, après une sonde verte. */
 export const DOMAIN_PREFERENCES = {
-  admin:        ['qwen', 'groq', 'cerebras', 'anthropic', 'openai', 'gemini'],
-  reasoning:    ['qwen', 'groq', 'cerebras', 'gemini', 'anthropic', 'openai'],
-  code:         ['qwen', 'groq', 'cerebras', 'deepseek', 'anthropic', 'openai', 'gemini'],
+  admin:        ['qwen', 'groq', 'anthropic', 'openai', 'gemini'],
+  reasoning:    ['qwen', 'groq', 'gemini', 'anthropic', 'openai'],
+  code:         ['qwen', 'groq', 'deepseek', 'anthropic', 'openai', 'gemini'],
   vision:       ['gemini', 'qwen', 'anthropic', 'openai'],
   long_context: ['gemini', 'qwen', 'groq', 'anthropic', 'openai'],
-  speed:        ['groq', 'cerebras', 'qwen', 'gemini', 'openrouter', 'anthropic'],
+  speed:        ['groq', 'qwen', 'gemini', 'openrouter', 'anthropic'],
   search:       ['qwen', 'groq', 'gemini', 'perplexity', 'anthropic'],
   translation:  ['qwen', 'gemini', 'groq', 'mistral', 'openrouter', 'anthropic'],
   summary:      ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'anthropic'],
-  creative:     ['qwen', 'groq', 'cerebras', 'gemini', 'anthropic', 'openai'],
+  creative:     ['qwen', 'groq', 'gemini', 'anthropic', 'openai'],
   general:      ['qwen', 'groq', 'gemini', 'mistral', 'openrouter', 'anthropic'],
 };
 

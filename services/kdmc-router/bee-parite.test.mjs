@@ -27,7 +27,7 @@ ok(proche(convertirUnites(90, 'km/h', 'm/s'), 25, 1e-9) && proche(convertirUnite
 ok(await refuse(() => convertirUnites(1, 'km', 'kg'), /ne peut pas convertir/) && await refuse(() => convertirUnites(1, 'zorg', 'km'), /inconnue/) && await refuse(() => convertirUnites('abc', 'km', 'm'), /valeur/), '1e. longueur→masse, unité inventée, valeur absurde : refusés, rien d\'inventé');
 const vraiFetch = globalThis.fetch;
 let reseau = [];
-const IA_SCRIPT = { cerebras: [], groq: [] }; const IA_VUES = [];
+const IA_SCRIPT = { groq: [], sambanova: [] }; const IA_VUES = [];
 const SEED = { persons: {
   p1: { prenom: 'Zélie', nom: 'TESTARD', sexe: 'F', vivant: true, naissance: { date: '1981-10-02', lieu: 'Valmont-sur-Mer' }, metier: 'vendeuse', pere: 'p2', mere: 'p3', conjoints: ['p4'], notes: 'Aime les arbres. ' + 'x'.repeat(400) },
   p2: { prenom: 'Octave', nom: 'TESTARD', sexe: 'M', vivant: true, naissance: { date: '1953-03-27', lieu: 'Vallée-Haute' }, conjoints: ['p3'] },
@@ -42,7 +42,7 @@ globalThis.fetch = async (url, init) => {
   const u = String(url); reseau.push(u);
   const R = (corps, st) => new Response(typeof corps === 'string' ? corps : JSON.stringify(corps), { status: st || 200, headers: { 'content-type': 'application/json' } });
   if (u.startsWith('https://api.frankfurter.dev/')) return /base=USD&symbols=EUR/.test(u) ? R({ date: '2026-10-13', rates: { EUR: 0.9 } }) : R({ message: 'not found' }, 404);
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) {
     const corps = JSON.parse(init.body); IA_VUES.push({ four, corps });
     const rep = IA_SCRIPT[four].shift();
@@ -51,7 +51,7 @@ globalThis.fetch = async (url, init) => {
   }
   return R({ error: 'réseau non prévu : ' + u }, 599);
 };
-const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; };
+const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_SCRIPT.sambanova = []; };
 { reset();
   const c = await convertir({ valeur: 100, de: 'USD', vers: 'EUR' });
   ok(/100 USD = 90 EUR/.test(c) && /Banque centrale européenne/.test(c) && reseau.length === 1 && /frankfurter\.dev/.test(reseau[0]), '1f. devises : taux BCE du jour (gratuit, sans clé), un seul appel — ' + c);
@@ -104,7 +104,7 @@ const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replac
 const signe = (uid) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: 1, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
 const kv = new Map(); kv.set('arbre:seed', JSON.stringify(SEED));
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const SERVEUR = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'Réponse de l\'ancien chemin.' }) } };
+const SERVEUR = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async () => ({ response: 'Réponse de l\'ancien chemin.' }) } };
 const appelOutil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
 async function bee(texte, env2, entetes, contexte) {
   const r = await mod.fetch(new Request('https://arbre.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', 'x-kdmc-sso': signe('kdmc_admin') }, entetes || {}),
@@ -114,21 +114,21 @@ async function bee(texte, env2, entetes, contexte) {
 const outilsVus = () => IA_VUES.flatMap((v) => (v.corps.tools || []).map((t) => t.function.name));
 const messagesOutil = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 { reset();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appelOutil('a', 'arbre', { recherche: 'Zélie TESTARD' })] }, { content: 'Zélie est née le 2 octobre 1981 à Valmont-sur-Mer, elle est vendeuse.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appelOutil('a', 'arbre', { recherche: 'Zélie TESTARD' })] }, { content: 'Zélie est née le 2 octobre 1981 à Valmont-sur-Mer, elle est vendeuse.' }];
   const r = await bee('Quand est née Zélie TESTARD ?');
-  ok(r.st === 200 && r.j.ok && /1981/.test(r.j.text) && r.j.outils.join() === 'arbre' && r.j.gratuit === true && r.j.provider === 'cerebras', '3. l\'IA appelle l\'outil arbre et répond avec la fiche — ' + JSON.stringify(r.j));
+  ok(r.st === 200 && r.j.ok && /1981/.test(r.j.text) && r.j.outils.join() === 'arbre' && r.j.gratuit === true && r.j.provider === 'groq', '3. l\'IA appelle l\'outil arbre et répond avec la fiche — ' + JSON.stringify(r.j));
   const tm = messagesOutil();
   ok(/DONNÉE D'OUTIL/.test(tm) && /né\(e\) : 1981-10-02 à Valmont-sur-Mer/.test(tm) && /père : Octave TESTARD/.test(tm), '3b. la fiche arrive à l\'IA encadrée comme une DONNÉE (jamais un ordre), avec les vrais faits');
   ok(outilsVus().includes('arbre') && outilsVus().includes('convertir') && !outilsVus().includes('proposer_action'), '3c. l\'outil arbre est offert avec les outils de base ; une simple QUESTION n\'envoie pas les outils d\'action (consigne allégée, 17.10)');
   const sys = IA_VUES[0].corps.messages[0].content;
   ok(/ARBRE DE FAMILLE/.test(sys) && /Ne dis jamais « je ne vois pas les fiches »/.test(sys), '3d. le caractère de Bee lui dit d\'utiliser l\'outil, pas de dire qu\'elle ne voit pas'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Tu es dans l\'arbre.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Tu es dans l\'arbre.' }];
   const r = await bee('où suis-je ?', SERVEUR, null, { app: 'arbre', titre: 'Arbre' });
   ok(r.st === 200 && outilsVus().includes('arbre'), '3e. Kevin DANS l\'app de l\'arbre : l\'outil est offert même pour une question courte'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   await bee('où suis-je ?', SERVEUR, null, { app: 'lingua', titre: 'Lingua' });
   ok(!outilsVus().includes('arbre') && IA_VUES.every((v) => !v.corps.tools), '3f. une question courte dans une autre app : pas d\'outils inutiles'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appelOutil('a', 'arbre', { recherche: 'Zélie' })] }, { content: 'Je ne peux pas.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [appelOutil('a', 'arbre', { recherche: 'Zélie' })] }, { content: 'Je ne peux pas.' }];
   const r = await bee('Quand est née Zélie TESTARD ?', Object.assign({}, SERVEUR, { BEE_ARBRE: '0' }));
   ok(!outilsVus().includes('arbre') && !/Zélie TESTARD \(femme\)/.test(messagesOutil()), '3g. interrupteur BEE_ARBRE=0 : l\'outil n\'existe plus (aucune fiche lue) — ' + JSON.stringify(r.j)); }
 { reset();
@@ -137,12 +137,12 @@ const messagesOutil = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) =
   const r2 = await mod.fetch(new Request('https://arbre.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Quand est née Zélie TESTARD ?' }] }) }), SERVEUR, { waitUntil() {} });
   ok(r2.status === 403 && IA_VUES.length === 0, '3i. un inconnu (sans session) : 403 aussi'); }
 { reset(); const SANS = Object.assign({}, SERVEUR); const k2 = new Map(); SANS.ACCOUNTS = { get: async (k) => (k2.has(k) ? k2.get(k) : null), put: async (k, v) => { k2.set(k, v); }, delete: async () => {} };
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appelOutil('a', 'arbre', { recherche: 'Zélie' })] }, { content: 'Je ne la trouve pas.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appelOutil('a', 'arbre', { recherche: 'Zélie' })] }, { content: 'Je ne la trouve pas.' }];
   const r = await bee('Quand est née Zélie TESTARD ?', SANS);
   ok(r.st === 200 && /ÉCHEC DE L'OUTIL : l'arbre n'est pas encore publié/.test(messagesOutil()), '3j. arbre non publié : l\'IA reçoit « échec de l\'outil » et le dit (rien d\'inventé) — ' + JSON.stringify(r.j)); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   await bee('combien font 2+2 ?', Object.assign({}, SERVEUR, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' }));
-  ok(reseau.every((u) => !/anthropic|openai/.test(u)), '3k. 0 € : aucun appel Anthropic / OpenAI'); }
+  ok(reseau.every((u) => !/api\.anthropic\.com|api\.openai\.com/.test(u)), '3k. 0 € : aucun appel Anthropic / OpenAI'); }
 
 /* ───────── 4. le caractère dit la vérité ───────── */
 ok(/tutoiement/.test(BEE_CARACTERE) && /n'invente jamais/.test(BEE_CARACTERE) && /ne prétends jamais avoir fait/.test(BEE_CARACTERE), '4. le caractère garde ses règles d\'honnêteté (tutoiement, n\'invente jamais, ne prétends jamais avoir fait)');
@@ -166,7 +166,7 @@ async function ia(corps, entetes) {
   const r = await apis.fetch(new Request('https://apis.kd-mc.com/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://apex-ai.kd-mc.com' }, entetes || {}), body: JSON.stringify(corps) }), SERVEUR, { waitUntil() {} });
   return { st: r.status, j: await r.json().catch(() => null) };
 }
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appelOutil('c', 'convertir', { valeur: 10, de: 'km', vers: 'miles' })] }, { content: '10 km = 6,2 miles.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [appelOutil('c', 'convertir', { valeur: 10, de: 'km', vers: 'miles' })] }, { content: '10 km = 6,2 miles.' }];
   const r = await ia({ messages: [{ role: 'user', content: 'convertis 10 km en miles' }], system: 'Tu es Apex.' }, { 'x-kdmc-sso': signe('kdmc_admin') });
   ok(r.st === 200 && r.j.ok && r.j.outils.join() === 'convertir' && /6,2 miles/.test(r.j.text), '5. Apex (via /ai, laissez-passer de Kevin) utilise convertir — mêmes outils que Bee — ' + JSON.stringify(r.j));
   const noms2 = outilsVus();

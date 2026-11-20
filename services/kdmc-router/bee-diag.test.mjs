@@ -54,13 +54,14 @@ ok(appareil(new Request('https://x/', { headers: { 'user-agent': 'Mozilla/5.0 (i
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const signe = (uid, v = 1) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
 const vraiFetch = globalThis.fetch;
-const IA_SCRIPT = { cerebras: [], groq: [] }; let IA_VUES = []; let reseau = [];
+/* 20.11.2026 : cerebras retiré des IA de Bee (HTTP 402 mesuré, décision de Kevin) ; la 2e IA scriptée est sambanova. */
+const IA_SCRIPT = { sambanova: [], groq: [] }; let IA_VUES = []; let reseau = [];
 globalThis.fetch = async (url, init) => {
   const u = String(url && url.url ? url.url : url); reseau.push(u);
   const R = (corps, st) => new Response(JSON.stringify(corps), { status: st || 200, headers: { 'content-type': 'application/json' } });
   if (/identitytoolkit/.test(u)) return R({ idToken: 'jeton-anonyme' });
   if (/firebasedatabase\.app/.test(u)) return R('x');
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /sambanova/.test(u) ? 'sambanova' : /groq/.test(u) ? 'groq' : '';
   if (four) { IA_VUES.push(four); const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   return R({ error: 'réseau non prévu : ' + u }, 599);
 };
@@ -68,7 +69,7 @@ const SEED = { persons: { p1: { prenom: 'Zélie', nom: 'TESTARD' }, p2: { prenom
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
 function serveur(db, extra) { return Object.assign({ BEE_DIAG_SONDE: '0' /* la sonde par IA a son propre test (12e) : ici elle consommerait les réponses scriptées */, KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, CERCLE_DB: db, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien' }) } }, extra || {}); }
-function remettre() { kv.clear(); kv.set('arbre:codehash', CH); kv.set('arbre:seed', JSON.stringify(SEED)); IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; IA_VUES = []; reseau = []; }
+function remettre() { kv.clear(); kv.set('arbre:codehash', CH); kv.set('arbre:seed', JSON.stringify(SEED)); IA_SCRIPT.sambanova = []; IA_SCRIPT.groq = []; IA_VUES = []; reseau = []; }
 const textes = [];
 async function bee(env, corps, { sso = signe('kdmc_admin'), ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1', chemin = '/__javis/ai', host = 'arbre.kd-mc.com' } = {}) {
   const h = { 'content-type': 'application/json', 'user-agent': ua, origin: 'https://' + host }; if (sso) h['x-kdmc-sso'] = sso;
@@ -78,10 +79,10 @@ async function bee(env, corps, { sso = signe('kdmc_admin'), ua = 'Mozilla/5.0 (i
 }
 
 { remettre(); const db = fauxD1(); const env = serveur(db);
-  IA_SCRIPT.cerebras = [{ content: 'Voici une réponse' }];
+  IA_SCRIPT.groq = [{ content: 'Voici une réponse' }];
   const r = await bee(env, { messages: [{ role: 'user', content: 'Bonjour, ma question privée de Kevin' }], contexte: { app: 'arbre', titre: 'Arbre' } });
   ok(r.st === 200 && r.j.ok, '2. Kevin parle à Bee : 200', JSON.stringify(r.j));
-  ok(db.lignes.length === 1 && db.lignes[0].route === 'ai' && db.lignes[0].statut === 200 && db.lignes[0].hote === 'arbre.kd-mc.com' && db.lignes[0].ia === 'cerebras' && db.lignes[0].appareil === 'iPhone/Safari', '2b. une ligne de journal : route, résultat, IA, appareil', JSON.stringify(db.lignes[0]));
+  ok(db.lignes.length === 1 && db.lignes[0].route === 'ai' && db.lignes[0].statut === 200 && db.lignes[0].hote === 'arbre.kd-mc.com' && db.lignes[0].ia === 'groq' && db.lignes[0].appareil === 'iPhone/Safari', '2b. une ligne de journal : route, résultat, IA, appareil', JSON.stringify(db.lignes[0]));
   ok(/en-tête=oui/.test(db.lignes[0].canal) && /origine=arbre\.kd-mc\.com/.test(db.lignes[0].canal), '2c. et par quel canal la session est arrivée');
   ok(!JSON.stringify(db.lignes).includes('ma question privée') && !JSON.stringify(db.lignes).includes(signe('kdmc_admin').slice(0, 20)) && !JSON.stringify(db.lignes).includes(CH), '2d. le journal ne contient NI le message de Kevin, NI un jeton, NI l\'empreinte du code famille');
   /* un inconnu */
@@ -96,20 +97,20 @@ async function bee(env, corps, { sso = signe('kdmc_admin'), ua = 'Mozilla/5.0 (i
   ok(db.lignes.some((z) => z.route === 'fil'), '2h. /__javis/fil aussi'); }
 
 { /* base en panne : Bee répond quand même */
-  remettre(); const db = fauxD1(); db.panne = true; const env = serveur(db); IA_SCRIPT.cerebras = [{ content: 'Réponse malgré la panne du journal' }];
+  remettre(); const db = fauxD1(); db.panne = true; const env = serveur(db); IA_SCRIPT.groq = [{ content: 'Réponse malgré la panne du journal' }];
   const r = await bee(env, { messages: [{ role: 'user', content: 'Salut' }] });
   ok(r.st === 200 && /malgré la panne/.test(r.j.text), '3. journal en panne : Bee répond normalement'); }
-{ remettre(); const db = fauxD1(); const env = serveur(db, { BEE_JOURNAL: '0' }); IA_SCRIPT.cerebras = [{ content: 'ok' }];
+{ remettre(); const db = fauxD1(); const env = serveur(db, { BEE_JOURNAL: '0' }); IA_SCRIPT.groq = [{ content: 'ok' }];
   await bee(env, { messages: [{ role: 'user', content: 'Salut' }] });
   ok(db.lignes.length === 0 && db.tables === 0, '3b. BEE_JOURNAL=0 : rien n\'est écrit, rien n\'est créé'); }
 
 /* ───────── le test de Bee ───────── */
-{ remettre(); const db = fauxD1(); const env = serveur(db); IA_SCRIPT.cerebras = [{ content: 'ok' }];
+{ remettre(); const db = fauxD1(); const env = serveur(db); IA_SCRIPT.groq = [{ content: 'ok' }];
   const r = await bee(env, { diag: true });
   ok(r.st === 200 && r.j.ok === true && typeof r.j.texte === 'string', '4. « Tester Bee » : Kevin reçoit un bilan', JSON.stringify(r.j));
   const t = r.j.texte;
   ok(/Session : ✅ Face ID prouvé/.test(t) && /arrivée par jeton/.test(t), '4b. la session est dite prouvée, et par quel chemin');
-  ok(/IA gratuites à outils avec clé : cerebras, groq/.test(t) && /répond à l'instant : ✅ cerebras/.test(t), '4c. les IA gratuites avec clé + celle qui répond VRAIMENT');
+  ok(/IA gratuites à outils avec clé : groq/.test(t) && /répond à l'instant : ✅ groq/.test(t), '4c. les IA gratuites avec clé + celle qui répond VRAIMENT');
   ok(/Arbre publié sur le domaine : ✅ 2 personnes/.test(t) && /Code famille connu du domaine : ✅ oui/.test(t) && /Nuage de l'arbre \(lecture\) : ✅ répond/.test(t), '4d. l\'arbre : publié, code famille connu, nuage qui répond');
   ok(/Interrupteurs : ✅ tous allumés/.test(t) && /Bee est en état de travailler/.test(t) && r.j.ok, '4e. conclusion : en état de travailler');
   ok(!t.includes(CH) && !t.includes('jeton-anonyme') && !/AIza/.test(t), '4f. le bilan ne montre NI l\'empreinte du code famille, NI un jeton, NI une clé');
@@ -119,7 +120,7 @@ async function bee(env, corps, { sso = signe('kdmc_admin'), ua = 'Mozilla/5.0 (i
   const r = await bee(env, { diag: true });
   ok(r.st === 200 && /répond à l'instant : ❌ aucune/.test(r.j.texte) && r.j.ok === false && /Voilà ce qui bloque/.test(r.j.texte), '5. aucune IA gratuite ne répond : le bilan le dit (❌) et conclut « voilà ce qui bloque »', r.j && r.j.texte); }
 { /* interrupteurs coupés + arbre non publié */
-  remettre(); kv.delete('arbre:seed'); kv.delete('arbre:codehash'); const env = serveur(fauxD1(), { BEE_ARBRE_ECRIRE: '0' }); IA_SCRIPT.cerebras = [{ content: 'ok' }];
+  remettre(); kv.delete('arbre:seed'); kv.delete('arbre:codehash'); const env = serveur(fauxD1(), { BEE_ARBRE_ECRIRE: '0' }); IA_SCRIPT.groq = [{ content: 'ok' }];
   const r = await bee(env, { diag: true });
   ok(/Arbre publié sur le domaine : ❌ non/.test(r.j.texte) && /Code famille connu du domaine : ❌ non/.test(r.j.texte) && /coupés : BEE_ARBRE_ECRIRE/.test(r.j.texte), '6. arbre non publié + interrupteur coupé : dits en clair'); }
 { /* inconnu : pas de test, pas d'IA */
@@ -145,11 +146,11 @@ ok((await bilanDiag({}, { session: {}, fournisseurs: [], ia: async () => null, a
   ok(/en pause : aucune/.test(c.texte), '12b. aucune pause : il le dit'); }
 
 /* 12e. la sonde par IA, de bout en bout (vrai routeur) : une IA qui appelle l'outil, une qui répond sans l'appeler, une qui refuse avec son message exact */
-{ remettre(); const db = fauxD1(); const env = serveur(db, { BEE_DIAG_SONDE: '1', GEMINI_API_KEY: 'gem' });
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [{ id: 'a', type: 'function', function: { name: 'calcul', arguments: '{"expression":"2+2"}' } }] }, { content: 'pong' }];
-  IA_SCRIPT.groq = [{ content: 'quatre' }, { content: 'pong' }];
+{ remettre(); const db = fauxD1(); const env = serveur(db, { BEE_DIAG_SONDE: '1', GEMINI_API_KEY: 'gem', SAMBANOVA_API_KEY: 'sam' });
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [{ id: 'a', type: 'function', function: { name: 'calcul', arguments: '{"expression":"2+2"}' } }] }, { content: 'pong' }];
+  IA_SCRIPT.sambanova = [{ content: 'quatre' }, { content: 'pong' }];
   const r = await bee(env, { diag: true });
-  ok(r.st === 200 && /Test des outils, IA par IA :/.test(r.j.texte) && /cerebras ✅ \d+ ms \(appelle l'outil\)/.test(r.j.texte) && /groq ✅ \d+ ms \(répond sans appeler l'outil\)/.test(r.j.texte), '12e. la sonde du vrai routeur : cerebras appelle l\'outil, groq répond sans l\'appeler', JSON.stringify(r.j).slice(0, 400)); }
+  ok(r.st === 200 && /Test des outils, IA par IA :/.test(r.j.texte) && /groq ✅ \d+ ms \(appelle l'outil\)/.test(r.j.texte) && /sambanova ✅ \d+ ms \(répond sans appeler l'outil\)/.test(r.j.texte), '12e. la sonde du vrai routeur : groq appelle l\'outil, sambanova répond sans l\'appeler', JSON.stringify(r.j).slice(0, 400)); }
 
 /* 12f. SOUS-REQUÊTES (23.10, robot réel : « le nuage dit : Too many subrequests ») : le nuage de l'arbre se lit AVANT les essais d'IA, et une IA qui a déjà répondu à la sonde n'est pas rappelée */
 { const ordre = []; let appelsIA = 0;

@@ -34,15 +34,15 @@ function remettre() {
 }
 const kvEcrit = [];
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); kvEcrit.push(k); }, delete: async (k) => { kv.delete(k); }, list: async () => ({ keys: [], list_complete: true }) };
-const IA_SCRIPT = { cerebras: [], groq: [] }; const IA_VUES = []; let reseau = [];
+const IA_SCRIPT = { groq: [], sambanova: [] }; const IA_VUES = []; let reseau = [];
 globalThis.fetch = async (url, init) => {
   const u = String(url); reseau.push(u);
   const R = (corps, st) => new Response(JSON.stringify(corps), { status: st || 200, headers: { 'content-type': 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) { const corps = JSON.parse(init.body); IA_VUES.push({ four, corps }); const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   return R({ error: 'réseau non prévu : ' + u }, 599);
 };
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien chemin' }) } };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien chemin' }) } };
 const att = []; const ctx = { waitUntil: (x) => att.push(x), passThroughOnException() {} };
 const req = async (hote, chemin, { m = 'GET', headers = {}, corps } = {}) => { const r = await mod.fetch(new Request('https://' + hote + chemin, { method: m, headers, body: corps === undefined ? undefined : JSON.stringify(corps) }), env, ctx); await Promise.allSettled(att.splice(0)); return r; };
 remettre();
@@ -53,7 +53,7 @@ const AUTRE = { cookie: 'kdmc_sso=' + signe('zelie_testard', true) };
 ok(/kdmc_sso=/.test(KEVIN.cookie), '0. connexion de Kevin par le code admin (session vérifiée)');
 const appel = (id) => ({ id, type: 'function', function: { name: '', arguments: '' } });
 const outil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
-const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; };
+const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_SCRIPT.sambanova = []; };
 const toolMsgs = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 async function bee(texte, headers) {
   const r = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, headers || KEVIN), body: JSON.stringify({ messages: [{ role: 'user', content: texte }] }) }), env, { waitUntil() {} });
@@ -63,12 +63,12 @@ const AGIR = (headers, corps, host = 'javis.kd-mc.com') => req(host, '/__javis/a
 const kvJ = (k) => JSON.parse(kv.get(k) || 'null');
 /** Fait proposer une action par la fausse IA (par le VRAI chemin : /__javis/ai) et rend la carte. */
 async function carte(texte, action, champs) {
-  reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('p', 'proposer_action', Object.assign({ action }, champs))] }, { content: 'Carte prête.' }];
+  reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('p', 'proposer_action', Object.assign({ action }, champs))] }, { content: 'Carte prête.' }];
   const r = await bee(texte); return { r, p: r.j && r.j.propositions && r.j.propositions[0] };
 }
 
 /* ───────── 1. lire les comptes, le journal, les apps ───────── */
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'comptes_domaine', { recherche: 'zelie' }), outil('b', 'journal_domaine', { n: 5 }), outil('c', 'apps_fermees', {})] }, { content: 'Voilà.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'comptes_domaine', { recherche: 'zelie' }), outil('b', 'journal_domaine', { n: 5 }), outil('c', 'apps_fermees', {})] }, { content: 'Voilà.' }];
   const r = await bee('qui a un compte, et le journal ?');
   const t = toolMsgs();
   ok(r.st === 200 && /Zélie TESTARD — identifiant : zelie_testard/.test(t) && !/Octave/.test(t.split('journal')[0] || ''), '1. comptes_domaine : la personne cherchée, avec son identifiant — ' + t.slice(0, 160));
@@ -163,11 +163,11 @@ for (const q of ['ferme lingua pour tout le monde', 'bloque Zélie sur l\'arbre'
 for (const q of ['qui a accès à lingua ?', 'qui a essayé de se connecter hier ?', 'qui s\'est connecté aujourd\'hui', 'qui est connecté en ce moment', 'qui peut voir l\'arbre ?'])
   ok(RE_DROITS.test(q), '6f2. « qui a… » de gestion prend les mains : « ' + q + ' »');
 for (const q of ['salut Bee', 'raconte-moi une blague', 'Qui a écrit « Le Petit Prince » ?', 'qui a inventé le téléphone ?', 'Qui a gagné la coupe du monde en 2018 ?'])
-  ok(!RE_DROITS.test(q), '6g. reste une conversation (mesuré en réel le 18.10 : « Qui a écrit… » chargeait 34 outils, 4 879 jetons, Groq refusait) : « ' + q + ' »');
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+  ok(!RE_DROITS.test(q), '6g. reste une conversation (mesuré en réel le 18.10 : « Qui a écrit… » chargeait 34 outils, 4 879 jetons, SambaNova refusait) : « ' + q + ' »');
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   const SERV = Object.assign({}, env, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' });
   await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, KEVIN), body: JSON.stringify({ messages: [{ role: 'user', content: 'ferme lingua' }] }) }), SERV, { waitUntil() {} });
-  ok(reseau.every((u) => !/anthropic|openai/.test(u)), '6h. 0 € : aucun appel Anthropic / OpenAI'); }
+  ok(reseau.every((u) => !/api\.anthropic\.com|api\.openai\.com/.test(u)), '6h. 0 € : aucun appel Anthropic / OpenAI'); }
 ok(!kvEcrit.some((k) => /^bee|^fil|^rappel/.test(k)), '6i. 0 écriture KV propre à Bee (le registre est celui des portes du domaine)');
 
 { const wd = readFileSync(new URL('../../tools/javis/javis-widget.js', import.meta.url), 'utf8');

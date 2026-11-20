@@ -11,7 +11,7 @@ import mod from './worker.js';
 let pass = 0, fail = 0;
 const ok = (c, m, d) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m + (d !== undefined ? ' → ' + String(d).slice(0, 300) : '')); } };
 const jetons = (s) => Math.round(String(s).length / 3.6);
-const PLAFOND_BASE = 3200, PLAFOND_MAX = 6500;   /* jetons : sous les 8 000/min de Groq même avec un 2ᵉ tour, et la place de la conversation */
+const PLAFOND_BASE = 3200, PLAFOND_MAX = 6500;   /* jetons : sous les 8 000/min de SambaNova même avec un 2ᵉ tour, et la place de la conversation */
 
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const signe = (uid) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: 1, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
@@ -20,24 +20,24 @@ const kv = new Map(); kv.set('cfg:apps_fermees', JSON.stringify(['lingua']));
 const kvEcrit = [];
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); kvEcrit.push(k); }, delete: async (k) => { kv.delete(k); }, list: async () => ({ keys: [], list_complete: true }) };
 let METEO_PANNE = false;
-const AI_VUES = []; const IA_SCRIPT = { cerebras: [], groq: [] }; const IA_VUES = []; let reseau = [];
+const AI_VUES = []; const IA_SCRIPT = { groq: [], sambanova: [] }; const IA_VUES = []; let reseau = [];
 globalThis.fetch = async (url, init) => {
   const u = String((url && url.url) || url); reseau.push(u);
   const R = (corps, st, type) => new Response(typeof corps === 'string' ? corps : JSON.stringify(corps), { status: st || 200, headers: { 'content-type': type || 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (/open-meteo\.com\/v1\/forecast/.test(u)) { if (METEO_PANNE) return R('{}', 500); return R({ daily: { time: ['2026-10-18','2026-10-19','2026-10-20','2026-10-21','2026-10-22','2026-10-23','2026-10-24','2026-10-25'], temperature_2m_min: [14,15,16,15,14,13,12,12], temperature_2m_max: [21,22,23,22,21,20,19,19], weather_code: [1,2,3,61,1,1,2,2], precipitation_probability_max: [5,10,20,60,5,5,10,10], precipitation_sum: [0,0,0.4,3,0,0,0,0], wind_speed_10m_max: [10,12,14,20,9,8,7,7] }, current: { temperature_2m: 19, apparent_temperature: 18, weather_code: 1, wind_speed_10m: 9 } }); }
   if (/api\.frankfurter\.dev/.test(u)) return R({ date: '2026-10-16', rates: { EUR: 0.92 } });
   if (/geocoding-api\.open-meteo\.com/.test(u)) return R({ results: [{ name: 'Nice', latitude: 43.7, longitude: 7.26, country: 'France' }] });
   if (four) { const corps = JSON.parse(init.body); IA_VUES.push({ four, corps }); const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   return R('<title>Page</title><body>ok</body>', 200, 'text/html; charset=utf-8');
 };
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async (m, o) => { AI_VUES.push(JSON.stringify(o || {})); return { response: 'ancien chemin' }; } } };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async (m, o) => { AI_VUES.push(JSON.stringify(o || {})); return { response: 'ancien chemin' }; } } };
 const att = []; const ctx = { waitUntil: (x) => att.push(x), passThroughOnException() {} };
 const login = await mod.fetch(new Request('https://kd-mc.com/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' }, body: JSON.stringify({ code: '424242' }) }), env, ctx);
 const sc = login.headers.getSetCookie ? login.headers.getSetCookie() : [login.headers.get('set-cookie') || ''];
 const KEVIN = { cookie: sc.map((c) => c.split(';')[0]).join('; ') };
 const outil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
-const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; };
+const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_SCRIPT.sambanova = []; };
 const toolMsgs = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 const outilsVus = () => IA_VUES.flatMap((v) => (v.corps.tools || []).map((t) => t.function.name));
 async function bee(texte, e2, headers) {
@@ -88,14 +88,14 @@ for (const q of NON) ok(I(q) === null, '1b. « ' + q.slice(0, 60) + ' » → pas
 { reset(); const r = await bee('Quel temps fait-il demain à Monaco ?');
   ok(r.j.provider === 'domaine' && r.j.outils.join() === 'meteo' && /°C/.test(r.j.text) && /22|21|15/.test(r.j.text) && IA_VUES.length === 0 && reseau.some((u) => /open-meteo/.test(u)), '2f. météo de demain : prévision réelle (open-meteo), sans IA', r.j.text); }
 /* ───── 3. repli ───── */
-{ reset(); METEO_PANNE = true; IA_SCRIPT.cerebras = [{ content: 'La météo ne répond pas.' }];
+{ reset(); METEO_PANNE = true; IA_SCRIPT.groq = [{ content: 'La météo ne répond pas.' }];
   const r = await bee('Quel temps fait-il demain à Monaco ?'); METEO_PANNE = false;
   ok(r.st === 200 && r.j.ok && r.j.provider !== 'domaine' && IA_VUES.length >= 1, '3a. l\'outil échoue (météo en panne) : l\'IA reprend la main, comme avant', JSON.stringify(r.j).slice(0, 200)); }
 { reset(); const r = await bee('quelle heure est-il à Atlantis');
   ok(r.st === 200 && r.j.provider !== 'domaine', '3b. ville inconnue : pas de réponse inventée par le domaine, l\'IA reprend'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; await bee('Combien font 17 % de 2 340 ?', Object.assign({}, env, { BEE_DIRECT: '0' }));
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }]; await bee('Combien font 17 % de 2 340 ?', Object.assign({}, env, { BEE_DIRECT: '0' }));
   ok(IA_VUES.length === 1, '3c. BEE_DIRECT=0 : le chemin sans IA est coupé d\'un geste, l\'IA répond comme avant'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; const r = await bee('quelle heure est-il à New York et quel temps fait-il');
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }]; const r = await bee('quelle heure est-il à New York et quel temps fait-il');
   ok(r.j.provider !== 'domaine' && IA_VUES.length >= 1, '3d. une demande composée va à l\'IA'); }
 /* ───── 4. Kevin seul, 0 € ───── */
 { reset(); const r = await bee('Combien font 17 % de 2 340 ?', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
@@ -122,7 +122,7 @@ ok(await reponseDirecte('quelle heure est-il', {}) !== null && await reponseDire
   METEO_PANNE = true; const rien = await reponseDirecte('mon brief', {}); METEO_PANNE = false;
   ok(rien === null, '5f. météo muette ET pas de planning : pas de « brief » réduit à la date, l\'IA reprend la main comme avant');
   const r5 = await bee('Mon brief du jour');
-  ok(r5.st === 200 && r5.j.provider === 'domaine' && (r5.j.outils || []).includes('brief_jour') && /point du jour/.test(r5.j.text) && reseau.every((u) => !/cerebras|groq|openai|anthropic/i.test(u)), '5g. de bout en bout : fournisseur « domaine », aucune IA appelée', r5.j && r5.j.text);
+  ok(r5.st === 200 && r5.j.provider === 'domaine' && (r5.j.outils || []).includes('brief_jour') && /point du jour/.test(r5.j.text) && reseau.every((u) => !/groq|sambanova|openai|anthropic/i.test(u)), '5g. de bout en bout : fournisseur « domaine », aucune IA appelée', r5.j && r5.j.text);
   const r6 = await bee('Mon brief du jour', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
   ok(r6.st === 403 && !(r6.j && r6.j.text), '5h. un autre compte : 403, aucun brief'); }
 

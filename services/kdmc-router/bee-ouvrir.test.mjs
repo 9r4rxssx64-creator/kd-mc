@@ -65,21 +65,21 @@ const vraiFetch = globalThis.fetch;
 const kv = new Map(); kv.set('cfg:apps_fermees', JSON.stringify(['lingua']));
 const kvEcrit = [];
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); kvEcrit.push(k); }, delete: async (k) => { kv.delete(k); }, list: async () => ({ keys: [], list_complete: true }) };
-const IA_SCRIPT = { cerebras: [], groq: [] }; const IA_VUES = []; let reseau = [];
+const IA_SCRIPT = { groq: [], sambanova: [] }; const IA_VUES = []; let reseau = [];
 globalThis.fetch = async (url, init) => {
   const u = String((url && url.url) || url); reseau.push(u);
   const R = (corps, st, type) => new Response(typeof corps === 'string' ? corps : JSON.stringify(corps), { status: st || 200, headers: { 'content-type': type || 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) { const corps = JSON.parse(init.body); IA_VUES.push({ four, corps }); const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   return R('<title>Page</title><body>ok</body>', 200, 'text/html; charset=utf-8');
 };
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien chemin' }) } };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien chemin' }) } };
 const att = []; const ctx = { waitUntil: (x) => att.push(x), passThroughOnException() {} };
 const login = await mod.fetch(new Request('https://kd-mc.com/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' }, body: JSON.stringify({ code: '424242' }) }), env, ctx);
 const sc = login.headers.getSetCookie ? login.headers.getSetCookie() : [login.headers.get('set-cookie') || ''];
 const KEVIN = { cookie: sc.map((c) => c.split(';')[0]).join('; ') };
 const outil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
-const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; };
+const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_SCRIPT.sambanova = []; };
 const toolMsgs = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 const outilsVus = () => IA_VUES.flatMap((v) => (v.corps.tools || []).map((t) => t.function.name));
 async function bee(texte, e2, headers) {
@@ -123,41 +123,41 @@ ok(estSuiteOuverture(HIST.concat([U('dans cmcteams et dis-moi pourquoi')])) === 
 { reset();
   const r = await bee('montre-moi l\'arbre de Yann Lorenzi');
   ok(r.st === 200 && r.j.ok && r.j.provider === 'domaine' && r.j.gratuit === true && r.j.outils.join() === 'ouvrir', '5. par le vrai serveur : « montre-moi l\'arbre de Yann Lorenzi » est compris SANS IA — ' + JSON.stringify(r.j).slice(0, 200));
-  ok(IA_VUES.length === 0 && !reseau.some((u) => /cerebras|groq|mistral|anthropic|openai/.test(u)), '5b. aucune IA appelée (0 € et instantané)');
+  ok(IA_VUES.length === 0 && !reseau.some((u) => /groq|sambanova|mistral|anthropic|openai/.test(u)), '5b. aucune IA appelée (0 € et instantané)');
   ok(Array.isArray(r.j.ouvrir) && r.j.ouvrir.length === 1 && r.j.ouvrir[0].url === 'https://arbre.kd-mc.com/#personne=Yann%20Lorenzi' && r.j.text === 'Je t\'ouvre l\'arbre sur Yann Lorenzi.', '5c. la réponse porte le bouton `ouvrir` et la phrase vraie'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'arbre', personne: 'Yann Lorenzi' })] }, { content: 'Je n\'ai pas accès à l\'arbre, désolé.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'arbre', personne: 'Yann Lorenzi' })] }, { content: 'Je n\'ai pas accès à l\'arbre, désolé.' }];
   const r = await bee('ouvre l\'arbre et dis-moi qui est Yann Lorenzi');
   ok(r.st === 200 && r.j.ok && r.j.outils.join() === 'ouvrir' && r.j.ouvrir && r.j.ouvrir.length === 1, '5d. phrase composée → l\'IA appelle ouvrir — ' + JSON.stringify(r.j).slice(0, 200));
   ok(!/pas accès/.test(r.j.text) && /Je t'ouvre/.test(r.j.text), '5e. même si l\'IA dit « je n\'ai pas accès », le domaine corrige la phrase (un lien est prêt)', r.j.text);
   const sys = IA_VUES[0].corps.messages[0].content;
   ok(/JAMAIS « je n'ai pas accès »/.test(sys) && outilsVus().includes('ouvrir'), '5f. le caractère interdit « je n\'ai pas accès » et l\'outil est offert'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'https://evil.example/' })] }, { content: 'Je ne peux pas.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'https://evil.example/' })] }, { content: 'Je ne peux pas.' }];
   const r = await bee('ouvre https://evil.example/ et dis-moi ce que tu vois');
   ok(r.st === 200 && !(r.j.ouvrir && r.j.ouvrir.length) && /ÉCHEC DE L'OUTIL/.test(toolMsgs()), '5d. un site extérieur : ÉCHEC DE L\'OUTIL, aucun bouton'); }
 { reset(); const r = await bee('ouvre l\'arbre', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
   ok(r.st === 403 && IA_VUES.length === 0, '5g. un autre compte : 403, aucune ouverture');
   const r2 = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'ouvre l\'arbre' }] }) }), env, ctx);
   ok(r2.status === 403 && IA_VUES.length === 0, '5h. un inconnu : 403'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   const r0 = await bee('ouvre l\'arbre', Object.assign({}, env, { BEE_OUVRIR: '0' }));
   ok(r0.j.provider !== 'domaine' && !(r0.j.ouvrir && r0.j.ouvrir.length), '5i0. interrupteur BEE_OUVRIR=0 : la voie directe est coupée aussi'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   await bee('ouvre l\'arbre et dis-moi qui est Yann', Object.assign({}, env, { BEE_OUVRIR: '0' }));
   ok(!outilsVus().includes('ouvrir'), '5i. interrupteur BEE_OUVRIR=0 : l\'outil n\'existe plus'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   await bee('ouvre l\'arbre et dis-moi qui est Yann', Object.assign({}, env, { ANTHROPIC_API_KEY: 'payant', OPENAI_API_KEY: 'payant' }));
-  ok(reseau.every((u) => !/anthropic|openai/.test(u)), '5j. 0 € : aucun appel Anthropic / OpenAI'); }
+  ok(reseau.every((u) => !/api\.anthropic\.com|api\.openai\.com/.test(u)), '5j. 0 € : aucun appel Anthropic / OpenAI'); }
 /* la suite par le vrai serveur */
 { reset();
   const r = await bee(HIST.concat([U('Dans cmcteams')]));
   ok(r.st === 200 && r.j.ok && r.j.provider === 'domaine' && r.j.gratuit === true && r.j.outils.join() === 'ouvrir' && IA_VUES.length === 0, '5l. « Dans cmcteams » après l\'arbre : compris SANS IA — ' + JSON.stringify(r.j).slice(0, 200));
   ok(r.j.ouvrir && r.j.ouvrir.length === 1 && r.j.ouvrir[0].url === 'https://cmcteams.kd-mc.com/#personne=Davy%20Carpinelli' && !/pas|ne peux/.test(r.j.text) && r.j.text === 'Je t\'ouvre CMCteams sur Davy Carpinelli.', '5m. le bouton mène à CMCteams SUR la personne, phrase vraie', JSON.stringify(r.j)); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   const r = await bee(HIST.concat([U('Dans cmcteams')]), Object.assign({}, env, { BEE_OUVRIR: '0' }));
   ok(r.j.provider !== 'domaine' && !(r.j.ouvrir && r.j.ouvrir.length), '5n. BEE_OUVRIR=0 coupe aussi la suite'); }
 { reset(); const r = await bee(HIST.concat([U('Dans cmcteams')]), env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
   ok(r.st === 403 && IA_VUES.length === 0, '5o. un autre compte : 403 même pour la suite'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'cmcteams', personne: 'Davy Carpinelli' })] }, { content: 'Je ne peux pas ouvrir des fichiers ou des apps directement.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'ouvrir', { app: 'cmcteams', personne: 'Davy Carpinelli' })] }, { content: 'Je ne peux pas ouvrir des fichiers ou des apps directement.' }];
   const r = await bee(HIST.concat([U('non plutôt dans cmcteams et dis-moi pourquoi')]));
   ok(outilsVus().includes('ouvrir') && /JAMAIS « je n'ai pas accès »/.test(IA_VUES[0].corps.messages[0].content), '5p. phrase composée juste après une ouverture : l\'outil `ouvrir` et ses règles sont offerts à l\'IA');
   ok(r.j.ouvrir && r.j.ouvrir[0].url === 'https://cmcteams.kd-mc.com/#personne=Davy%20Carpinelli' && !/ne peux pas/.test(r.j.text), '5q. et si l\'IA dit « je ne peux pas ouvrir », le domaine corrige', JSON.stringify(r.j)); }
@@ -225,7 +225,7 @@ async function beeCtx(texte, app, e2, headers) {
   ok(!(r.j.ouvrir && r.j.ouvrir.some((o) => /#personne=Famille/.test(o.url))), '7bb. « la fiche de la famille Buchet » n\'est PAS prise pour une personne « Famille Buchet »'); }
 { reset(); const r = await beeCtx('ouvre la fiche de Davy', 'cmcteams', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
   ok(r.st === 403 && IA_VUES.length === 0, '7cc. un autre compte : 403'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   const r = await beeCtx('ouvre la fiche de Davy', 'cmcteams', Object.assign({}, env, { BEE_OUVRIR: '0' }));
   ok(r.j.provider !== 'domaine' && !(r.j.ouvrir && r.j.ouvrir.length), '7dd. BEE_OUVRIR=0 coupe aussi la fiche'); }
 kv.delete('arbre:seed');

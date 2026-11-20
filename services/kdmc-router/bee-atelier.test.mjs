@@ -13,7 +13,7 @@ import mod from './worker.js';
 let pass = 0, fail = 0;
 const ok = (c, m, d) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m + (d !== undefined ? ' → ' + String(d).slice(0, 300) : '')); } };
 const jetons = (s) => Math.round(String(s).length / 3.6);
-const PLAFOND_BASE = 3200, PLAFOND_MAX = 6500;   /* jetons : sous les 8 000/min de Groq même avec un 2ᵉ tour, et la place de la conversation */
+const PLAFOND_BASE = 3200, PLAFOND_MAX = 6500;   /* jetons : sous les 8 000/min de SambaNova même avec un 2ᵉ tour, et la place de la conversation */
 
 const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const signe = (uid) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: 1, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
@@ -22,21 +22,21 @@ const kv = new Map(); kv.set('cfg:apps_fermees', JSON.stringify(['lingua']));
 const kvEcrit = [];
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); kvEcrit.push(k); }, delete: async (k) => { kv.delete(k); }, list: async () => ({ keys: [], list_complete: true }) };
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='; let IMAGE_PRET = 'ok';
-const AI_VUES = []; const IA_SCRIPT = { cerebras: [], groq: [] }; const IA_VUES = []; let reseau = [];
+const AI_VUES = []; const IA_SCRIPT = { groq: [], sambanova: [] }; const IA_VUES = []; let reseau = [];
 globalThis.fetch = async (url, init) => {
   const u = String((url && url.url) || url); reseau.push(u);
   const R = (corps, st, type) => new Response(typeof corps === 'string' ? corps : JSON.stringify(corps), { status: st || 200, headers: { 'content-type': type || 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) { const corps = JSON.parse(init.body); IA_VUES.push({ four, corps }); const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   return R('<title>Page</title><body>ok</body>', 200, 'text/html; charset=utf-8');
 };
-const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async (m, o) => { AI_VUES.push(JSON.stringify(o || {})); return /flux/.test(String(m)) ? (IMAGE_PRET === 'rien' ? {} : { image: PNG }) : { response: 'ancien chemin' }; } } };
+const env = { KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async (m, o) => { AI_VUES.push(JSON.stringify(o || {})); return /flux/.test(String(m)) ? (IMAGE_PRET === 'rien' ? {} : { image: PNG }) : { response: 'ancien chemin' }; } } };
 const att = []; const ctx = { waitUntil: (x) => att.push(x), passThroughOnException() {} };
 const login = await mod.fetch(new Request('https://kd-mc.com/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' }, body: JSON.stringify({ code: '424242' }) }), env, ctx);
 const sc = login.headers.getSetCookie ? login.headers.getSetCookie() : [login.headers.get('set-cookie') || ''];
 const KEVIN = { cookie: sc.map((c) => c.split(';')[0]).join('; ') };
 const outil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
-const reset = () => { AI_VUES.length = 0; reseau = []; IA_VUES.length = 0; IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; };
+const reset = () => { AI_VUES.length = 0; reseau = []; IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_SCRIPT.sambanova = []; };
 const toolMsgs = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 const outilsVus = () => IA_VUES.flatMap((v) => (v.corps.tools || []).map((t) => t.function.name));
 async function bee(texte, e2, headers) {
@@ -129,17 +129,17 @@ const mk = (o) => { const sortie = {}; return { sortie, t: outilsAtelier(Object.
   ok(n === MAX_CARTES && /assez de pièces/.test(e), '4i. ' + MAX_CARTES + ' pièces au plus par réponse'); }
 /* ───── 5. de bout en bout, avec le VRAI routeur ───── */
 { reset(); IMAGE_PRET = 'ok';
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'agenda', { titre: 'Dentiste', debut: '2026-10-20T14:30', lieu: 'Monaco' }), outil('b', 'brouillon_mail', { a: 'marc@example.com', objet: 'Dîner', corps: 'Samedi 20 h ?' })] }, { content: 'Je te prépare le rendez-vous et le mail.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'agenda', { titre: 'Dentiste', debut: '2026-10-20T14:30', lieu: 'Monaco' }), outil('b', 'brouillon_mail', { a: 'marc@example.com', objet: 'Dîner', corps: 'Samedi 20 h ?' })] }, { content: 'Je te prépare le rendez-vous et le mail.' }];
   const r = await bee('prépare mon rdv chez le dentiste le 20 à 14h30 et un mail à Marc pour le dîner');
   ok(r.st === 200 && r.j.ok && r.j.cartes && r.j.cartes.length === 2 && r.j.cartes[0].t === 'fichier' && /BEGIN:VEVENT/.test(r.j.cartes[0].texte) && r.j.cartes[1].t === 'lien' && /^mailto:marc@example\.com/.test(r.j.cartes[1].url), '5a. agenda + brouillon de mail : deux cartes sortent par /__javis/ai', JSON.stringify(r.j).slice(0, 250));
   ok(r.j.provider !== undefined && r.j.gratuit !== false, '5b. gratuit (IA gratuite à outils)');
   ok(['fichier', 'agenda', 'brouillon_mail', 'image'].every((n) => outilsVus().includes(n)), '5c. le lot « atelier » est offert à l\'IA pour cette demande', outilsVus().join());
   ok(/ATELIER/.test(IA_VUES[0].corps.messages[0].content) && /tu n'envoies RIEN/.test(IA_VUES[0].corps.messages[0].content), '5d. le caractère dit : Kevin envoie lui-même, Bee n\'envoie rien'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'image', { prompt: 'a small golden bee with a crown, logo', legende: 'Bee' })] }, { content: 'Voilà ton logo.' }];
+{ reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'image', { prompt: 'a small golden bee with a crown, logo', legende: 'Bee' })] }, { content: 'Voilà ton logo.' }];
   const r = await bee('fais-moi un logo d\'abeille');
   ok(r.st === 200 && r.j.cartes && r.j.cartes.length === 1 && r.j.cartes[0].t === 'image' && /^data:image\/png;base64,/.test(r.j.cartes[0].src), '5e. une image générée par Workers AI sort en carte', JSON.stringify(r.j).slice(0, 200));
-  ok(AI_VUES.some((v) => /bee with a crown/.test(v)) && !reseau.some((u) => /openai|replicate|stability|pollinations|dall/i.test(u)), '5f. gratuit : Workers AI du compte seulement, aucun service payant appelé'); }
-{ reset(); IMAGE_PRET = 'rien'; IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'image', { prompt: 'a small golden bee with a crown' })] }, { content: 'Je n\'ai pas pu.' }];
+  ok(AI_VUES.some((v) => /bee with a crown/.test(v)) && !reseau.some((u) => /api\.openai\.com|replicate|stability|pollinations|dall/i.test(u)), '5f. gratuit : Workers AI du compte seulement, aucun service payant appelé'); }
+{ reset(); IMAGE_PRET = 'rien'; IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'image', { prompt: 'a small golden bee with a crown' })] }, { content: 'Je n\'ai pas pu.' }];
   const r = await bee('dessine un logo d\'abeille'); IMAGE_PRET = 'ok';
   ok(r.st === 200 && !(r.j.cartes && r.j.cartes.length) && /ÉCHEC DE L'OUTIL/.test(toolMsgs()), '5g. l\'IA d\'image ne rend rien : ÉCHEC DE L\'OUTIL honnête, aucune carte factice'); }
 { reset(); const r = await bee('écris un mail à Marc', env, { cookie: 'kdmc_sso=' + signe('zelie_testard') });
@@ -148,10 +148,10 @@ const mk = (o) => { const sortie = {}; return { sortie, t: outilsAtelier(Object.
   ok(r2.status === 403 && IA_VUES.length === 0, '5i. UN INCONNU : 403');
   const r3 = await bee('fais-moi un logo', env, { cookie: 'kdmc_k=1' });
   ok(r3.st === 403 && IA_VUES.length === 0, '5j. le simple marqueur « Kevin » (cookie kdmc_k) ne donne AUCUN pouvoir : 403'); }
-{ reset(); const e0 = Object.assign({}, env, { BEE_ATELIER: '0' }); IA_SCRIPT.cerebras = [{ content: 'Ok.' }];
+{ reset(); const e0 = Object.assign({}, env, { BEE_ATELIER: '0' }); IA_SCRIPT.groq = [{ content: 'Ok.' }];
   await bee('prépare une lettre pour la banque', e0);
   ok(!outilsVus().some((n) => ['fichier', 'agenda', 'brouillon_mail', 'image'].includes(n)), '5k. BEE_ATELIER=0 : plus aucun outil d\'atelier'); }
-{ reset(); IA_SCRIPT.cerebras = [{ content: 'Ok.' }]; await bee('quel temps fait-il demain ?');
+{ reset(); IA_SCRIPT.groq = [{ content: 'Ok.' }]; await bee('quel temps fait-il demain ?');
   ok(!outilsVus().some((n) => ['fichier', 'agenda', 'brouillon_mail', 'image'].includes(n)), '5l. une question de météo ne charge PAS l\'atelier (consigne légère)'); }
 ok(RE_ATELIER.test('écris un mail à Marc') && RE_ATELIER.test('un événement samedi') && !RE_ATELIER.test('ajoute le mail de Zélie') && !RE_ATELIER.test('quel temps demain'), '5m. la détection de l\'atelier : oui pour un mail à écrire, non pour « le mail de Zélie »');
 /* ───── 6. le widget revérifie ───── */

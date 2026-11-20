@@ -195,7 +195,9 @@ test('secrets : noms EXACTS de Kevin (PERPLEXITI, OPEN_AI)', () => {
 
 /* ---- PALIERS GRATUITS EMPILÉS (Kevin 2026-10-02 « Go freellm ») ---- */
 test('Go freellm : 5 paliers gratuits de plus, APRÈS les gratuits d\'avant (l\'ordre d\'avant ne bouge pas) ; Together câblé mais PAS déclaré gratuit', () => {
-  assert.deepEqual(FREE_PROVIDERS.slice(0, 6), ['qwen', 'groq', 'mistral', 'openrouter', 'cerebras', 'sambanova']); // 5.11 : Gemini passé en dernier (clé AI Studio en palier payant depuis le 26.09)
+  assert.deepEqual(FREE_PROVIDERS.slice(0, 5), ['qwen', 'groq', 'mistral', 'openrouter', 'sambanova']);
+  /* 20.11.2026 : Cerebras retiré (HTTP 402 « Payment required » mesuré, décision de Kevin) — ni déclaré gratuit, ni dans une chaîne. */
+  assert.ok(!FREE_PROVIDERS.includes('cerebras')); for (const [d, c] of Object.entries(DOMAIN_PREFERENCES)) assert.ok(!c.includes('cerebras'), 'cerebras encore dans ' + d); // 5.11 : Gemini passé en dernier (clé AI Studio en palier payant depuis le 26.09)
   assert.equal(FREE_PROVIDERS[FREE_PROVIDERS.length - 1], 'gemini', 'Gemini = dernier des gratuits (peut être facturé)');
   for (const p of ['sambanova', 'nvidia', 'huggingface', 'glm', 'cohere']) {
     assert.ok(FREE_PROVIDERS.includes(p), p + ' est un palier gratuit');

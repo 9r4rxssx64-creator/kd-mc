@@ -4909,7 +4909,7 @@ async function handleBeeIa(request, env, ctx) {
      de parler). Cerebras et Groq servent des modèles de niveau A (gpt-oss-120b, Qwen 3.8) sur du matériel fait pour
      la vitesse : ils passent DEVANT pour Bee, gratuits eux aussi. Qwen de Workers AI reste dans la chaîne, juste
      après (relais gratuit de même niveau, règle Kevin 2.10). Ordre stable pour le reste. */
-  const RAPIDES = ['cerebras', 'groq'];
+  const RAPIDES = ['groq'];   // 20.11 : cerebras retiré (HTTP 402 « Payment required », décision de Kevin)
   const gratuites = ordre.filter((p) => FREE_PROVIDERS.indexOf(p) >= 0)
     .map((p, i) => [p, i]).sort((x, y) => ((RAPIDES.indexOf(x[0]) < 0) - (RAPIDES.indexOf(y[0]) < 0)) || (RAPIDES.indexOf(x[0]) - RAPIDES.indexOf(y[0])) || (x[1] - y[1])).map((x) => x[0]);
   /* GRATUIT TOUJOURS (Kevin 02.10 : « gratuit tjs ») : le secours payant est ÉTEINT par défaut.

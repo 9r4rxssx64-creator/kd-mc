@@ -49,16 +49,16 @@ function d1() {
   });
   return { prepare: (sql) => stmt(sql), _s: s };
 }
-const vraiFetch = globalThis.fetch; const reseau = []; const IA_SCRIPT = { cerebras: [], groq: [] }; const vuesIA = [];
+const vraiFetch = globalThis.fetch; const reseau = []; const IA_SCRIPT = { groq: [], sambanova: [] }; const vuesIA = [];
 globalThis.fetch = async (url, init) => {
   const u = String(url && url.url ? url.url : url); reseau.push(u);
   const R = (corps, st) => new Response(JSON.stringify(corps), { status: st || 200, headers: { 'content-type': 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) { if (init && init.body) { try { vuesIA.push(JSON.parse(init.body)); } catch (_) {} } const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   return R({ error: 'réseau non prévu : ' + u }, 599);
 };
 const kv = new Map(); const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); }, list: async () => ({ keys: [] }) };
-const mkEnv = (db, extra) => Object.assign({ KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, CERCLE_DB: db, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien' }) } }, extra || {});
+const mkEnv = (db, extra) => Object.assign({ KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, CERCLE_DB: db, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async () => ({ response: 'ancien' }) } }, extra || {});
 const outil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
 const toolMsgs = (vues) => vues.flatMap((v) => v.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 const KEVIN = { 'x-kdmc-sso': signe('kdmc_admin') };
@@ -70,7 +70,7 @@ async function agir(env, jeton, h) {
   const r = await mod.fetch(new Request('https://arbre.kd-mc.com/__javis/agir', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://arbre.kd-mc.com' }, h || KEVIN), body: JSON.stringify({ jeton, confirme: true }) }), env, { waitUntil() {} });
   return { st: r.status, j: await r.json().catch(() => null) };
 }
-async function carte(env, texte, champs) { vuesIA.length = 0; IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('p', 'proposer_action', Object.assign({ action: 'message_direct' }, champs))] }, { content: 'Prête.' }]; const r = await bee(env, texte); return { r, p: r.j && r.j.propositions && r.j.propositions[0] }; }
+async function carte(env, texte, champs) { vuesIA.length = 0; IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('p', 'proposer_action', Object.assign({ action: 'message_direct' }, champs))] }, { content: 'Prête.' }]; const r = await bee(env, texte); return { r, p: r.j && r.j.propositions && r.j.propositions[0] }; }
 const lignesDm = (db) => { try { return db._s.prepare('SELECT * FROM dm').all(); } catch (_) { return []; } };
 
 const MSG = 'Bonjour Davy, ton planning de décembre est en ligne, dis-moi si une case te paraît fausse.';

@@ -359,7 +359,7 @@ async function handleReputation(request, env, origin) {
 // test:apis-paliers), puis Workers AI llama en tout dernier.
 export const AI_CHAIN = [
   'gemini', 'groq', 'openrouter', 'mistral', 'cohere', 'deepseek', 'together', 'xai',
-  'perplexity', 'cerebras', 'nvidia', 'sambanova', 'huggingface', 'scaleway', 'nebius', 'glm', 'qwen',
+  'perplexity', 'nvidia', 'sambanova', 'huggingface', 'scaleway', 'nebius', 'glm', 'qwen',
 ];
 
 export const AI_DEFAULT_MODEL = {

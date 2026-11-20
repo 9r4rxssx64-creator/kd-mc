@@ -23,11 +23,11 @@ const kv = new Map();
 const put = (k, v) => kv.set(k, typeof v === 'string' ? v : JSON.stringify(v));
 put('acc:kdmc_admin', { uid: 'kdmc_admin', name: 'Kevin ADMIN', verified: true }); put('idx:uids', ['kdmc_admin']);
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); }, list: async () => ({ keys: [], list_complete: true }) };
-const IA_SCRIPT = { cerebras: [], groq: [] }; const IA_VUES = []; const RAIL = { vars: { SYMBOLS: 'BTC/USDT', TIMEFRAME: '1h', RISK_PER_TRADE_PCT: '1', MAX_POSITION_PCT: '30', DAILY_LOSS_CAP_PCT: '5', MAX_DRAWDOWN_PCT: '15', TESTNET: 'true' }, muts: [] };
+const IA_SCRIPT = { groq: [], sambanova: [] }; const IA_VUES = []; const RAIL = { vars: { SYMBOLS: 'BTC/USDT', TIMEFRAME: '1h', RISK_PER_TRADE_PCT: '1', MAX_POSITION_PCT: '30', DAILY_LOSS_CAP_PCT: '5', MAX_DRAWDOWN_PCT: '15', TESTNET: 'true' }, muts: [] };
 globalThis.fetch = async (url, init) => {
   const u = String(url);
   const R = (corps, st) => new Response(JSON.stringify(corps), { status: st || 200, headers: { 'content-type': 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) { const corps = JSON.parse(init.body); IA_VUES.push({ four, corps }); const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   if (/backboard\.railway\.com/.test(u)) {
     const q = JSON.parse(init.body).query;
@@ -38,7 +38,7 @@ globalThis.fetch = async (url, init) => {
   }
   return R({ error: 'réseau non prévu : ' + u }, 599);
 };
-const env = { BEE_DROITS_MAX: '1', KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', RAILWAY_TOKEN: 'rt', AI: { run: async () => ({ response: 'ancien chemin' }) } };
+const env = { BEE_DROITS_MAX: '1', KDMC_SSO_SECRET: 'sec', KDMC_PORTE_TOTALE: '0', KDMC_ADMIN_PIN_SHA256: createHash('sha256').update('424242').digest('hex'), ACCOUNTS, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', RAILWAY_TOKEN: 'rt', AI: { run: async () => ({ response: 'ancien chemin' }) } };
 const att = []; const ctx = { waitUntil: (x) => att.push(x), passThroughOnException() {} };
 const req = async (hote, chemin, { m = 'GET', headers = {}, corps } = {}) => { const r = await mod.fetch(new Request('https://' + hote + chemin, { method: m, headers, body: corps === undefined ? undefined : JSON.stringify(corps) }), env, ctx); await Promise.all(att.splice(0)); return r; };
 const login = await req('kd-mc.com', '/__admin/login', { m: 'POST', headers: { 'content-type': 'application/json', origin: 'https://kd-mc.com' }, corps: { code: '424242' } });
@@ -47,14 +47,14 @@ const KEVIN = { cookie: sc.map((c) => c.split(';')[0]).join('; ') };
 const AUTRE = { cookie: 'kdmc_sso=' + signe('zelie_testard', true) };
 ok(/kdmc_sso=/.test(KEVIN.cookie), '0. connexion de Kevin par le code admin (session vérifiée)');
 const outil = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
-const reset = () => { IA_VUES.length = 0; IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; };
+const reset = () => { IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_SCRIPT.sambanova = []; };
 const toolMsgs = () => IA_VUES.flatMap((v) => v.corps.messages.filter((m) => m.role === 'tool').map((m) => m.content)).join('\n');
 const tout = () => JSON.stringify(IA_VUES.map((v) => v.corps));
 async function bee(texte) { const r = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, KEVIN), body: JSON.stringify({ messages: [{ role: 'user', content: texte }] }) }), env, { waitUntil() {} }); return { st: r.status, j: await r.json().catch(() => null) }; }
 const AGIR = (headers, corps) => req('javis.kd-mc.com', '/__javis/agir', { m: 'POST', headers: Object.assign({ 'content-type': 'application/json', origin: 'https://javis.kd-mc.com' }, headers), corps });
-async function carte(texte, action, champs) { reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('p', 'proposer_action', Object.assign({ action }, champs))] }, { content: 'Carte prête.' }]; const r = await bee(texte); return { r, p: r.j && r.j.propositions && r.j.propositions[0] }; }
+async function carte(texte, action, champs) { reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('p', 'proposer_action', Object.assign({ action }, champs))] }, { content: 'Carte prête.' }]; const r = await bee(texte); return { r, p: r.j && r.j.propositions && r.j.propositions[0] }; }
 const ack = async (p, h) => { const r = await AGIR(h || KEVIN, { jeton: p.jeton, confirme: true }); return { st: r.status, j: await r.json() }; };
-const lireOutil = async (nom) => { reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', nom, {})] }, { content: 'Voilà.' }]; await bee('montre-moi le réglage du robot et le contrôle du réel'); return toolMsgs(); };
+const lireOutil = async (nom) => { reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', nom, {})] }, { content: 'Voilà.' }]; await bee('montre-moi le réglage du robot et le contrôle du réel'); return toolMsgs(); };
 
 /* ───────── 1. CRÉER UN COMPTE ───────── */
 { const { p, r: r0 } = await carte('crée un compte pour Léa Martin, 06 12 34 56 78', 'compte_creer', { prenom: 'Léa', nom: 'Martin', telephone: '06 12 34 56 78', code: 'MONCODE12' });
@@ -151,7 +151,7 @@ ok(!/openai|anthropic|api\.openai|stripe/i.test(MAXSRC), '5g. 0 € : aucun mote
   const jr = await rr.json();
   ok(rr.status === 403 && jr.reason === 'droit_ferme' && !/CODE :/.test(jr.texte || '') && JSON.stringify([...kv.entries()]) === avantKv, '6e. verrou 2 — ✅ sur une carte déjà signée : 403 « droit_ferme », aucun compte, aucun code — ' + JSON.stringify(jr).slice(0, 120));
   /* verrou 3 : les PORTES elles-mêmes */
-  reset(); IA_SCRIPT.cerebras = [{ content: '', tool_calls: [outil('a', 'robot_config', {})] }, { content: 'Voilà.' }];
+  reset(); IA_SCRIPT.groq = [{ content: '', tool_calls: [outil('a', 'robot_config', {})] }, { content: 'Voilà.' }];
   await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json' }, KEVIN), body: JSON.stringify({ messages: [{ role: 'user', content: 'montre-moi le réglage du robot' }] }) }), envF, ctx);
   ok(/porte_non_autorisee/.test(toolMsgs()), '6f. verrou 3 — la lecture du réglage du robot est refusée à la PORTE (porte_non_autorisee) — ' + toolMsgs().slice(-120));
   ok(PORTES_DROITS_MAX.length === 2 && PORTES_DROITS_MAX.every((x) => PORTES.includes(x)), '6g. les 2 portes fermées par l\'interrupteur sont exactement celles de la liste blanche ajoutées le 23.10'); }

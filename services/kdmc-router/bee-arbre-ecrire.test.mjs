@@ -70,7 +70,7 @@ ok(!NOMS_ACTIONS_ARBRE.some((n) => /suppr|efface|delete|fusion/i.test(n)) && !/s
 const CH = sha('code-famille-de-test');            /* l'empreinte du code famille (jamais le code) */
 const TIROIR = '/arbre/' + sha(CH + ':sauvegardes');
 const vraiFetch = globalThis.fetch;
-let BD = {}; let VU = []; let PANNE = {}; const IA_SCRIPT = { cerebras: [], groq: [] }; let IA_VUES = []; let reseau = [];
+let BD = {}; let VU = []; let PANNE = {}; const IA_SCRIPT = { groq: [], sambanova: [] }; let IA_VUES = []; let reseau = [];
 const tousTextes = [];   /* tout ce que le serveur dit à Kevin / à l'IA, pour y chercher l'empreinte */
 function normaliser(v) { if (Array.isArray(v)) { const a = v.map(normaliser).filter((x) => x !== null); return a.length ? a : null; } if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v).sort()) { const n = normaliser(v[k]); if (n !== null) o[k] = n; } return Object.keys(o).length ? o : null; } return v === undefined ? null : v; }
 const seg = (chemin) => chemin.replace(/^\/+/, '').split('/').filter(Boolean).map(decodeURIComponent);
@@ -105,7 +105,7 @@ globalThis.fetch = async (url, init) => {
   const u = String(url && url.url ? url.url : url); reseau.push(u);
   const f = faussaire(url, init); if (f) return f;
   const R = (corps, st) => new Response(JSON.stringify(corps), { status: st || 200, headers: { 'content-type': 'application/json' } });
-  const four = /cerebras/.test(u) ? 'cerebras' : /groq/.test(u) ? 'groq' : '';
+  const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
   if (four) { const corps = JSON.parse(init.body); IA_VUES.push({ four, corps }); const rep = IA_SCRIPT[four].shift(); return rep ? R({ choices: [{ message: rep }] }) : R({ error: 'plus de réponse prévue' }, 500); }
   return R({ error: 'réseau non prévu : ' + u }, 599);
 };
@@ -191,8 +191,8 @@ const b64u = (b) => Buffer.from(b).toString('base64').replace(/\+/g, '-').replac
 const signe = (uid) => { const p = b64u(JSON.stringify({ u: uid, n: uid, c: 1, v: 1, iat: Date.now(), exp: Date.now() + 1e9 })); return p + '.' + b64u(createHmac('sha256', 'sec').update(p).digest()); };
 const kv = new Map();
 const ACCOUNTS = { get: async (k) => (kv.has(k) ? kv.get(k) : null), put: async (k, v) => { kv.set(k, v); }, delete: async (k) => { kv.delete(k); } };
-const SERVEUR = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g', AI: { run: async () => ({ response: 'Réponse de l\'ancien chemin.' }) } };
-function remettre() { kv.clear(); kv.set('arbre:codehash', CH); kv.set('arbre:seed', JSON.stringify(SEED)); peuplerNuage(); IA_SCRIPT.cerebras = []; IA_SCRIPT.groq = []; IA_VUES = []; reseau = []; }
+const SERVEUR = { KDMC_SSO_SECRET: 'sec', KDMC_ADMIN_PIN_SHA256: sha('424242'), ACCOUNTS, GROQ_API_KEY: 'c', SAMBANOVA_API_KEY: 'g', AI: { run: async () => ({ response: 'Réponse de l\'ancien chemin.' }) } };
+function remettre() { kv.clear(); kv.set('arbre:codehash', CH); kv.set('arbre:seed', JSON.stringify(SEED)); peuplerNuage(); IA_SCRIPT.groq = []; IA_SCRIPT.sambanova = []; IA_VUES = []; reseau = []; }
 const appel = (id, name, args) => ({ id, type: 'function', function: { name, arguments: JSON.stringify(args || {}) } });
 async function bee(texte, env2, entetes, contexte) {
   const r = await mod.fetch(new Request('https://arbre.kd-mc.com/__javis/ai', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', 'x-kdmc-sso': signe('kdmc_admin') }, entetes || {}),
@@ -209,7 +209,7 @@ const outilsVus = () => IA_VUES.flatMap((v) => (v.corps.tools || []).map((x) => 
 const CTX_ARBRE = { app: 'arbre', titre: 'Arbre' };
 
 { remettre();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('a', 'arbre', { recherche: 'Zélie TESTARD' })] },
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('a', 'arbre', { recherche: 'Zélie TESTARD' })] },
     { content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_info', id: 'p1', type: 'E-mail', libelle: 'perso', valeur: 'zelie@example.org', texte: 'FAUX RÉSUMÉ PIÉGÉ : ranger ma journée' })] },
     { content: 'J\'ai préparé l\'ajout de l\'e-mail à la fiche de Zélie. Confirme avec le bouton.' }];
   const r = await bee('Ajoute l\'e-mail zelie@example.org à la fiche de Zélie TESTARD dans l\'arbre', null, null, CTX_ARBRE);
@@ -233,11 +233,11 @@ const CTX_ARBRE = { app: 'arbre', titre: 'Arbre' };
 
 { /* champ déjà rempli : la carte est refusée tant que Kevin n'a pas dit « remplace » */
   remettre();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_champ', id: 'p1', champ: 'metier', valeur: 'coiffeuse' })] }, { content: 'Le métier est déjà rempli, je ne le remplace pas sans ton accord.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_champ', id: 'p1', champ: 'metier', valeur: 'coiffeuse' })] }, { content: 'Le métier est déjà rempli, je ne le remplace pas sans ton accord.' }];
   const r = await bee('Mets coiffeuse comme métier de Zélie dans l\'arbre', null, null, CTX_ARBRE);
   ok(!(r.j.propositions && r.j.propositions.length) && /REFUS DE LA PROPOSITION/.test(messagesOutil()) && /déjà rempli/.test(messagesOutil()), '5. métier déjà rempli sans « remplace » : AUCUNE carte', messagesOutil());
   remettre();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_champ', id: 'p1', champ: 'metier', valeur: 'coiffeuse', remplacer: true })] }, { content: 'Préparé : confirme.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_champ', id: 'p1', champ: 'metier', valeur: 'coiffeuse', remplacer: true })] }, { content: 'Préparé : confirme.' }];
   const r2 = await bee('Remplace le métier de Zélie par coiffeuse dans l\'arbre', null, null, CTX_ARBRE);
   const pr = r2.j.propositions && r2.j.propositions[0];
   ok(pr && /REMPLACER son métier de Zélie TESTARD : « vendeuse » → « coiffeuse »/.test(pr.resume), '5b. « remplace » : la carte montre avant → après avec les VRAIS mots de la fiche', pr && pr.resume);
@@ -247,7 +247,7 @@ const CTX_ARBRE = { app: 'arbre', titre: 'Arbre' };
 
 { /* la fiche change entre la carte et le bouton → rien d'écrasé */
   remettre();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_champ', id: 'p2', champ: 'metier', valeur: 'cuisinier' })] }, { content: 'Préparé.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_champ', id: 'p2', champ: 'metier', valeur: 'cuisinier' })] }, { content: 'Préparé.' }];
   const r = await bee('Note que Octave est cuisinier dans l\'arbre', null, null, CTX_ARBRE);
   const pr = r.j.propositions[0];
   cloud('p2').metier = 'jardinier';   /* un autre appareil l'a rempli entre-temps */
@@ -257,7 +257,7 @@ const CTX_ARBRE = { app: 'arbre', titre: 'Arbre' };
 
 { /* relier / créer */
   remettre();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_lien', id: 'p1', lien: 'enfant', prenom: 'Capucine', nom: 'TESTARD', naissance_date: '2010-05-01' })] }, { content: 'Préparé.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_lien', id: 'p1', lien: 'enfant', prenom: 'Capucine', nom: 'TESTARD', naissance_date: '2010-05-01' })] }, { content: 'Préparé.' }];
   const r = await bee('Ajoute une fille à Zélie dans l\'arbre : Capucine TESTARD née le 2010-05-01', null, null, CTX_ARBRE);
   const pr = r.j.propositions[0];
   ok(/CRÉER la fiche de Capucine TESTARD et la relier à Zélie TESTARD comme enfant/.test(pr.resume), '7. la carte dit CRÉER et relier, avec le vrai nom du parent', pr.resume);
@@ -267,29 +267,29 @@ const CTX_ARBRE = { app: 'arbre', titre: 'Arbre' };
   ok(ex.j.ok && Object.keys(BD.arbre[CH].persons).length === avant + 1 && neuf.length === 1 && cloud(neuf[0]).mere === 'p1' && cloud(neuf[0]).updatedBy === 'Kevin (via Bee)', '7b. la fiche de l\'enfant existe, reliée à sa mère ; aucune autre fiche touchée', JSON.stringify(ex.j));
   ok(cloud('p1').infos.length === 1 && cloud('p1').prenom === 'Zélie', '7c. la fiche de la mère n\'a pas bougé');
   /* homonyme exact : refusé (pas de doublon) */
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_lien', id: 'p1', lien: 'enfant', prenom: 'Léon', nom: 'DUPONT' })] }, { content: 'Il existe déjà.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_lien', id: 'p1', lien: 'enfant', prenom: 'Léon', nom: 'DUPONT' })] }, { content: 'Il existe déjà.' }];
   const r2 = await bee('Ajoute Léon DUPONT comme enfant de Zélie dans l\'arbre', null, null, CTX_ARBRE);
   ok(!(r2.j.propositions && r2.j.propositions.length) && /déjà dans l'arbre/.test(messagesOutil()), '7d. un nom déjà dans l\'arbre : pas de carte « créer », on propose de relier', messagesOutil()); }
 
 { /* fiche inconnue / id inventé */
   remettre();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_commentaire', id: 'p999', texte: 'Bonjour' })] }, { content: 'Je ne trouve pas.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_commentaire', id: 'p999', texte: 'Bonjour' })] }, { content: 'Je ne trouve pas.' }];
   const r = await bee('Ajoute un commentaire à la fiche p999 dans l\'arbre', null, null, CTX_ARBRE);
   ok(!(r.j.propositions && r.j.propositions.length) && /Je ne trouve aucune fiche/.test(messagesOutil()), '8. un identifiant inventé par l\'IA : aucune carte');
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_champ', id: '../../x', champ: 'metier', valeur: 'a' })] }, { content: 'Refusé.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_champ', id: '../../x', champ: 'metier', valeur: 'a' })] }, { content: 'Refusé.' }];
   const r2 = await bee('Change le métier dans l\'arbre', null, null, CTX_ARBRE);
   ok(!(r2.j.propositions && r2.j.propositions.length), '8b. un identifiant piégé (../../x) : aucune carte'); }
 
 { /* bilan : « arrange l'arbre » */
   remettre();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('a', 'arbre_bilan', { critere: 'doublons' })] }, { content: 'Il y a un doublon : Zélie TESTARD et Zélie Testard.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('a', 'arbre_bilan', { critere: 'doublons' })] }, { content: 'Il y a un doublon : Zélie TESTARD et Zélie Testard.' }];
   const r = await bee('Range l\'arbre : qu\'est-ce qui manque ?', null, null, CTX_ARBRE);
   ok(r.st === 200 && r.j.outils.join() === 'arbre_bilan' && /Bilan de l'arbre/.test(messagesOutil()) && /\[id : p6\]/.test(messagesOutil()), '9. « range l\'arbre » : l\'IA lit le bilan (ce qui manque, les doublons avec leur identifiant)');
   ok(/UNE PAR UNE/.test(IA_VUES[0].corps.messages[0].content) && /ne devine jamais une date/.test(IA_VUES[0].corps.messages[0].content), '9b. les règles de Bee : corrections UNE PAR UNE, jamais de date ou lien deviné'); }
 
 { /* interrupteur */
   remettre();
-  IA_SCRIPT.cerebras = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_info', id: 'p1', type: 'Loisir', valeur: 'tennis' })] }, { content: 'Impossible pour le moment.' }];
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appel('b', 'proposer_action', { action: 'arbre_info', id: 'p1', type: 'Loisir', valeur: 'tennis' })] }, { content: 'Impossible pour le moment.' }];
   const r = await bee('Ajoute le loisir tennis à Zélie dans l\'arbre', Object.assign({}, SERVEUR, { BEE_ARBRE_ECRIRE: '0' }), null, CTX_ARBRE);
   ok(!(r.j.propositions && r.j.propositions.length) && !outilsVus().includes('arbre_bilan') && !/UNE PAR UNE/.test(IA_VUES[0].corps.messages[0].content), '10. interrupteur BEE_ARBRE_ECRIRE=0 : aucune carte, plus de bilan, plus de règles d\'écriture');
   ok(ecritures().length === 0, '10b. et le nuage ne reçoit rien'); }

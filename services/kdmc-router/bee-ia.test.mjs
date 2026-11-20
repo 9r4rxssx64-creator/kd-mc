@@ -230,8 +230,8 @@ const kevin = signe('kdmc_admin', 1);
   ok(r.st === 200 && r.j && r.j.provider === 'qwen', '« belle photo » (texte seul) → Qwen gratuit répond  [' + r.st + ' ' + (r.j && r.j.provider) + ']');
 }
 
-/* ---- 7. BEE RÉPOND VITE (Kevin 3.10 : « le délai de réponse est trop long ») : quand Cerebras et Groq sont là,
-        ils passent DEVANT Qwen de Workers AI (mesuré : 4,5 à 8 s par réponse) — gratuits tous les deux. ---- */
+/* ---- 7. BEE RÉPOND VITE (Kevin 3.10 : « le délai de réponse est trop long ») : quand Groq est là,
+        il passe DEVANT Qwen de Workers AI (mesuré : 4,5 à 8 s par réponse) — gratuit. 20.11.2026 : Cerebras retiré (HTTP 402 mesuré, décision de Kevin) — sa clé présente ne doit plus le faire appeler. ---- */
 { const orig = globalThis.fetch; const vus = [];
   globalThis.fetch = async (u) => { vus.push(String(u));
     if (/cerebras/.test(String(u))) return new Response(JSON.stringify({ choices: [{ message: { content: 'Cerebras répond vite' } }] }), { status: 200 });
@@ -242,17 +242,17 @@ const kevin = signe('kdmc_admin', 1);
     const envR = Object.assign({}, env, { CEREBRAS_API_KEY: 'c', GROQ_API_KEY: 'g' });
     const r = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-sso': kevin }, body: JSON.stringify(Q) }), envR, { waitUntil() {} });
     const j = await r.json();
-    ok(r.status === 200 && j.provider === 'cerebras' && j.gratuit === true && appels.length === 0 && vus.length === 1,
-      'Cerebras (rapide, gratuit) répond en PREMIER, Qwen de Workers AI pas réveillé  [' + j.provider + ', ' + appels.length + ' appel Workers AI, ' + vus.length + ' appel externe]');
+    ok(r.status === 200 && j.provider === 'groq' && j.gratuit === true && appels.length === 0 && vus.length === 1 && !vus.some((u) => /cerebras/.test(u)),
+      'Groq (rapide, gratuit) répond en PREMIER, Cerebras jamais appelé même avec sa clé, Qwen de Workers AI pas réveillé  [' + j.provider + ', ' + appels.length + ' appel Workers AI, ' + vus.length + ' appel externe]');
     vus.length = 0; appels = [];
     globalThis.fetch = async (u) => { vus.push(String(u)); if (/groq/.test(String(u))) return new Response(JSON.stringify({ choices: [{ message: { content: 'Groq répond' } }] }), { status: 200 }); return new Response('{}', { status: 500 }); };
     const r2 = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-sso': kevin }, body: JSON.stringify(Q) }), envR, { waitUntil() {} });
     const j2 = await r2.json();
-    ok(r2.status === 200 && j2.provider === 'groq' && appels.length === 0, 'Cerebras en panne → Groq, toujours avant Qwen de Workers AI  [' + j2.provider + ']');
+    ok(r2.status === 200 && j2.provider === 'groq' && appels.length === 0, 'Groq répond encore, toujours avant Qwen de Workers AI  [' + j2.provider + ']');
     vus.length = 0; appels = [];
     const r3 = await mod.fetch(new Request('https://javis.kd-mc.com/__javis/ai', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-sso': kevin }, body: JSON.stringify(Q) }), env, { waitUntil() {} });
     const j3 = await r3.json();
-    ok(r3.status === 200 && j3.provider === 'qwen', 'sans Cerebras ni Groq : Qwen de Workers AI répond comme avant  [' + j3.provider + ']');
+    ok(r3.status === 200 && j3.provider === 'qwen', 'sans Groq : Qwen de Workers AI répond comme avant  [' + j3.provider + ']');
   } finally { globalThis.fetch = orig; } }
 
 console.log(`\n=== Cerveau de Bee (/__javis/ai) : ${pass} contrôles OK, ${fail} échec(s) ===`);

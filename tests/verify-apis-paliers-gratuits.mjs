@@ -18,7 +18,8 @@ import { readFileSync } from 'node:fs';
 
 const R = { ok: [], ko: [] };
 const chk = (c, m) => (c ? R.ok : R.ko).push(m);
-const NOUVEAUX = ['perplexity', 'cerebras', 'nvidia', 'sambanova', 'huggingface', 'scaleway', 'nebius', 'glm', 'qwen'];
+/* 20.11.2026 : cerebras retiré de la chaîne (HTTP 402 « Payment required » mesuré, décision de Kevin) ; le secours testé ici est huggingface. */
+const NOUVEAUX = ['perplexity', 'nvidia', 'sambanova', 'huggingface', 'scaleway', 'nebius', 'glm', 'qwen'];
 const ANCIENS = ['gemini', 'groq', 'openrouter', 'mistral', 'cohere', 'deepseek', 'together', 'xai'];
 
 /* --- 1. branché de bout en bout --- */
@@ -66,8 +67,8 @@ let appeles = [];
 global.fetch = async (u) => {
   const url = String(u);
   appeles.push(url);
-  if (/api\.cerebras\.ai/.test(url)) {
-    return new Response(JSON.stringify({ choices: [{ message: { content: 'SECOURS-CEREBRAS' } }] }), { status: 200 });
+  if (/router\.huggingface\.co/.test(url)) {
+    return new Response(JSON.stringify({ choices: [{ message: { content: 'SECOURS-HF' } }] }), { status: 200 });
   }
   return new Response(JSON.stringify({ error: { message: 'rate limit' } }), { status: 429 });
 };
@@ -78,23 +79,23 @@ const pass = (u, v) => { const p = b64u(JSON.stringify({ u, n: u, c: 1, v: v ? 1
 const KV = { get: async () => null, put: async () => {}, delete: async () => {} };
 const env = { KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV };
 ANCIENS.forEach((p) => { env[secretName(p)] = 'k'; });
-env[secretName('cerebras')] = 'k';
+env[secretName('huggingface')] = 'k';
 let r = await worker.fetch(new Request('https://w/ai', {
   method: 'POST', headers: { 'content-type': 'application/json', Origin: 'https://kd-mc.com', Authorization: 'Bearer ' + pass('marie-dupont', 0) },
   body: JSON.stringify({ messages: [{ role: 'user', content: 'salut' }] }) }), env);
 let j = await r.json().catch(() => ({}));
 chk(r.status === 200, '4. les 8 premiers tombent → la réponse arrive quand même (' + r.status + ')');
-chk(j.provider === 'cerebras', '4. et c\'est bien un NOUVEAU palier gratuit qui a servi (' + j.provider + ')');
-chk(j.text === 'SECOURS-CEREBRAS', '4. le texte du moteur de secours est bien remonté');
+chk(j.provider === 'huggingface', '4. et c\'est bien un NOUVEAU palier gratuit qui a servi (' + j.provider + ')');
+chk(j.text === 'SECOURS-HF', '4. le texte du moteur de secours est bien remonté');
 chk(!appeles.some((u) => /nvidia|sambanova|nebius/.test(u)),
   '5. les moteurs SANS clé ne sont jamais appelés (aucune erreur inventée)');
 
 /* --- 6. /health honnête --- */
 r = await worker.fetch(new Request('https://w/health', { headers: { Origin: 'https://kd-mc.com', 'x-kdmc-sso': pass('kdmc_admin', 1) } }),
-  { [secretName('cerebras')]: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV });
+  { [secretName('huggingface')]: 'k', KDMC_SSO_SECRET: 'sec', ACCOUNTS: KV });
 j = await r.json().catch(() => ({}));
 const ks = j.keys || j.providers || {};
-chk(ks.cerebras === true, '6. /health annonce un moteur réellement branché');
+chk(ks.huggingface === true, '6. /health annonce un moteur réellement branché');
 chk(ks.nvidia === false, '6. /health n\'annonce PAS un moteur sans clé (aucune promesse en l\'air)');
 chk(Object.keys(ks).length >= AI_CHAIN.length, '6. /health couvre TOUTE la chaîne (' + Object.keys(ks).length + ' entrées)');
 

@@ -39,6 +39,7 @@ const PERMIS = {
   'services/_shared/ia-route.js': 'LE routage commun : c\'est lui qui appelle les fournisseurs',
   'services/kdmc-apis/worker.js': 'passerelle : relais des clés pour Apex (proxy) + secours historique derrière routeSmart',
   'services/kdmc-router/worker.js': 'voix (TTS) et Coach IA historique ; le texte de Bee passe par routeSmart',
+  'services/kdmc-apis/delegue.js': 'les yeux du domaine (/delegue/vision, 12.11) : une image d\'acte lue par Gemini gratuit avec la clé du domaine, jeton et plafond par jour — pas un choix d\'IA de texte',
   'services/kdmc-crea-ai/worker.js': 'cascade texte de secours derrière la conférence + images',
   'services/chat-svc/src/index.js': 'ancien service de chat (gratuit d\'abord) — à faire passer par /ai (chantier)',
   'services/kdmc-balances/src/index.js': 'service annexe — à faire passer par /ai (chantier)',

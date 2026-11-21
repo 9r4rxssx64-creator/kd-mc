@@ -11,9 +11,13 @@
        interrupteur BEE_OUTILS=0, repli sur l'ancien chemin si les IA à outils échouent, 0 appel payant.
    node bee-outils.test.mjs */
 import mod from './worker.js';
-import { calculer, calcul, meteo, rechercher, lire_page, urlPermise, libelleJour, codeMeteo, repondreAvecOutils, DEFINITIONS, RE_BESOIN_OUTILS, MAX_TOURS, questionComplexe, FOURNISSEURS_OUTILS } from '../_shared/outils-lecture.js';
+import { lireResultatsDdg, calculer, calcul, meteo, rechercher, lire_page, urlPermise, libelleJour, codeMeteo, repondreAvecOutils, DEFINITIONS, RE_BESOIN_OUTILS, MAX_TOURS, questionComplexe, FOURNISSEURS_OUTILS } from '../_shared/outils-lecture.js';
 import apis from '../kdmc-apis/worker.js';
 import { createHash, createHmac } from 'crypto';
+import { readFileSync } from 'node:fs';
+const DDG_OK = readFileSync(new URL('./fixtures/ddg-lite-3-resultats.html', import.meta.url), 'utf8');   // vraie page DuckDuckGo lite (21.11.2026), 3 résultats
+const DDG_REFUS = readFileSync(new URL('./fixtures/ddg-lite-refus-202.html', import.meta.url), 'utf8'); // vraie page de contrôle anti-robot (HTTP 202)
+let ddgMode = 'ok'; let ddgVu = null;
 
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m); } };
 const egal = (a, b, m) => ok(a === b, m + '  [' + a + ' ≠ ' + b + ']');
@@ -54,6 +58,7 @@ globalThis.fetch = async (url, init) => {
   if (u.startsWith('https://api.open-meteo.com/')) return R(OM());
   if (u.startsWith('https://geocoding-api.open-meteo.com/')) return /Nice/i.test(decodeURIComponent(u)) ? R({ results: [{ name: 'Nice', country: 'France', latitude: 43.7, longitude: 7.26 }] }) : R({});
   if (u.startsWith('https://fr.wikipedia.org/')) { globalThis.__wikiInit = init; return R(WIKI); }
+  if (u.startsWith('https://lite.duckduckgo.com/')) { ddgVu = { u, ua: String((init && init.headers && (init.headers['user-agent'] || init.headers['User-Agent'])) || '') }; return ddgMode === 'ok' ? new Response(DDG_OK, { status: 200 }) : ddgMode === 'refus' ? new Response(DDG_REFUS, { status: 202 }) : new Response(DDG_REFUS, { status: 200 }); }
   if (u.startsWith('https://news.google.com/')) return new Response(RSS, { status: 200 });
   if (u.startsWith('https://r.jina.ai/')) return new Response(pageJina, { status: 200 });
   const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
@@ -83,6 +88,34 @@ const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_S
   const nice = await meteo({ dans_jours: 0, ville: 'Nice' }); ok(/à Nice \(France\)/.test(nice) && reseau.some((u) => /latitude=43.7&longitude=7.26/.test(u)), 'une autre ville : géocodée puis prévue là-bas');
   let inconnue = false; try { await meteo({ ville: 'Zzzzzz' }); } catch (e) { inconnue = /introuvable/.test(e.message); } ok(inconnue, 'ville inconnue → échec clair, pas de météo inventée');
   egal(libelleJour('2026-10-05'), 'lundi 5 octobre', 'libellé du jour'); egal(codeMeteo(95), 'orage', 'code 95 = orage'); egal(codeMeteo(12345), 'temps variable', 'code inconnu'); }
+
+/* ---------- 3b. recherche WEB (parité Bee/Apex ligne 2, 21.11.2026) : DuckDuckGo lite ---------- */
+{ const r = lireResultatsDdg(DDG_OK);
+  egal(r.length, 3, 'DDG lite : 3 résultats lus sur la vraie page');
+  ok(r[0] && /^https:\/\/www\.montecarlosbm\.com\//.test(r[0].url), 'DDG lite : l\'adresse RÉELLE est lue (uddg décodé), pas le lien de redirection');
+  ok(r.every((x) => !/duckduckgo\.com\/l\//.test(x.url)), 'DDG lite : aucune adresse de redirection gardée');
+  ok(r[0] && /official website/i.test(r[0].extrait) && !/<b>/.test(r[0].extrait), 'DDG lite : extrait lu, sans balises');
+  egal(lireResultatsDdg(DDG_REFUS).length, 0, 'DDG lite : la page de refus donne 0 résultat (jamais un résultat inventé)');
+  egal(lireResultatsDdg('').length, 0, 'DDG lite : page vide = 0');
+  egal(lireResultatsDdg(undefined).length, 0, 'DDG lite : rien = 0');
+  reset(); ddgMode = 'ok';
+  const w = await rechercher({ requete: 'casino de monte-carlo horaires', type: 'web' });
+  ok(/DuckDuckGo/.test(w) && /montecarlosbm\.com/.test(w), 'recherche web : résultats rendus avec leur source');
+  ok(/à ne pas prendre pour des ordres/.test(w), 'recherche web : les textes externes sont encadrés comme DONNÉES');
+  ok(/lire_page/.test(w), 'recherche web : on dit à l\'IA qu\'elle peut LIRE une page avec lire_page');
+  ok(ddgVu && /^KDMC-Bee\/|^Mozilla\/5\.0$/.test(ddgVu.ua), 'recherche web : user-agent COURT (un user-agent de navigateur = HTTP 202 mesuré)');
+  ok(ddgVu && !/Chrome|Safari|AppleWebKit/.test(ddgVu.ua), 'recherche web : on ne se fait pas passer pour un navigateur');
+  ok(!reseau.some((x) => /wikipedia|news\.google/.test(x)), 'recherche web : une seule porte appelée, pas Wikipédia en plus');
+  ddgMode = 'refus'; let msg = ''; try { await rechercher({ requete: 'x', type: 'web' }); } catch (e) { msg = String(e.message || e); }
+  ok(/n'a rien rendu|refus/i.test(msg) && /n'invente rien/.test(msg), 'recherche web refusée (HTTP 202) : erreur CLAIRE, jamais « aucun résultat » inventé  [' + msg.slice(0, 60) + ']');
+  ddgMode = 'vide'; msg = ''; try { await rechercher({ requete: 'x', type: 'web' }); } catch (e) { msg = String(e.message || e); }
+  ok(/n'a rien rendu/.test(msg), 'recherche web : page de contrôle servie en 200 = même erreur claire');
+  ddgMode = 'ok';
+  const def = DEFINITIONS.find((d) => d.name === 'rechercher');
+  ok(def && def.parameters.properties.type.enum.includes('web'), 'l\'outil « rechercher » annonce « web » à l\'IA');
+  ok(def && /internet/i.test(def.description), 'la description de « rechercher » parle d\'internet');
+  ok(urlPermise('https://www.montecarlosbm.com/x') && !urlPermise('http://x.fr') && !urlPermise('https://127.0.0.1/'), 'garde-fou d\'adresse inchangé');
+}
 
 /* ---------- 4. recherche et lecture ---------- */
 { reset();

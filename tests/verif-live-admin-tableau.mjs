@@ -24,7 +24,7 @@ const ctx = await browser.newContext({
 });
 /* MAIL_ESSAI=1 (à la main, jamais par défaut) : UN mail d'essai part au compte ADMIN lui-même, pour prouver l'envoi réel de la porte /__admin/mail-envoyer. */
 const MAIL_ESSAI = process.env.MAIL_ESSAI === '1';
-const DOMAINE = /(^|\.)kd-mc\.com$/, ECRITURE_OK = MAIL_ESSAI ? /^\/__(admin\/login|sso\/[a-z]+|admin\/mail-envoyer)$/ : /^\/__(admin\/login|sso\/[a-z]+)$/;
+const DOMAINE = /(^|\.)kd-mc\.com$/, ECRITURE_OK = MAIL_ESSAI ? /^\/__(admin\/login|sso\/[a-z]+|admin\/mail-envoyer|admin\/matricule)$/ : /^\/__(admin\/login|sso\/[a-z]+|admin\/matricule)$/;   // 21.11 : /__admin/matricule passe, mais le robot n'y envoie QU'UNE forme refusée (« ROBOT ») : la porte répond 400 avant toute lecture, rien n'est écrit
 await ctx.route('**/*', (r) => {
   const q = r.request(), m = q.method(); let u; try { u = new URL(q.url()); } catch (_) { return r.abort(); }
   if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return r.fallback();
@@ -143,6 +143,17 @@ try {
   }, MAIL_ESSAI);
   chk(ml.avant.ok && ml.avant.champs === 'email_masque,name,ok,pret,reste', `porte du mail : HTTP ${ml.avant.st} · messagerie branchée : ${ml.avant.pret ? 'oui' : 'NON'} · le compte admin a une adresse : ${ml.avant.adresse ? 'oui' : 'non'} · reste aujourd'hui : ${ml.avant.reste}`);
   if (MAIL_ESSAI) chk(!!ml.envoi && ml.envoi.ok && ml.apres && ml.apres.reste === ml.avant.reste - 1, `mail d'essai au compte admin : ${ml.envoi ? (ml.envoi.ok ? 'PARTI' : 'refusé (' + (ml.envoi.raison || 'HTTP ' + ml.envoi.st) + ')') : 'pas tenté (messagerie non branchée, pas d\'adresse ou plafond atteint)'} · reste ensuite : ${ml.apres ? ml.apres.reste : '-'}`);
+  /* 21.11 (pont 2989) : le matricule SBM modifiable — la porte existe et REFUSE une mauvaise forme (aucune écriture : « ROBOT » n'est pas un matricule) ; la page servie a le champ et le bouton. */
+  const mt = await page.evaluate(async () => {
+    const h = { 'content-type': 'application/json' }; try { const g = localStorage.getItem('kdmc_admin_grant') || '', t = localStorage.getItem('kdmc_sso_token') || ''; if (g) h['x-kdmc-admin'] = g; if (t) h.Authorization = 'Bearer ' + t; } catch (_) { /* rien */ }
+    const x = await fetch('/__admin/matricule', { method: 'POST', credentials: 'include', headers: h, body: JSON.stringify({ uid: 'kdmc_admin', matricule: 'ROBOT' }) });
+    const j = await x.json().catch(() => ({}));
+    const src = (document.querySelector('script[src*="admin.js"]') || {}).src || '';
+    const js = src ? await (await fetch(src, { cache: 'no-store' })).text() : '';
+    return { st: x.status, raison: String(j.reason || ''), champ: /class="matin"/.test(js), bouton: /data-act="matricule"/.test(js) };
+  });
+  chk(mt.st === 400 && mt.raison === 'matricule_format', `matricule SBM : la porte répond et refuse une mauvaise forme sans rien écrire · HTTP ${mt.st} · ${mt.raison || '-'}`);
+  chk(mt.champ && mt.bouton, `matricule SBM : la page servie a le champ (${mt.champ ? 'oui' : 'NON'}) et le bouton (${mt.bouton ? 'oui' : 'NON'}) dans la rubrique Identité`);
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }
 
 dire(`=== VÉRIF TABLEAU ADMIN : ${bons} OK · ${mauvais} en défaut`);

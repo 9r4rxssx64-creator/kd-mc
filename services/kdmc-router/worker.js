@@ -20,6 +20,7 @@ import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret,
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
 import { lienEcrire } from './ecrire-apex-chat.js';   // 20.11 : « Écrire à <nom> » par Apex Chat = lien prérempli, Kevin envoie lui-même (Bee + Apex AI)
+import { handleMatriculeAdmin } from './matricule-admin.js';   // 21.11 (pont 2989) : le matricule SBM posé par Kevin dans la rubrique Identité de l'admin
 import { handleMailAdmin } from './mail-admin.js';   // 19.11 : un mail envoyé par le domaine au nom de Kevin, derrière son ✅ (Bee)
 import { handleVoix } from './voix.js';   // 🎙️ Studio Voix : bibliothèque de voix clonées + porte d'intégration (Kevin 29.10)
 import { catalogue as catalogueVoix } from './voix-catalogue.js';
@@ -5599,6 +5600,10 @@ async function handleAdmin(request, url, env) {
      NOMBRES. JAMAIS : code, empreinte, adresse IP, téléphone, e-mail, appareil. Triée par nom. Bee / Apex AI n'en reçoivent que « liste prête (N comptes) » :
      la carte est fabriquée par le domaine (les noms ne partent jamais à une IA). */
   /* ── UN MAIL À UNE PERSONNE DU DOMAINE (Kevin 19.11 « Oui go pour Bee ») : adresse lue sur SA fiche, plafond par jour, journal — voir mail-admin.js ── */
+  /* MATRICULE SBM (pont 2989, 21.11) — Kevin seul : POST { uid, matricule } range le matricule sur la fiche du compte (forme U + 3 à 6 chiffres, jamais en double, vide = effacer). */
+  if (path === '/__admin/matricule') return handleMatriculeAdmin(request, env, { accGet, accPut, audLog, J: (o, st) => J(o, undefined, st),
+    origineOk: (r) => ssoOriginOk(r.headers.get('origin'), new URL(r.url).host),
+    tous: async (e) => { const idxM = JSON.parse((await e.ACCOUNTS.get('idx:uids')) || '[]'); return (await Promise.all(idxM.slice(-500).map((u) => accGet(e, u)))).filter(Boolean); } });
   if (path === '/__admin/mail-envoyer') return handleMailAdmin(request, url, env, { accGet, audLog, J: (o, st) => J(o, undefined, st) });
   if (path === '/__admin/comptes-cmcteams' && request.method === 'GET') {
     if (!env.ACCOUNTS) return J({ ok: true, comptes: [], total: 0, avec_matricule: 0, sans_matricule: 0, kv: false });

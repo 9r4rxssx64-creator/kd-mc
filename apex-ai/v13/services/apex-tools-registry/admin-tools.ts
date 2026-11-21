@@ -8,6 +8,20 @@ import type { ApexTool } from '../core-svc/apex-tools-types.js';
 
 export const ADMIN_TOOLS: readonly ApexTool[] = [
   {
+    name: 'message_apex_chat',
+    description: 'Bouton « ✍️ Écrire » pour une personne ayant un compte : le domaine lit son identifiant, Apex Chat s\'ouvre avec ton message dans la zone de saisie, Kevin relit et envoie lui-même (rien n\'est envoyé par toi).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        nom: { type: 'string', description: 'prénom et nom de la personne, comme sur le compte' },
+        texte: { type: 'string', description: 'le message de Kevin (500 signes au plus)' },
+      },
+      required: ['nom', 'texte'],
+    },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
     name: 'lien_externe',
     description: 'Bouton « Ouvrir » vers une page https hors du domaine : Kevin le touche, tu n\'ouvres rien toi-même.',
     inputSchema: {

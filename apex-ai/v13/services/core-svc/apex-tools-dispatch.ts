@@ -397,6 +397,11 @@ class ApexToolsDispatcher {
         const report = await apexSelfAudit.runFullAudit(brutal);
         return apexSelfAudit.formatReportMarkdown(report);
       }
+      case 'message_apex_chat': {
+        /* Parité Bee (Kevin 18.11) : un bouton que Kevin touche ; Apex Chat s'ouvre avec le message prêt, il envoie lui-même (E2E côté appareil). */
+        const { ecrireApexChat } = await import('../admin/ecrire-apex-chat.js');
+        return ecrireApexChat(params['nom'], params['texte']);
+      }
       case 'lien_externe': {
         /* Parité Bee (Kevin 18.11) : une carte avec un bouton que Kevin touche ; rien ne s'ouvre tout seul. */
         const { lienExterne } = await import('../admin/lien-externe.js');

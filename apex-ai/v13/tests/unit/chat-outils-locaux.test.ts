@@ -4,7 +4,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { adresseAOuvrir, demandeListeComptesCmcteams, repondreLocalement } from '../../features/chat/chat-outils-locaux.js';
+import { adresseAOuvrir, demandeEcrireApexChat, demandeListeComptesCmcteams, repondreLocalement } from '../../features/chat/chat-outils-locaux.js';
 
 afterEach(() => { document.body.innerHTML = ''; });
 const faux = (corps: unknown, status = 200): typeof fetch =>
@@ -77,5 +77,23 @@ describe('« ouvre-moi <adresse> » (pc-config 2906 : partait vers un lancement 
     const r = await repondreLocalement('ouvre-moi http://exemple.fr', faux(REP));
     expect(r).toMatch(/Adresse refusée/);
     expect(document.querySelector('a.ax-lien-externe')).toBeNull();
+  });
+});
+
+describe('« écris à <nom> sur Apex Chat : <message> » (parité Bee, conception du 19.11)', () => {
+  it.each([
+    ['écris à Marie Dupont sur Apex Chat : Bonjour, tu peux passer ?', 'Marie Dupont', 'Bonjour, tu peux passer ?'],
+    ['Peux-tu écrire à Léa Martin par apex chat que la réunion est à 14 h', 'Léa Martin', 'la réunion est à 14 h'],
+    ['envoie un message à Jean-Paul Roux sur ApexChat - merci pour hier', 'Jean-Paul Roux', 'merci pour hier'],
+  ])('« %s »', (t, nom, texte) => { expect(demandeEcrireApexChat(t)).toEqual({ nom, texte }); });
+  it.each(['écris à Marie', 'écris à Marie sur Apex Chat', 'écris à Marie sur Apex Chat :', 'comment écrire à quelqu\'un sur Apex Chat : exemple', 'ouvre Apex Chat', 'dis à Marie bonjour'])('pas pour nous : « %s »', (t) => {
+    expect(demandeEcrireApexChat(t)).toBeNull();
+  });
+  it('réponse locale : un bouton, ni nom ni texte dans la phrase, rien n\'est envoyé', async () => {
+    const lien = 'https://apex-chat.kd-mc.com/?to=kdmc_marie-dupont&texte=Bonjour';
+    const f = (async () => new Response(JSON.stringify({ ok: true, correspondances: 1, trouves: [{ nom: 'Marie Dupont', lien }] }))) as unknown as typeof fetch;
+    const r = await repondreLocalement('écris à Marie Dupont sur Apex Chat : Bonjour', f);
+    expect(r).toMatch(/« Écrire » est affiché/); expect(r).not.toMatch(/Marie|Dupont|Bonjour|kdmc_/);
+    expect(document.querySelector('a.ax-ecrire')?.getAttribute('href')).toBe(lien);
   });
 });

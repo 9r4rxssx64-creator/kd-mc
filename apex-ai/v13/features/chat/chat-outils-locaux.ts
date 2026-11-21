@@ -6,6 +6,7 @@
  */
 import { appeler } from '../../services/admin/appeler.js';
 import { comptesCmcteams } from '../../services/admin/comptes-cmcteams.js';
+import { ecrireApexChat } from '../../services/admin/ecrire-apex-chat.js';
 import { lienExterne } from '../../services/admin/lien-externe.js';
 
 const W = (...mots: string[]): string => `(?<![\\p{L}\\p{N}])(?:${mots.join('|')})(?![\\p{L}\\p{N}])`;
@@ -28,6 +29,14 @@ export function nomAAppeler(texte: string): string | null {
   return m?.[1] ? m[1].trim() : null;
 }
 
+/** PURE : « écris à <nom> sur Apex Chat : <message> » → { nom, texte }, sinon null. Il faut « Apex Chat » dit et un séparateur (« : » ou « que ») : jamais une phrase ordinaire. */
+export function demandeEcrireApexChat(texte: string): { nom: string; texte: string } | null {
+  const m = /^\s*(?:peux-tu\s+|pourrais-tu\s+)?(?:écris|ecris|écrire|ecrire|envoie(?:-moi)?(?:\s+un\s+message)?|dis)\s+(?:à|a)\s+([\p{L}][\p{L}'’ -]{1,60}?)\s+(?:sur|dans|par|via)\s+apex[\s-]?chat\s*(?::|,|-|\s+que\s+|\s+qu['’])\s*(\S[\s\S]{0,499})$/iu.exec(String(texte ?? '').slice(0, 700));
+  if (!m?.[1] || !m[2]) return null;
+  const msg = m[2].trim();
+  return msg ? { nom: m[1].trim(), texte: msg } : null;
+}
+
 /** PURE : « ouvre-moi <adresse> » → l'adresse, sinon null. https:// explicite, ou un nom de site avec une extension connue ; jamais un nom de fichier. */
 export function adresseAOuvrir(texte: string): string | null {
   const m = /^\s*(?:peux-tu\s+|pourrais-tu\s+)?(?:ouvre|ouvrir|va sur|navigue sur)(?:[- ]moi)?\s+(?:la page\s+|le site\s+|le lien\s+)?((?:https?:\/\/\S+)|(?:[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|fr|ch|mc|io|eu|info|ai|app|dev|co)(?:[/?#]\S*)?))\s*[?.!]*\s*$/iu.exec(String(texte ?? '').slice(0, 2100));
@@ -36,6 +45,12 @@ export function adresseAOuvrir(texte: string): string | null {
 
 /** Si la demande est connue : exécute l'outil (carte à Kevin) et rend la phrase à afficher ; sinon null (le modèle répond comme avant). */
 export async function repondreLocalement(texte: string, f: typeof fetch = fetch): Promise<string | null> {
+  const ecrire = demandeEcrireApexChat(texte);
+  if (ecrire) {
+    const t = await ecrireApexChat(ecrire.nom, ecrire.texte, f);
+    if (/^(Bouton|\d+ personnes)/.test(t)) return '✍️ Le bouton « Écrire » est affiché dans la fenêtre : touche-le, Apex Chat s\'ouvre avec ton message prêt (tu relis et tu envoies toi-même).';
+    return `✍️ ${t}`;
+  }
   const adresse = adresseAOuvrir(texte);
   if (adresse) {
     const t = await lienExterne(adresse);

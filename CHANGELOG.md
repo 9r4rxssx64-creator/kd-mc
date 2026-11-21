@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.411 + routeur — 21.11.2026 (apex-cloud, parité Bee ⇄ Apex AI : « modifier dans Apex Chat » / « envoyer un message »)
+- Nouvelle porte du domaine `GET /__admin/ecrire-apex-chat?q=<nom>&texte=<message>` (session admin, lecture seule) : rend, pour chaque personne trouvée, un lien `https://apex-chat.kd-mc.com/?to=kdmc_<uid>&texte=<message>` (identifiant lu par le domaine, compte admin jamais proposé, identifiant hors format écarté). Fonction pure `lienEcrire` dans `services/kdmc-router/ecrire-apex-chat.js`, test `ecrire-apex-chat.test.mjs` (12 ✓, sabotage rouge). **javis-bee peut l'appeler pour l'outil Bee `message_apex_chat`.**
+- Apex AI : outil `message_apex_chat` et routage local « écris à <nom> sur Apex Chat : <message> » → carte « ✍️ Écrire » ; Kevin la touche, Apex Chat (1.1.373) s'ouvre avec le texte prêt, il relit et envoie lui-même (messages chiffrés de bout en bout : rien n'est envoyé par Apex AI ni par le domaine). La phrase rendue à l'IA ne contient ni nom, ni lien, ni texte.
+- Tests : `tests/unit/ecrire-apex-chat.test.ts`, `chat-outils-locaux.test.ts` ; sabotage (garde du lien retirée) = rouge.
+
 ## Apex AI v13.4.410 — 20.11.2026 (apex-cloud, cloud-installer 2977)
 - Cerebras retiré des IA gratuites d'Apex AI (décision de Kevin « retire » : le service rend HTTP 402 « Payment required »). Il n'est plus dans la politique de choix (admin, raisonnement, code, vitesse, création), la liste des gratuits, la chaîne par défaut du routeur ni le crew : fini l'appel perdu en 3ᵉ position à chaque message. Apex Chat n'appelle pas Cerebras (vérifié : aucune occurrence hors un test).
 - Test : `tests/unit/ia-sans-cerebras.test.ts` (lit les listes réelles) ; sabotage (remis dans la chaîne) = rouge. Test de l'orchestre mis à jour.

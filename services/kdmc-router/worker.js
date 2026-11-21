@@ -19,6 +19,7 @@ import { handleCodesComptes, chiffrerCode, dechiffrerCode, codeAuHasard } from '
 import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret, jetonConfirmation, envoyerMailConfirmation, sha256Hex as sha256HexMail } from './mail-confirme.js';   // confirmation par MAIL de l'inscription (Kevin 17.10 : « B », pas de 2e numéro pour WhatsApp)
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
+import { lienEcrire } from './ecrire-apex-chat.js';   // 20.11 : « Écrire à <nom> » par Apex Chat = lien prérempli, Kevin envoie lui-même (Bee + Apex AI)
 import { handleMailAdmin } from './mail-admin.js';   // 19.11 : un mail envoyé par le domaine au nom de Kevin, derrière son ✅ (Bee)
 import { handleVoix } from './voix.js';   // 🎙️ Studio Voix : bibliothèque de voix clonées + porte d'intégration (Kevin 29.10)
 import { catalogue as catalogueVoix } from './voix-catalogue.js';
@@ -5614,6 +5615,19 @@ async function handleAdmin(request, url, env) {
     const idxA = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
     const tousA = (await Promise.all(idxA.slice(-500).map((uid) => accGet(env, uid)))).filter(Boolean);
     return J(Object.assign({ ok: true, kv: true }, trouverAppel(tousA, q)));
+  }
+  /* ÉCRIRE À UNE PERSONNE PAR APEX CHAT (Kevin 18.11, parité Bee / Apex AI) — Kevin seul (session admin prouvée) : GET ?q=<nom>&texte=<message> → { ok, trouves:[{nom, lien}], correspondances }.
+     Lecture seule : rien n'est envoyé (messages chiffrés de bout en bout côté appareil). Le lien ouvre la conversation et préremplit le texte ; Kevin relit et touche Envoyer.
+     Identifiant et lien : jamais donnés à une IA, seulement à la carte que le domaine affiche. Voir ecrire-apex-chat.js. */
+  if (path === '/__admin/ecrire-apex-chat' && request.method === 'GET') {
+    const sp = new URL(request.url).searchParams;
+    const q = String(sp.get('q') || '').slice(0, 80), texte = String(sp.get('texte') || '').slice(0, 2000);
+    if (!q.trim()) return J({ ok: false, reason: 'nom_requis' }, undefined, 400);
+    if (!texte.trim()) return J({ ok: false, reason: 'texte_requis' }, undefined, 400);
+    if (!env.ACCOUNTS) return J({ ok: true, trouves: [], correspondances: 0, kv: false });
+    const idxE = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
+    const tousE = (await Promise.all(idxE.slice(-500).map((uid) => accGet(env, uid)))).filter(Boolean);
+    return J(Object.assign({ ok: true, kv: true }, lienEcrire(tousE, q, texte, CANON_UID)));
   }
   /* Journal d'audit admin : connexions admin ok/échec, déconnexions forcées,
      nouveaux appareils, mints Firebase. FIFO 200 en KV. */

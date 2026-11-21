@@ -1,5 +1,11 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.414 + routeur — 21.11.2026 (apex-cloud, parité Bee ⇄ Apex AI : « classer l'arbre autrement », pont-check 2992 b · javis-bee 3031)
+- Nouvelle porte du domaine `GET /__admin/ouvrir` (session admin, lecture seule) : même décision que Bee (`intentionOuvrir` / `adresse` de `bee-ouvrir.js`, listes fermées de vues arbre|plan|paysage|lignee et de tris alpha|nom|naissance|recent, apps du domaine seulement). Forme phrase `?q=` ou structurée `?app=&personne=&famille=&vue=&tri=&page=`.
+- Apex AI : outil `ouvrir` (même nom que chez Bee) et routage local « ouvre l'arbre en vue plan », « montre l'arbre trié par naissance »… → bouton « Ouvrir » que Kevin touche ; adresse du domaine exigée (https, kd-mc.com ou sous-domaine) ; la phrase rendue à l'IA ne contient ni adresse ni nom. Une phrase qui n'est pas une ouverture nette repart au modèle comme avant.
+- Garde de parité `parite-bee-apex-ai` étendu : il lit maintenant `ouvrir`, `arbre_info|champ|commentaire|lien` et `message_direct` de Bee ; les 5 non portés sont listés avec leur propriétaire (apex-cloud) et la liste ne peut que rétrécir.
+- Tests : `ouvrir-admin.test.mjs` (8 ✓), `tests/unit/ouvrir-domaine.test.ts` (24 ✓, sabotage de l'hôte = rouge).
+
 ## Apex AI v13.4.413 + routeur — 21.11.2026 (apex-cloud, pc-config 3055)
 - Mesuré en réel : « lis https://example.org » ne donnait plus de 401 mais « HTTP 429 » (le lecteur gratuit r.jina.ai refuse « trop de requêtes »). La porte `/__admin/lire-page` bascule alors sur une lecture directe par le Worker (`lire-page-direct.js` : https seulement, adresses internes refusées, redirections suivies à la main et revérifiées une à une, pages texte/HTML seulement, 200 Ko lus, 5000 signes rendus).
 - Défaut de focus (pc-config 3055, 1 essai sur 1) : à la fermeture d'une fenêtre (Ouvrir, Écrire, Appeler), taper sans recliquer le champ perdait la saisie. La fenêtre rend maintenant le focus au champ qui l'avait (sinon la saisie du chat), sans voler un focus pris ailleurs.

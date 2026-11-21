@@ -8,6 +8,26 @@ import type { ApexTool } from '../core-svc/apex-tools-types.js';
 
 export const ADMIN_TOOLS: readonly ApexTool[] = [
   {
+    name: 'ouvrir',
+    description: 'Bouton « Ouvrir » vers une app du domaine ou l\'arbre (personne, famille, vue arbre|plan|paysage|lignee, tri alpha|nom|naissance|recent) : le domaine décide comme pour Bee, Kevin touche le bouton, tu n\'ouvres rien toi-même. Donne soit app (+ personne, famille, vue, tri, page), soit la phrase de Kevin dans demande.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        app: { type: 'string', description: 'nom de l\'app : arbre, lingua, cmcteams, light, apex chat, admin…' },
+        page: { type: 'string', description: 'chemin de page dans l\'app (facultatif)' },
+        personne: { type: 'string', description: 'arbre seulement : prénom et nom' },
+        famille: { type: 'string', description: 'arbre seulement : nom de famille' },
+        vue: { type: 'string', enum: ['arbre', 'plan', 'paysage', 'lignee'], description: 'arbre seulement : la vue' },
+        tri: { type: 'string', enum: ['alpha', 'nom', 'naissance', 'recent'], description: 'arbre seulement : le classement' },
+        libelle: { type: 'string', description: 'texte du bouton (facultatif)' },
+        demande: { type: 'string', description: 'à défaut de app : la phrase de Kevin, telle quelle' },
+      },
+      required: [],
+    },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
     name: 'message_apex_chat',
     description: 'Bouton « ✍️ Écrire » pour une personne ayant un compte : le domaine lit son identifiant, Apex Chat s\'ouvre avec ton message dans la zone de saisie, Kevin relit et envoie lui-même (rien n\'est envoyé par toi).',
     inputSchema: {

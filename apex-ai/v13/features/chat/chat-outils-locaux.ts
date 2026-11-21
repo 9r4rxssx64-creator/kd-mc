@@ -8,6 +8,7 @@ import { appeler } from '../../services/admin/appeler.js';
 import { comptesCmcteams } from '../../services/admin/comptes-cmcteams.js';
 import { ecrireApexChat } from '../../services/admin/ecrire-apex-chat.js';
 import { lienExterne } from '../../services/admin/lien-externe.js';
+import { ouvrirDomaine } from '../../services/admin/ouvrir-domaine.js';
 
 const W = (...mots: string[]): string => `(?<![\\p{L}\\p{N}])(?:${mots.join('|')})(?![\\p{L}\\p{N}])`;
 const CMC = '(?<![\\p{L}\\p{N}])cmc\\s?-?teams?(?![\\p{L}\\p{N}])';
@@ -43,6 +44,12 @@ export function adresseAOuvrir(texte: string): string | null {
   return m?.[1] ? m[1].replace(/[?.!]+$/, '') : null;
 }
 
+/** PURE : la phrase commence par un verbe d'ouverture (le domaine décide ensuite si c'est une ouverture NETTE : sinon le modèle répond comme avant). */
+export function ressembleAOuvrir(texte: string): boolean {
+  const t = String(texte ?? '').trim();
+  return t.length > 0 && t.length <= 200 && /^(?:peux-tu\s+|pourrais-tu\s+|s'il te pla[iî]t\s+)?(?:ouvre|ouvrir|ouvrez|montre|montrer|affiche|afficher|emm[eè]ne|am[eè]ne|va\s+(?:sur|dans|[àa])|aller\s+(?:sur|dans|[àa])|fais[- ]moi\s+voir|je\s+(?:veux|voudrais)\s+voir|lance)(?![\p{L}])/iu.test(t);
+}
+
 /** Si la demande est connue : exécute l'outil (carte à Kevin) et rend la phrase à afficher ; sinon null (le modèle répond comme avant). */
 export async function repondreLocalement(texte: string, f: typeof fetch = fetch): Promise<string | null> {
   const ecrire = demandeEcrireApexChat(texte);
@@ -62,7 +69,14 @@ export async function repondreLocalement(texte: string, f: typeof fetch = fetch)
     if (/^(Bouton|\d+ personnes)/.test(t)) return '📞 Le bouton « Appeler » est affiché dans la fenêtre : touche-le, ton iPhone compose.';
     return `📞 ${t}`;
   }
-  if (!demandeListeComptesCmcteams(texte)) return null;
+  if (!demandeListeComptesCmcteams(texte)) {
+    /* 21.11 (parité Bee, ligne « classer l'arbre autrement ») : « ouvre l'arbre en vue plan », « montre l'arbre trié par naissance »… — le domaine décide comme pour Bee */
+    if (ressembleAOuvrir(texte)) {
+      const t = await ouvrirDomaine({ demande: texte }, f);
+      if (/^Bouton/.test(t)) return '🔗 Le bouton « Ouvrir » est affiché dans la fenêtre : touche-le pour ouvrir l\'app.';
+    }
+    return null;
+  }
   const r = await comptesCmcteams(f);
   const n = /(\d+) comptes/.exec(r)?.[1];
   if (r.startsWith('Liste prête') && n) return `📋 La liste des comptes CMCteams est affichée dans la fenêtre : ${n} comptes, avec leur identifiant SBM quand il est connu.`;

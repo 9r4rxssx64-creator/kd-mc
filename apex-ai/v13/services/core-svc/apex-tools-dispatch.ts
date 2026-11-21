@@ -397,6 +397,11 @@ class ApexToolsDispatcher {
         const report = await apexSelfAudit.runFullAudit(brutal);
         return apexSelfAudit.formatReportMarkdown(report);
       }
+      case 'ouvrir': {
+        /* Parité Bee (Kevin 19.11, « classer l'arbre autrement ») : le domaine décide (même logique que Bee), Kevin touche le bouton. */
+        const { ouvrirDomaine } = await import('../admin/ouvrir-domaine.js');
+        return ouvrirDomaine(params);
+      }
       case 'message_apex_chat': {
         /* Parité Bee (Kevin 18.11) : un bouton que Kevin touche ; Apex Chat s'ouvre avec le message prêt, il envoie lui-même (E2E côté appareil). */
         const { ecrireApexChat } = await import('../admin/ecrire-apex-chat.js');

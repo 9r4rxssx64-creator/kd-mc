@@ -43,7 +43,7 @@ import { reponseDirecte } from './bee-direct.js';
 import { handleRaccourci } from './bee-raccourci.js';   // Kevin 29.10 « Go tout » : Bee appelée par Siri / Raccourcis, LECTURE SEULE, jeton par appareil (voir ce fichier)   // météo, heure, date, calcul, conversion SANS IA quand la demande est nette (Kevin 17.10)
 import { outilsParite, RE_PARITE, REGLES_PARITE, intentionParite } from './bee-parite.js';   // page hors domaine, liste des comptes CMCteams, bouton Appeler — Kevin seul, derrière son toucher (Kevin 18.11)
 import { outilsAtelier, imageGratuite, RE_ATELIER, REGLES_ATELIER } from './bee-atelier.js';   // documents, agenda, brouillon de mail, images — gratuit, Kevin seul (Kevin 17.10)
-import { outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, intentionOuvrir, intentionSuite, intentionFiche, homonymesArbre, reponseFiche, estSuiteOuverture, corrigerTexte } from './bee-ouvrir.js';   // Bee OUVRE n'importe quelle app du domaine sur l'écran de Kevin (Kevin 17.10)
+import { outilsOuvrir, RE_OUVRIR, REGLES_OUVRIR, adresse as adresseOuvrir, intentionOuvrir, intentionSuite, intentionFiche, homonymesArbre, reponseFiche, estSuiteOuverture, corrigerTexte } from './bee-ouvrir.js';   // Bee OUVRE n'importe quelle app du domaine sur l'écran de Kevin (Kevin 17.10)
 import { nuage as nuageArbre, outilsBilan, chercherDoublon, REGLES_ARBRE_ECRIRE } from './bee-arbre-ecrire.js';   // Bee MODIFIE l'arbre (Kevin 15.10), derrière son ✅   // Bee voit les fiches de l'arbre (lecture, Kevin seul)
 import { REGLES_TACHES } from './bee-taches.js';   // Bee dépose les tâches de code pour Claude Code (derrière ✅)
 import { REGLES_MESSAGES_DIRECTS, RE_MESSAGES_DIRECTS } from './bee-messages-directs.js';   // Bee écrit à une personne (derrière ✅)
@@ -5635,6 +5635,22 @@ async function handleAdmin(request, url, env) {
       try { return J({ ok: true, texte: await lireDirect(u), via: 'direct' }); }
       catch (e2) { return J({ ok: false, reason: String((e2 && e2.message) || e2).slice(0, 160) }, undefined, 502); }
     }
+  }
+  /* OUVRIR UNE APP DU DOMAINE, L'ARBRE (personne, famille, vue, tri) — parité Bee ⇄ Apex AI, ligne « classer l'arbre autrement » (Kevin 19.11) — Kevin seul (session admin prouvée) :
+     GET ?q=<phrase> → { ok:true, url, libelle, texte } quand la demande est NETTE (même décision que Bee : `intentionOuvrir`, listes fermées de vues et de tris), sinon { ok:false, reason:'pas_une_ouverture' }.
+     Lecture seule : rien ne s'ouvre ; la page affiche un bouton que Kevin touche. */
+  if (path === '/__admin/ouvrir' && request.method === 'GET') {
+    const sp = new URL(request.url).searchParams;
+    /* forme structurée (l'outil `ouvrir` de Bee : app, page, personne, famille, vue, tri) : la MÊME fonction `adresse` que Bee, listes fermées */
+    if (sp.get('app')) {
+      const a = {}; for (const k of ['app', 'page', 'personne', 'famille', 'vue', 'tri', 'libelle']) { const v = sp.get(k); if (v) a[k] = String(v).slice(0, 120); }
+      const r = adresseOuvrir(a, new Set(Object.keys(ROUTES)), APPS);
+      return r.erreur ? J({ ok: false, reason: String(r.erreur).slice(0, 160) }) : J({ ok: true, url: r.url, libelle: r.libelle, texte: 'Je t\'ouvre « ' + r.libelle + ' ».' });
+    }
+    const q = String(sp.get('q') || '').slice(0, 300);
+    if (!q.trim()) return J({ ok: false, reason: 'phrase_requise' }, undefined, 400);
+    const io = intentionOuvrir(q, new Set(Object.keys(ROUTES)), APPS);
+    return io ? J({ ok: true, url: io.url, libelle: io.libelle, texte: io.texte }) : J({ ok: false, reason: 'pas_une_ouverture' });
   }
   /* ÉCRIRE À UNE PERSONNE PAR APEX CHAT (Kevin 18.11, parité Bee / Apex AI) — Kevin seul (session admin prouvée) : GET ?q=<nom>&texte=<message> → { ok, trouves:[{nom, lien}], correspondances }.
      Lecture seule : rien n'est envoyé (messages chiffrés de bout en bout côté appareil). Le lien ouvre la conversation et préremplit le texte ; Kevin relit et touche Envoyer.

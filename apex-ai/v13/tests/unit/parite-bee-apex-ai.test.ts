@@ -10,16 +10,30 @@ import { WEB_TOOLS } from '../../services/apex-tools-registry/web-tools.js';
 import { COMM_TOOLS } from '../../services/apex-tools-registry/comm-tools.js';
 import { DEVICE_TOOLS } from '../../services/apex-tools-registry/device-tools.js';
 
-const PAS_ENCORE_PORTES: Record<string, string> = {};   /* 19.11 : tout est porté ; un futur outil de Bee non porté s'ajoute ICI avec son propriétaire */
+/* 21.11 (javis-bee 3016) : le garde lit AUSSI les outils d'écriture de l'arbre et le message direct de Bee (pas seulement bee-parite.js). Ce qui n'est pas encore porté est listé ICI avec son propriétaire ;
+   la liste ne peut que rétrécir (un outil porté mais encore listé fait échouer le garde). */
+const PAS_ENCORE_PORTES: Record<string, string> = {
+  arbre_info: 'apex-cloud — pris en charge 21.11 (derrière le ✅ de Kevin)',
+  arbre_champ: 'apex-cloud — pris en charge 21.11 (derrière le ✅ de Kevin)',
+  arbre_commentaire: 'apex-cloud — pris en charge 21.11 (derrière le ✅ de Kevin)',
+  arbre_lien: 'apex-cloud — pris en charge 21.11 (derrière le ✅ de Kevin)',
+  message_direct: 'apex-cloud — pris en charge 21.11 (mini-chat CMCteams / light, derrière le ✅ de Kevin)',
+};
 
 const src = readFileSync(`${process.cwd()}/../../services/kdmc-router/bee-parite.js`, 'utf8');
 const defs = src.slice(src.indexOf('const defs = ['), src.indexOf('const exe = {'));
-const outilsBee = [...defs.matchAll(/name:\s*'([a-z_]+)'/g)].map((m) => m[1] as string);
+const lire = (f: string): string => readFileSync(`${process.cwd()}/../../services/kdmc-router/${f}`, 'utf8');
+const ouvrirSrc = lire('bee-ouvrir.js');
+const outilsOuvrirBee = [...ouvrirSrc.slice(ouvrirSrc.indexOf('export function outilsOuvrir')).matchAll(/name:\s*'([a-z_]+)'/g)].map((m) => m[1] as string).slice(0, 1);
+const arbreSrc = lire('bee-arbre-ecrire.js');
+const outilsArbreBee = [...arbreSrc.slice(arbreSrc.indexOf('const ACTIONS_ARBRE')).matchAll(/^  (arbre_[a-z]+): \{/gm)].map((m) => m[1] as string);
+const outilsDmBee = [...lire('bee-messages-directs.js').matchAll(/^  (message_direct): \{/gm)].map((m) => m[1] as string);
+const outilsBee = [...[...defs.matchAll(/name:\s*'([a-z_]+)'/g)].map((m) => m[1] as string), ...outilsOuvrirBee, ...outilsArbreBee, ...outilsDmBee];
 const outilsApexAi = new Set([...ADMIN_TOOLS, ...WEB_TOOLS, ...COMM_TOOLS, ...DEVICE_TOOLS].map((t) => t.name));
 
 describe('parité Bee ⇄ Apex AI', () => {
   it('on lit bien les outils de parité de Bee', () => {
-    expect(outilsBee).toEqual(expect.arrayContaining(['lien_externe', 'comptes_cmcteams', 'appeler']));
+    expect(outilsBee).toEqual(expect.arrayContaining(['lien_externe', 'comptes_cmcteams', 'appeler', 'ouvrir', 'arbre_info', 'arbre_champ', 'arbre_commentaire', 'arbre_lien', 'message_direct']));
   });
   it('chaque outil de parité de Bee existe dans Apex AI, ou est listé « pas encore porté » avec son propriétaire', () => {
     const manquants = outilsBee.filter((n) => !outilsApexAi.has(n) && !(n in PAS_ENCORE_PORTES));

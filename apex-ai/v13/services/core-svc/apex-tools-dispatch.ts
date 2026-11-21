@@ -397,6 +397,15 @@ class ApexToolsDispatcher {
         const report = await apexSelfAudit.runFullAudit(brutal);
         return apexSelfAudit.formatReportMarkdown(report);
       }
+      case 'arbre_info':
+      case 'arbre_champ':
+      case 'arbre_commentaire':
+      case 'arbre_lien':
+      case 'message_direct': {
+        /* Parité Bee (Kevin 18.11) : l'IA PROPOSE, le domaine fabrique le résumé, Kevin touche ✅ ; seul /__javis/agir exécute. */
+        const { proposerPourKevin } = await import('../admin/proposer-action.js');
+        return proposerPourKevin(toolName, params);
+      }
       case 'ouvrir': {
         /* Parité Bee (Kevin 19.11, « classer l'arbre autrement ») : le domaine décide (même logique que Bee), Kevin touche le bouton. */
         const { ouvrirDomaine } = await import('../admin/ouvrir-domaine.js');

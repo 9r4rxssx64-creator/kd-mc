@@ -8,6 +8,41 @@ import type { ApexTool } from '../core-svc/apex-tools-types.js';
 
 export const ADMIN_TOOLS: readonly ApexTool[] = [
   {
+    name: 'arbre_info',
+    description: 'PROPOSE d\'ajouter une info (téléphone, e-mail, adresse, réseau, site, anniversaire, profession, loisir, santé, autre) à la fiche d\'une personne de l\'arbre. Tu ne fais RIEN : une carte ✅ Confirmer s\'affiche à Kevin et le domaine n\'écrit qu\'après son bouton. Ne dis jamais « c\'est fait ».',
+    inputSchema: { type: 'object', properties: { personne: { type: 'string', description: 'prénom ET nom de la personne dans l\'arbre' }, type: { type: 'string', description: 'Téléphone, E-mail, Adresse postale, Réseau social, Site web, Anniversaire / Fête, Profession détaillée, Loisir, Santé, Autre, Champ libre' }, libelle: { type: 'string' }, valeur: { type: 'string' } }, required: ['personne', 'valeur'] },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
+    name: 'arbre_champ',
+    description: 'PROPOSE de renseigner ou corriger un champ de la fiche d\'une personne de l\'arbre (naissance, décès, métier, sexe). Tu ne fais RIEN : carte ✅ Confirmer à Kevin, le domaine n\'écrit qu\'après son bouton (copie de sauvegarde avant).',
+    inputSchema: { type: 'object', properties: { personne: { type: 'string', description: 'prénom ET nom' }, champ: { type: 'string', enum: ['naissance.date', 'naissance.lieu', 'deces.date', 'deces.lieu', 'metier', 'sexe'] }, valeur: { type: 'string', description: 'date AAAA-MM-JJ pour une date' }, remplacer: { type: 'boolean', description: 'true seulement si Kevin demande de REMPLACER une valeur déjà là' } }, required: ['personne', 'champ', 'valeur'] },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
+    name: 'arbre_commentaire',
+    description: 'PROPOSE d\'ajouter un commentaire à la fiche d\'une personne de l\'arbre. Tu ne fais RIEN : carte ✅ Confirmer à Kevin.',
+    inputSchema: { type: 'object', properties: { personne: { type: 'string', description: 'prénom ET nom' }, texte: { type: 'string', description: 'le commentaire (600 signes au plus)' } }, required: ['personne', 'texte'] },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
+    name: 'arbre_lien',
+    description: 'PROPOSE de relier deux personnes de l\'arbre (père, mère, conjoint, enfant) ou de CRÉER un proche. Tu ne fais RIEN : carte ✅ Confirmer à Kevin.',
+    inputSchema: { type: 'object', properties: { personne: { type: 'string', description: 'prénom ET nom de la fiche de départ' }, lien: { type: 'string', enum: ['pere', 'mere', 'conjoint', 'enfant'] }, personne2: { type: 'string', description: 'une fiche EXISTANTE à relier (prénom ET nom)' }, prenom: { type: 'string', description: 'pour CRÉER la personne : son prénom' }, nom: { type: 'string', description: 'pour CRÉER la personne : son nom' }, sexe: { type: 'string' }, naissance_date: { type: 'string' } }, required: ['personne', 'lien'] },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
+    name: 'message_direct',
+    description: 'PROPOSE d\'écrire à une personne dans CMCteams ou la light (message direct). Tu ne fais RIEN : carte ✅ Confirmer à Kevin, le message n\'est déposé qu\'après son bouton. Pour Apex Chat, utilise message_apex_chat.',
+    inputSchema: { type: 'object', properties: { nom: { type: 'string', description: 'prénom ET nom de la personne' }, texte: { type: 'string', description: 'le message (500 signes au plus)' } }, required: ['nom', 'texte'] },
+    minTier: 'admin',
+    impactLevel: 'A',
+  },
+  {
     name: 'ouvrir',
     description: 'Bouton « Ouvrir » vers une app du domaine ou l\'arbre (personne, famille, vue arbre|plan|paysage|lignee, tri alpha|nom|naissance|recent) : le domaine décide comme pour Bee, Kevin touche le bouton, tu n\'ouvres rien toi-même. Donne soit app (+ personne, famille, vue, tri, page), soit la phrase de Kevin dans demande.',
     inputSchema: {

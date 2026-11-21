@@ -1,5 +1,11 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.416 + routeur — 21.11.2026 (apex-cloud, parité Bee ⇄ Apex AI : agir pour Kevin, jamais sans son bouton — javis-bee 3016 / 3031)
+- Les 5 outils d'écriture de Bee sont portés : `arbre_info`, `arbre_champ`, `arbre_commentaire`, `arbre_lien` (fiches de l'arbre) et `message_direct` (mini-chat CMCteams / light). MÊME mécanique que Bee : l'IA PROPOSE ; la porte `POST /__admin/proposer` (admin prouvé, liste blanche de ces 5 actions, plafond de débit de Bee) appelle `proposer` de `bee-agir.js` — champs contrôlés, **résumé fabriqué par le domaine**, fiche de l'arbre trouvée par le domaine (une seule correspondance exigée), proposition signée 5 min — ; Apex AI affiche la carte « ✅ Confirmer / ✖ Annuler » ; seul `POST /__javis/agir` exécute (session admin, origine du domaine, confirme:true, signature, une seule fois), comme pour Bee.
+- La phrase rendue à l'IA ne contient ni nom, ni résumé, ni jeton : « carte affichée, rien n'est fait, ne dis jamais c'est fait ».
+- Garde de parité : plus rien dans « pas encore porté ».
+- Tests : `proposer-admin.test.mjs` (9 ✓), `tests/unit/proposer-action.test.ts` (16 ✓ ; sabotage « confirmation automatique » = rouge).
+
 ## Apex AI v13.4.415 — 21.11.2026 (apex-cloud, robot « Lighthouse CI Apex v13 » rouge depuis le 19.11)
 - Cause trouvée (mesurée en navigateur réel sur le paquet construit, 412×823) : l'audit `target-size` (minimum 24×24 px) échouait sur UN seul élément, le badge de version `#apex-version-badge` : 70×18 px. Il fait maintenant au moins 24 px de haut et de large, toujours posé sous l'en-tête à droite, sans capter d'appui ni recouvrir un onglet (règle du 15.10). Mesure après : 0 cible trop petite.
 - Test : `tests/unit/version-badge-cible.test.ts` (lit le CSS réel ; sabotage « min-height: 0 » = rouge).

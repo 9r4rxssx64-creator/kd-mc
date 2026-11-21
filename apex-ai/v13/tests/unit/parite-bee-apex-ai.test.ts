@@ -12,13 +12,7 @@ import { DEVICE_TOOLS } from '../../services/apex-tools-registry/device-tools.js
 
 /* 21.11 (javis-bee 3016) : le garde lit AUSSI les outils d'écriture de l'arbre et le message direct de Bee (pas seulement bee-parite.js). Ce qui n'est pas encore porté est listé ICI avec son propriétaire ;
    la liste ne peut que rétrécir (un outil porté mais encore listé fait échouer le garde). */
-const PAS_ENCORE_PORTES: Record<string, string> = {
-  arbre_info: 'apex-cloud — pris en charge 21.11 (derrière le ✅ de Kevin)',
-  arbre_champ: 'apex-cloud — pris en charge 21.11 (derrière le ✅ de Kevin)',
-  arbre_commentaire: 'apex-cloud — pris en charge 21.11 (derrière le ✅ de Kevin)',
-  arbre_lien: 'apex-cloud — pris en charge 21.11 (derrière le ✅ de Kevin)',
-  message_direct: 'apex-cloud — pris en charge 21.11 (mini-chat CMCteams / light, derrière le ✅ de Kevin)',
-};
+const PAS_ENCORE_PORTES: Record<string, string> = {};   /* 21.11 : arbre_info|champ|commentaire|lien et message_direct portés (proposition du domaine + ✅ de Kevin) ; un futur outil de Bee non porté s'ajoute ICI avec son propriétaire */
 
 const src = readFileSync(`${process.cwd()}/../../services/kdmc-router/bee-parite.js`, 'utf8');
 const defs = src.slice(src.indexOf('const defs = ['), src.indexOf('const exe = {'));

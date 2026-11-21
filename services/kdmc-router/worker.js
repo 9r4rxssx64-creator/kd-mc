@@ -50,7 +50,7 @@ import { REGLES_MESSAGES_DIRECTS, RE_MESSAGES_DIRECTS } from './bee-messages-dir
 import { avecJournal, bilanDiag } from './bee-diag.js';   // le journal des demandes à Bee + son test de bout en bout (Kevin 16.10 : « je ne peux rien lui faire faire »)
 import { handleFil } from './bee-fil.js';   // le fil de Bee : une seule conversation, dans toutes les apps, pour Kevin seul
 import { PORTES_DROITS_MAX, droitsMaxOuverts } from './bee-droits-max.js';   // Kevin 23.10 « Ferme pour l'instant » : ces 2 portes restent fermées sauf BEE_DROITS_MAX = "1"
-import { handleAgir, outilsAdmin, memoireBee, RE_AGIR, REGLES_AGIR, CATALOGUE as CATALOGUE_BEE, ACTIONS as ACTIONS_BEE } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
+import { handleAgir, outilsAdmin, memoireBee, proposer as proposerBee, RE_AGIR, REGLES_AGIR, CATALOGUE as CATALOGUE_BEE, ACTIONS as ACTIONS_BEE } from './bee-agir.js';   // les mains de Bee : proposer, Kevin confirme, le domaine exécute
 import { handlePartout, PARTOUT_TAG, MARQUEUR, nonceBee, cspPourBee, cspAccepteBee, marqueurKevin } from './bee-partout.js';                        // Bee te suit dans chaque app du domaine (Kevin seul)
 export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wrangler.toml)   // Cercle Lingua : invitations, amis, présence, messages, cadeaux (D1 kdmc-cercle)
 /* Audit 30.09.2026 (P0-3 / R3) : les fichiers RH nominatifs ne sortent qu'à une personne reconnue. */
@@ -5130,6 +5130,8 @@ let _fbJeton = { v: '', exp: 0 };
    · appeler : une action ne fait QUE rappeler une porte admin déjà en place, avec la session de Kevin (une porte qui lui est fermée reste fermée),
      et seulement celles de cette liste blanche. */
 /* 16.10 (Kevin : « il doit pouvoir tout faire… » ; réponses à un choix : lire plus, gérer les comptes, régler le robot ; le reste RESTE FERMÉ) — voir bee-droits-plus.js */
+/* Les actions que Bee PROPOSE et qu'Apex AI peut aussi proposer (parité, 21.11) : liste blanche ; ajouter une action = ajouter une ligne ET son test. */
+const ACTIONS_APEX_AI = ['arbre_info', 'arbre_champ', 'arbre_commentaire', 'arbre_lien', 'message_direct'];
 const PORTES_BEE = ['/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repondre', '/__bot/kill', '/__bot/start', '/__bot/status',
   '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke',
   '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/bannis', '/__admin/debannir', '/__admin/attendus', '/__demandes',
@@ -5651,6 +5653,38 @@ async function handleAdmin(request, url, env) {
     if (!q.trim()) return J({ ok: false, reason: 'phrase_requise' }, undefined, 400);
     const io = intentionOuvrir(q, new Set(Object.keys(ROUTES)), APPS);
     return io ? J({ ok: true, url: io.url, libelle: io.libelle, texte: io.texte }) : J({ ok: false, reason: 'pas_une_ouverture' });
+  }
+  /* PROPOSER UNE ACTION POUR APEX AI (parité Bee, javis-bee 3016 / 3031 : arbre_info, arbre_champ, arbre_commentaire, arbre_lien, message_direct) — Kevin seul (session admin prouvée) :
+     POST { action, personne?, personne2?, …champs } → { ok:true, proposition:{ action, titre, icone, risque, resume, jeton } } : EXACTEMENT la proposition signée de Bee (`proposer` de bee-agir.js :
+     champs contrôlés, résumé FABRIQUÉ par le domaine, signature 5 min, une seule fois). RIEN n'est écrit ici : la page montre la carte ✅ / ✖, et seul `POST /__javis/agir` (session admin, origine du domaine,
+     confirme:true, signature) exécute — même porte que Bee. Liste blanche : ces 5 actions seulement. `personne` / `personne2` (arbre) : le domaine trouve la fiche (une seule correspondance exigée), l'IA ne voit jamais l'identifiant. */
+  if (path === '/__admin/proposer' && request.method === 'POST') {
+    const ob = outilsBee(env, ctx);
+    if (!(await ob.qui(request))) return J({ ok: false, reason: 'kevin_seulement' }, undefined, 403);
+    if (!(await ob.limite('bee-agir'))) return J({ ok: false, reason: 'trop_vite' }, undefined, 429);
+    let b = {}; try { b = await request.json(); } catch { return J({ ok: false, reason: 'json_invalide' }, undefined, 400); }
+    const action = String(b.action || '');
+    if (ACTIONS_APEX_AI.indexOf(action) < 0) return J({ ok: false, reason: 'action_non_ouverte', texte: 'Cette action n\'est pas ouverte à Apex AI. Actions : ' + ACTIONS_APEX_AI.join(', ') + '.' }, undefined, 400);
+    const champs = Object.assign({}, b); delete champs.action; delete champs.personne; delete champs.personne2;
+    if (action.indexOf('arbre_') === 0) {
+      let seed = null; try { seed = (await arbreSeedOut(env)).seed; } catch (_) { seed = null; }
+      const resoudre = (q) => {
+        const t = seed ? trouverArbre(seed, String(q || ''), 5) : [];
+        if (!t.length) return { n: 0 };
+        if (t.length > 1 && !(t[0].score > t[1].score)) return { n: t.length };
+        return { id: t[0].id, n: 1 };
+      };
+      for (const [cle, champ] of [['personne', 'id'], ['personne2', 'id2']]) {
+        if (b[cle] && !champs[champ]) {
+          const r = resoudre(b[cle]);
+          if (r.n === 0) return J({ ok: false, reason: 'introuvable', texte: 'Je ne trouve personne à ce nom dans l\'arbre.' }, undefined, 404);
+          if (r.n > 1) return J({ ok: false, reason: 'plusieurs', texte: r.n + ' personnes correspondent : précise (prénom ET nom, ou une date).' }, undefined, 409);
+          champs[champ] = r.id;
+        }
+      }
+    }
+    const r = await proposerBee(env, action, champs, ob.now(), { appeler: (chemin, init) => ob.appeler(request, chemin, init), arbre: ob.arbre ? ob.arbre() : null, doublon: ob.doublon });
+    return r.ok ? J({ ok: true, proposition: r.proposition }) : J({ ok: false, reason: 'refus', texte: String(r.erreur || 'Proposition refusée.').slice(0, 300) }, undefined, 400);
   }
   /* ÉCRIRE À UNE PERSONNE PAR APEX CHAT (Kevin 18.11, parité Bee / Apex AI) — Kevin seul (session admin prouvée) : GET ?q=<nom>&texte=<message> → { ok, trouves:[{nom, lien}], correspondances }.
      Lecture seule : rien n'est envoyé (messages chiffrés de bout en bout côté appareil). Le lien ouvre la conversation et préremplit le texte ; Kevin relit et touche Envoyer.

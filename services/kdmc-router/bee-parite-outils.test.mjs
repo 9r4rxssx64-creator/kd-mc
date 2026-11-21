@@ -122,6 +122,8 @@ const txtEnvoye = decodeURIComponent((appelsLong[0] || '').split('&texte=')[1] |
 ok(txtEnvoye.length === 500, '6h. un message de plus de 500 caractères est COUPÉ à 500 (jamais envoyé trop long au domaine)', txtEnvoye.length);
 const soSans = {}; const rSans = await outilsParite({ appeler: async () => ({ ok: true, trouves: [], correspondances: 0 }) }, soSans).exe.message_apex_chat({ nom: 'Inconnu Nom', texte: 'Salut' });
 ok(!soSans.cartes && !/https?:/.test(JSON.stringify(rSans)), '6i. aucun compte trouvé → aucune carte', rSans);
+const soMoi = {}; const rMoi = await outilsParite({ appeler: async () => ({ ok: true, trouves: [], correspondances: 0, soi_meme: 1 }) }, soMoi).exe.message_apex_chat({ nom: 'Kevin Desarzens', texte: 'Salut' });
+ok(!soMoi.cartes && /lui-même/.test(JSON.stringify(rMoi)) && !/Aucun compte/i.test(JSON.stringify(rMoi)), '6i2. le nom de Kevin lui-même → message clair « lui-même », jamais « aucun compte »', rMoi);
 const iAc = intentionParite('Écris à Zoé Petit dans Apex Chat : Salut, tu viens demain ?');
 ok(iAc && iAc.outil === 'message_apex_chat' && iAc.args.nom === 'Zoé Petit' && iAc.args.texte === 'Salut, tu viens demain ?', '6j. le raccourci sans IA lit « écris à X dans Apex Chat : … » (majuscules du message gardées)', iAc);
 ok(intentionParite('écris à moi dans apex chat : x') === null && intentionParite('ouvre l arbre') === null && intentionParite('écris à Zoé Petit dans Apex Chat') === null, '6k. « moi », une demande sans message, une autre demande : pas de raccourci');

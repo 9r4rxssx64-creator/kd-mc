@@ -143,6 +143,7 @@ export function outilsParite(o, sortie) {
       const messages = (Array.isArray(r.trouves) ? r.trouves : []).map((x) => ({ nom: s(x && x.nom, 80), lien: lienApexChat(x && x.lien) })).filter((x) => x.lien).slice(0, 5);
       if (!messages.length) {
         if (Number(r.correspondances) > 0) return 'Je connais ' + Number(r.correspondances) + ' compte(s) à ce nom, mais aucun n\'a de conversation Apex Chat prête. Dis-le à Kevin.';
+        if (Number(r.soi_meme) > 0) return 'Ce nom est celui de Kevin lui-même : je ne lui écris pas à lui-même. Demande-lui un autre prénom et nom.';
         return 'Aucun compte à ce nom dans le domaine. Dis-le à Kevin et demande-lui d\'écrire le prénom et le nom comme sur le compte.';
       }
       ajouter(sortie, { t: 'apex_chat', messages, texte });

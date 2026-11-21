@@ -32,5 +32,8 @@ ok(rep.status === 401 || rep.status === 403, '10. la porte est fermée sans sess
 ok(!/apex-chat\.kd-mc\.com\/\?to=/.test(txt), '11. aucun lien dans le refus');
 const src = readFileSync(new URL('./worker.js', import.meta.url), 'utf8');
 ok(/path === '\/__admin\/ecrire-apex-chat'/.test(src) && /lienEcrire\(tousE, q, texte, CANON_UID\)/.test(src), '12. la porte est câblée sur la fonction pure');
+/* 21.11 — preuve réelle rouge (run 44873818580) : « Kevin Desarzens » visait le compte admin, exclu exprès ; il faut le DIRE (soi_meme), pas « aucun compte ». */
+const rSoi = lienEcrire([{ uid: 'kdmc_admin', name: 'Kevin Desarzens' }, { uid: 'u1', name: 'Marie Dupont' }], 'kevin desarzens', 'x');
+ok(rSoi.trouves.length === 0 && rSoi.soi_meme === 1 && rSoi.correspondances === 0, '13. le nom de Kevin lui-même est signalé (soi_meme), jamais proposé', rSoi);
 console.log(`\n${pass} OK · ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

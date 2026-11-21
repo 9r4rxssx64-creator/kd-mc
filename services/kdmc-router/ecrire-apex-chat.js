@@ -14,14 +14,15 @@ export function lienEcrire(fiches, q, texte, uidAdmin = 'kdmc_admin') {
   const msg = String(texte == null ? '' : texte).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').slice(0, TEXTE_MAX);
   if (!mots.length) return { trouves: [], correspondances: 0, sans_lien: 0, raison: 'nom_requis' };
   if (!msg.trim()) return { trouves: [], correspondances: 0, sans_lien: 0, raison: 'texte_requis' };
-  const trouves = []; let corr = 0, sansLien = 0;
+  const trouves = []; let corr = 0, sansLien = 0, soiMeme = 0;
   for (const a of Array.isArray(fiches) ? fiches : []) {
-    if (!a || !a.uid || a.uid === uidAdmin) continue;
+    if (!a || !a.uid) continue;
     const nom = sansAccents(a.name);
     if (!nom || !mots.every((m) => nom.indexOf(m) >= 0)) continue;
+    if (a.uid === uidAdmin) { soiMeme++; continue; }   // 21.11 : le nom demandé est celui de Kevin lui-même → on le dit (preuve réelle rouge « Kevin Desarzens »)
     corr++;
     if (!UID_OK.test(String(a.uid))) { sansLien++; continue; }
     if (trouves.length < 5) trouves.push({ nom: String(a.name || '').slice(0, 80), lien: APEX_CHAT + '?to=' + encodeURIComponent('kdmc_' + a.uid) + '&texte=' + encodeURIComponent(msg) });
   }
-  return { trouves, correspondances: corr, sans_lien: sansLien };
+  return { trouves, correspondances: corr, sans_lien: sansLien, soi_meme: soiMeme };
 }

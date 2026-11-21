@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.412 + routeur — 21.11.2026 (apex-cloud, pont-check 2992 · pc-config 2948 C)
+- « lis https://example.org » finissait en « Échec du lancement (HTTP 401) » : la lecture d'une adresse partait vers un robot GitHub (jeton exigé). Le domaine lit maintenant la page lui-même (`GET /__admin/lire-page?url=`, session admin, https seulement, adresses internes refusées, même lecture que `lire_page` de Bee) et Apex AI affiche un extrait dans un bloc de code (jamais interprété comme un ordre). La recherche (`/web <mots>`) reste au robot.
+- Tests : `services/kdmc-router/lire-page-admin.test.mjs` (5 ✓), `apex-ai/v13/tests/unit/lire-page.test.ts` (4 ✓) ; sabotage (lecture retirée du câblage) = rouge.
+
 ## Créa Studio — 21.11.2026 (studio-crea, cloud-installer 2977 : Cerebras retiré)
 - `services/kdmc-crea-ai/worker.js` : Cerebras (HTTP 402 « Payment required », retiré des IA gratuites par Kevin le 20.11) n'est plus dans la cascade `TEXT_PROVIDERS` du Studio ; il y était resté, ignoré en silence. Aucun plafond de neurones posé (décision après la mesure du 21.11).
 - Garde : `tests/verify-crea-gemini-nom.mjs` refuse aussi `id: 'cerebras'` (SABOTAGE=1 = rouge).

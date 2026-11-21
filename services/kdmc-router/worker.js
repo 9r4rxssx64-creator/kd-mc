@@ -56,7 +56,7 @@ export { AppelReveil };   // 📞 horloge des appels de Bee (Durable Object, wra
 import { DONNEES_RH_NORMALISEES, cleKV } from './donnees-rh.js';
 import { lirePlanning, verifierEtRanger, corrigerMatricule, listeMatricules } from './membre-planning.js';
 import { KEVIN_MATRICULE, RE_PLANNING, lireSeed, prochainsJours, faitsPlanning } from './bee-planning.js';
-import { repondreAvecOutils, REGLES_OUTILS, RE_BESOIN_OUTILS, questionComplexe, DEFINITIONS, FOURNISSEURS_OUTILS } from '../_shared/outils-lecture.js';   // les mains de Bee : météo, date, planning, calcul, recherche, lecture de page (gratuits, lecture seule)
+import { repondreAvecOutils, REGLES_OUTILS, RE_BESOIN_OUTILS, questionComplexe, DEFINITIONS, FOURNISSEURS_OUTILS, lire_page } from '../_shared/outils-lecture.js';   // les mains de Bee : météo, date, planning, calcul, recherche, lecture de page (gratuits, lecture seule)
 
 /* D'où viennent les pages. Historiquement GitHub Pages — mais le dépôt est
    PRIVÉ depuis le 23/09/2026 (« que personne ne voie mon code ») et GitHub
@@ -5621,6 +5621,14 @@ async function handleAdmin(request, url, env) {
     const idxA = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
     const tousA = (await Promise.all(idxA.slice(-500).map((uid) => accGet(env, uid)))).filter(Boolean);
     return J(Object.assign({ ok: true, kv: true }, trouverAppel(tousA, q)));
+  }
+  /* LIRE UNE PAGE WEB (pont-check 2992, parité Bee ⇄ Apex AI : « lis https://… » partait vers un robot GitHub et finissait en HTTP 401) — Kevin seul (session admin prouvée) :
+     GET ?url=<https://…> → { ok, texte } ou { ok:false, reason }. Même lecture que l'outil `lire_page` de Bee (r.jina.ai, https seulement, pas d'adresse interne, 5000 signes, sans clé, 0 €). Lecture seule. */
+  if (path === '/__admin/lire-page' && request.method === 'GET') {
+    const u = String(new URL(request.url).searchParams.get('url') || '').slice(0, 2000);
+    if (!u.trim()) return J({ ok: false, reason: 'url_requise' }, undefined, 400);
+    try { return J({ ok: true, texte: await lire_page({ url: u }) }); }
+    catch (e) { return J({ ok: false, reason: String((e && e.message) || e).slice(0, 160) }, undefined, 502); }
   }
   /* ÉCRIRE À UNE PERSONNE PAR APEX CHAT (Kevin 18.11, parité Bee / Apex AI) — Kevin seul (session admin prouvée) : GET ?q=<nom>&texte=<message> → { ok, trouves:[{nom, lien}], correspondances }.
      Lecture seule : rien n'est envoyé (messages chiffrés de bout en bout côté appareil). Le lien ouvre la conversation et préremplit le texte ; Kevin relit et touche Envoyer.

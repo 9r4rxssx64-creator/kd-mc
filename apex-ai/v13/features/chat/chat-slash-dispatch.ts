@@ -503,6 +503,15 @@ async function handleDispatchCommand(rootEl: HTMLElement, dispatch: string, args
     return;
   }
 
+  /* v13.4.412 (pont-check 2992) : une ADRESSE se lit par le domaine (comme Bee), sans robot GitHub ni jeton : plus de « Échec du lancement HTTP 401 ». La recherche reste au robot. */
+  if (dispatch === 'agent-reach' && payload['channel'] === 'web') {
+    const url = String(payload['target'] ?? '');
+    toast.info('🌐 Lecture de la page…');
+    const { lirePageDomaine, messageLecture } = await import('../../services/admin/lire-page.js');
+    const lu = await lirePageDomaine(url);
+    pushAssistantMessage(rootEl, lu.ok ? messageLecture(url, lu.texte) : `🌐 Lecture de \`${url.replace(/`/g, '')}\`\n\n⚠️ Je n'ai pas pu lire cette page (${lu.raison}).`);
+    return;
+  }
   toast.info('🚀 Lancement en cours…');
   try {
     const r = await claudeBridge.dispatchWorkflow(dispatch, payload);

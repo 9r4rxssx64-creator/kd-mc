@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.415 — 21.11.2026 (apex-cloud, robot « Lighthouse CI Apex v13 » rouge depuis le 19.11)
+- Cause trouvée (mesurée en navigateur réel sur le paquet construit, 412×823) : l'audit `target-size` (minimum 24×24 px) échouait sur UN seul élément, le badge de version `#apex-version-badge` : 70×18 px. Il fait maintenant au moins 24 px de haut et de large, toujours posé sous l'en-tête à droite, sans capter d'appui ni recouvrir un onglet (règle du 15.10). Mesure après : 0 cible trop petite.
+- Test : `tests/unit/version-badge-cible.test.ts` (lit le CSS réel ; sabotage « min-height: 0 » = rouge).
+
 ## Apex AI v13.4.414 + routeur — 21.11.2026 (apex-cloud, parité Bee ⇄ Apex AI : « classer l'arbre autrement », pont-check 2992 b · javis-bee 3031)
 - Nouvelle porte du domaine `GET /__admin/ouvrir` (session admin, lecture seule) : même décision que Bee (`intentionOuvrir` / `adresse` de `bee-ouvrir.js`, listes fermées de vues arbre|plan|paysage|lignee et de tris alpha|nom|naissance|recent, apps du domaine seulement). Forme phrase `?q=` ou structurée `?app=&personne=&famille=&vue=&tri=&page=`.
 - Apex AI : outil `ouvrir` (même nom que chez Bee) et routage local « ouvre l'arbre en vue plan », « montre l'arbre trié par naissance »… → bouton « Ouvrir » que Kevin touche ; adresse du domaine exigée (https, kd-mc.com ou sous-domaine) ; la phrase rendue à l'IA ne contient ni adresse ni nom. Une phrase qui n'est pas une ouverture nette repart au modèle comme avant.

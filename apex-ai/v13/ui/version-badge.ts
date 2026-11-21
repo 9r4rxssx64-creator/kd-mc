@@ -38,9 +38,15 @@ const BADGE_CSS = `
     top: calc(env(safe-area-inset-top, 0px) + 54px);
     right: 8px;
     z-index: 2147483646;
-    padding: 2px 6px;
-    min-height: 0;
-    min-width: 0;
+    /* 21.11.2026 (robot Lighthouse CI Apex v13 rouge depuis le 19.11, audit « target-size » : cible mesurée 70×18 px, minimum 24×24) :
+       le badge ne capte aucun appui (pointer-events: none) mais reste un <button> ; il fait au moins 24 px dans les deux sens. */
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    min-height: 24px;
+    min-width: 24px;
     background: rgba(232, 184, 48, 0.12);
     border: 1px solid rgba(232, 184, 48, 0.35);
     color: #c9a227;

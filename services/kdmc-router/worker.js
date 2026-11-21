@@ -19,6 +19,7 @@ import { handleCodesComptes, chiffrerCode, dechiffrerCode, codeAuHasard } from '
 import { handleMailConfirme, emailValide, normaliseEmail, masqueEmail, mailPret, jetonConfirmation, envoyerMailConfirmation, sha256Hex as sha256HexMail } from './mail-confirme.js';   // confirmation par MAIL de l'inscription (Kevin 17.10 : « B », pas de 2e numéro pour WhatsApp)
 import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTel, preuveDejaUtilisee, bruleePreuve, MAX_COMPTES_PAR_TEL } from './tel-inscription.js';   // OTP WhatsApp pour toutes les inscriptions (Kevin 9.10)
 import * as activite from './activite.js';
+import { lireDirect } from './lire-page-direct.js';   // 21.11 : secours de la lecture d'une page quand le lecteur gratuit répond 429
 import { lienEcrire } from './ecrire-apex-chat.js';   // 20.11 : « Écrire à <nom> » par Apex Chat = lien prérempli, Kevin envoie lui-même (Bee + Apex AI)
 import { handleMatriculeAdmin } from './matricule-admin.js';   // 21.11 (pont 2989) : le matricule SBM posé par Kevin dans la rubrique Identité de l'admin
 import { handleMailAdmin } from './mail-admin.js';   // 19.11 : un mail envoyé par le domaine au nom de Kevin, derrière son ✅ (Bee)
@@ -5628,7 +5629,12 @@ async function handleAdmin(request, url, env) {
     const u = String(new URL(request.url).searchParams.get('url') || '').slice(0, 2000);
     if (!u.trim()) return J({ ok: false, reason: 'url_requise' }, undefined, 400);
     try { return J({ ok: true, texte: await lire_page({ url: u }) }); }
-    catch (e) { return J({ ok: false, reason: String((e && e.message) || e).slice(0, 160) }, undefined, 502); }
+    catch (e1) {
+      /* pc-config 3055 : le lecteur gratuit (r.jina.ai) répond 429 « trop de requêtes » → le Worker lit la page lui-même (mêmes garde-fous, redirections revérifiées). */
+      if (/adresse refusée/.test(String((e1 && e1.message) || e1))) return J({ ok: false, reason: String(e1.message).slice(0, 160) }, undefined, 502);
+      try { return J({ ok: true, texte: await lireDirect(u), via: 'direct' }); }
+      catch (e2) { return J({ ok: false, reason: String((e2 && e2.message) || e2).slice(0, 160) }, undefined, 502); }
+    }
   }
   /* ÉCRIRE À UNE PERSONNE PAR APEX CHAT (Kevin 18.11, parité Bee / Apex AI) — Kevin seul (session admin prouvée) : GET ?q=<nom>&texte=<message> → { ok, trouves:[{nom, lien}], correspondances }.
      Lecture seule : rien n'est envoyé (messages chiffrés de bout en bout côté appareil). Le lien ouvre la conversation et préremplit le texte ; Kevin relit et touche Envoyer.

@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI v13.4.413 + routeur — 21.11.2026 (apex-cloud, pc-config 3055)
+- Mesuré en réel : « lis https://example.org » ne donnait plus de 401 mais « HTTP 429 » (le lecteur gratuit r.jina.ai refuse « trop de requêtes »). La porte `/__admin/lire-page` bascule alors sur une lecture directe par le Worker (`lire-page-direct.js` : https seulement, adresses internes refusées, redirections suivies à la main et revérifiées une à une, pages texte/HTML seulement, 200 Ko lus, 5000 signes rendus).
+- Défaut de focus (pc-config 3055, 1 essai sur 1) : à la fermeture d'une fenêtre (Ouvrir, Écrire, Appeler), taper sans recliquer le champ perdait la saisie. La fenêtre rend maintenant le focus au champ qui l'avait (sinon la saisie du chat), sans voler un focus pris ailleurs.
+- Tests : `lire-page-admin.test.mjs` (11 ✓, sabotage de la revérification des redirections = rouge), `tests/unit/modal-sheet-focus.test.ts` (3 ✓, sabotage = rouge).
+
 ## Apex AI v13.4.412 + routeur — 21.11.2026 (apex-cloud, pont-check 2992 · pc-config 2948 C)
 - « lis https://example.org » finissait en « Échec du lancement (HTTP 401) » : la lecture d'une adresse partait vers un robot GitHub (jeton exigé). Le domaine lit maintenant la page lui-même (`GET /__admin/lire-page?url=`, session admin, https seulement, adresses internes refusées, même lecture que `lire_page` de Bee) et Apex AI affiche un extrait dans un bloc de code (jamais interprété comme un ordre). La recherche (`/web <mots>`) reste au robot.
 - Tests : `services/kdmc-router/lire-page-admin.test.mjs` (5 ✓), `apex-ai/v13/tests/unit/lire-page.test.ts` (4 ✓) ; sabotage (lecture retirée du câblage) = rouge.

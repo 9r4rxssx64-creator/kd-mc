@@ -45,6 +45,9 @@ class ModalSheet {
     /* Close existing si actif (1 sheet à la fois) */
     if (this.active) this.active.close();
 
+    /* 21.11.2026 (pc-config 3055, défaut mesuré en réel) : à la fermeture d'une fenêtre, le champ de saisie ne reprenait pas le focus — la 1re saisie suivante était perdue.
+       On retient l'élément qui l'avait à l'ouverture ; à la fermeture, s'il ne reste AUCUN focus (document.body), on le lui rend (à défaut : la saisie du chat). */
+    const focusAvant = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
     const id = `ax-sheet-${++this.idCounter}-${Date.now()}`;
     const overlay = document.createElement('div');
     overlay.className = 'ax-sheet-overlay';
@@ -116,6 +119,13 @@ class ModalSheet {
       setTimeout(() => {
         overlay.remove();
         if (this.active && this.active.el === overlay) this.active = null;
+        try {
+          const rien = !document.activeElement || document.activeElement === document.body;
+          if (rien) {
+            const cible = focusAvant && focusAvant.isConnected && focusAvant !== document.body ? focusAvant : document.querySelector<HTMLElement>('#ax-chat-text');
+            cible?.focus({ preventScroll: true });
+          }
+        } catch { /* le focus ne gêne jamais la fermeture */ }
       }, 300);
     };
 

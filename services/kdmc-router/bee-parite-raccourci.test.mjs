@@ -28,6 +28,12 @@ ok(l2 && l2.outil === 'lien_externe', '1f. « ouvre www.example.org » → lien_
 const h1 = I('peux-tu appeler Jean Dupont ?'), h2 = I('Fais-moi la liste des personnes qui ont un compte dans CMCteams'), h3 = I('Donne-moi la liste de tous les comptes CMCteams');
 ok(h1 && h1.outil === 'appeler' && h1.args.nom === 'jean dupont', '1g. « peux-tu appeler … » (trait d\'union)', h1);
 ok(h2 && h2.outil === 'comptes_cmcteams' && h3 && h3.outil === 'comptes_cmcteams', '1h. « Fais-moi / Donne-moi la liste … » (trait d\'union)', [h2, h3]);
+const ac1 = I('Écris à Zoé Petit dans Apex Chat : Salut, tu viens demain ?'); const ac2 = I('envoie un message à Marie-Claire Roux sur apex chat que je suis en retard');
+ok(ac1 && ac1.outil === 'message_apex_chat' && ac1.args.nom === 'Zoé Petit' && ac1.args.texte === 'Salut, tu viens demain ?', '1i. « Écris à X dans Apex Chat : … » → message_apex_chat (texte gardé tel quel)', ac1);
+ok(ac2 && ac2.outil === 'message_apex_chat' && ac2.args.nom === 'Marie-Claire Roux' && /retard/.test(ac2.args.texte), '1j. « envoie un message à X sur apex chat que … » → message_apex_chat', ac2);
+ok(I('écris à moi dans Apex Chat : test') === null && I('écris à tout le monde dans Apex Chat : salut') === null && I('écris à Zoé Petit dans Apex Chat') === null, '1k. « moi », « tout le monde », message absent : aucun raccourci');
+const acLong = I('écris à Zoé Petit dans Apex Chat : ' + 'a'.repeat(900)); const acMoyen = I('écris à Zoé Petit dans Apex Chat : ' + 'a'.repeat(120));
+ok(acLong === null && acMoyen && acMoyen.args.texte.length === 120, '1l. au-delà de 200 caractères la demande passe à l\'IA (l\'outil coupe à 500) ; en dessous le raccourci garde le texte entier', [acLong, acMoyen && acMoyen.args.texte.length]);
 
 /* 2. ce qui NE DOIT PAS déclencher (pas de faux départ : l'IA, elle, comprend le reste) */
 const non = ['appelle-moi', 'Appelle le plombier', 'appelle tout le monde', 'appelle quelqu\'un', 'appelle moi demain à 8 h', 'ouvre http://example.org', 'ouvre cmcteams', 'ouvre la porte', 'quelle est la date', 'bonjour',

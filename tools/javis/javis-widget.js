@@ -1885,8 +1885,30 @@
         b.addEventListener('click', function () { try { var a = document.createElement('a'); a.href = String(x.tel); a.rel = 'noopener'; a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a); fin.textContent = 'Ton iPhone compose : touche « Appeler » pour valider.'; } catch (e) { fin.textContent = 'Je n\'ai pas pu lancer l\'appel.'; } });
         bs.appendChild(b);
       });
+    } else if (c.t === 'apex_chat' && Array.isArray(c.messages)) {
+      /* PARITÉ (Kevin 19.11, ligne 5) : « écris à … dans Apex Chat » = un bouton par personne. Le DOMAINE a fabriqué le lien (message prérempli) ; Apex Chat est chiffré de bout en bout : c'est Kevin qui touche « Envoyer » là-bas. Rien ne part ici, rien ne s'ouvre tout seul, l'IA n'a jamais vu ni l'identifiant ni le lien. */
+      var am = c.messages.slice(0, 5).filter(function (x) { return x && apexChatLien(x.lien); });
+      if (!am.length) return;
+      t.textContent = '✉️ ' + (am.length === 1 ? 'Écrire dans Apex Chat' : 'À qui écrire ?');
+      if (c.texte) { var ap2 = document.createElement('div'); ap2.style.cssText = 'font-size:14px;line-height:1.5;margin:6px 0;white-space:pre-wrap'; ap2.textContent = '« ' + String(c.texte).slice(0, 500) + ' »'; carte.appendChild(t); carte.appendChild(ap2); t = null; }
+      am.forEach(function (x) {
+        var u = apexChatLien(x.lien);
+        var b = bouton('✉️ Écrire à ' + String(x.nom || '').slice(0, 50) + ' dans Apex Chat'); b.style.minHeight = '44px';
+        b.addEventListener('click', function () { try { var a = document.createElement('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a); fin.textContent = 'Apex Chat s\'ouvre avec ton message : relis-le puis touche Envoyer.'; } catch (e) { fin.textContent = 'Je n\'ai pas pu ouvrir Apex Chat.'; } });
+        bs.appendChild(b);
+      });
+      if (t === null) { carte.appendChild(bs); carte.appendChild(fin); list.appendChild(carte); list.scrollTop = list.scrollHeight; return; }
     } else return;
     carte.appendChild(t); carte.appendChild(bs); carte.appendChild(fin); list.appendChild(carte); list.scrollTop = list.scrollHeight;
+  }
+  /* Lien Apex Chat prérempli : hôte EXACT apex-chat.kd-mc.com, https, pas d'identifiants ni de fragment, destinataire kdmc_<uid> (jamais kdmc_admin). Revérifié ici même si le domaine l'a déjà filtré. */
+  function apexChatLien(l) {
+    try {
+      var s = String(l == null ? '' : l); if (s.length > 2400 || s.indexOf('https://apex-chat.kd-mc.com/?') !== 0) return null;
+      var x = new URL(s); if (x.origin !== 'https://apex-chat.kd-mc.com' || x.username || x.password || x.hash) return null;
+      var to = x.searchParams.get('to') || ''; if (!/^kdmc_[A-Za-z0-9_.:-]{1,70}$/.test(to) || to === 'kdmc_admin') return null;
+      return x.toString();
+    } catch (e) { return null; }
   }
   /* Une adresse https hors domaine qu'on accepte d'ouvrir au toucher de Kevin : jamais d'identifiants dans l'adresse, un vrai nom d'hôte (au moins un point), pas d'IP nue ni de réseau interne. */
   function adresseHttps(u) {

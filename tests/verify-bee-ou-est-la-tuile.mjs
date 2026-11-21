@@ -16,7 +16,7 @@ const { T, F } = ctx;
 let portail = readFileSync('kdmc-home/index.html', 'utf8');
 if (process.env.SABOTAGE) portail = portail.replace(/<a class="card"[^>]*rotaplan\.kd-mc\.com[^>]*>[\s\S]*?<\/a>/, '');
 const dec = (s) => s.replace(/&amp;/g, '&');
-const blocs = portail.split('<details class="grp">').slice(1).map((b) => {
+const blocs = portail.split(/<details class="grp"[^>]*>/).slice(1).map((b) => {
   const nom = dec((b.match(/<span class="nm">([^<]+)<\/span>/) || [])[1] || '');
   return { nom, html: b.split('</details>')[0] };
 });

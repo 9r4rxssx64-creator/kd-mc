@@ -4869,6 +4869,7 @@ async function handleBeeIa(request, env, ctx) {
       let texte;
       if (panne && !c0) texte = 'Je n\u2019arrive pas à le faire pour le moment (le domaine ne répond pas à cette demande). Réessaie dans un instant.';
       else if (raccourci.outil === 'appeler') texte = c0 ? (c0.appels && c0.appels.length > 1 ? 'Plusieurs personnes correspondent : touche la bonne pour l\u2019appeler.' : 'Voilà : touche le bouton pour appeler.') : (/aucun num/i.test(retour) ? 'Je connais le compte, mais aucun numéro n\u2019est dans sa fiche. Tu veux que je lui écrive un message direct pour le demander ?' : 'Je ne trouve aucun compte à ce nom. Écris-moi le prénom et le nom comme sur son compte.');
+      else if (raccourci.outil === 'message_apex_chat') texte = c0 ? 'Le message est prêt : relis-le et touche « Écrire dans Apex Chat », puis Envoyer. Rien n\u2019est parti.' : (/aucun compte/i.test(retour) ? 'Je ne trouve aucun compte à ce nom. Écris le prénom et le nom comme sur le compte.' : 'Je n\u2019arrive pas à préparer ce message pour le moment. Réessaie dans un instant.');
       else if (raccourci.outil === 'comptes_cmcteams') texte = c0 ? 'La liste est là, avec l\u2019identifiant SBM de chacun.' : 'Je n\u2019arrive pas à lire la liste des comptes pour le moment. Réessaie dans un instant.';
       else texte = c0 ? 'Touche le bouton pour ouvrir la page.' : 'Cette adresse n\u2019est pas ouvrable (il faut une adresse https).';
       return JB(avec({ ok: true, text: texte, provider: 'domaine', gratuit: true, outils: [raccourci.outil] }));
@@ -5132,7 +5133,7 @@ const PORTES_BEE = ['/__boite/admin', '/__boite/admin/lu', '/__boite/admin/repon
   '/__admin/apps-fermees', '/__admin/acces', '/__admin/acces-lot', '/__admin/accounts', '/__admin/audit', '/__admin/code', '/__admin/revoke',
   '/__admin/compte-ouvrir', '/__admin/compte-supprimer', '/__admin/bannis', '/__admin/debannir', '/__admin/attendus', '/__demandes',
   '/__bot/ia', '/__bot/ia/mode', '/__bot/ia/tick', '/__bot/ia/annuler', '/__bot/scan', '/__bot/marche', '/__bot/liens', '/__bot/fleet', '/__bot/history', '/__bot/analysis',
-  '/__admin/compte-invite', '/__bot/config', '/__dm/admin/ecrire', '/__admin/comptes-cmcteams', '/__admin/appel', '/__admin/mail-envoyer'];   // + 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par Kevin seul), régler le robot (testnet) (bee-droits-max.js) ; /__bot/reel reste fermé   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre restent FERMÉS (bee-droits.js) ; création de compte et réglage du robot ouverts le 23.10 (bee-droits-max.js)
+  '/__admin/compte-invite', '/__bot/config', '/__dm/admin/ecrire', '/__admin/comptes-cmcteams', '/__admin/appel', '/__admin/ecrire-apex-chat', '/__admin/mail-envoyer'];   // + 23.10 « Go oui tout » : créer un compte (code tiré au hasard, vu par Kevin seul), régler le robot (testnet) (bee-droits-max.js) ; /__bot/reel reste fermé   // Kevin 13.10 « tous les droits » (liste confirmée par lui) : portes de GESTION du domaine ; coffre, code admin, argent réel, arbre restent FERMÉS (bee-droits.js) ; création de compte et réglage du robot ouverts le 23.10 (bee-droits-max.js)
 async function diagBee(request, env, session) {
   const pingIA = async () => {
     const t = Date.now();

@@ -611,7 +611,7 @@ const TEXT_PROVIDERS = [
   { id: 'xai',        key: 'XAI_API_KEY',        url: 'https://api.x.ai/v1/chat/completions',                  model: 'grok-2-latest',                  free: false },
   { id: 'perplexity', key: 'PERPLEXITI_API_KEY', url: 'https://api.perplexity.ai/chat/completions',            model: 'sonar',                          free: false },
   /* b) moteurs à généreux palier gratuit — il suffira d'ajouter la clé : */
-  { id: 'cerebras',   key: 'CEREBRAS_API_KEY',   url: 'https://api.cerebras.ai/v1/chat/completions',           model: 'gpt-oss-120b',                   free: true },   // 2.10 : llama-3.3-70b retiré par Cerebras
+  /* Cerebras RETIRÉ le 21.11 (Kevin 20.11 « retire » : HTTP 402 Payment required, pont 2977) */
   { id: 'nvidia',     key: 'NVIDIA_API_KEY',     url: 'https://integrate.api.nvidia.com/v1/chat/completions',  model: 'meta/llama-3.3-70b-instruct',    free: true },
   { id: 'sambanova',  key: 'SAMBANOVA_API_KEY',  url: 'https://api.sambanova.ai/v1/chat/completions',          model: 'Meta-Llama-3.3-70B-Instruct',    free: true },
   { id: 'huggingface',key: 'HF_TOKEN',           url: 'https://router.huggingface.co/v1/chat/completions',     model: 'meta-llama/Llama-3.3-70B-Instruct', free: true },

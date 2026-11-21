@@ -8,4 +8,7 @@ const nom = m ? m[1] : '';
 const MORTS = ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 const ok = nom === 'gemini-flash-lite-latest' && !MORTS.includes(nom);
 console.log(ok ? '✅ Studio : modèle Gemini texte = ' + nom : '❌ Studio : modèle Gemini texte mort ou inconnu : ' + (nom || 'introuvable'));
-process.exit(ok ? 0 : 1);
+/* Cerebras est payant depuis le 20.11 (HTTP 402) : il ne doit plus figurer dans la cascade du Studio. */
+const cerebras = process.env.SABOTAGE ? true : /id: 'cerebras'/.test(src);
+console.log(cerebras ? '❌ Studio : Cerebras (402, retiré par Kevin) est encore dans la cascade' : '✅ Studio : Cerebras absent de la cascade');
+process.exit(ok && !cerebras ? 0 : 1);

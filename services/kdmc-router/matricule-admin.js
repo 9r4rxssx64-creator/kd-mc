@@ -18,44 +18,57 @@ export function preparerMatricule(v) {
   return { matricule: m };
 }
 
+const matriculeDe = (a) => String(a?.fiche?.matricule || '').toUpperCase();
+
 /** PURE : l'identifiant d'un AUTRE compte qui porte déjà ce matricule, ou ''. */
 export function dejaPris(tous, uid, matricule) {
   if (!matricule) return '';
-  for (const a of (tous || [])) {
-    if (!a || !a.uid || a.uid === uid) continue;
-    if (String((a.fiche && a.fiche.matricule) || '').toUpperCase() === matricule) return String(a.uid);
-  }
-  return '';
+  const autre = (tous || []).find((a) => a?.uid && a.uid !== uid && matriculeDe(a) === matricule);
+  return autre ? String(autre.uid) : '';
+}
+
+/** Ce qui se refuse AVANT de lire la demande : méthode, origine, registre. Rend [objet, statut] ou null. */
+function refusEntree(request, env, deps) {
+  if (request.method !== 'POST') return [{ ok: false, reason: 'methode' }, 405];
+  if (deps.origineOk && !deps.origineOk(request)) return [{ ok: false, reason: 'origine refusée' }, 403];
+  if (!env?.ACCOUNTS) return [{ ok: false, reason: 'registre indisponible' }, 503];
+  return null;
+}
+
+/** La ligne du journal : « ancien → nouveau », « nouveau », ou « ancien → (effacé) ». Jamais le nom. */
+export function detailJournal(avant, apres) {
+  if (!apres) return (avant || '?') + ' → (effacé)';
+  return avant ? avant + ' → ' + apres : apres;
+}
+
+/** Écrit la fiche puis la RELIT : true seulement si le registre rend bien le matricule voulu. */
+async function ecrireEtRelire(env, deps, a, matricule, now) {
+  const fiche = { ...a.fiche };
+  if (matricule) fiche.matricule = matricule; else delete fiche.matricule;
+  fiche.maj = now;
+  a.fiche = fiche;
+  await deps.accPut(env, a, true);
+  return matriculeDe(await deps.accGet(env, a.uid)) === matricule;
 }
 
 /** deps : { accGet(env, uid), accPut(env, acc, connu), audLog(env, entree), J(obj, status), tous(env), origineOk(request) } — fournis par worker.js. */
 export async function handleMatriculeAdmin(request, env, deps, now) {
   const J = deps.J; now = now || Date.now();
-  if (request.method !== 'POST') return J({ ok: false, reason: 'methode' }, 405);
-  if (deps.origineOk && !deps.origineOk(request)) return J({ ok: false, reason: 'origine refusée' }, 403);
-  if (!env || !env.ACCOUNTS) return J({ ok: false, reason: 'registre indisponible' }, 503);
+  const refus = refusEntree(request, env, deps);
+  if (refus) return J(refus[0], refus[1]);
   let b = {}; try { b = await request.json(); } catch { b = {}; }
-  const uid = String((b && b.uid) || '').slice(0, 80).trim();
+  const uid = String(b?.uid || '').slice(0, 80).trim();
   if (!uid) return J({ ok: false, reason: 'uid requis' }, 400);
-  const p = preparerMatricule(b && b.matricule);
+  const p = preparerMatricule(b?.matricule);
   if (p.erreur) return J({ ok: false, reason: p.erreur, message: 'Un matricule SBM s\'écrit U puis 3 à 6 chiffres (exemple : U12345).' }, 400);
   const a = await deps.accGet(env, uid);
   if (!a) return J({ ok: false, reason: 'not_found' }, 404);
-  const avant = String((a.fiche && a.fiche.matricule) || '').toUpperCase();
+  const avant = matriculeDe(a);
   if (avant === p.matricule) return J({ ok: true, uid, matricule: p.matricule, inchange: true });
-  if (p.matricule) {
-    const autre = dejaPris(await deps.tous(env), uid, p.matricule);
-    if (autre) return J({ ok: false, reason: 'matricule_pris', message: 'Ce matricule est déjà rangé sur un autre compte.', autre_uid: autre }, 409);
-  }
-  const fiche = Object.assign({}, a.fiche || {});
-  if (p.matricule) fiche.matricule = p.matricule; else delete fiche.matricule;
-  fiche.maj = now;
-  a.fiche = fiche;
-  await deps.accPut(env, a, true);
+  const autre = p.matricule ? dejaPris(await deps.tous(env), uid, p.matricule) : '';
+  if (autre) return J({ ok: false, reason: 'matricule_pris', message: 'Ce matricule est déjà rangé sur un autre compte.', autre_uid: autre }, 409);
   /* relu après écriture : on ne répond « fait » que si le registre le dit */
-  const relu = await deps.accGet(env, uid);
-  const lu = String((relu && relu.fiche && relu.fiche.matricule) || '').toUpperCase();
-  if (lu !== p.matricule) return J({ ok: false, reason: 'ecriture_non_relue' }, 503);
-  await deps.audLog(env, { ev: 'matricule_pose_admin', uid, detail: p.matricule ? ((avant ? avant + ' → ' : '') + p.matricule) : ((avant || '?') + ' → (effacé)') });
+  if (!(await ecrireEtRelire(env, deps, a, p.matricule, now))) return J({ ok: false, reason: 'ecriture_non_relue' }, 503);
+  await deps.audLog(env, { ev: 'matricule_pose_admin', uid, detail: detailJournal(avant, p.matricule) });
   return J({ ok: true, uid, matricule: p.matricule });
 }

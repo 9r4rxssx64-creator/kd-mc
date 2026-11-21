@@ -1,5 +1,5 @@
 /* node services/kdmc-router/matricule-admin.test.mjs — le matricule SBM posé par Kevin dans l'admin (pont 2989, 21.11.2026). */
-import { preparerMatricule, dejaPris, handleMatriculeAdmin, RE_MATRICULE } from './matricule-admin.js';
+import { preparerMatricule, dejaPris, handleMatriculeAdmin, RE_MATRICULE, detailJournal } from './matricule-admin.js';
 import { readFileSync } from 'node:fs';
 let ok = 0, ko = 0; const chk = (c, m, d) => { if (c) ok++; else ko++; console.log(`  ${c ? '✅' : '❌'} ${m}${!c && d ? '  → ' + d : ''}`); };
 
@@ -9,6 +9,8 @@ for (const x of ['12345', 'U12', 'U1234567', 'UX1234', 'U12a45', '<b>U123</b>'])
 chk(RE_MATRICULE.test('U123') && RE_MATRICULE.test('U123456'), '1d. U + 3 à 6 chiffres');
 const T = [{ uid: 'a', fiche: { matricule: 'U111' } }, { uid: 'b', fiche: {} }, { uid: 'c' }, null];
 chk(dejaPris(T, 'b', 'U111') === 'a' && dejaPris(T, 'a', 'U111') === '' && dejaPris(T, 'b', 'U222') === '' && dejaPris(T, 'b', '') === '', '2. en double : seulement chez un AUTRE compte');
+
+chk(detailJournal('', 'U1') === 'U1' && detailJournal('U1', 'U2') === 'U1 → U2' && detailJournal('U1', '') === 'U1 → (effacé)' && detailJournal('', '') === '? → (effacé)', '2b. la ligne du journal : nouveau, corrigé, effacé');
 
 function monde() {
   const comptes = { anne: { uid: 'anne', name: 'Anne Durand', fiche: { matricule: 'U111', email: 'a@x.fr' } }, bob: { uid: 'bob', name: 'Bob Martin' } };

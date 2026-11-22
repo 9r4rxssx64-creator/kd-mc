@@ -1,5 +1,10 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Portail v1.0.96 + valise OBD v2.3.1 — 22.11.2026 (cloud-installer, demandes de Kevin relayées par pc-config 3164 et pc-obd 3169)
+- Portail : raccourci « 🚗 Valise OBD » sous « Mon tableau de bord », dans le bloc `#tdb-haut` caché que le portail ne révèle qu'à l'admin prouvé ; un visiteur ne le voit pas. Mesuré à 390 px : 354 × 108 px, aucun débordement ; bloc caché = 0 × 0.
+- Seule exception nommée à « une seule carte admin au portail » (règle du 29.10) ; garde `tests/admin-tuiles.test.mjs` (15 tests).
+- Valise OBD v2.3.1 (écrite par pc-obd) : correctifs après les premiers essais réels du 22.11 (ligne K) ; 2 fichiers, `kdmc-home/admin/obd.js` et `obd.html`.
+
 ## Apex AI v13.4.417 — 21.11.2026 (apex-cloud, pc-config 3092 : « ÉCHEC 3/3, le modèle INVENTE »)
 - Mesure réelle sur la 13.4.416 (modèle groq gratuit) : sur « ajoute le commentaire "…" à la fiche de … » le modèle n'appelait AUCUN outil et répondait « Modification appliquée : data/team.json… commit automatisé » avec un faux JSON ; sur « écris à … dans CMCteams : test » : « Message envoyé » — FAUX, rien n'avait été fait. Cause : les modèles gratuits ne choisissent pas les outils de façon fiable.
 - Correction : une demande NETTE d'écriture est routée par le chat lui-même, SANS modèle, vers la carte « ✅ Confirmer / ✖ Annuler » du domaine : « ajoute le commentaire "…" à la fiche de X », « ajoute le téléphone / l'e-mail / l'adresse / le site … à la fiche de X », « corrige / renseigne la date de naissance (jj/mm/aaaa acceptée), le lieu, le décès, le métier de X : … », « écris à X dans CMCteams (ou la light) : … ». Une demande d'écriture PAS assez nette reçoit une aide locale qui dit comment la formuler et « je n'ai rien modifié / envoyé » : plus aucune réponse inventée par le modèle. Un nom inconnu : le domaine refuse, le chat le dit.

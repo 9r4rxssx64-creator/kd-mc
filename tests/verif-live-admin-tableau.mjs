@@ -180,6 +180,15 @@ try {
   chk(ob.pg === 200 && ob.pgOk && ob.csp, `valise OBD : la page répond · HTTP ${ob.pg} · c'est bien la valise : ${ob.pgOk ? 'oui' : 'NON'} · elle ne parle qu'au domaine : ${ob.csp ? 'oui' : 'NON'}`);
   chk(ob.sc === 200 && /javascript/.test(ob.scType) && ob.scTaille > 20000, `valise OBD : son script est servi · HTTP ${ob.sc} · ${ob.scType || '-'} · ${ob.scTaille} caractères`);
   chk(ob.ti === 200 && ob.nTitres > 1000 && ob.p2 === 200 && ob.okP2, `valise OBD : la base de codes est servie · ${ob.nTitres} libellés de codes · un fichier de détail lisible : ${ob.okP2 ? 'oui' : 'NON'}`);
+  /* 22.11 (Kevin, relayé pc-config 3164) : la valise OBD aussi sur le PORTAIL, pour lui seul — vue avec la session admin, en dernier (on quitte la page admin). Lecture seule. */
+  await page.goto('https://kd-mc.com/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  await page.waitForFunction(() => { const n = document.getElementById('tdb-haut'); return !!n && !n.hidden; }, null, { timeout: 20000 }).catch(() => {});
+  const po = await page.evaluate(() => {
+    const t = document.getElementById('tuile-obd'), n = document.getElementById('tdb-haut'), badge = (document.querySelector('script[data-project="kdmc-home"]') || {}).dataset || {};
+    const r = t ? t.getBoundingClientRect() : { width: 0, height: 0 };
+    return { existe: !!t, blocVisible: !!n && !n.hidden, l: Math.round(r.width), h: Math.round(r.height), href: t ? t.getAttribute('href') : '', version: badge.version || '', deborde: document.documentElement.scrollWidth > window.innerWidth + 1 };
+  });
+  chk(po.existe && po.blocVisible && po.h >= 44 && po.l >= 44 && po.href === '/admin/obd.html' && !po.deborde, `portail ${po.version || '?'} : raccourci « Valise OBD » visible pour l'admin · ${po.l} × ${po.h} px · mène à ${po.href || '-'} · page qui déborde : ${po.deborde ? 'OUI' : 'non'}`);
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }
 
 dire(`=== VÉRIF TABLEAU ADMIN : ${bons} OK · ${mauvais} en défaut`);

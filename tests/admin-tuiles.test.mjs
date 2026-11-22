@@ -166,3 +166,18 @@ test('la tuile « Valise OBD » est rendue, une seule fois, vers la page admin',
     'la valise OBD doit avoir exactement UNE tuile dans l\'admin (0 = perdue, 2 = doublon)');
   assert.ok(/Valise OBD/.test(html), 'le libellé de la tuile Valise OBD a disparu');
 });
+/* ── Kevin 22.11.2026 : la valise OBD « avec les autres tuiles » sur le portail, visible par lui seul ──
+   Seule exception nommée à « une seule carte admin au portail » : un raccourci, DANS le bloc caché que le portail ne révèle qu'à l'admin prouvé. */
+test('portail : le raccourci « Valise OBD » existe une fois, dans le bloc admin caché, et nulle part ailleurs', async () => {
+  const { readFileSync } = await import('node:fs');
+  const portail = readFileSync(new URL('../kdmc-home/index.html', import.meta.url), 'utf8');
+  assert.equal((portail.match(/href="\/admin\/obd\.html"/g) || []).length, 1, 'une seule carte Valise OBD au portail');
+  const bloc = portail.slice(portail.indexOf('<nav id="tdb-haut"'), portail.indexOf('</nav>', portail.indexOf('<nav id="tdb-haut"')));
+  assert.match(portail.slice(portail.indexOf('<nav id="tdb-haut"'), portail.indexOf('>', portail.indexOf('<nav id="tdb-haut"'))), /\shidden$/, 'le bloc admin du portail est caché par défaut');
+  assert.ok(bloc.includes('href="/admin/obd.html"'), 'la carte Valise OBD doit être DANS le bloc caché (sinon tout visiteur la verrait)');
+  const js = readFileSync(new URL('../kdmc-home/kdmc-portal.js', import.meta.url), 'utf8');
+  assert.match(js, /var isPriv = !\(s && s\.apercu\) && !!\(s && s\.admin\);/, 'le bloc n\'est révélé que pour l\'admin prouvé');
+  assert.match(js, /getElementById\('tdb-haut'\); if \(tdb\) tdb\.hidden = !isPriv;/, 'et c\'est bien CE bloc que la règle admin commande');
+  const adm = [...portail.matchAll(/class="card adm[^"]*" href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(adm, ['/admin/'], 'aucune autre carte admin n\'est revenue au portail');
+});

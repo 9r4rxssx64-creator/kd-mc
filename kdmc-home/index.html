@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- v1.0.95 -->
+<!-- v1.0.96 -->
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
@@ -205,6 +205,9 @@
            kdmc-portal.js avec la même règle que « Mon espace » (admin prouvé, ou Kevin/Lolo vérifiés). -->
       <nav id="tdb-haut" class="grid tdb" aria-label="Mon tableau de bord" hidden>
         <a class="card adm big" href="/admin/"><span class="ic">🛡</span><span class="ct"><span class="nm">Mon tableau de bord <span class="badge">Admin</span></span><span class="ds">Tout en un seul endroit : qui est en ligne, messages, comptes, outils privés, apps, coûts</span><span class="url">kd-mc.com → admin</span></span><span class="arr">›</span></a>
+        <!-- 22.11 (Kevin : la valise OBD « avec les autres tuiles », visible par lui seul) : raccourci direct. Il vit DANS ce bloc caché, révélé pour le seul admin prouvé
+             (kdmc-portal.js applyAdminVisibility) ; la page elle-même reste derrière l'entrée admin du domaine. Seule exception à « une seule carte admin au portail ». Garde : tests/admin-tuiles.test.mjs. -->
+        <a class="card" id="tuile-obd" href="/admin/obd.html"><span class="ic">🚗</span><span class="ct"><span class="nm">Valise OBD <span class="badge">Admin</span></span><span class="ds">Diagnostic auto : codes défaut, calculateurs, valeurs en direct</span><span class="url">kd-mc.com → admin → obd</span></span><span class="arr">›</span></a>
       </nav>
       <div class="hubbar">
         <span id="hello">Bienvenue</span>
@@ -287,10 +290,10 @@
   </div>
   <!-- ?v= numéroté : force le rafraîchissement du JS à chaque version (sinon le cache
        HTTP/SW sert l'ancien fichier — la tuile bot n'apparaissait pas, leçon #39/#82). -->
-  <script src="kdmc-sso.js?v=1.0.95"></script>
-  <script src="kdmc-boite.js?v=1.0.95"></script>
-  <script src="kdmc-portal.js?v=1.0.95"></script>
+  <script src="kdmc-sso.js?v=1.0.96"></script>
+  <script src="kdmc-boite.js?v=1.0.96"></script>
+  <script src="kdmc-portal.js?v=1.0.96"></script>
   <!-- MAJ auto forcée + badge version (helper partagé) -->
-  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.95" data-color="#c9a227" defer></script>
+  <script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="kdmc-home" data-version="v1.0.96" data-color="#c9a227" defer></script>
 </body>
 </html>

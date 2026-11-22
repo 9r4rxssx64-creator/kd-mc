@@ -4,7 +4,7 @@
  * Aucune donnée personnelle ici (dépôt public) : le garage vit dans le navigateur. */
 (function () {
 'use strict';
-const VERSION = 'v2.2.0';
+const VERSION = 'v2.3.1';
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -21,9 +21,11 @@ async function api(p, b) {
   if (!r.ok || j.ok === false) throw new Error(j.err || 'Erreur');
   return j;
 }
-async function attendre(lire, t) {
+async function attendre(lire, t, calme) {
   const fin = Date.now() + t;
   while (Date.now() < fin) { if (lire().includes('>')) break; await pause(12); }
+  /* Certains boîtiers renvoient encore des octets après l'invite : on attend le silence. */
+  if (calme) { let n = -1; const f2 = Date.now() + 900; while (Date.now() < f2 && lire().length !== n) { n = lire().length; await pause(calme); } }
   return lire();
 }
 
@@ -32,7 +34,7 @@ function TLocal(port) {
   return { nom:port,
     async open() { await api('open', { port }); },
     async close() { await api('close', {}).catch(() => {}); },
-    async cmd(c, t) { return (await api('cmd', { cmd:c, timeout:t })).raw; } };
+    async cmd(c, t, calme) { return (await api('cmd', { cmd:c, timeout:t, calme:calme || 0 })).raw; } };
 }
 function TSerie(p0) {
   let port = p0 || null, reader = null, writer = null, buf = '';
@@ -55,7 +57,7 @@ function TSerie(p0) {
       writer = port.writable.getWriter(); reader = port.readable.getReader(); pompe();
     },
     close: fermer,
-    async cmd(c, t) { buf = ''; await writer.write(enc.encode(c + '\r')); return attendre(() => buf, t); } };
+    async cmd(c, t, calme) { buf = ''; await writer.write(enc.encode(c + '\r')); return attendre(() => buf, t, calme); } };
 }
 function TBle() {
   const SERV = [0xfff0, 0xffe0, 0x18f0, 'e7810a71-73ae-499d-8c15-faa9aef0c3f2', '49535343-fe7d-4ae5-8fa9-9fafd205e455', '6e400001-b5a3-f393-e0a9-e50e24dcca9e'];
@@ -78,13 +80,13 @@ function TBle() {
       await rx.startNotifications();
     },
     async close() { try { if (dev && dev.gatt.connected) dev.gatt.disconnect(); } catch (e) { /* rien */ } },
-    async cmd(c, t) {
+    async cmd(c, t, calme) {
       buf = ''; const d = enc.encode(c + '\r');
       for (let i = 0; i < d.length; i += 20) {
         const m = d.slice(i, i + 20);
         if (tx.properties.writeWithoutResponse) await tx.writeValueWithoutResponse(m); else await tx.writeValue(m);
       }
-      return attendre(() => buf, t);
+      return attendre(() => buf, t, calme);
     } };
 }
 /* Simulateur : un véhicule CAN factice avec 4 calculateurs, pour essayer sans voiture. */
@@ -144,8 +146,13 @@ function TSimu() {
 /* ================= Dialogue avec le boîtier ================= */
 let file = Promise.resolve();
 function at(cmd, t = 2500) {
+  /* Tant que le protocole du véhicule n'est pas établi, chaque requête relance une recherche de plusieurs secondes : on laisse le temps au boîtier. */
+  if (!/^AT/i.test(cmd) && !etat.proto && t < 12000) t = 12000;
   const p = file.then(async () => {
-    const raw = await etat.T.cmd(cmd, t);
+    const q = etat.kline ? 150 : 0;
+    let raw = await etat.T.cmd(cmd, t, q);
+    /* Ligne K : la session tombe après 5 s de silence et certains boîtiers ne la rouvrent pas seuls. On la rouvre et on redemande, une fois. */
+    if (etat.kline && !/^AT/i.test(cmd) && !trameK(raw).length && /NO ?DATA|ERROR|UNABLE/i.test(raw)) { await etat.T.cmd('ATPC', 2500, q); raw = await etat.T.cmd(cmd, 15000, q); }
     brut.push({ cmd, rep:raw }); if (brut.length > 400) brut.shift();
     const s = $('#sortie'); s.textContent = (s.textContent + '> ' + cmd + '\n' + texte(raw) + '\n').slice(-20000); s.scrollTop = s.scrollHeight;
     return raw;
@@ -158,7 +165,19 @@ function lignes(raw) {
   return raw.replace(/>/g, '').split(/[\r\n]+/).map(l => l.trim()).filter(l => l && !/^SEARCHING|^BUS INIT/i.test(l)).map(l => l.replace(/\s+/g, '').toUpperCase());
 }
 /* Messages sans en-tête (ATH0), trames multiples CAN recollées. */
+/* Ligne K avec en-têtes : on ne garde que les trames dont la somme de contrôle est juste (le boîtier peut renvoyer d'anciennes réponses ou des morceaux). */
+function trameK(raw, avecSource) {
+  const out = [], vu = new Set();
+  for (const l of lignes(raw)) {
+    if (!/^[0-9A-F]+$/.test(l) || l.length < 10 || l.length % 2 || vu.has(l)) continue;
+    const b = octets(l);
+    if ((b.slice(0, -1).reduce((a, x) => a + x, 0) & 0xFF) !== b[b.length - 1]) continue;
+    vu.add(l); out.push(avecSource ? { src:l.slice(4, 6), d:l.slice(6, -2) } : l.slice(6, -2));
+  }
+  return out;
+}
 function messages(raw) {
+  if (etat.kline) return trameK(raw);
   const out = []; let cur = null;
   for (const l of lignes(raw)) {
     if (/^[0-9A-F]{3}$/.test(l)) { cur = { len:parseInt(l, 16) * 2, d:'' }; out.push(cur); continue; }
@@ -304,7 +323,7 @@ function majInfos() {
   const att = !etat.simu && etat.veh && etat.veh.vin;
   $('#iVin').innerHTML = etat.vin ? esc(etat.vin) + (att ? (att === etat.vin ? '<span class="badge ok">conforme</span>' : '<span class="badge ko">différent de la fiche</span>') : (marqueVin(etat.vin) ? '<span class="badge">' + esc(marqueVin(etat.vin)) + '</span>' : '')) : '—';
 }
-async function init() { for (const c of ['ATE0', 'ATL0', 'ATS0', 'ATH0', 'ATAT1', 'ATSP0']) await at(c); }
+async function init() { for (const c of ['ATE0', 'ATL0', 'ATS0', 'ATH0', 'ATAT1', 'ATSP0']) await at(c); if (etat.kline) await at('ATH1'); }
 /* Signature électronique d'un véhicule : protocole + liste des valeurs qu'il fournit (sert quand il ne donne pas son n° de châssis). */
 function empreinte() { return (etat.protoN || '?') + '|' + [...etat.sup].sort().join(''); }
 function memoriserEmpreinte(v) {
@@ -331,6 +350,8 @@ async function suiteVehicule() {
   etat.proto = texte(await at('ATDP')).replace(/^AUTO,\s*/i, '');
   const n = texte(await at('ATDPN')).replace(/^A/i, '').trim();
   etat.protoN = n; etat.can = parseInt(n, 16) >= 6; etat.can29 = n === '7' || n === '9';
+  /* Ligne K : en-têtes toujours visibles, pour vérifier chaque trame. */
+  etat.kline = ['3', '4', '5'].includes(n); if (etat.kline) await at('ATH1');
   etat.vin = lireVin(await at('0902', 5000));
   reconnaitre(); majInfos(); statut(etat.simu ? 'Simulateur connecté' : 'Véhicule connecté', 'on');
   construireJauges();
@@ -354,7 +375,7 @@ async function connecter(o) {
   etat.enConnexion = true;
   const choix = auto ? o.choix : $('#port').value;
   const T = (auto && o.T) || (choix === 'simu' ? TSimu() : choix === 'serie' ? TSerie() : choix === 'ble' ? TBle() : TLocal(choix.slice(6)));
-  etat.T = T; etat.simu = choix === 'simu'; etat.sup = new Set(); etat.vin = ''; etat.proto = ''; etat.protoN = ''; etat.emp = ''; etat.can = etat.can29 = false; etat.perdu = 0; brut = [];
+  etat.T = T; etat.simu = choix === 'simu'; etat.sup = new Set(); etat.vin = ''; etat.proto = ''; etat.protoN = ''; etat.emp = ''; etat.kline = false; etat.can = etat.can29 = false; etat.perdu = 0; brut = [];
   $('#bConnecter').disabled = true; if (!auto) statut('Ouverture de la liaison…', 'att');
   let reussi = false;
   try {
@@ -403,7 +424,7 @@ async function autoRecherche() {
   clearTimeout(autoRecherche.t);
   try {
     if (etat.connecte) {
-      if (!etat.simu && !etat.enConnexion) {
+      if (!etat.simu && !etat.enConnexion && !etat.sondeEnCours) {
         let vivant = false;
         try { const r = await at('ATRV', 2500); vivant = /\d/.test(r); if (vivant) { etat.tension = texte(r); $('#iTension').textContent = etat.tension; } } catch (e) { vivant = false; }
         etat.perdu = vivant ? 0 : (etat.perdu || 0) + 1;
@@ -453,8 +474,9 @@ function nomCalc(id) {
   return m[id] || 'Calculateur';
 }
 async function listerCalculateurs() {
-  await at('ATH1'); const raw = await at('0100', 6000); await at('ATH0');
+  await at('ATH1'); const raw = await at('0100', 6000); await at(etat.kline ? 'ATH1' : 'ATH0');
   const vus = new Map();
+  if (etat.kline) { for (const l of lignes(raw)) { const m = l.match(/^(?:486B|8[0-9A-F]F1)([0-9A-F]{2})41/); if (m && !vus.has(m[1])) vus.set(m[1], { id:m[1], nom:nomCalc(m[1]) }); } return [...vus.values()]; }
   for (const l of lignes(raw)) {
     if (!/^[0-9A-F]+$/.test(l)) continue;
     let id = null;
@@ -466,7 +488,8 @@ async function listerCalculateurs() {
 }
 const GEL = [['0C', 'Régime', 'tr/min', b => (b[0] * 256 + b[1]) / 4], ['0D', 'Vitesse', 'km/h', b => b[0]], ['05', 'Température du liquide', '°C', b => b[0] - 40], ['04', 'Charge moteur', '%', b => Math.round(b[0] * 100 / 255)], ['0F', 'Température d\'admission', '°C', b => b[0] - 40], ['0B', 'Pression d\'admission', 'kPa', b => b[0]], ['11', 'Papillon', '%', b => Math.round(b[0] * 100 / 255)]];
 async function diagnostic() {
-  if (!etat.connecte) return;
+  if (!etat.connecte || etat.sondeEnCours) return;
+  if (!etat.proto) { dire('Le véhicule ne répond pas encore. Mets le contact : la lecture partira toute seule.', 6000); return; }
   const etaitDirect = etat.direct; etat.direct = false;
   $('#bDiag').disabled = true; $('#bDiag').textContent = 'Lecture en cours…';
   try {
@@ -481,6 +504,8 @@ async function diagnostic() {
     if (g && g.slice(6, 10) && g.slice(6, 10) !== '0000') {
       e.gel = { code:dtcDe(g.slice(6, 10)), valeurs:[] };
       for (const [pid, nom, u, f] of GEL) { const b = valeur(await at('02' + pid + '00'), pid, '42'); if (b && b.length) e.gel.valeurs.push({ nom, u, v:f(b) }); }
+      /* Une trace sans aucune valeur et sans code mémorisé correspondant n'est pas fiable. */
+      if (!e.gel.valeurs.length && !e.codes.memorises.concat(e.codes.attente).includes(e.gel.code)) e.gel.incertain = true;
     }
     e.calculateurs = await listerCalculateurs();
     e.brut = brut.slice(-60);
@@ -508,7 +533,8 @@ function rendu(e, cible) {
     + blocCodes('Codes mémorisés', e.codes.memorises, 'Défauts confirmés, enregistrés dans le calculateur.', e.nom)
     + blocCodes('Codes en attente', e.codes.attente, 'Défauts vus pendant le dernier trajet, pas encore confirmés.', e.nom)
     + blocCodes('Codes permanents', e.codes.permanents, "Défauts que l'effacement ne supprime pas : ils partent seuls après réparation.", e.nom)
-    + (e.gel ? '<h3>Données figées</h3><p class="sous">Conditions de roulage au moment du défaut <b>' + esc(e.gel.code) + '</b>.</p><div>' + (e.gel.valeurs || []).map(v => '<span class="badge">' + esc(v.nom) + ' : ' + esc(v.v) + ' ' + esc(v.u) + '</span>').join('') + '</div>' : '')
+    + (e.gel && e.gel.incertain ? '<h3>Données figées</h3><p class="sous">Le calculateur signale une trace pour <b>' + esc(e.gel.code) + '</b>, sans valeur associée ni code mémorisé : à ne pas prendre pour un défaut.</p>' : '')
+    + (e.gel && !e.gel.incertain ? '<h3>Données figées</h3><p class="sous">Conditions de roulage au moment du défaut <b>' + esc(e.gel.code) + '</b>.</p><div>' + (e.gel.valeurs || []).map(v => '<span class="badge">' + esc(v.nom) + ' : ' + esc(v.v) + ' ' + esc(v.u) + '</span>').join('') + '</div>' : '')
     + (mon ? '<h3>Prêt pour le contrôle antipollution · ' + prets + '/' + mon.liste.length + '</h3><div>' + mon.liste.map(x => '<span class="badge ' + (x.pret ? 'ok' : 'att') + '">' + esc(x.nom) + ' : ' + (x.pret ? 'prêt' : 'pas encore') + '</span>').join('') + '</div>' : '')
     + (e.calculateurs && e.calculateurs.length ? '<h3>Calculateurs qui ont répondu</h3><div>' + e.calculateurs.map(c => '<span class="badge">' + esc(c.id) + ' · ' + esc(c.nom) + '</span>').join('') + '</div>' : '');
 }
@@ -627,7 +653,8 @@ async function ouvrirLigneK(adr, test, mode) {
   if (mode === 'lente') {
     await at('ATSP4'); if (/\?/.test(await at('ATIIA ' + adr))) return null;
     await at('ATSH 81 ' + adr + ' ' + test);
-    return /OK/i.test(await at('ATSI', 10000));
+    const rs = await at('ATSI', 10000); if (/\?/.test(rs)) return null;
+    return /OK/i.test(rs);
   }
   await at('ATSP5'); if (/\?/.test(await at('ATSH 81 ' + adr + ' ' + test))) return null;
   if (mode === 'rapide') {

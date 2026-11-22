@@ -4,7 +4,7 @@
  * Aucune donnée personnelle ici (dépôt public) : le garage vit dans le navigateur. */
 (function () {
 'use strict';
-const VERSION = 'v2.0.0';
+const VERSION = 'v2.1.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -34,8 +34,8 @@ function TLocal(port) {
     async close() { await api('close', {}).catch(() => {}); },
     async cmd(c, t) { return (await api('cmd', { cmd:c, timeout:t })).raw; } };
 }
-function TSerie() {
-  let port = null, reader = null, writer = null, buf = '';
+function TSerie(p0) {
+  let port = p0 || null, reader = null, writer = null, buf = '';
   const dec = new TextDecoder(), enc = new TextEncoder();
   async function pompe() { try { for (;;) { const { value, done } = await reader.read(); if (done) break; buf += dec.decode(value, { stream:true }); } } catch (e) { /* port fermé */ } }
   async function fermer() {
@@ -304,11 +304,55 @@ function majInfos() {
   $('#iVin').innerHTML = etat.vin ? esc(etat.vin) + (att ? (att === etat.vin ? '<span class="badge ok">conforme</span>' : '<span class="badge ko">différent de la fiche</span>') : (marqueVin(etat.vin) ? '<span class="badge">' + esc(marqueVin(etat.vin)) + '</span>' : '')) : '—';
 }
 async function init() { for (const c of ['ATE0', 'ATL0', 'ATS0', 'ATH0', 'ATAT1', 'ATSP0']) await at(c); }
-async function connecter() {
-  const choix = $('#port').value;
-  const T = choix === 'simu' ? TSimu() : choix === 'serie' ? TSerie() : choix === 'ble' ? TBle() : TLocal(choix.slice(6));
-  etat.T = T; etat.simu = choix === 'simu'; etat.sup = new Set(); etat.vin = ''; etat.proto = ''; etat.can = etat.can29 = false; brut = [];
-  $('#bConnecter').disabled = true; statut('Ouverture de la liaison…', 'att');
+/* Signature électronique d'un véhicule : protocole + liste des valeurs qu'il fournit (sert quand il ne donne pas son n° de châssis). */
+function empreinte() { return (etat.protoN || '?') + '|' + [...etat.sup].sort().join(''); }
+function memoriserEmpreinte(v) {
+  if (!v || !etat.emp) return;
+  for (const x of garage) if (x !== v && x.emp === etat.emp) delete x.emp;
+  v.emp = etat.emp; sauverGarage();
+}
+function reconnaitre() {
+  etat.emp = empreinte();
+  if (etat.simu) return;
+  let v = etat.vin ? garage.find(x => x.vin === etat.vin) : null, comment = 'son numéro de châssis';
+  if (!v && !etat.vin) { v = garage.find(x => x.emp === etat.emp); comment = 'sa signature électronique'; }
+  if (v) { memoriserEmpreinte(v); choisirVeh(v.id); dire('Véhicule reconnu par ' + comment + ' : ' + v.nom); return; }
+  if (etat.vin) {
+    v = { id:'v' + Date.now(), nom:marqueVin(etat.vin) || 'Véhicule', detail:'Ajouté automatiquement · ' + etat.vin.slice(-6), vin:etat.vin, note:'' };
+    garage.push(v); memoriserEmpreinte(v); choisirVeh(v.id);
+    dire('Nouveau véhicule ajouté à ton garage : ' + v.nom + '. Touche sa tuile pour le renommer.', 7000); return;
+  }
+  const n = $('#noteVeh'); n.style.display = 'block';
+  n.textContent = "Ce véhicule ne donne pas son numéro de châssis. Touche sa tuile dans la liste ci-dessus : je le reconnaîtrai tout seul la prochaine fois.";
+}
+async function suiteVehicule() {
+  if (etat.sup.has('20') && ajouterSupportes(await at('0120'), 0x20) && etat.sup.has('40')) ajouterSupportes(await at('0140'), 0x40);
+  etat.proto = texte(await at('ATDP')).replace(/^AUTO,\s*/i, '');
+  const n = texte(await at('ATDPN')).replace(/^A/i, '').trim();
+  etat.protoN = n; etat.can = parseInt(n, 16) >= 6; etat.can29 = n === '7' || n === '9';
+  etat.vin = lireVin(await at('0902', 5000));
+  reconnaitre(); majInfos(); statut(etat.simu ? 'Simulateur connecté' : 'Véhicule connecté', 'on');
+  construireJauges();
+  await diagnostic();
+}
+/* Boîtier trouvé mais véhicule muet (contact coupé) : on réessaie seul jusqu'à ce qu'il réponde. */
+async function attendreVehicule() {
+  while (etat.connecte && !etat.proto) {
+    await pause(5000); if (!etat.connecte) break;
+    try { if (ajouterSupportes(await at('0100', 9000), 0)) { $('#resultat').innerHTML = ''; await suiteVehicule(); } } catch (e) { break; }
+  }
+}
+async function connecter(o) {
+  const auto = !!(o && o.auto);
+  if (etat.connecte) return false;
+  if (!auto) { etat.manuel = true; while (etat.enConnexion) await pause(100); etat.autoOff = false; }
+  else if (etat.enConnexion) return false;
+  etat.enConnexion = true;
+  const choix = auto ? o.choix : $('#port').value;
+  const T = (auto && o.T) || (choix === 'simu' ? TSimu() : choix === 'serie' ? TSerie() : choix === 'ble' ? TBle() : TLocal(choix.slice(6)));
+  etat.T = T; etat.simu = choix === 'simu'; etat.sup = new Set(); etat.vin = ''; etat.proto = ''; etat.protoN = ''; etat.emp = ''; etat.can = etat.can29 = false; etat.perdu = 0; brut = [];
+  $('#bConnecter').disabled = true; if (!auto) statut('Ouverture de la liaison…', 'att');
+  let reussi = false;
   try {
     let z = '';
     for (const b of (T.bauds || [0])) {
@@ -316,7 +360,7 @@ async function connecter() {
         if (e && (e.name === 'NotFoundError' || e.name === 'SecurityError')) throw new Error('Aucun boîtier choisi.');
         throw new Error('Boîtier injoignable (' + T.nom + '). Branche-le sur la prise du véhicule, mets le contact, ferme tout autre logiciel OBD, puis réessaie.');
       }
-      statut('Initialisation du boîtier…', 'att');
+      statut('Boîtier trouvé, initialisation…', 'att');
       z = await at('ATZ', 5000);
       if (!/ELM|OBD|v\d\.\d/i.test(z)) z = await at('ATI', 2500);
       if (/ELM|OBD|v\d\.\d/i.test(z)) break;
@@ -334,36 +378,57 @@ async function connecter() {
         if (ajouterSupportes(await at('0100', 9000), 0)) { ok = true; break; }
       }
     }
-    activer(true);
+    activer(true); reussi = true;
+    if ([...$('#port').options].some(x => x.value === choix)) $('#port').value = choix;
     if (!ok) {
-      await at('ATSP0'); majInfos(); statut('Boîtier connecté, véhicule muet', 'att');
-      $('#resultat').innerHTML = '<div class="note">Le boîtier fonctionne (tension ' + esc(etat.tension) + ') mais le véhicule ne répond à aucun des 9 protocoles standard. Vérifie que le contact est mis. Si c\'est déjà le cas, le calculateur de ce véhicule n\'utilise pas le diagnostic standard (certains modèles d\'avant 2004–2006). L\'onglet « Tous les systèmes » propose un essai par la ligne K.</div>';
-      return;
-    }
-    if (etat.sup.has('20') && ajouterSupportes(await at('0120'), 0x20) && etat.sup.has('40')) ajouterSupportes(await at('0140'), 0x40);
-    etat.proto = texte(await at('ATDP')).replace(/^AUTO,\s*/i, '');
-    const n = texte(await at('ATDPN')).replace(/^A/i, '').trim();
-    etat.can = parseInt(n, 16) >= 6; etat.can29 = n === '7' || n === '9';
-    etat.vin = lireVin(await at('0902', 5000));
-    if (etat.vin) {
-      const connu = garage.find(v => v.vin === etat.vin);
-      if (connu) choisirVeh(connu.id);
-      else if (!etat.simu && confirm('Véhicule non enregistré : ' + (marqueVin(etat.vin) || 'marque inconnue') + ' — ' + etat.vin + '.\n\nL\'ajouter à ton garage ?')) {
-        const v = { id:'v' + Date.now(), nom:marqueVin(etat.vin) || 'Véhicule', detail:etat.vin.slice(-6), vin:etat.vin, note:'' };
-        garage.push(v); sauverGarage(); choisirVeh(v.id);
-      }
-    }
-    majInfos(); statut(etat.simu ? 'Simulateur connecté' : 'Véhicule connecté', 'on');
-    construireJauges();
+      await at('ATSP0'); majInfos(); statut('Boîtier connecté, en attente du véhicule', 'att');
+      $('#resultat').innerHTML = '<div class="note">Le boîtier fonctionne (tension ' + esc(etat.tension) + ') mais le véhicule ne répond pas encore. Mets le contact : la lecture démarrera toute seule. Si le contact est déjà mis, le calculateur de ce véhicule n\'utilise pas le diagnostic standard (certains modèles d\'avant 2004–2006) ; l\'onglet « Tous les systèmes » propose un essai par la ligne K.</div>';
+      attendreVehicule();
+    } else await suiteVehicule();
   } catch (e) {
     try { await T.close(); } catch (x) { /* rien */ }
-    activer(false); statut('Non connecté'); dire(e.message, 8000);
+    activer(false); reussi = false;
+    if (auto) statut('Recherche automatique du boîtier…', 'att'); else { statut('Non connecté'); dire(e.message, 8000); }
   }
+  etat.enConnexion = false; if (!auto) etat.manuel = false;
+  return reussi;
+}
+/* Recherche automatique : la page cherche le boîtier toute seule, se connecte, reconnaît le véhicule et lance le diagnostic.
+   Une fois connectée, elle surveille la liaison (et la tension) et repart en recherche si le boîtier est débranché. */
+async function autoRecherche() {
+  clearTimeout(autoRecherche.t);
+  try {
+    if (etat.connecte) {
+      if (!etat.simu && !etat.enConnexion) {
+        let vivant = false;
+        try { const r = await at('ATRV', 2500); vivant = /\d/.test(r); if (vivant) { etat.tension = texte(r); $('#iTension').textContent = etat.tension; } } catch (e) { vivant = false; }
+        etat.perdu = vivant ? 0 : (etat.perdu || 0) + 1;
+        if (etat.perdu >= 2) { etat.direct = false; etat.stop = true; try { await etat.T.close(); } catch (e) { /* rien */ } activer(false); statut('Boîtier débranché — recherche automatique…', 'att'); dire('Liaison avec le boîtier perdue : je le recherche.'); }
+      }
+    } else if (!etat.enConnexion && !etat.autoOff && !etat.manuel) {
+      let candidats = 0;
+      if (LOCAL) {
+        const { ports } = await api('ports');
+        for (const p of ports.filter(x => x.conseille).concat(ports.filter(x => !x.conseille && !x.bluetooth))) {
+          candidats++; statut('Recherche automatique du boîtier…', 'att');
+          if (etat.autoOff || etat.manuel || await connecter({ auto:true, choix:'local:' + p.port })) break;
+        }
+      } else if (navigator.serial) {
+        for (const p of await navigator.serial.getPorts()) {
+          candidats++; statut('Recherche automatique du boîtier…', 'att');
+          if (etat.autoOff || etat.manuel || await connecter({ auto:true, choix:'serie', T:TSerie(p) })) break;
+        }
+      }
+      if (!candidats && !etat.connecte && !etat.enConnexion) statut(navigator.serial || navigator.bluetooth ? 'Touche Connecter une première fois' : 'Non connecté');
+    }
+  } catch (e) { /* on réessaiera */ }
+  autoRecherche.t = setTimeout(autoRecherche, etat.connecte ? 12000 : 6000);
 }
 async function deconnecter() {
-  etat.direct = false; etat.stop = true; await file;
+  etat.autoOff = true; etat.direct = false; etat.stop = true; await file;
   try { await etat.T.close(); } catch (e) { /* rien */ }
   activer(false); statut('Non connecté'); $('#bDirect').textContent = 'Démarrer la lecture';
+  dire('Recherche automatique en pause. Touche Connecter pour la relancer.');
 }
 
 /* ================= Diagnostic ================= */
@@ -689,12 +754,15 @@ async function ouvrirEssai(f) {
 /* ================= Démarrage ================= */
 function brancher() {
   $('#version').textContent = VERSION + (LOCAL ? ' · Lenovo' : ' · domaine');
-  $('#vehs').onclick = e => { const b = e.target.closest('.veh'); if (!b) return; if (b.dataset.id === '+') ouvrirDlg(null); else if (etat.veh && b.dataset.id === etat.veh.id) ouvrirDlg(etat.veh); else choisirVeh(b.dataset.id); };
+  $('#vehs').onclick = e => { const b = e.target.closest('.veh'); if (!b) return; if (b.dataset.id === '+') { ouvrirDlg(null); return; }
+    if (etat.connecte && !etat.simu && etat.emp && !etat.vin && etat.proto) { const v = garage.find(x => x.id === b.dataset.id); memoriserEmpreinte(v); choisirVeh(v.id); dire(v.nom + ' mémorisé : je le reconnaîtrai tout seul la prochaine fois.'); return; }
+    if (etat.veh && b.dataset.id === etat.veh.id) ouvrirDlg(etat.veh); else choisirVeh(b.dataset.id); };
   $('#vNon').onclick = () => $('#dlgVeh').close();
   $('#vOk').onclick = () => {
     const nom = $('#vNom').value.trim(); if (!nom) { dire('Donne un nom au véhicule'); return; }
     const id = $('#dlgVeh').dataset.id, vin = $('#vVin').value.trim().toUpperCase();
-    const v = { id:id || 'v' + Date.now(), nom, detail:$('#vDetail').value.trim(), vin, note:(garage.find(x => x.id === id) || {}).note || '' };
+    const anc = garage.find(x => x.id === id) || {};
+    const v = { id:id || 'v' + Date.now(), nom, detail:$('#vDetail').value.trim(), vin, note:anc.note || '' }; if (anc.emp) v.emp = anc.emp;
     const i = garage.findIndex(x => x.id === v.id); if (i >= 0) garage[i] = v; else garage.push(v);
     sauverGarage(); choisirVeh(v.id); $('#dlgVeh').close();
   };
@@ -740,7 +808,9 @@ async function demarrer() {
   importerGarage();
   choisirVeh(localStorage.getItem('kdmc-obd-veh'));
   await chargerPorts(); await listerJournal(); chargerTitres();
+  if (navigator.serial) navigator.serial.addEventListener('connect', () => autoRecherche());
+  autoRecherche();
 }
-window.KDMC_OBD = { etat, connecter, diagnostic, scanSystemes, controles, batterie, lancerDirect, deconnecter, effacer, effacerModule, messages, trames, lireCodes, dtcDe };
+window.KDMC_OBD = { etat, garage:() => garage, reconnaitre, autoRecherche, connecter, diagnostic, scanSystemes, controles, batterie, lancerDirect, deconnecter, effacer, effacerModule, messages, trames, lireCodes, dtcDe };
 demarrer();
 })();

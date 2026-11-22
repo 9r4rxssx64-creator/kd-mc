@@ -4,7 +4,7 @@
  * Aucune donnée personnelle ici (dépôt public) : le garage vit dans le navigateur. */
 (function () {
 'use strict';
-const VERSION = 'v2.1.0';
+const VERSION = 'v2.2.0';
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
@@ -118,6 +118,7 @@ function TSimu() {
   function rep(c) {
     const k = c.replace(/\s/g, '').toUpperCase(), z = s.z;
     if (k.startsWith('ATSH')) { s.sh = k.slice(4); return 'OK'; }
+    if (k === 'ATD') { s.sh = '7DF'; s.H = false; return 'OK'; }
     if (k === 'ATH1') { s.H = true; return 'OK'; } if (k === 'ATH0') { s.H = false; return 'OK'; }
     if (k === 'ATZ' || k === 'ATI') return 'ELM327 v1.5 (simulateur)';
     if (k === 'ATRV') return (12.3 + Math.random() * 0.2).toFixed(1) + 'V';
@@ -295,7 +296,7 @@ async function chargerPorts() {
 }
 function activer(on) {
   etat.connecte = on;
-  for (const id of ['bDiag', 'bEffacer', 'bDirect', 'bCmd', 'bSys', 'bCtrl', 'bBatt']) $('#' + id).disabled = !on;
+  for (const id of ['bDiag', 'bEffacer', 'bDirect', 'bCmd', 'bSys', 'bSonde', 'bCtrl', 'bBatt']) $('#' + id).disabled = !on;
   $('#bDeconnecter').disabled = !on; $('#bConnecter').disabled = on; $('#port').disabled = on;
 }
 function majInfos() {
@@ -337,8 +338,11 @@ async function suiteVehicule() {
 }
 /* Boîtier trouvé mais véhicule muet (contact coupé) : on réessaie seul jusqu'à ce qu'il réponde. */
 async function attendreVehicule() {
+  let essais = 0;
   while (etat.connecte && !etat.proto) {
     await pause(5000); if (!etat.connecte) break;
+    /* Toujours muet après 4 essais : la sonde approfondie part toute seule, une fois. */
+    if (++essais === 4 && !etat.sondeFaite && !etat.simu) { etat.sondeFaite = true; document.querySelector('[data-o=sys]').click(); await sondeConstructeur(); continue; }
     try { if (ajouterSupportes(await at('0100', 9000), 0)) { $('#resultat').innerHTML = ''; await suiteVehicule(); } } catch (e) { break; }
   }
 }
@@ -493,6 +497,7 @@ function blocCodes(titre, liste, aide, nom) {
 }
 function rendu(e, cible) {
   if (e.type === 'systemes') { renduSystemes(e, cible); return; }
+  if (e.type === 'sonde') { renduSonde(e, cible); return; }
   const total = (e.codes.memorises || []).length + (e.codes.attente || []).length + (e.codes.permanents || []).length;
   const rouge = e.voyant || total > 0, mon = e.moniteurs;
   const prets = mon ? mon.liste.filter(x => x.pret).length : 0;
@@ -607,6 +612,72 @@ async function scanLigneK() {
   } catch (err) { dire('Erreur : ' + err.message, 7000); }
   try { await at('ATPC'); await at('ATIIA 33'); await at('ATD'); await init(); await at('0100', 12000); } catch (e) { /* rien */ }
   progres(null); $('#bSys').disabled = false; $('#bSysStop').style.display = 'none';
+}
+
+/* ================= Sonde constructeur (ligne K) =================
+   Pour les véhicules qui ne répondent pas au diagnostic standard (ex. Nissan d'avant 2006) :
+   essaie seule les adresses, les modes d'ouverture et les services de LECTURE connus, et enregistre tout.
+   Aucune commande d'écriture, d'effacement ni de reprogrammation n'est envoyée. */
+const SONDE_SERVICES = [['3E', 'Présence de l\'outil'], ['1A81', 'Identification du calculateur'], ['1A80', 'Identification (variante 80)'], ['1A82', 'Identification (variante 82)'], ['1A83', 'Identification (variante 83)'],
+  ['17FF00', 'Défauts (service 17)'], ['13', 'Défauts (service 13)'], ['1800FF00', 'Défauts mémorisés (service 18)'], ['1802FF00', 'Défauts (service 18, variante)'],
+  ['2101', 'Bloc de mesures 01'], ['2102', 'Bloc de mesures 02'], ['2110', 'Bloc de mesures 10'], ['21F0', 'Bloc de mesures F0'], ['2181', 'Bloc de mesures 81'],
+  ['1081', 'Session de diagnostic (81)'], ['10C0', 'Session de diagnostic (C0)'], ['1A81', 'Identification après session'], ['17FF00', 'Défauts après session'], ['2101', 'Bloc 01 après session']];
+async function ouvrirLigneK(adr, test, mode) {
+  await at('ATPC');
+  if (mode === 'lente') {
+    await at('ATSP4'); if (/\?/.test(await at('ATIIA ' + adr))) return null;
+    await at('ATSH 81 ' + adr + ' ' + test);
+    return /OK/i.test(await at('ATSI', 10000));
+  }
+  await at('ATSP5'); if (/\?/.test(await at('ATSH 81 ' + adr + ' ' + test))) return null;
+  if (mode === 'rapide') {
+    await at('ATAT1'); await at('ATST FF'); await at('ATWM 81 ' + adr + ' ' + test + ' 3E'); await at('ATSW 60');
+    const r = await at('ATFI', 6000); if (/\?/.test(r)) return null;
+    return /OK/i.test(r);
+  }
+  /* implicite : la première requête déclenche l'ouverture (pour les boîtiers sans ATFI) */
+  return messages(await at('3E', 7000)).some(m => /^7E|^7F/.test(m));
+}
+async function sondeConstructeur() {
+  if (!etat.connecte || etat.sondeEnCours) return;
+  etat.sondeEnCours = true; etat.direct = false; etat.stop = false;
+  $('#bSonde').disabled = true; $('#bSys').disabled = true; $('#bSysStop').style.display = 'inline-block'; progres(0);
+  const e = { type:'sonde', date:new Date().toISOString(), vehicule:etat.veh.id, nom:etat.veh.nom, simu:etat.simu, elm:etat.elm, tension:etat.tension, essais:[], ouverture:null, reponses:[], codes:[] };
+  const combos = [];
+  for (const adr of ['12', '10', '11', '33']) for (const mode of ['rapide', 'implicite', 'lente']) for (const test of ['FC', 'F1']) combos.push([adr, test, mode]);
+  try {
+    for (let i = 0; i < combos.length && !etat.stop && !e.ouverture; i++) {
+      const [adr, test, mode] = combos[i]; progres(0.8 * i / combos.length);
+      $('#systemes').innerHTML = '<p class="vide">Sonde ' + (i + 1) + '/' + combos.length + ' : calculateur ' + adr + ', outil ' + test + ', ouverture ' + mode + '…</p>';
+      const r = await ouvrirLigneK(adr, test, mode);
+      e.essais.push({ adr, test, mode, resultat:r === null ? 'commande inconnue du boîtier' : (r ? 'ouvert' : 'pas de réponse') });
+      if (r) e.ouverture = { adr, test, mode };
+    }
+    if (e.ouverture) {
+      for (let i = 0; i < SONDE_SERVICES.length && !etat.stop; i++) {
+        const [cmd, nom] = SONDE_SERVICES[i]; progres(0.8 + 0.2 * i / SONDE_SERVICES.length);
+        const raw = await at(cmd, 5000), ms = messages(raw);
+        const tampon = ms.length ? '' : texte(await at('ATBD')).replace(/\n/g, ' ');
+        e.reponses.push({ cmd, nom, tampon, rep:ms.join(' / ') || texte(raw).replace(/\n/g, ' '), ok:ms.some(m => parseInt(m.slice(0, 2), 16) === parseInt(cmd.slice(0, 2), 16) + 0x40) });
+        for (const b of ms.map(octets)) { if (b[0] === 0x58) for (let j = 2; j + 3 <= b.length; j += 3) e.codes.push(dtcDe(hx(b[j], 2) + hx(b[j + 1], 2)));
+          if (b[0] === 0x57) for (let j = 2; j + 2 <= b.length; j += 3) { const c = hx(b[j], 2) + hx(b[j + 1], 2); if (c !== '0000' && /^[0-9]{4}$/.test(c)) e.codes.push('P' + c); } }
+      }
+    }
+    e.codes = [...new Set(e.codes)]; e.brut = brut.slice(-300);
+    await stocker(e); renduSonde(e, $('#systemes')); listerJournal();
+  } catch (err) { dire('Erreur : ' + err.message, 7000); }
+  try { await at('ATPC'); await at('ATD'); await init(); } catch (x) { /* rien */ }
+  progres(null); $('#bSonde').disabled = false; $('#bSys').disabled = false; $('#bSysStop').style.display = 'none'; etat.sondeEnCours = false;
+}
+function renduSonde(e, cible) {
+  const o = e.ouverture, utiles = (e.reponses || []).filter(r => r.ok);
+  cible.innerHTML = '<div class="voyant" style="margin-top:16px"><div class="gros ' + (o ? 'vert' : 'rouge') + '">' + (o ? '✓' : '✕') + '</div><div><h2>' + (o ? 'Le calculateur a répondu' : 'Aucune réponse du calculateur') + '</h2><div class="sous">' + esc(e.nom) + ' · ' + new Date(e.date).toLocaleString('fr-FR') + ' · ' + esc(e.tension || '') + '</div></div></div>'
+    + (o ? '<p>Dialogue ouvert avec le calculateur <b>' + esc(o.adr) + '</b> (outil ' + esc(o.test) + ', ouverture ' + esc(o.mode) + '). ' + utiles.length + ' service(s) de lecture sur ' + e.reponses.length + ' ont répondu.</p>'
+        : '<p>' + e.essais.length + ' essais d\'ouverture, sans réponse. Vérifie que le contact est bien mis. Si oui, ce calculateur demande un autre boîtier ou un autre protocole.</p>')
+    + (e.codes && e.codes.length ? '<h3>Codes lus · ' + e.codes.length + '</h3>' + e.codes.map(c => carteCode(c, e.nom)).join('') : '')
+    + (e.reponses && e.reponses.length ? '<h3>Réponses du calculateur</h3><div style="overflow-x:auto"><table class="table"><tr><th>Service</th><th>Commande</th><th>Réponse</th></tr>' + e.reponses.map(r => '<tr><td>' + esc(r.nom) + '</td><td>' + esc(r.cmd) + '</td><td>' + (r.ok ? '<span class="badge ok">répond</span> ' : '') + esc(r.rep.slice(0, 160)) + (r.tampon ? ' <span class="sous">tampon : ' + esc(r.tampon.slice(0, 60)) + '</span>' : '') + (r.ok && ascii(octets(r.rep.replace(/[^0-9A-F]/g, ''))).length > 5 ? '<br><span class="sous">' + esc(ascii(octets(r.rep.replace(/[^0-9A-F]/g, '')))) + '</span>' : '') + '</td></tr>').join('') + '</table></div>' : '')
+    + '<details style="margin-top:12px"><summary class="sous" style="min-height:44px;cursor:pointer">Détail des ' + e.essais.length + ' essais d\'ouverture</summary>' + e.essais.map(x => '<span class="badge ' + (x.resultat === 'ouvert' ? 'ok' : '') + '">' + esc(x.adr + ' · ' + x.test + ' · ' + x.mode + ' : ' + x.resultat) + '</span>').join('') + '</details>'
+    + '<p class="sous">Tout est enregistré dans le journal : ces réponses servent à adapter la valise à ce véhicule.</p>';
 }
 
 /* ================= En direct ================= */
@@ -737,12 +808,12 @@ async function stocker(e) {
   for (;;) { try { localStorage.setItem('kdmc-obd-journal', JSON.stringify(j.slice(0, 80))); break; } catch (x) { if (j.length < 2) break; j.pop(); } }
   return '';
 }
-const nbCodes = e => e.type === 'systemes' ? (e.modules || []).reduce((n, m) => n + (m.codes || []).length, 0) : ((e.codes && (e.codes.memorises || []).length + (e.codes.attente || []).length + (e.codes.permanents || []).length) || 0);
+const nbCodes = e => e.type === 'sonde' ? (e.codes || []).length : e.type === 'systemes' ? (e.modules || []).reduce((n, m) => n + (m.codes || []).length, 0) : ((e.codes && (e.codes.memorises || []).length + (e.codes.attente || []).length + (e.codes.permanents || []).length) || 0);
 async function listerJournal() {
   let essais = lsJournal().map(e => ({ fichier:e.fichier, date:e.date, nom:e.nom, nb:nbCodes(e), simu:e.simu, type:e.type }));
   if (LOCAL) { try { essais = (await api('journal')).essais.concat(essais); } catch (e) { /* rien */ } }
   $('#journalOu').textContent = LOCAL ? 'Chaque essai est gardé sur cet ordinateur (dossier journal).' : 'Chaque essai est gardé dans ce navigateur, sur cet appareil. Exporte-les pour les conserver ailleurs.';
-  $('#essais').innerHTML = essais.length ? essais.map(e => '<button class="essai" data-f="' + esc(e.fichier) + '"><div><b>' + esc(e.nom) + '</b>' + (e.type === 'systemes' ? ' <span class="badge">tous systèmes</span>' : '') + (e.simu ? ' <span class="badge ko">simulateur</span>' : '') + '<br><span class="sous">' + new Date(e.date).toLocaleString('fr-FR') + '</span></div><span class="n">' + e.nb + ' code' + (e.nb > 1 ? 's' : '') + '</span></button>').join('') : '<p class="vide">Aucun essai pour le moment.</p>';
+  $('#essais').innerHTML = essais.length ? essais.map(e => '<button class="essai" data-f="' + esc(e.fichier) + '"><div><b>' + esc(e.nom) + '</b>' + (e.type === 'systemes' ? ' <span class="badge">tous systèmes</span>' : e.type === 'sonde' ? ' <span class="badge">sonde</span>' : '') + (e.simu ? ' <span class="badge ko">simulateur</span>' : '') + '<br><span class="sous">' + new Date(e.date).toLocaleString('fr-FR') + '</span></div><span class="n">' + e.nb + ' code' + (e.nb > 1 ? 's' : '') + '</span></button>').join('') : '<p class="vide">Aucun essai pour le moment.</p>';
 }
 async function ouvrirEssai(f) {
   let e = lsJournal().find(x => x.fichier === f);
@@ -769,7 +840,7 @@ function brancher() {
   $('#vSuppr').onclick = () => { garage = garage.filter(x => x.id !== $('#dlgVeh').dataset.id); sauverGarage(); choisirVeh(null); $('#dlgVeh').close(); };
   $('#bConnecter').onclick = connecter; $('#bDeconnecter').onclick = deconnecter;
   $('#bDiag').onclick = diagnostic; $('#bEffacer').onclick = effacer; $('#bImprimer').onclick = () => window.print();
-  $('#bSys').onclick = scanSystemes; $('#bSysStop').onclick = () => { etat.stop = true; };
+  $('#bSys').onclick = scanSystemes; $('#bSonde').onclick = sondeConstructeur; $('#bSysStop').onclick = () => { etat.stop = true; };
   $('#systemes').addEventListener('click', e => { const b = e.target.closest('[data-efface]'); if (b) effacerModule(b.dataset.efface, b.dataset.rx); });
   $('#bDirect').onclick = () => { if (etat.direct) etat.direct = false; else lancerDirect(); };
   $('#jauges').onclick = e => { const b = e.target.closest('.jauge'); if (!b) return; const x = actifs.find(a => a.p === b.dataset.p); x.on = !x.on; b.classList.toggle('off', !x.on); };
@@ -811,6 +882,6 @@ async function demarrer() {
   if (navigator.serial) navigator.serial.addEventListener('connect', () => autoRecherche());
   autoRecherche();
 }
-window.KDMC_OBD = { etat, garage:() => garage, reconnaitre, autoRecherche, connecter, diagnostic, scanSystemes, controles, batterie, lancerDirect, deconnecter, effacer, effacerModule, messages, trames, lireCodes, dtcDe };
+window.KDMC_OBD = { etat, garage:() => garage, reconnaitre, autoRecherche, connecter, diagnostic, scanSystemes, sondeConstructeur, controles, batterie, lancerDirect, deconnecter, effacer, effacerModule, messages, trames, lireCodes, dtcDe };
 demarrer();
 })();

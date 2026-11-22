@@ -153,6 +153,18 @@ try {
     return { st: x.status, raison: String(j.reason || ''), champ: /class="matin"/.test(js), bouton: /data-act="matricule"/.test(js) };
   });
   chk(mt.st === 400 && mt.raison === 'matricule_format', `matricule SBM : la porte répond et refuse une mauvaise forme sans rien écrire · HTTP ${mt.st} · ${mt.raison || '-'}`);
+  /* 22.11 (Kevin : « oui entre ») : matricules à confirmer par la personne — le NOMBRE côté admin, et la porte de la personne lue avec la session du robot (lecture seule). */
+  const mc = await page.evaluate(async () => {
+    const h = { 'content-type': 'application/json' }; try { const g = localStorage.getItem('kdmc_admin_grant') || '', t = localStorage.getItem('kdmc_sso_token') || ''; if (g) h['x-kdmc-admin'] = g; if (t) h.Authorization = 'Bearer ' + t; } catch (_) { /* rien */ }
+    const a = await fetch('/__admin/comptes-cmcteams', { credentials: 'include', cache: 'no-store', headers: h }); const ja = await a.json().catch(() => ({}));
+    const p = await fetch('/__sso/matricule-confirmer', { credentials: 'include', cache: 'no-store', headers: h }); const jp = await p.json().catch(() => ({}));
+    const src = (document.querySelector('script[src*="admin.js"]') || {}).src || '';
+    const js = src ? await (await fetch(src, { cache: 'no-store' })).text() : '';
+    return { n: ja.a_confirmer, avec: ja.avec_matricule, stP: p.status, okP: jp.ok === true, typeP: typeof jp.a_confirmer, case_: /class="matchk"/.test(js) };
+  });
+  chk(Number.isInteger(mc.n) && mc.n >= 0 && mc.n <= mc.avec, `matricules à confirmer par la personne : ${mc.n} sur ${mc.avec} matricule(s) rangé(s)`);
+  /* 200 = le robot a une session de personne ; 401 = il n'a que la session admin, et la porte le REFUSE (elle existe et garde l'entrée) — les deux prouvent la porte, le verdict dit lequel. */
+  chk(((mc.stP === 200 && mc.okP && mc.typeP === 'boolean') || mc.stP === 401) && mc.case_, `matricule à confirmer : la porte de la personne ${mc.stP === 200 ? 'répond' : 'refuse sans session de personne'} · HTTP ${mc.stP} · la case « à faire confirmer » est dans la page servie : ${mc.case_ ? 'oui' : 'NON'}`);
   chk(mt.champ && mt.bouton, `matricule SBM : la page servie a le champ (${mt.champ ? 'oui' : 'NON'}) et le bouton (${mt.bouton ? 'oui' : 'NON'}) dans la rubrique Identité`);
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }
 

@@ -325,6 +325,9 @@
       /* 21.11 (pont 2989) : le matricule SBM n'était qu'affiché — un matricule retrouvé ne pouvait pas être rangé. Un champ, un bouton, un message. */
       + '<div class="coderow"><input class="matin" data-uid="' + esc(a.uid) + '" type="text" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="8" placeholder="Matricule SBM (U12345)" aria-label="Matricule SBM" value="' + esc((a.fiche && a.fiche.matricule) || '') + '">'
       + '<button class="matbtn" data-act="matricule" data-uid="' + esc(a.uid) + '" type="button">🪪 Enregistrer le matricule</button></div>'
+      /* 22.11 (Kevin : « oui entre ») : un matricule posé par toi est montré à la personne à sa prochaine ouverture de CMCteams / la light ; elle confirme ou corrige, et elle entre dans tous les cas. */
+      + '<label class="matconf"><input class="matchk" data-uid="' + esc(a.uid) + '" type="checkbox"' + ((a.fiche && a.fiche.matricule && a.fiche.matriculeAConfirmer !== true) ? '' : ' checked') + '> À faire confirmer par la personne à sa prochaine connexion</label>'
+      + ((a.fiche && a.fiche.matricule && a.fiche.matriculeAConfirmer === true) ? '<div class="matetat">⏳ En attente de sa confirmation (elle entre quand même).</div>' : '')
       + '<div class="matmsg" data-uid="' + esc(a.uid) + '" role="status" aria-live="polite"></div>';
     /* 18.11 (audit) : « Connexions / Appareils / Lieux » menaient au Journal ADMIN, qui ne contient pas les connexions (« aucun événement »).
        Ils ouvrent maintenant le Journal du domaine filtré sur CETTE personne (connexions, pages, lieux, appareils, enregistrements), le plus récent en haut. */
@@ -394,16 +397,17 @@
       var inp = list.querySelector('.matin[data-uid="' + uid + '"]'), msg = list.querySelector('.matmsg[data-uid="' + uid + '"]');
       var dire = function (t) { if (msg) msg.textContent = t; };
       var m = inp ? inp.value.replace(/\s+/g, '').toUpperCase() : '';
+      var chk = list.querySelector('.matchk[data-uid="' + uid + '"]');
       if (m && !/^U\d{3,6}$/.test(m)) { dire('⚠️ Un matricule SBM s\'écrit U puis 3 à 6 chiffres (exemple : U12345).'); return; }
       if (!m && !confirm('Effacer son matricule SBM ?')) return;
       b.disabled = true; dire('…');
-      fetch('/__admin/matricule', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: uid, matricule: m }) })
+      fetch('/__admin/matricule', { method: 'POST', credentials: 'include', headers: Object.assign({ 'content-type': 'application/json' }, adminHeaders()), body: JSON.stringify({ uid: uid, matricule: m, a_confirmer: !chk || chk.checked }) })
         .then(function (r) { return r.json(); })
         .then(function (j) {
           b.disabled = false;
           if (!j || !j.ok) { dire('⚠️ ' + ((j && j.message) || (j && j.reason === 'need_admin_code' ? 'Reconnecte-toi en admin.' : 'Échec — réessaie.'))); return; }
           if (inp) inp.value = j.matricule || '';
-          dire(j.inchange ? '✅ Déjà enregistré.' : (j.matricule ? '✅ Matricule ' + j.matricule + ' enregistré.' : '✅ Matricule effacé.'));
+          dire(j.inchange ? '✅ Déjà enregistré.' : (j.matricule ? '✅ Matricule ' + j.matricule + ' enregistré.' + (j.a_confirmer ? ' La personne le confirmera à sa prochaine connexion.' : '') : '✅ Matricule effacé.'));
         })
         .catch(function () { b.disabled = false; dire('⚠️ Réseau — réessaie.'); });
     });
@@ -755,7 +759,7 @@
     revoke_sessions: '🚪 Déconnexion forcée', new_device: '📱 Nouvel appareil', fbtoken_mint: '🔥 Jeton Firebase admin émis',
     perimetre: '🔐 Périmètre modifié', apps_fermees: '🚧 Apps fermées pour tout le monde', nouvel_inscrit: '🆕 Nouvel inscrit (limité à une app)',
     geo_anomaly: '⚠️ Connexion suspecte', nouvelle_connexion: '🆕 Nouvelle connexion', quota_inscriptions_atteint: '🛑 Inscriptions suspendues',
-    matricule_refuse: '🪪 Matricule SBM refusé', matricule_corrige: '🪪 Matricule SBM corrigé', matricule_pose_admin: '🪪 Matricule SBM enregistré par toi', compte_invite_cree: '➕ Compte invité créé',
+    matricule_refuse: '🪪 Matricule SBM refusé', matricule_corrige: '🪪 Matricule SBM corrigé', matricule_pose_admin: '🪪 Matricule SBM enregistré par toi', matricule_confirme: '🪪 Matricule SBM confirmé par la personne', compte_invite_cree: '➕ Compte invité créé',
     /* 19.11 (audit des tableaux de bord : 15 événements nommés sur 55 — les autres s'affichaient en nom de code) : chaque événement écrit par le domaine a sa phrase.
        Garde : tests/verify-admin-journal-libelles.mjs relit le routeur et refuse tout événement sans phrase. */
     accounts_merged: '🔗 Deux comptes réunis en un', admin_grant_session: '🔓 Session admin ouverte sur une app', admin_lien_appareil_cree: '🔗 Lien « nouvel appareil » créé',

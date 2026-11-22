@@ -21,7 +21,7 @@ import { handleTel, telPret, telObligatoire, verifiePreuve, comptesDuTel, lierTe
 import * as activite from './activite.js';
 import { lireDirect } from './lire-page-direct.js';   // 21.11 : secours de la lecture d'une page quand le lecteur gratuit répond 429
 import { lienEcrire } from './ecrire-apex-chat.js';   // 20.11 : « Écrire à <nom> » par Apex Chat = lien prérempli, Kevin envoie lui-même (Bee + Apex AI)
-import { handleMatriculeAdmin } from './matricule-admin.js';   // 21.11 (pont 2989) : le matricule SBM posé par Kevin dans la rubrique Identité de l'admin
+import { handleMatriculeAdmin, handleMatriculeConfirmer, aConfirmerDe } from './matricule-admin.js';   // 21.11 (pont 2989) : le matricule SBM posé par Kevin dans la rubrique Identité de l'admin
 import { handleMailAdmin } from './mail-admin.js';   // 19.11 : un mail envoyé par le domaine au nom de Kevin, derrière son ✅ (Bee)
 import { handleVoix } from './voix.js';   // 🎙️ Studio Voix : bibliothèque de voix clonées + porte d'intégration (Kevin 29.10)
 import { catalogue as catalogueVoix } from './voix-catalogue.js';
@@ -4567,6 +4567,11 @@ async function handleSso(request, url, env, ctx) {
      CMCteams : ses renseignements ne vont PAS dans Firebase (lisible par toute session
      anonyme) mais ICI, dans le dossier de la personne (KV ACCOUNTS), que seul l'admin lit
      (/__admin/accounts). Chacun ne lit et n'écrit QUE sa fiche : uid pris dans SON token. */
+  /* MON MATRICULE À CONFIRMER (Kevin 22.11 : « oui entre ») : un matricule posé par l'admin est montré à la personne à l'ouverture de CMCteams / la light ;
+     elle confirme ou corrige ICI (sa session, sa fiche). Elle entre dans l'app dans tous les cas. Voir matricule-admin.js. */
+  if (path === '/__sso/matricule-confirmer') return handleMatriculeConfirmer(request, env, { accGet, accPut, audLog, J: (o, st) => J(o, undefined, st),
+    session: membreSession, origineOk: (r) => ssoOriginOk(r.headers.get('origin'), url.host),
+    tous: async (e) => { const idxM = JSON.parse((await e.ACCOUNTS.get('idx:uids')) || '[]'); return (await Promise.all(idxM.slice(-500).map((u) => accGet(e, u)))).filter(Boolean); } });
   if (path === '/__sso/fiche' && (request.method === 'GET' || request.method === 'POST')) {
     const s = await ssoVerify(secret, ssoToken(request), request);
     if (!s) return J({ ok: false, reason: 'session requise' });
@@ -4578,6 +4583,7 @@ async function handleSso(request, url, env, ctx) {
     let b = {}; try { b = await request.json(); } catch { /* ignore */ }
     const f = ficheNettoyee(b);
     acc.fiche = { ...acc.fiche, ...f, maj: Date.now(), app: appDe(request.headers.get('host')) };
+    if (f.matricule) delete acc.fiche.matriculeAConfirmer;   // 22.11 : la personne a tapé SON matricule elle-même → plus rien à confirmer
     await accPut(env, acc, true);
     return J({ ok: true, champs: Object.keys(f) });
   }
@@ -5058,7 +5064,10 @@ export function comptesCmcteams(fiches) {
   }
   comptes.sort((x, y) => x.nom.localeCompare(y.nom, 'fr', { sensitivity: 'base' }) || x.uid.localeCompare(y.uid));
   const avec = comptes.filter((c) => c.matricule).length;
-  return { comptes, total: comptes.length, avec_matricule: avec, sans_matricule: comptes.length - avec };
+  /* 22.11 : combien de matricules posés par l'admin attendent encore la confirmation de la personne (un nombre seulement, pas un champ par compte). */
+  const uidsListes = new Set(comptes.map((c) => c.uid));
+  const aConf = (Array.isArray(fiches) ? fiches : []).filter((a) => a && uidsListes.has(String(a.uid).slice(0, 64)) && aConfirmerDe(a)).length;
+  return { comptes, total: comptes.length, avec_matricule: avec, sans_matricule: comptes.length - avec, a_confirmer: aConf };
 }
 
 /* PURE (testée seule) : « appeler <nom> » — des fiches du domaine + un nom → au plus 5 personnes avec LEUR numéro (fiche.telephone, saisi à l'inscription), sous forme tel:.
@@ -5610,7 +5619,7 @@ async function handleAdmin(request, url, env) {
     tous: async (e) => { const idxM = JSON.parse((await e.ACCOUNTS.get('idx:uids')) || '[]'); return (await Promise.all(idxM.slice(-500).map((u) => accGet(e, u)))).filter(Boolean); } });
   if (path === '/__admin/mail-envoyer') return handleMailAdmin(request, url, env, { accGet, audLog, J: (o, st) => J(o, undefined, st) });
   if (path === '/__admin/comptes-cmcteams' && request.method === 'GET') {
-    if (!env.ACCOUNTS) return J({ ok: true, comptes: [], total: 0, avec_matricule: 0, sans_matricule: 0, kv: false });
+    if (!env.ACCOUNTS) return J({ ok: true, comptes: [], total: 0, avec_matricule: 0, sans_matricule: 0, a_confirmer: 0, kv: false });
     const idxC = JSON.parse((await env.ACCOUNTS.get('idx:uids')) || '[]');
     const tous = (await Promise.all(idxC.slice(-500).map((uid) => accGet(env, uid)))).filter(Boolean);
     return J(Object.assign({ ok: true, kv: true }, comptesCmcteams(tous)));

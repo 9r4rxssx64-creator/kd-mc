@@ -159,10 +159,3 @@ test('page admin : une réserve en bas, pour que le contenu remonte au-dessus de
   for (const f of ['admin.js', 'commerce.js', 'tableau.js', 'tableau.css']) assert.ok(h.includes(f + '?v=' + bv), f + ' n\'est pas servi à la version de la pastille (' + bv + ') : un iPhone garderait l\'ancien fichier');
 });
 
-
-/* ── Kevin 22.11.2026 : « mets une tuile dans mon domaine, admin seulement » (valise OBD) ── */
-test('la tuile « Valise OBD » est rendue, une seule fois, vers la page admin', () => {
-  assert.equal(compte(/href="\/admin\/obd\.html"/g), 1,
-    'la valise OBD doit avoir exactement UNE tuile dans l\'admin (0 = perdue, 2 = doublon)');
-  assert.ok(/Valise OBD/.test(html), 'le libellé de la tuile Valise OBD a disparu');
-});

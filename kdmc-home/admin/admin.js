@@ -68,6 +68,8 @@
       + card('💬', 'Apex Chat — Admin', 'Users, connexions, sentinelles', 'https://apex-chat.kd-mc.com/')
       + card('📊', 'Boutiques — Dashboard', 'Commandes, produits, finances', 'https://dashboard.kd-mc.com/')
       + card('💶', 'OpenAI — ce qui consomme', 'Chiffres reels + ecouter la voix gratuite', '/admin/openai.html')
+      /* Kevin 22.11.2026 : « mets une tuile dans mon domaine, admin seulement » — la valise de diagnostic auto (boîtier ELM327). Garde : tests/admin-tuiles.test.mjs. */
+      + card('🚗', 'Valise OBD — diagnostic auto', 'Codes défaut, tous les calculateurs, valeurs en direct', '/admin/obd.html')
       + card('🩺', 'Santé des workers', 'État live de tous les services', 'https://kdmc-uptime.9r4rxssx64.workers.dev/')
       + '</div>'
       /* Deux pages d'administration du domaine n'etaient citees NULLE PART dans l'admin :

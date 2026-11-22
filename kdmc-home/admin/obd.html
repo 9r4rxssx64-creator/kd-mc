@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0b0d12">
+<title>KDMC — Valise OBD (admin)</title>
+<style>
+:root{--bg:#0b0d12;--carte:#141821;--carte2:#1b2030;--trait:#262d3f;--txt:#eef1f7;--doux:#93a0b8;--accent:#ff9d1c;--accent2:#ffc46b;--ok:#35d49a;--alerte:#ff5a5f;--info:#5aa9ff;--r:18px}
+[data-theme=clair]{--bg:#f3f5f9;--carte:#fff;--carte2:#f0f2f7;--trait:#dfe4ee;--txt:#131722;--doux:#5d6980;--accent:#e07b00;--accent2:#b86200;--ok:#0c9a67;--alerte:#d92d34;--info:#1b6fd6}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.45 "Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+.page{max-width:1080px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 90px max(14px,env(safe-area-inset-left))}
+header{display:flex;align-items:center;gap:12px;padding:6px 0 14px;flex-wrap:wrap}
+.logo{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#ff5e3a);display:grid;place-items:center;font-weight:800;font-size:13px;color:#111;letter-spacing:.5px;flex:0 0 auto}
+h1{font-size:20px;margin:0;letter-spacing:-.3px}
+.sous{color:var(--doux);font-size:13px}
+.droite{margin-left:auto;display:flex;align-items:center;gap:8px}
+.pastille{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:99px;background:var(--carte);border:1px solid var(--trait);font-size:14px;white-space:nowrap;min-height:44px}
+.point{width:10px;height:10px;border-radius:50%;background:var(--doux);flex:0 0 auto}
+.point.on{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 25%,transparent)}
+.point.att{background:var(--accent);animation:p 1s infinite}
+@keyframes p{50%{opacity:.3}}
+.rond{min-width:44px;height:44px;border-radius:50%;border:1px solid var(--trait);background:var(--carte);cursor:pointer;text-decoration:none;display:inline-grid;place-items:center;padding:0 12px}
+.vehs{display:flex;gap:10px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.veh{flex:0 0 auto;min-height:56px;padding:10px 16px;border-radius:16px;border:1px solid var(--trait);background:var(--carte);cursor:pointer;text-align:left}
+.veh b{display:block;font-size:15px}.veh span{font-size:12px;color:var(--doux)}
+.veh.actif{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--carte))}
+.veh.plus{display:grid;place-items:center;font-size:22px;min-width:56px;color:var(--doux)}
+.carte{background:var(--carte);border:1px solid var(--trait);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.ligne{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+select,input[type=text]{min-height:48px;padding:0 14px;border-radius:14px;border:1px solid var(--trait);background:var(--carte2);flex:1 1 220px;min-width:0;width:100%}
+.btn{min-height:48px;padding:0 20px;border-radius:14px;border:1px solid var(--trait);background:var(--carte2);cursor:pointer;font-weight:600}
+.btn.p{background:var(--accent);border-color:transparent;color:#161006}
+.btn.danger{background:transparent;border-color:var(--alerte);color:var(--alerte)}
+.btn.petit{min-height:44px;padding:0 14px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.infos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+.info{background:var(--carte2);border-radius:14px;padding:10px 14px;min-width:0}
+.info small{display:block;color:var(--doux);font-size:12px}.info div{font-weight:600;overflow-wrap:anywhere}
+.note{margin-top:12px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent2);font-size:14px}
+.note.bleu{background:color-mix(in srgb,var(--info) 12%,transparent);color:var(--info)}
+nav{display:flex;gap:6px;overflow-x:auto;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0;scrollbar-width:none}
+nav button{flex:0 0 auto;min-height:44px;padding:0 16px;border-radius:99px;border:1px solid transparent;background:transparent;color:var(--doux);cursor:pointer;font-weight:600}
+nav button.actif{background:var(--carte);border-color:var(--trait);color:var(--txt)}
+section{display:none}section.actif{display:block}
+.voyant{display:flex;align-items:center;gap:16px}
+.gros{width:72px;height:72px;border-radius:22px;display:grid;place-items:center;font-size:28px;font-weight:800;background:var(--carte2);color:var(--doux);flex:0 0 auto}
+.gros.rouge{background:color-mix(in srgb,var(--alerte) 18%,transparent);color:var(--alerte)}
+.gros.vert{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+h2{font-size:17px;margin:0 0 4px}h3{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--doux);margin:18px 0 8px}
+.code{display:flex;gap:14px;align-items:flex-start;padding:14px;border-radius:14px;background:var(--carte2);margin-bottom:8px}
+.code .c{font:700 16px ui-monospace,Consolas,monospace;padding:6px 10px;border-radius:10px;background:var(--bg);color:var(--accent2);white-space:nowrap}
+.code .d{flex:1;min-width:0}.code .d small{color:var(--doux);display:block}
+.code a{color:var(--info);font-size:13px;display:inline-block;padding:10px 0}
+.vide{color:var(--doux);padding:8px 0}
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.jauge{background:var(--carte);border:1px solid var(--trait);border-radius:var(--r);padding:14px;cursor:pointer;text-align:left;min-height:120px;position:relative}
+.jauge.off{opacity:.45}
+.jauge small{color:var(--doux);display:block;min-height:34px}
+.jauge .v{font-size:30px;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums}.jauge .v i{font-style:normal;font-size:13px;color:var(--doux);font-weight:500;margin-left:4px}
+.jauge .mm{font-size:11px;color:var(--doux)}
+.jauge canvas{width:100%;height:34px;display:block;margin-top:6px}
+.table{width:100%;border-collapse:collapse;font-size:14px}
+.table td,.table th{text-align:left;padding:10px 6px;border-bottom:1px solid var(--trait)}
+.table th{color:var(--doux);font-size:12px;font-weight:600}
+.essai{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border-radius:14px;background:var(--carte2);border:0;margin-bottom:8px;cursor:pointer;text-align:left}
+.essai .n{margin-left:auto;font-weight:700;padding:4px 12px;border-radius:99px;background:var(--bg);white-space:nowrap}
+pre{background:#06080c;color:#b9f5d0;border-radius:14px;padding:14px;min-height:220px;max-height:50vh;overflow:auto;font:13px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;margin:12px 0 0}
+#msg{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--txt);color:var(--bg);padding:12px 18px;border-radius:14px;font-weight:600;max-width:92vw;display:none;z-index:9}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700;margin:2px 4px 2px 0;background:var(--bg);color:var(--doux)}
+.badge.ok{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}.badge.ko{background:color-mix(in srgb,var(--alerte) 20%,transparent);color:var(--alerte)}.badge.att{background:color-mix(in srgb,var(--accent) 20%,transparent);color:var(--accent2)}
+.prog{height:8px;border-radius:9px;background:var(--carte2);overflow:hidden;margin-top:12px;display:none}.prog b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#ff5e3a);transition:width .2s}
+dialog{border:1px solid var(--trait);border-radius:var(--r);background:var(--carte);color:var(--txt);padding:20px;width:min(440px,92vw)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog label{display:block;font-size:13px;color:var(--doux);margin:10px 0 4px}
+@media(max-width:560px){h1{font-size:17px}.pastille span{max-width:38vw;overflow:hidden;text-overflow:ellipsis}.gros{width:60px;height:60px}.grille{grid-template-columns:repeat(2,1fr)}}
+@media print{nav,header .droite,.vehs,#connexion,.ligne,#msg,section:not(#diag){display:none!important}html,body{background:#fff;color:#000}.carte,.code{border:1px solid #ccc;background:#fff}.code a{display:none}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="logo">OBD</div>
+    <div><h1>KDMC-OBD</h1><div class="sous">Valise de diagnostic · <span id="version"></span></div></div>
+    <div class="droite">
+      <div class="pastille"><i class="point" id="point"></i><span id="statut">Non connecté</span></div>
+      <a class="rond" id="retour" href="/admin/" title="Tableau de bord admin" style="display:none">←</a>
+      <button class="rond" id="theme" title="Clair / sombre" aria-label="Clair ou sombre">◐</button>
+    </div>
+  </header>
+
+  <div id="app" style="display:none">
+  <div class="vehs" id="vehs"></div>
+
+  <div class="carte" id="connexion">
+    <div class="ligne">
+      <select id="port" aria-label="Liaison avec le boîtier"></select>
+      <button class="btn p" id="bConnecter">Connecter</button>
+      <button class="btn" id="bDeconnecter" disabled>Déconnecter</button>
+    </div>
+    <div class="note bleu" id="noteNav" style="display:none"></div>
+    <div class="note" id="noteVeh" style="display:none"></div>
+    <div class="infos">
+      <div class="info"><small>Protocole</small><div id="iProto">—</div></div>
+      <div class="info"><small>Tension batterie</small><div id="iTension">—</div></div>
+      <div class="info"><small>N° de châssis lu</small><div id="iVin">—</div></div>
+      <div class="info"><small>Boîtier</small><div id="iElm">—</div></div>
+    </div>
+  </div>
+
+  <nav id="nav">
+    <button data-o="diag" class="actif">Diagnostic</button>
+    <button data-o="sys">Tous les systèmes</button>
+    <button data-o="direct">En direct</button>
+    <button data-o="ctrl">Contrôles</button>
+    <button data-o="journal">Journal</button>
+    <button data-o="console">Console</button>
+  </nav>
+
+  <section id="diag" class="actif">
+    <div class="carte">
+      <div class="ligne">
+        <button class="btn p" id="bDiag" disabled>Lancer le diagnostic</button>
+        <button class="btn danger" id="bEffacer" disabled>Effacer les codes défaut</button>
+        <button class="btn petit" id="bImprimer">Imprimer / PDF</button>
+      </div>
+      <div id="resultat"><p class="vide">Connecte le boîtier, mets le contact, puis lance le diagnostic.</p></div>
+    </div>
+  </section>
+
+  <section id="sys">
+    <div class="carte">
+      <h2>Tous les calculateurs du véhicule</h2>
+      <p class="sous">Interroge un par un tous les calculateurs du réseau (moteur, boîte, freinage, airbags, carrosserie…) et lit leurs défauts, comme une valise professionnelle. Véhicule à l'arrêt, contact mis. Dure environ une minute.</p>
+      <div class="ligne">
+        <button class="btn p" id="bSys" disabled>Balayer tous les systèmes</button>
+        <button class="btn" id="bSysStop" style="display:none">Arrêter</button>
+      </div>
+      <div class="prog" id="prog"><b id="progB"></b></div>
+      <div id="systemes"></div>
+    </div>
+  </section>
+
+  <section id="direct">
+    <div class="carte"><div class="ligne">
+      <button class="btn p" id="bDirect" disabled>Démarrer la lecture</button>
+      <button class="btn petit" id="bCsv" disabled>Exporter l'enregistrement (CSV)</button>
+      <span class="sous" id="directInfo">Touche une tuile pour l'activer ou la mettre en pause.</span>
+    </div></div>
+    <div class="grille" id="jauges"></div>
+  </section>
+
+  <section id="ctrl">
+    <div class="carte">
+      <h2>Contrôles</h2>
+      <p class="sous">État de préparation au contrôle antipollution, résultats des autotests du calculateur, identité du calculateur, batterie et alternateur.</p>
+      <div class="ligne">
+        <button class="btn p" id="bCtrl" disabled>Lancer les contrôles</button>
+        <button class="btn" id="bBatt" disabled>Tester batterie et alternateur</button>
+      </div>
+      <div id="controles"></div>
+    </div>
+  </section>
+
+  <section id="journal">
+    <div class="carte"><h2>Essais enregistrés</h2><p class="sous" id="journalOu"></p>
+      <div class="ligne" style="margin:10px 0"><button class="btn petit" id="bExport">Exporter tout (JSON)</button></div>
+      <div id="essais"></div></div>
+    <div class="carte" id="essaiVu" style="display:none"></div>
+  </section>
+
+  <section id="console">
+    <div class="carte">
+      <div class="ligne">
+        <input type="text" id="cmd" placeholder="Commande (ex. ATRV, 0105, 03)" autocomplete="off" spellcheck="false" aria-label="Commande brute">
+        <button class="btn" id="bCmd" disabled>Envoyer</button>
+        <button class="btn" id="bVider">Vider</button>
+      </div>
+      <pre id="sortie"></pre>
+    </div>
+  </section>
+  </div>
+  <div id="porte" class="carte">Vérification de l'accès…</div>
+</div>
+
+<dialog id="dlgVeh">
+  <h2>Ajouter un véhicule</h2>
+  <label for="vNom">Nom</label><input type="text" id="vNom" placeholder="ex. Clio de Marie">
+  <label for="vDetail">Détail (énergie, année, plaque)</label><input type="text" id="vDetail">
+  <label for="vVin">N° de châssis (17 caractères, facultatif)</label><input type="text" id="vVin" maxlength="17" autocapitalize="characters">
+  <div class="ligne" style="margin-top:16px"><button class="btn p" id="vOk">Ajouter</button><button class="btn" id="vNon">Annuler</button><button class="btn danger petit" id="vSuppr" style="display:none">Retirer ce véhicule</button></div>
+</dialog>
+<div id="msg" role="status"></div>
+
+<script src="obd-codes.js"></script>
+<script src="obd.js"></script>
+<script src="/CMCteams/tools/shared/version-badge-pwa.js" data-project="admin-obd" data-version="v2.0.0" data-color="#ff9d1c" defer></script>
+</body>
+</html>

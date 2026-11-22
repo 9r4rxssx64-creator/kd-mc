@@ -183,6 +183,10 @@ try {
   /* 22.11 (Kevin, relayé pc-config 3164) : la valise OBD aussi sur le PORTAIL, pour lui seul — vue avec la session admin, en dernier (on quitte la page admin). Lecture seule. */
   const erreursPortail = []; page.on('pageerror', (e) => erreursPortail.push(String(e && e.message || e).split('\n')[0].slice(0, 160)));
   await page.goto('https://kd-mc.com/', { waitUntil: 'domcontentloaded', timeout: 45000 });
+  /* Le portail propose d'abord « 🔐 Active Face ID » (boutons pk-go / pk-skip) : Kevin touche « Plus tard » et l'accueil s'ouvre. « Plus tard » n'écrit que dans le
+     stockage de l'ONGLET (sessionStorage) : aucune écriture au domaine. Le robot fait pareil, comme lui. */
+  await page.waitForSelector('#pk-skip, #tdb-haut:not([hidden])', { timeout: 20000 }).catch(() => {});
+  if (await page.$('#pk-skip')) { dire('ℹ️ portail : proposition « Active Face ID » — le robot touche « Plus tard » comme Kevin (stockage de l\'onglet seulement)'); await page.click('#pk-skip').catch(() => {}); }
   await page.waitForFunction(() => { const n = document.getElementById('tdb-haut'); return !!n && !n.hidden; }, null, { timeout: 20000 }).catch(() => {});
   const po = await page.evaluate(async () => {
     /* pourquoi le bloc est caché, si c'est le cas : ce que le domaine répond à « qui suis-je » (états seulement, jamais le nom) */

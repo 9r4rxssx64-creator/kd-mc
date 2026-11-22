@@ -46,6 +46,24 @@ describe('aideEcriture : jamais un « c\'est fait » inventé', () => {
   it.each(['bonjour', 'quelle heure est-il', 'résume cette page', 'ajoute 2 et 3'])('une phrase ordinaire n\'est pas touchée : « %s »', (t) => { expect(aideEcriture(t)).toBeNull(); });
 });
 
+describe('pc-config 3162 (mesure réelle 13.4.417, 0 carte sur 5) : les phrases réelles ne partent JAMAIS au modèle', () => {
+  it.each([
+    'mets le champ naissance de la fiche Zzzzzz Qqqqq à 1900',
+    'envoie un message à Zzzzzz Qqqqq : bonjour test',
+    'envoie un message à Zzzzzz Qqqqq',
+    'écris un message à Zzzzzz Qqqqq : bonjour',
+    'change le champ naissance de la fiche Zzzzzz Qqqqq en 1900',
+    'supprime la fiche de Zzzzzz Qqqqq',
+  ])('« %s » → aide locale qui dit « rien modifié / rien envoyé »', (t) => {
+    const a = aideEcriture(t);
+    expect(a).not.toBeNull(); expect(a).toMatch(/Je n'ai rien (modifié|envoyé)/);
+  });
+  it('« ajoute un commentaire à la fiche de X : texte » (forme naturelle) → la carte, avec la personne et le texte', () => {
+    expect(demandeEcritureArbre('ajoute un commentaire à la fiche de Marie Dupont : test parité')).toEqual({ action: 'arbre_commentaire', champs: { personne: 'Marie Dupont', texte: 'test parité' } });
+  });
+  it.each(['mets-moi la fiche technique en PDF', 'envoie-moi la météo', 'dis à voix haute la fiche', 'écris à Paul une lettre de remerciement'])('une phrase ordinaire n\'est pas détournée : « %s »', (t) => { expect(aideEcriture(t)).toBeNull(); });
+});
+
 describe('chat : la carte passe AVANT le modèle', () => {
   it('« ajoute le commentaire … » → carte de confirmation, aucun appel d\'exécution, phrase sans nom ni texte', async () => {
     const appels: string[] = [];

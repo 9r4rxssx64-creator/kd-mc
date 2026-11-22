@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI 13.4.418 — 22.11.2026 (apex-cloud, mesure pc-config 3162)
+- Mesure réelle de pc-config sur 13.4.417 : 0 carte sur 5, et deux FAUSSES réussites du modèle gratuit (« Modification appliquée » pour « mets le champ naissance de la fiche X à 1900 », « Message envoyé » pour « envoie un message à X : bonjour test »). Cause : ces deux phrases n'étaient dans aucune grammaire (verbe « mets », message sans « dans CMCteams ») donc partaient au modèle. Correctif : l'aide locale couvre tout verbe d'écriture sur une fiche (mets, note, supprime, efface, renomme, fusionne… hors « mets-moi ») et tout « envoie / écris un message à X » ; la forme naturelle « ajoute un commentaire à la fiche de X : texte » donne la carte ✅. Rien ne s'écrit ni ne s'envoie sans le ✅ de Kevin ; la réponse dit « Je n'ai rien modifié / envoyé ». Test discriminant : 12 contrôles `ecriture-locale.test.ts`, rouges sans le correctif, verts avec.
+
 ## Portail v1.0.96 + valise OBD v2.3.1 — 22.11.2026 (cloud-installer, demandes de Kevin relayées par pc-config 3164 et pc-obd 3169)
 - Portail : raccourci « 🚗 Valise OBD » sous « Mon tableau de bord », dans le bloc `#tdb-haut` caché que le portail ne révèle qu'à l'admin prouvé ; un visiteur ne le voit pas. Mesuré à 390 px : 354 × 108 px, aucun débordement ; bloc caché = 0 × 0.
 - Seule exception nommée à « une seule carte admin au portail » (règle du 29.10) ; garde `tests/admin-tuiles.test.mjs` (15 tests).

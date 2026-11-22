@@ -73,6 +73,7 @@ const CHAMPS_FICHE: Record<string, string> = { 'date de naissance': 'naissance.d
 export function demandeEcritureArbre(texte: string): EcritureArbre | null {
   const t = String(texte ?? '').trim().slice(0, 900);
   let m = new RegExp(`^(?:peux-tu\\s+|pourrais-tu\\s+)?(?:ajoute|ajouter|mets|mettre|note|noter)\\s+(?:le|un|ce)\\s+commentaire\\s*[:,-]?\\s*(.+)${FICHE_DE}${NOM}\\s*[.!?]*$`, 'iu').exec(t);
+  if (!m) { const m2 = new RegExp(`^(?:peux-tu\\s+|pourrais-tu\\s+)?(?:ajoute|ajouter|mets|mettre|note|noter)\\s+(?:le|un|ce)\\s+commentaire${FICHE_DE}${NOM}\\s*:\\s*(\\S[\\s\\S]{0,400})$`, 'iu').exec(t); const x2 = m2?.[2] ? nettoyerValeur(m2[2]) : ''; if (m2?.[1] && x2) return { action: 'arbre_commentaire', champs: { personne: m2[1].trim(), texte: x2 } }; }
   if (m?.[1] && m[2]) { const x = nettoyerValeur(m[1]); return x ? { action: 'arbre_commentaire', champs: { personne: m[2].trim(), texte: x } } : null; }
   m = new RegExp(`^(?:peux-tu\\s+|pourrais-tu\\s+)?(?:ajoute|ajouter|mets|mettre|note|noter)\\s+(?:le\\s+|la\\s+|l['’]\\s*|un\\s+|une\\s+)?(num[ée]ro de t[ée]l[ée]phone|t[ée]l[ée]phone|e-?mail|mail|adresse|site web|site|profession|loisir)\\s*[:,-]?\\s*(.+)${FICHE_DE}${NOM}\\s*[.!?]*$`, 'iu').exec(t);
   if (m?.[1] && m[2] && m[3]) { const type = TYPES_INFO[m[1].toLowerCase().replace('é', 'é')] ?? TYPES_INFO[m[1].toLowerCase()]; const v = nettoyerValeur(m[2]); return type && v ? { action: 'arbre_info', champs: { personne: m[3].trim(), type, valeur: v } } : null; }
@@ -96,11 +97,12 @@ export function demandeMessageDirect(texte: string): { nom: string; texte: strin
 /** PURE : une demande d'ÉCRITURE dans l'arbre ou de message direct qui n'a pas été assez nette pour la carte : on le dit (jamais un « c'est fait » inventé par le modèle). */
 export function aideEcriture(texte: string): string | null {
   const t = String(texte ?? '').trim().slice(0, 400);
-  if (/^(?:peux-tu\s+|pourrais-tu\s+)?(?:ajoute|ajouter|corrige|corriger|modifie|modifier|compl[èe]te|compl[ée]ter|renseigne|renseigner|relie|relier|change|changer)\b[\s\S]*\b(?:fiche|arbre)\b/iu.test(t)) {
+  if (/^(?:peux-tu\s+|pourrais-tu\s+)?(?:ajoute|ajouter|corrige|corriger|modifie|modifier|compl[èe]te|compl[ée]ter|renseigne|renseigner|relie|relier|change|changer|mets|mettre|note|noter|supprime|supprimer|efface|effacer|renomme|renommer|fusionne|fusionner)(?![-\s]*moi\b)\b[\s\S]*\b(?:fiche|arbre)\b/iu.test(t)) {
     return '🌳 Pour écrire dans l\'arbre, dis-le ainsi (je te montre une carte, rien n\'est écrit avant ton « ✅ Confirmer ») :\n• « ajoute le commentaire "…" à la fiche de Prénom Nom »\n• « ajoute le téléphone 06… à la fiche de Prénom Nom »\n• « corrige la date de naissance de Prénom Nom : 16/06/1880 »\nJe n\'ai rien modifié.';
   }
-  if (/^(?:peux-tu\s+|pourrais-tu\s+)?(?:écris|ecris|écrire|ecrire|envoie|dis)\s+(?:à|a)(?=\s)[\s\S]*\b(?:cmc[\s-]?teams?|la\s+light)\b/iu.test(t)) {
-    return '✉️ Pour écrire à quelqu\'un dans CMCteams, dis-le ainsi : « écris à Prénom Nom dans CMCteams : ton message ». Je te montre une carte, rien n\'est envoyé avant ton « ✅ Confirmer ». Je n\'ai rien envoyé.';
+  if (/^(?:peux-tu\s+|pourrais-tu\s+)?(?:écris|ecris|écrire|ecrire|envoie|envoyer|dis|dire|transmets)\s+(?:à|a)(?=\s)[\s\S]*\b(?:cmc[\s-]?teams?|la\s+light|apex[\s-]?chat)\b/iu.test(t)
+    || /^(?:peux-tu\s+|pourrais-tu\s+)?(?:envoie|envoyer|écris|ecris|transmets)(?:-moi)?\s+(?:un|le|ce)\s+(?:message|mot|sms|mail|e-?mail)\s+(?:à|a)(?=\s)/iu.test(t)) {
+    return '✉️ Pour écrire à quelqu\'un, dis où, ainsi : « écris à Prénom Nom dans CMCteams : ton message » ou « écris à Prénom Nom sur Apex Chat : ton message ». Je te montre une carte (CMCteams) ou un bouton (Apex Chat), rien n\'est envoyé avant ton « ✅ Confirmer » ou ton « Envoyer ». Je n\'ai rien envoyé.';
   }
   return null;
 }

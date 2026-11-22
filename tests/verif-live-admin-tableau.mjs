@@ -166,6 +166,20 @@ try {
   /* 200 = le robot a une session de personne ; 401 = il n'a que la session admin, et la porte le REFUSE (elle existe et garde l'entrée) — les deux prouvent la porte, le verdict dit lequel. */
   chk(((mc.stP === 200 && mc.okP && mc.typeP === 'boolean') || mc.stP === 401) && mc.case_, `matricule à confirmer : la porte de la personne ${mc.stP === 200 ? 'répond' : 'refuse sans session de personne'} · HTTP ${mc.stP} · la case « à faire confirmer » est dans la page servie : ${mc.case_ ? 'oui' : 'NON'}`);
   chk(mt.champ && mt.bouton, `matricule SBM : la page servie a le champ (${mt.champ ? 'oui' : 'NON'}) et le bouton (${mt.bouton ? 'oui' : 'NON'}) dans la rubrique Identité`);
+  /* 22.11 (mission pc-obd, pont 3158) : la valise OBD — la tuile est dans l'admin servi, la page, son script et sa base de codes répondent AVEC la session admin (sans session, tout /admin/ rend la page d'entrée). Lecture seule. */
+  const ob = await page.evaluate(async () => {
+    const src = (document.querySelector('script[src*="admin.js"]') || {}).src || '';
+    const js = src ? await (await fetch(src, { cache: 'no-store' })).text() : '';
+    const lire = async (u) => { try { const x = await fetch(u, { credentials: 'include', cache: 'no-store' }); return { st: x.status, type: String(x.headers.get('content-type') || '').split(';')[0], texte: await x.text() }; } catch (_) { return { st: 0, type: '', texte: '' }; } };
+    const pg = await lire('/admin/obd.html'), sc = await lire('/admin/obd.js'), ti = await lire('/admin/obd-base/titres.json'), p2 = await lire('/admin/obd-base/P02.json');
+    let nTitres = 0; try { nTitres = Object.keys(JSON.parse(ti.texte)).length; } catch (_) { nTitres = 0; }
+    let okP2 = false; try { JSON.parse(p2.texte); okP2 = true; } catch (_) { okP2 = false; }
+    return { tuile: (js.match(/\/admin\/obd\.html/g) || []).length, pg: pg.st, pgOk: /Valise|OBD/i.test(pg.texte) && /obd\.js/.test(pg.texte), csp: /connect-src 'self'/.test(pg.texte), sc: sc.st, scType: sc.type, scTaille: sc.texte.length, ti: ti.st, nTitres, p2: p2.st, okP2 };
+  });
+  chk(ob.tuile === 1, `valise OBD : ${ob.tuile} tuile dans l'admin servi (attendu 1)`);
+  chk(ob.pg === 200 && ob.pgOk && ob.csp, `valise OBD : la page répond · HTTP ${ob.pg} · c'est bien la valise : ${ob.pgOk ? 'oui' : 'NON'} · elle ne parle qu'au domaine : ${ob.csp ? 'oui' : 'NON'}`);
+  chk(ob.sc === 200 && /javascript/.test(ob.scType) && ob.scTaille > 20000, `valise OBD : son script est servi · HTTP ${ob.sc} · ${ob.scType || '-'} · ${ob.scTaille} caractères`);
+  chk(ob.ti === 200 && ob.nTitres > 1000 && ob.p2 === 200 && ob.okP2, `valise OBD : la base de codes est servie · ${ob.nTitres} libellés de codes · un fichier de détail lisible : ${ob.okP2 ? 'oui' : 'NON'}`);
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }
 
 dire(`=== VÉRIF TABLEAU ADMIN : ${bons} OK · ${mauvais} en défaut`);

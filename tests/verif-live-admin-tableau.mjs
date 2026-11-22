@@ -185,13 +185,21 @@ try {
   await page.waitForFunction(() => { const n = document.getElementById('tdb-haut'); return !!n && !n.hidden; }, null, { timeout: 20000 }).catch(() => {});
   const po = await page.evaluate(async () => {
     /* pourquoi le bloc est caché, si c'est le cas : ce que le domaine répond à « qui suis-je » (états seulement, jamais le nom) */
-    let qui = { etat: '?', admin: null, apercu: null }; try { const w = await window.kdmcSSO.whoamiResult(); qui = { etat: String((w && w.state) || 'aucun'), admin: !!(w && w.session && w.session.admin), apercu: !!(w && w.session && w.session.apercu) }; } catch (_) { qui.etat = 'erreur'; }
+    let qui = { etat: '?', admin: null, apercu: null, prouve: null }; try { const w = await window.kdmcSSO.whoamiResult(); qui = { etat: String((w && w.state) || 'aucun'), admin: !!(w && w.session && w.session.admin), apercu: !!(w && w.session && w.session.apercu), prouve: !!(w && w.session && w.session.verified) }; } catch (_) { qui.etat = 'erreur'; }
     const hub = document.getElementById('hub');
     const t = document.getElementById('tuile-obd'), n = document.getElementById('tdb-haut'), badge = (document.querySelector('script[data-project="kdmc-home"]') || {}).dataset || {};
     const r = t ? t.getBoundingClientRect() : { width: 0, height: 0 };
     return { qui, hubCache: !hub || hub.hidden, existe: !!t, blocVisible: !!n && !n.hidden, l: Math.round(r.width), h: Math.round(r.height), href: t ? t.getAttribute('href') : '', version: badge.version || '', deborde: document.documentElement.scrollWidth > window.innerWidth + 1 };
   });
-  chk(po.existe && po.blocVisible && po.h >= 44 && po.l >= 44 && po.href === '/admin/obd.html' && !po.deborde, `portail ${po.version || '?'} : raccourci « Valise OBD » visible pour l'admin · ${po.l} × ${po.h} px · mène à ${po.href || '-'} · page qui déborde : ${po.deborde ? 'OUI' : 'non'}` + (po.blocVisible ? '' : ` — bloc admin caché : le domaine répond état « ${po.qui.etat} », admin : ${po.qui.admin}, vue membre : ${po.qui.apercu}, accueil caché : ${po.hubCache}`));
+  /* Le portail n'ouvre l'accueil du compte admin qu'après une preuve Face ID (kdmc-portal.js `_kevinNonProuve`). Le robot n'a qu'une session par code :
+     chez lui l'accueil reste fermé. Ce n'est pas un défaut : on le DIT (non mesuré) et on vérifie ce qui reste mesurable — la carte est dans le bloc caché de la page servie. */
+  const demandePreuve = po.hubCache && po.qui.etat === 'session' && po.qui.admin === true && po.qui.prouve === false;
+  if (demandePreuve) {
+    dire(`ℹ️ portail ${po.version || '?'} : affichage du raccourci NON MESURÉ par le robot — le portail demande Face ID au compte admin (session par code seulement). À mesurer dans le navigateur de Kevin.`);
+    chk(po.existe && po.href === '/admin/obd.html' && !po.blocVisible, `portail ${po.version || '?'} : le raccourci « Valise OBD » est dans la page servie, DANS le bloc admin resté caché · mène à ${po.href || '-'}`);
+  } else {
+    chk(po.existe && po.blocVisible && po.h >= 44 && po.l >= 44 && po.href === '/admin/obd.html' && !po.deborde, `portail ${po.version || '?'} : raccourci « Valise OBD » visible pour l'admin · ${po.l} × ${po.h} px · mène à ${po.href || '-'} · page qui déborde : ${po.deborde ? 'OUI' : 'non'}` + (po.blocVisible ? '' : ` — bloc admin caché : le domaine répond état « ${po.qui.etat} », admin : ${po.qui.admin}, prouvé : ${po.qui.prouve}, vue membre : ${po.qui.apercu}, accueil caché : ${po.hubCache}`));
+  }
 } catch (e) { chk(false, 'erreur du robot : ' + String(e && e.message || e).split('\n')[0].slice(0, 140)); }
 
 dire(`=== VÉRIF TABLEAU ADMIN : ${bons} OK · ${mauvais} en défaut`);

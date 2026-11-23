@@ -51,5 +51,12 @@ ok(/httpRequestsAdaptiveGroups/.test(qz.query) && /clientASN/.test(qz.query) && 
 const sab = resumerZone(zone, []);
 ok(sab.parJour['2026-10-07'].robots === 0 && rz.parJour['2026-10-07'].robots === 38000 && ASN_NUAGES.includes(8075), '6e. SABOTAGE : sans la liste des nuages, 38 000 coups de robots passeraient pour des personnes');
 
+const cj = { data: { viewer: { accounts: [{ workersInvocationsAdaptive: [
+  { sum: { requests: 100 }, quantiles: { cpuTimeP50: 2000, cpuTimeP99: 4000 }, dimensions: { scriptName: 'a', datetimeHour: '2026-11-22T10:00:00Z' } },
+  { sum: { requests: 50 }, quantiles: { cpuTimeP50: 3000, cpuTimeP99: 12000 }, dimensions: { scriptName: 'a', datetimeHour: '2026-11-22T11:00:00Z' } },
+] }] } } };
+const rc = resumer(cj);
+ok(rc.cpuParWorker.a.p99max === 12000 && rc.cpuParWorker.a.au_dessus === 50 && /🔴 a .*p99 12\.0 ms/.test(texte(rc, 1)) && /cpuTimeP99/.test(requete('c', 'd', 'e').query), '7. temps de calcul : pire p99 par worker, rouge au-dessus de 10 ms (plafond gratuit)');
+
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

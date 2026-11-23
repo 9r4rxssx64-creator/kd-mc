@@ -245,7 +245,16 @@ try {
       await ev(B.p, () => { try { return K._sendHeartbeat(); } catch (e) { return 0; } });
       const j = 'ferme-' + lettres(5); await B.p.locator('#msg-input').fill(j); await B.p.locator('#msg-input').press('Enter');
       const d = await attendre(A.p, (x) => Object.values(K.messages || {}).flat().some((m) => JSON.stringify(m).includes(x)) || (K.conversations || []).some((c) => (c.unread || c.unread_count || 0) > 0), j, 200000, 500);
-      noter('Temps réel : A (sur la liste, conversation FERMÉE) est averti d\'un message de B', d >= 0, d >= 0 ? sec(d) : 'aucun signe en 200 s');
+      /* 23.11 : rouge isolé (1 passage sur ~6, aucun changement de code) — quand il revient, dire OÙ le message s'arrête : envoyé par B ? connu du serveur ? connexion temps réel de A ouverte ? */
+      let dgf = '';
+      if (d < 0) {
+        const chezB = await ev(B.p, (x) => { const m = Object.values(K.messages || {}).flat().find((q) => JSON.stringify(q).includes(x)); return m ? { present: true, statut: m.status || m.state || null, erreur: !!(m.error || m.failed || m.pending) } : { present: false }; }, j).catch(() => '?');
+        const chezA = await ev(A.p, () => ({ ws: K.ws ? K.ws.readyState : 'null', vue: K.view || K.currentView || null, nonLus: (K.conversations || []).map((c) => c.unread || c.unread_count || 0), enLigne: navigator.onLine })).catch(() => '?');
+        const srvA = await A.p.evaluate(async ([api, id]) => { const r = await fetch(api + '/api/conversations', { headers: { Authorization: 'Bearer ' + K.token } }); const t = await r.json(); const c = (t.conversations || []).find((x) => x.id === id); return c ? JSON.stringify({ http: r.status, nonLus: c.unread || c.unread_count || 0, dernier: !!c.last_message }) : 'absente (http ' + r.status + ')'; }, [API, convA]).catch((e) => 'ERR ' + String(e.message).slice(0, 50));
+        dgf = ' · B=' + JSON.stringify(chezB) + ' · A=' + JSON.stringify(chezA) + ' · serveur(A)=' + srvA;
+        await capture(A, 'ferme-A'); await capture(B, 'ferme-B');
+      }
+      noter('Temps réel : A (sur la liste, conversation FERMÉE) est averti d\'un message de B', d >= 0, d >= 0 ? sec(d) : 'aucun signe en 200 s' + dgf.slice(0, 600));
       await ev(A.p, async (id) => { await K.openConv(id); }, convA);
     });
 

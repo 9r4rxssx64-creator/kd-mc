@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Bee recherche web : 2ᵉ moteur de secours — 26.11.2026 (javis-bee, preuve réelle rouge du 26.11)
+- `services/_shared/outils-lecture.js` : `rechercheWeb` essaie DuckDuckGo LITE puis Bing RSS (gratuit, sans clé) ; les deux refusés = erreur claire. Partagé par Bee et Apex AI (`/ai`). Garde `test:bee-outils` 130 ✓ (rouge sans le correctif), fixture `bing-rss-ok.xml`. Aucune version d'app ne change.
+
 ## Apex AI 13.4.419 — 26.11.2026 (apex-cloud, points qualité de pont-check 3269)
 - Mêmes réponses, code simplifié dans `features/chat/chat-outils-locaux.ts` : la fonction des écritures d'arbre est coupée en trois (commentaire, information, champ), les motifs sont courts et en `String.raw`, les listes de verbes sortent des expressions régulières (contrôle de la complexité cognitive 21 → petites fonctions, et des deux expressions trop complexes de l'aide d'écriture). Les 83 tests du chat et de la parité passent sans changement.
 

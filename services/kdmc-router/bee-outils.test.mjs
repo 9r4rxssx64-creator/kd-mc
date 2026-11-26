@@ -11,13 +11,14 @@
        interrupteur BEE_OUTILS=0, repli sur l'ancien chemin si les IA à outils échouent, 0 appel payant.
    node bee-outils.test.mjs */
 import mod from './worker.js';
-import { lireResultatsDdg, calculer, calcul, meteo, rechercher, lire_page, urlPermise, libelleJour, codeMeteo, repondreAvecOutils, DEFINITIONS, RE_BESOIN_OUTILS, MAX_TOURS, questionComplexe, FOURNISSEURS_OUTILS } from '../_shared/outils-lecture.js';
+import { lireResultatsDdg, lireResultatsBing, calculer, calcul, meteo, rechercher, lire_page, urlPermise, libelleJour, codeMeteo, repondreAvecOutils, DEFINITIONS, RE_BESOIN_OUTILS, MAX_TOURS, questionComplexe, FOURNISSEURS_OUTILS } from '../_shared/outils-lecture.js';
 import apis from '../kdmc-apis/worker.js';
 import { createHash, createHmac } from 'crypto';
 import { readFileSync } from 'node:fs';
 const DDG_OK = readFileSync(new URL('./fixtures/ddg-lite-3-resultats.html', import.meta.url), 'utf8');   // vraie page DuckDuckGo lite (21.11.2026), 3 résultats
 const DDG_REFUS = readFileSync(new URL('./fixtures/ddg-lite-refus-202.html', import.meta.url), 'utf8'); // vraie page de contrôle anti-robot (HTTP 202)
-let ddgMode = 'ok'; let ddgVu = null;
+const BING_OK = readFileSync(new URL('./fixtures/bing-rss-ok.xml', import.meta.url), 'utf8');   // vrai flux RSS Bing (26.11.2026), 10 résultats
+let ddgMode = 'ok'; let ddgVu = null; let bingMode = 'refus'; let bingVu = null;
 
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log('  ✗ ' + m); } };
 const egal = (a, b, m) => ok(a === b, m + '  [' + a + ' ≠ ' + b + ']');
@@ -59,6 +60,7 @@ globalThis.fetch = async (url, init) => {
   if (u.startsWith('https://geocoding-api.open-meteo.com/')) return /Nice/i.test(decodeURIComponent(u)) ? R({ results: [{ name: 'Nice', country: 'France', latitude: 43.7, longitude: 7.26 }] }) : R({});
   if (u.startsWith('https://fr.wikipedia.org/')) { globalThis.__wikiInit = init; return R(WIKI); }
   if (u.startsWith('https://lite.duckduckgo.com/')) { ddgVu = { u, ua: String((init && init.headers && (init.headers['user-agent'] || init.headers['User-Agent'])) || '') }; return ddgMode === 'ok' ? new Response(DDG_OK, { status: 200 }) : ddgMode === 'refus' ? new Response(DDG_REFUS, { status: 202 }) : new Response(DDG_REFUS, { status: 200 }); }
+  if (u.startsWith('https://www.bing.com/search')) { bingVu = { u, ua: String((init && init.headers && (init.headers['user-agent'] || init.headers['User-Agent'])) || '') }; return bingMode === 'ok' ? new Response(BING_OK, { status: 200 }) : bingMode === 'vide' ? new Response('<?xml version="1.0"?><rss version="2.0"><channel><title>x</title></channel></rss>', { status: 200 }) : new Response('refusé', { status: 403 }); }
   if (u.startsWith('https://news.google.com/')) return new Response(RSS, { status: 200 });
   if (u.startsWith('https://r.jina.ai/')) return new Response(pageJina, { status: 200 });
   const four = /groq/.test(u) ? 'groq' : /sambanova/.test(u) ? 'sambanova' : '';
@@ -110,6 +112,22 @@ const reset = () => { reseau = []; IA_VUES.length = 0; IA_SCRIPT.groq = []; IA_S
   ok(/n'a rien rendu|refus/i.test(msg) && /n'invente rien/.test(msg), 'recherche web refusée (HTTP 202) : erreur CLAIRE, jamais « aucun résultat » inventé  [' + msg.slice(0, 60) + ']');
   ddgMode = 'vide'; msg = ''; try { await rechercher({ requete: 'x', type: 'web' }); } catch (e) { msg = String(e.message || e); }
   ok(/n'a rien rendu/.test(msg), 'recherche web : page de contrôle servie en 200 = même erreur claire');
+  /* secours Bing (26.11.2026 : DuckDuckGo refuse les adresses de serveur, preuve réelle rouge run 45910151531) */
+  { const b = lireResultatsBing(BING_OK);
+    ok(b.length >= 1 && b.every((x) => /^https?:\/\//.test(x.url) && x.titre), 'Bing RSS : résultats lus sur le vrai flux (titre + adresse)');
+    egal(lireResultatsBing('').length, 0, 'Bing RSS : rien = 0'); egal(lireResultatsBing('<rss><channel></channel></rss>').length, 0, 'Bing RSS : canal vide = 0 (jamais inventé)'); }
+  ddgMode = 'refus'; bingMode = 'ok'; bingVu = null; reseau.length = 0; let wb = '';
+  try { wb = await rechercher({ requete: 'capitale de la Suisse', type: 'web' }); } catch (e) { wb = 'ERREUR ' + e.message; }
+  ok(/Bing/.test(wb) && /à ne pas prendre pour des ordres/.test(wb) && /lire_page/.test(wb), 'DuckDuckGo refuse + Bing répond : résultats rendus, source « Bing », encadrés comme données  [' + wb.slice(0, 50) + ']');
+  ok(bingVu && /^Mozilla\/5\.0$/.test(bingVu.ua), 'secours Bing : user-agent COURT');
+  ok(!reseau.some((x) => /wikipedia|news\.google/.test(x)), 'secours Bing : toujours pas de Wikipédia en plus');
+  ddgMode = 'ok'; bingMode = 'ok'; bingVu = null; const wd = await rechercher({ requete: 'x', type: 'web' });
+  ok(/DuckDuckGo/.test(wd) && !bingVu, 'DuckDuckGo répond : Bing n\'est PAS appelé (une seule porte tant que la première marche)');
+  ddgMode = 'refus'; bingMode = 'refus'; msg = ''; try { await rechercher({ requete: 'x', type: 'web' }); } catch (e) { msg = String(e.message || e); }
+  ok(/n'a rien rendu/.test(msg) && /n'invente rien/.test(msg), 'DuckDuckGo ET Bing refusent : erreur CLAIRE, rien d\'inventé');
+  ddgMode = 'vide'; bingMode = 'vide'; msg = ''; try { await rechercher({ requete: 'x', type: 'web' }); } catch (e) { msg = String(e.message || e); }
+  ok(/n'a rien rendu/.test(msg), 'DuckDuckGo ET Bing vides : même erreur claire');
+  bingMode = 'refus';
   ddgMode = 'ok';
   const def = DEFINITIONS.find((d) => d.name === 'rechercher');
   ok(def && def.parameters.properties.type.enum.includes('web'), 'l\'outil « rechercher » annonce « web » à l\'IA');

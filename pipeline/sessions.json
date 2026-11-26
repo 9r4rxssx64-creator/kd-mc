@@ -461,7 +461,7 @@
       "branche": "claude/persona-personnage-javis-hqd55e",
       "sujet": "Bee (mascotte Lingua) comme assistant de Kevin : widget, app installable javis.kd-mc.com, voix + lip-sync",
       "surfaces": [],
-      "etat": "v1.42 prête : bras marionnette, garde arbre, bee-tester web/apex_chat ; reste publier + preuves réelles",
+      "etat": "v1.42 en ligne ; branche claude/bee-recherche-web-secours : Bing RSS en secours de la recherche web, à fusionner puis re-prouver en réel",
       "maj": "2026-11-26",
       "attend_kevin": "Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",

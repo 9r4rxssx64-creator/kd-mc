@@ -22,5 +22,21 @@ ok(/proposerBee\(env, action, champs, ob\.now\(\)/.test(bloc) && /ACTIONS_APEX_A
 ok(!/\.executer\(|__javis\/agir|premiereFois/.test(bloc), '7. cette porte ne fait QUE proposer : elle n\'exécute rien (seul /__javis/agir exécute, après ✅)');
 ok(/ob\.qui\(request\)/.test(bloc) && /ob\.limite\('bee-agir'\)/.test(bloc), '8. session admin prouvée + même plafond de débit que Bee');
 ok(/r\.n > 1[\s\S]{0,200}plusieurs/.test(bloc) && /r\.n === 0[\s\S]{0,200}introuvable/.test(bloc), '9. la fiche est trouvée par le domaine : aucune → refus, plusieurs → refus (jamais de devinette)');
+
+/* 23.11 (pc-config 3183, mesure réelle sur 13.4.418) : la porte répondait 500 à TOUTE demande d'un admin (« ReferenceError: ctx is not defined » : handleAdmin ne recevait pas ctx).
+   Les contrôles 1-9 ci-dessus sont statiques ou sans session : aucun n'appelait la porte AVEC une session admin. Ici on se connecte (code admin simulé) et on appelle pour de vrai. */
+import { createHash } from 'node:crypto';
+const CODE = '424242', HASH = createHash('sha256').update(CODE).digest('hex');
+const envA = { KDMC_SSO_SECRET: 'sec', KDMC_CODE_OBLIGATOIRE: '0', KDMC_ADMIN_PIN_SHA256: HASH, ACCOUNTS: env.ACCOUNTS };
+const REQA = (path, o = {}) => new Request('https://kd-mc.com' + path, { method: o.method || 'GET', headers: Object.assign({ origin: 'https://kd-mc.com' }, o.headers || {}), body: o.body });
+const lg = await (await mod.fetch(REQA('/__admin/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: CODE }) }), envA)).json();
+ok(lg.ok === true && typeof lg.grant === 'string', '10. session admin simulée obtenue (login avec le code de test)', lg);
+const appeler = async (b) => { try { const r = await mod.fetch(REQA('/__admin/proposer', { method: 'POST', headers: { 'content-type': 'application/json', 'x-kdmc-admin': lg.grant }, body: JSON.stringify(b) }), envA); return { status: r.status, j: await r.json().catch(() => null) }; } catch (e) { return { status: 'THROW', erreur: String(e && e.message) }; } };
+const pm = await appeler({ action: 'message_direct', nom: 'Zzzzzz Qqqqq', texte: 'bonjour test' });
+ok(pm.status === 200 && pm.j && pm.j.ok === true && /^v1\./.test(String(pm.j.proposition && pm.j.proposition.jeton)) && /Zzzzzz Qqqqq/.test(String(pm.j.proposition.resume)), '11. AVEC une session admin : message_direct → une proposition signée, résumé fabriqué par le domaine (jamais un 500)', pm);
+const pa = await appeler({ action: 'arbre_commentaire', personne: 'Zzzzzz Qqqqq', texte: 'test' });
+ok(pa.status === 404 && pa.j && pa.j.reason === 'introuvable' && typeof pa.j.texte === 'string', '12. AVEC une session admin : une fiche inconnue → « introuvable » clair (404 avec texte), jamais un 500', pa);
+const px = await appeler({ action: 'compte_creer', nom: 'x' });
+ok(px.status === 400 && px.j && px.j.reason === 'action_non_ouverte', '13. AVEC une session admin : une action hors liste reste refusée (400)', px);
 console.log(`\n${pass} OK · ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

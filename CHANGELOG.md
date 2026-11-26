@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Routeur — porte /__admin/proposer réparée — 26.11.2026 (apex-cloud, mesure pc-config 3183)
+- Mesure réelle sur Apex AI 13.4.418 : toute demande de carte (commentaire, info, champ, message à une personne) répondait « le domaine répond 500 ». Cause : `handleAdmin` utilisait `ctx` sans le recevoir (`ReferenceError: ctx is not defined`, ligne de la route `/__admin/proposer`). Corrigé : `handleAdmin(request, url, env, ctx)` ; l'appel lui passe `ctx`. Rien d'autre ne change : la porte ne fait toujours que proposer, rien ne s'écrit sans le ✅ de Kevin.
+- Test : `proposer-admin.test.mjs` 13 contrôles (3 nouveaux appellent la porte AVEC une session admin simulée : proposition signée, fiche inconnue → « introuvable », action hors liste → 400) ; rouges (3) sur l'ancien routeur, verts (13) avec le correctif. Recherche des autres variables non définies dans `worker.js` : aucune.
+
 ## Apex AI 13.4.418 — 22.11.2026 (apex-cloud, mesure pc-config 3162)
 - Mesure réelle de pc-config sur 13.4.417 : 0 carte sur 5, et deux FAUSSES réussites du modèle gratuit (« Modification appliquée » pour « mets le champ naissance de la fiche X à 1900 », « Message envoyé » pour « envoie un message à X : bonjour test »). Cause : ces deux phrases n'étaient dans aucune grammaire (verbe « mets », message sans « dans CMCteams ») donc partaient au modèle. Correctif : l'aide locale couvre tout verbe d'écriture sur une fiche (mets, note, supprime, efface, renomme, fusionne… hors « mets-moi ») et tout « envoie / écris un message à X » ; la forme naturelle « ajoute un commentaire à la fiche de X : texte » donne la carte ✅. Rien ne s'écrit ni ne s'envoie sans le ✅ de Kevin ; la réponse dit « Je n'ai rien modifié / envoyé ». Test discriminant : 12 contrôles `ecriture-locale.test.ts`, rouges sans le correctif, verts avec.
 

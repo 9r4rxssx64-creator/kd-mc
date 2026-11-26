@@ -756,7 +756,7 @@ const ROUTEUR = {
       return handleVoix(request, url, env, { uid, admin: !!adm, ouvert, limite: (q) => limiteTous(env.LIMITE_VOIX, q) });
     }
     // Admin domaine (fiches clients + fonctions communes). Réservé admin.
-    if (url.pathname.startsWith('/__admin/')) return handleAdmin(request, url, env);
+    if (url.pathname.startsWith('/__admin/')) return handleAdmin(request, url, env, ctx);
     // Coffre Finances : sauvegarde EN LIGNE chiffrée de bout en bout. Réservé admin
     // (même grant que /__admin). Le serveur ne stocke qu'un bloc illisible (AES-GCM
     // côté client) → même le worker/KV ne peut PAS lire. Cf. tools/finances/.
@@ -5349,7 +5349,7 @@ async function adminSession(request, env) {
   }
   return null;
 }
-async function handleAdmin(request, url, env) {
+async function handleAdmin(request, url, env, ctx) {   // ctx : la route /__admin/proposer le passe à outilsBee (23.11 : « ctx is not defined » = 500 sur toutes les cartes d'Apex AI, mesure pc-config 3183)
   /* `domain-log` est le SEUL endpoint admin lu depuis un autre sous-domaine
      (admin.kd-mc.com) : son préflight a besoin des en-têtes CORS, donc il ne doit
      PAS être avalé par ce 204 générique — sinon le navigateur bloque la lecture et

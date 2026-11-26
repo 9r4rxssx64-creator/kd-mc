@@ -54,7 +54,11 @@ export async function handleDelegue(request, env, deps) {
     n = (u && u.n) || 0;
   } catch (e) { return non(503, 'base', String(e && e.message).slice(0, 120)); }
   if (n > (ligne.plafond_jour || 300)) return non(429, 'plafond_jour', 'plafond de ' + (ligne.plafond_jour || 300) + ' appels pour aujourd\'hui atteint');
-  const r = await deps.routeSmart(deps.sansPayants(env), {
+  /* BUDGET ABSOLU DE 5 €/MOIS (Kevin) : la porte ne consomme JAMAIS Workers AI (binding AI = neurones facturés au-delà du gratuit ; cause des 10,41 $ du mois, mesuré par pc-connecteurs 26.11).
+     Seules les IA gratuites À CLÉ (Groq, Gemini, Mistral, OpenRouter, SambaNova, NVIDIA…) répondent ici. */
+  const envGratuit = { ...deps.sansPayants(env) };
+  delete envGratuit.AI;
+  const r = await deps.routeSmart(envGratuit, {
     messages, domain, analyse: 'regex', council: false,
     maxTokens: Math.min(4000, Math.max(50, parseInt(corps.max_tokens, 10) || 1500)), temperature: 0.2, premium: false, timeoutMs: 25000,
   });

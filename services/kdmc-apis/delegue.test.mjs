@@ -49,11 +49,12 @@ test('secret en entrée, trop long, messages vides : refusés', async () => {
 });
 test('JAMAIS un moteur payant : l\'environnement passé au routage n\'a aucune clé payante', async () => {
   let envVu;
-  const env = { DELEGUE: d1(), ANTHROPIC_API_KEY: 'x', OPEN_AI_API_KEY: 'x', XAI_API_KEY: 'x', DEEPSEEK_API_KEY: 'x', PERPLEXITI_API_KEY: 'x', TOGETHER_API_KEY: 'x', GROQ_API_KEY: 'g' };
+  const env = { DELEGUE: d1(), ANTHROPIC_API_KEY: 'x', OPEN_AI_API_KEY: 'x', XAI_API_KEY: 'x', DEEPSEEK_API_KEY: 'x', PERPLEXITI_API_KEY: 'x', TOGETHER_API_KEY: 'x', GROQ_API_KEY: 'g', AI: { run() { throw new Error('Workers AI ne doit jamais être appelé par /delegue'); } } };
   const mod = await import('./worker.js'); assert.ok(mod.sansMoteursPayants);
   await handleDelegue(req({ messages: msg }), env, { routeSmart: async (e) => { envVu = e; return ok(); }, sansPayants: mod.sansMoteursPayants });
   for (const k of ['ANTHROPIC_API_KEY', 'OPEN_AI_API_KEY', 'XAI_API_KEY', 'DEEPSEEK_API_KEY', 'PERPLEXITI_API_KEY', 'TOGETHER_API_KEY']) assert.equal(envVu[k], undefined, k);
   assert.equal(envVu.GROQ_API_KEY, 'g');
+  assert.equal(envVu.AI, undefined, 'budget 5 €/mois : le binding Workers AI est retiré de l\'environnement de la porte');
 });
 test('branchée dans le worker AVANT la porte des comptes, et sans jeton → 401 (pas 403 compte)', async () => {
   const r = await worker.fetch(new Request('https://apis.kd-mc.com/delegue', { method: 'POST', body: '{}' }), { DELEGUE: d1(), KDMC_SSO_SECRET: 's' });

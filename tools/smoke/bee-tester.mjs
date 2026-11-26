@@ -95,6 +95,17 @@ if (outilsUtilises.includes('rechercher') && texte.length > 0) {
   resume = Object.keys(parType).sort((a, b) => a.localeCompare(b)).map((t) => `${t}×${parType[t]}`).join(' ');
   console.log(`recherche web : outil « rechercher » utilisé, réponse de ${texte.length} caractères`);
 }
+/* Diagnostic (journal public : seulement le NOM de l'IA et une catégorie fermée, jamais le texte de l'erreur, la question ni la réponse).
+ * Sert à savoir POURQUOI aucune IA « à outils » n'a servi quand la recherche web n'est pas utilisée. */
+if (Array.isArray(q.j.outils_pourquoi)) {
+  const categorie = (m) => (/en pause/.test(m) ? 'en pause' : /429|quota|limit/i.test(m) ? 'quota' : /timeout|délai|abort/i.test(m) ? 'délai' : /\b(401|403)\b/.test(m) ? 'refus clé' : /\b5\d\d\b/.test(m) ? 'panne serveur' : /outil|tool/i.test(m) ? 'outils non gérés' : 'autre');
+  const lignes = q.j.outils_pourquoi.slice(0, 6).map((t) => {
+    const m = String(t); const nom = (m.match(/^([a-z0-9_-]{1,24}) :/) || [])[1] || '?';
+    return `${nom} = ${categorie(m)}`;
+  });
+  console.log(`outils muets : ${lignes.join(' · ')}`);
+}
+console.log(`outils servis : ${outilsUtilises.length ? outilsUtilises.join(', ') : 'aucun'}`);
 const chat = cartes.find((c) => c && c.t === 'apex_chat');
 if (chat) console.log(`apex_chat : ${Array.isArray(chat.messages) ? chat.messages.length : 0} message(s) prêt(s) · rien n'est envoyé (Kevin touche pour valider)`);
 const liste = cartes.find((c) => c && c.t === 'liste_comptes');

@@ -1,9 +1,15 @@
 # Vérifier dans le réel, toujours (Kevin 16.10.2026)
 
+## TOUT vérifier, JAMAIS « non vérifié » (Kevin 26.11.2026 : « Vérifie toujours tout, ne laisse rien non vérifié, jamais. Aucune branche, personne. Note-le. »)
+- Valable pour **toutes les sessions et toutes les branches, sans exception**. Une livraison ne se termine plus par une liste de choses « non vérifiées » : ce qu'on n'a pas vérifié, **on le vérifie avant de répondre**.
+- Obstacle (session de Kevin, code famille, Lenovo éteint, robot inexistant) : on le **contourne** — robot « comme Kevin » au dépôt public, mission au pont pour le Lenovo, nouveau robot avec son essai local — et on **attend le résultat** ; jamais « non vérifié » comme point final.
+- Seule vérité acceptable à la place : « pas encore vérifié : j'ai lancé X, résultat attendu à tel moment, je reviens avec les nombres » — puis on revient. Un chiffre lu dans la doc n'est pas une mesure : on mesure.
+- Le bloc de fin garde la ligne « Vérifié réel : » ; la ligne « Non vérifié : » ne peut contenir que ce qui est en cours de vérification (lancé, avec l'heure du retour), jamais une résignation.
+
 Un test vert ne prouve pas que Kevin voit la chose. Avant de dire « en ligne » ou « ça marche » :
 1. regarder le réel : fichier servi / dépôt public `kd-mc` (raw.githubusercontent.com), runs de déploiement (`gh api repos/…/actions/runs`), nuage, vrai navigateur sur vraies données ;
-2. si le réel m'est fermé (arbre = code famille, admin = connexion) : écrire « non vérifié en ligne » + ce que j'ai vu à la place ;
-3. finir chaque livraison par « Vérifié réel : … / Non vérifié : … ».
+2. si le réel m'est fermé (arbre = code famille, admin = connexion) : le rouvrir par un robot ou par le Lenovo (voir ci-dessus), jamais s'arrêter à « non vérifié » ;
+3. finir chaque livraison par « Vérifié réel : … » (+ « en cours de vérification : … » avec l'heure du retour, s'il y en a).
 
 ## Se connecter au domaine POUR DE VRAI, depuis la session (Kevin 16.10 nuit : « connecte-toi réel partout, même le domaine »)
 Mesuré le 16.10 : une session **atteint kd-mc.com** (curl 200). L'ancienne phrase « kd-mc.com est injoignable depuis l'agent » est FAUSSE aujourd'hui.

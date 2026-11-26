@@ -58,5 +58,11 @@ const cj = { data: { viewer: { accounts: [{ workersInvocationsAdaptive: [
 const rc = resumer(cj);
 ok(rc.cpuParWorker.a.p99max === 12000 && rc.cpuParWorker.a.au_dessus === 50 && /🔴 a .*p99 12\.0 ms/.test(texte(rc, 1)) && /cpuTimeP99/.test(requete('c', 'd', 'e').query), '7. temps de calcul : pire p99 par worker, rouge au-dessus de 10 ms (plafond gratuit)');
 
+const cj2 = { data: { viewer: { accounts: [{ workersInvocationsAdaptive: [
+  { sum: { requests: 1000 }, quantiles: { cpuTimeP50: 2000, cpuTimeP90: 3000, cpuTimeP99: 12000, cpuTimeP999: 20000 }, dimensions: { scriptName: 'b', datetimeHour: '2026-11-22T10:00:00Z' } },
+  { sum: { requests: 100 }, quantiles: { cpuTimeP50: 9000, cpuTimeP90: 11000, cpuTimeP99: 30000, cpuTimeP999: 40000 }, dimensions: { scriptName: 'b', datetimeHour: '2026-11-22T11:00:00Z' } },
+] }] } } };
+ok(Math.round(resumer(cj2).cpuParWorker.b.minCoupees) === 20 && /au moins 20 \(1\.82 %\) coupées/.test(texte(resumer(cj2), 1)), '8. plancher de requêtes coupées au gratuit : 1 % de 1000 + 10 % de 100 = 20');
+
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

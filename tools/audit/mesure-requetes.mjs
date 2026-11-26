@@ -37,11 +37,14 @@ export function resumer(json) {
   for (const l of lignes) {
     const d = l.dimensions || {}, s = l.sum || {}, q = l.quantiles || {};
     if (d.scriptName && q.cpuTimeP99 != null) {   /* temps de calcul par requête, en microsecondes (API) */
-      const c = cpuParWorker[d.scriptName] || (cpuParWorker[d.scriptName] = { p99max: 0, p50max: 0, requetes: 0, au_dessus: 0 });
+      const c = cpuParWorker[d.scriptName] || (cpuParWorker[d.scriptName] = { p99max: 0, p50max: 0, requetes: 0, au_dessus: 0, minCoupees: 0 });
       c.p99max = Math.max(c.p99max, Number(q.cpuTimeP99) || 0);
       c.p50max = Math.max(c.p50max, Number(q.cpuTimeP50) || 0);
       c.requetes += s.requests || 0;
       if ((Number(q.cpuTimeP99) || 0) > PLAFOND_CPU_US) c.au_dessus += s.requests || 0;
+      /* plancher du nombre de requêtes qui dépasseraient 10 ms : p90 > 10 ms ⇒ ≥ 10 %, sinon p99 ⇒ ≥ 1 %, sinon p999 ⇒ ≥ 0,1 % */
+      const part = (Number(q.cpuTimeP90) || 0) > PLAFOND_CPU_US ? 0.10 : (Number(q.cpuTimeP99) || 0) > PLAFOND_CPU_US ? 0.01 : (Number(q.cpuTimeP999) || 0) > PLAFOND_CPU_US ? 0.001 : 0;
+      c.minCoupees += (s.requests || 0) * part;
     }
     const n = s.requests || 0;
     const jour = String(d.datetimeHour || d.date || '').slice(0, 10);
@@ -66,7 +69,7 @@ export function requete(compte, depuis, jusqua) {
       viewer { accounts(filter: { accountTag: $compte }) {
         workersInvocationsAdaptive(limit: 5000, filter: { datetime_geq: $depuis, datetime_leq: $jusqua }) {
           sum { requests subrequests errors }
-          quantiles { cpuTimeP50 cpuTimeP99 }
+          quantiles { cpuTimeP50 cpuTimeP90 cpuTimeP99 cpuTimeP999 }
           dimensions { scriptName datetimeHour }
         } } } }`,
     variables: { compte, depuis, jusqua },
@@ -93,7 +96,7 @@ export function texte(r, jours) {
   const cpu = Object.entries(r.cpuParWorker || {}).sort((a, b) => b[1].p99max - a[1].p99max);
   if (cpu.length) {
     out.push(`\nTemps de calcul par requête (gratuit : ${PLAFOND_CPU_US / 1000} ms ; pire heure du p99, sur ${jours} jour(s)) :`);
-    for (const [w, c] of cpu) out.push(`  ${c.p99max > PLAFOND_CPU_US ? '🔴' : c.p99max > PLAFOND_CPU_US * 0.7 ? '🟠' : '✅'} ${w.padEnd(26)} p50 ${(c.p50max / 1000).toFixed(1)} ms · p99 ${(c.p99max / 1000).toFixed(1)} ms · ${c.requetes} requêtes`);
+    for (const [w, c] of cpu) out.push(`  ${c.p99max > PLAFOND_CPU_US ? '🔴' : c.p99max > PLAFOND_CPU_US * 0.7 ? '🟠' : '✅'} ${w.padEnd(26)} p50 ${(c.p50max / 1000).toFixed(1)} ms · p99 ${(c.p99max / 1000).toFixed(1)} ms · ${c.requetes} requêtes · au moins ${Math.round(c.minCoupees)} (${(100 * c.minCoupees / Math.max(1, c.requetes)).toFixed(2)} %) coupées au gratuit`);
   }
   if (r.heuresChargees.length) { out.push('\nheures les plus chargées (requêtes) :'); for (const [h, n] of r.heuresChargees) out.push(`  ${h}h UTC : ${n}`); }
   return out.join('\n');

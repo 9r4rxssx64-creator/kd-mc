@@ -133,12 +133,11 @@ export function texte(r, jours) {
       : `❌ Lecture impossible : ${r.erreur}`;
   }
   const out = [];
-  out.push(`Requêtes Workers sur ${jours} jour(s) — ${r.lignes} lignes lues (plafond gratuit : ${PLAFOND_REQUETES} requêtes/jour, tout le compte)\n`);
-  out.push('jour        worker                          requêtes');
-  out.push('───────────────────────────────────────────────────────');
+  out.push(`Requêtes Workers sur ${jours} jour(s) — ${r.lignes} lignes lues (plafond gratuit : ${PLAFOND_REQUETES} requêtes/jour, tout le compte)\n`,
+    'jour        worker                          requêtes',
+    '───────────────────────────────────────────────────────');
   for (const t of r.tableau) out.push(`${t.jour}  ${t.worker.padEnd(30)}  ${String(t.n).padStart(8)}`);
-  out.push('');
-  out.push(...sectionJours(r), ...sectionCalcul(r), ...sectionCpu(r, jours));
+  out.push('', ...sectionJours(r), ...sectionCalcul(r), ...sectionCpu(r, jours));
   if (r.heuresChargees.length) { out.push('\nheures les plus chargées (requêtes) :'); for (const [h, n] of r.heuresChargees) out.push(`  ${h}h UTC : ${n}`); }
   return out.join('\n');
 }

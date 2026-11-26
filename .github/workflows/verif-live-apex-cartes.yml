@@ -1,0 +1,50 @@
+name: Vérif RÉELLE — Apex AI : la porte des cartes ✅ (connecté en admin, lecture seule)
+
+# Kevin 26.11.2026 : « Vérifie toujours tout, ne laisse rien non vérifié, jamais. » Cause réelle du 26.11 (pc-config 3183) : la porte /__admin/proposer répondait 500 à tout admin ;
+# ses contrôles étaient verts mais sans session. Le code admin vient du SECRET (empreinte, jamais écrite ni journalisée) et part au DOMAINE (/__admin/login), comme quand Kevin le tape.
+# LECTURE SEULE : la porte ne fait que PROPOSER ; ce robot n'appelle jamais /__javis/agir et n'utilise qu'une personne inventée. Nombres et verdicts seulement (dépôt public).
+# À la main seulement, jamais de cron.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verif-live-apex-cartes
+  cancel-in-progress: false
+
+jobs:
+  verif:
+    runs-on: ubuntu-24.04   # interrupteur Lenovo (garde test:runner-interrupteur)
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cartes d'Apex AI, connecté en admin, sur le vrai domaine — nombres seulement
+        id: robot
+        env:
+          KDMC_ADMIN_PIN_SHA256: ${{ secrets.APEX_ADMIN_PIN_SHA256 }}
+        # `pipefail` OBLIGATOIRE : sans lui le code de sortie est celui de `tee`.
+        shell: bash -euo pipefail {0}
+        run: |
+          set +e
+          node tests/verif-live-apex-cartes.mjs 2>&1 | tee /tmp/verif-apex-cartes.log
+          echo "rc=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Rapport lisible depuis l'agent (annotations)
+        if: always()
+        shell: bash
+        run: |
+          [ -s /tmp/verif-apex-cartes.log ] || { echo "::notice title=Vérif Apex cartes::(pas de journal)"; exit 0; }
+          msg=$(grep -aE '✅|❌|===' /tmp/verif-apex-cartes.log | grep -avE 'code admin|pinhash|PIN_HASH' | sed -E 's/[0-9a-f]{16,}/…/g' | sed -e 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          echo "::notice title=Vérif Apex cartes::${msg}"
+
+      - name: Verdict
+        if: always()
+        run: test "${{ steps.robot.outputs.rc }}" = "0"

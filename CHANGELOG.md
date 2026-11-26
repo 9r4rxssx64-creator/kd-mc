@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Robot « Apex AI : cartes ✅ » — 26.11.2026 (apex-cloud, règle de Kevin 26.11 « ne laisse rien non vérifié »)
+- Nouveau robot public `verif-live-apex-cartes` (registre `apex-cartes`) : connecté en admin comme Kevin, il appelle pour de vrai la porte `/__admin/proposer` (proposition signée ou refus clair, jamais un 5xx ; fiche inconnue → « introuvable » ; action hors liste → 400 ; porte fermée sans session) et prouve qu'il n'appelle jamais `/__javis/agir`. Lecture seule, personne inventée, nombres seulement. Essai local (routeur du dépôt dans le processus) : vert ; sur l'ancien routeur (`ctx is not defined`) : rouge ; `SABOTAGE=500` : rouge (garde `test:verif-live-apex-cartes-sabotage`, dans `test:ci`).
+
 ## Routeur — porte /__admin/proposer réparée — 26.11.2026 (apex-cloud, mesure pc-config 3183)
 - Mesure réelle sur Apex AI 13.4.418 : toute demande de carte (commentaire, info, champ, message à une personne) répondait « le domaine répond 500 ». Cause : `handleAdmin` utilisait `ctx` sans le recevoir (`ReferenceError: ctx is not defined`, ligne de la route `/__admin/proposer`). Corrigé : `handleAdmin(request, url, env, ctx)` ; l'appel lui passe `ctx`. Rien d'autre ne change : la porte ne fait toujours que proposer, rien ne s'écrit sans le ✅ de Kevin.
 - Test : `proposer-admin.test.mjs` 13 contrôles (3 nouveaux appellent la porte AVEC une session admin simulée : proposition signée, fiche inconnue → « introuvable », action hors liste → 400) ; rouges (3) sur l'ancien routeur, verts (13) avec le correctif. Recherche des autres variables non définies dans `worker.js` : aucune.

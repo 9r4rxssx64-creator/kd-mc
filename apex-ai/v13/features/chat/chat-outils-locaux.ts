@@ -56,8 +56,20 @@ export function ressembleAOuvrir(texte: string): boolean {
    INVENTAIT « Modification appliquée : data/team.json… commit automatisé » ; « écris à … dans CMCteams » : « Message envoyé » — FAUX). Les modèles gratuits ne choisissent pas les outils de façon fiable :
    une demande NETTE est donc routée ICI, sans modèle, vers la carte « ✅ Confirmer / ✖ Annuler » du domaine ; une demande d'écriture PAS assez nette reçoit une réponse locale qui dit comment la formuler
    (jamais une réponse inventée par le modèle). ───────── */
-const NOM = "([\\p{L}][\\p{L}'’ -]{1,60}?)";
-const FICHE_DE = "\\s+(?:à|a|sur|dans)\\s+la\\s+fiche\\s+(?:de\\s+|d['’]\\s*|du\\s+|des\\s+)";
+/* Les motifs sont écrits en String.raw (une seule barre oblique inverse) et assemblés par morceaux courts : chacun reste lisible et sous le seuil de complexité du contrôle qualité. */
+const POLI = String.raw`^(?:peux-tu\s+|pourrais-tu\s+)?`;
+const NOM = String.raw`([\p{L}][\p{L}'’ -]{1,60}?)`;
+const FICHE_DE = String.raw`\s+(?:à|a|sur|dans)\s+la\s+fiche\s+(?:de\s+|d['’]\s*|du\s+|des\s+)`;
+const VERBE_AJOUT = String.raw`(\p{L}+)`;   // le verbe est lu ici puis contrôlé dans VERBES_AJOUT / VERBES_CHAMP (une liste de mots, pas une alternation dans le motif)
+const VERBES_AJOUT = new Set(['ajoute', 'ajouter', 'mets', 'mettre', 'note', 'noter']);
+const VERBES_CHAMP = new Set(['corrige', 'corriger', 'modifie', 'modifier', 'change', 'changer', 'mets', 'mettre', 'renseigne', 'renseigner']);
+const RE_COMMENTAIRE_AVANT = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le|un|ce)\s+commentaire\s*[:,-]?\s*(.+)${FICHE_DE}${NOM}\s*[.!?]*$`, 'iu');
+const RE_COMMENTAIRE_APRES = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le|un|ce)\s+commentaire${FICHE_DE}${NOM}\s*:\s*(\S[\s\S]{0,400})$`, 'iu');
+const TYPES_INFO_RE = String.raw`(num[ée]ro de t[ée]l[ée]phone|t[ée]l[ée]phone|e-?mail|mail|adresse|site web|site|profession|loisir)`;
+const RE_INFO = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le\s+|la\s+|l['’]\s*|un\s+|une\s+)?${TYPES_INFO_RE}\s*[:,-]?\s*(.+)${FICHE_DE}${NOM}\s*[.!?]*$`, 'iu');
+const CHAMPS_RE = String.raw`(date de naissance|lieu de naissance|date de d[ée]c[èe]s|lieu de d[ée]c[èe]s|m[ée]tier|sexe)`;
+const RE_CHAMP = new RegExp(String.raw`${POLI}(\p{L}+)\s+(?:la\s+|le\s+|l['’]\s*)?${CHAMPS_RE}\s+(?:de\s+|d['’]\s*|du\s+)${NOM}\s*(?::|=|\s+à\s+|\s+a\s+|\s+en\s+|\s+par\s+)\s*(\S[\s\S]{0,120})$`, 'iu');
+const RE_CORRECTION = /^(corrige|corriger|modifie|modifier|change|changer)$/i;
 const nettoyerValeur = (v: string): string => v.trim().replace(/^[«"“'‘]\s*/, '').replace(/\s*[»"”'’]$/, '').trim();
 const dateIso = (v: string): string => { const m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(v.trim()); return m ? `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}` : v.trim(); };
 
@@ -69,21 +81,37 @@ export type EcritureArbre =
 const TYPES_INFO: Record<string, string> = { 'téléphone': 'Téléphone', 'telephone': 'Téléphone', 'numéro de téléphone': 'Téléphone', 'e-mail': 'E-mail', 'email': 'E-mail', 'mail': 'E-mail', 'adresse': 'Adresse postale', 'site web': 'Site web', 'site': 'Site web', 'profession': 'Profession détaillée', 'loisir': 'Loisir' };
 const CHAMPS_FICHE: Record<string, string> = { 'date de naissance': 'naissance.date', 'lieu de naissance': 'naissance.lieu', 'date de décès': 'deces.date', 'date de deces': 'deces.date', 'lieu de décès': 'deces.lieu', 'lieu de deces': 'deces.lieu', 'métier': 'metier', 'metier': 'metier', 'sexe': 'sexe' };
 
+
+function commentaireArbre(t: string): EcritureArbre | null {
+  const a = RE_COMMENTAIRE_AVANT.exec(t);
+  const m = a ?? RE_COMMENTAIRE_APRES.exec(t);
+  if (!m?.[1] || !m[2] || !m[3] || !VERBES_AJOUT.has(m[1].toLowerCase())) return null;
+  const [texteBrut, personne] = a ? [m[2], m[3]] : [m[3], m[2]];   // forme « …commentaire "texte" à la fiche de X » ou « …commentaire à la fiche de X : texte »
+  const x = nettoyerValeur(texteBrut);
+  return x ? { action: 'arbre_commentaire', champs: { personne: personne.trim(), texte: x } } : null;
+}
+
+function infoArbre(t: string): EcritureArbre | null {
+  const m = RE_INFO.exec(t);
+  if (!m?.[1] || !m[2] || !m[3] || !m[4] || !VERBES_AJOUT.has(m[1].toLowerCase())) return null;
+  const type = TYPES_INFO[m[2].toLowerCase()];
+  const v = nettoyerValeur(m[3]);
+  return type && v ? { action: 'arbre_info', champs: { personne: m[4].trim(), type, valeur: v } } : null;
+}
+
+function champArbre(t: string): EcritureArbre | null {
+  const m = RE_CHAMP.exec(t);
+  if (!m?.[1] || !m[2] || !m[3] || !m[4] || !VERBES_CHAMP.has(m[1].toLowerCase())) return null;
+  const champ = CHAMPS_FICHE[m[2].toLowerCase()];
+  const v = nettoyerValeur(m[4]).replace(/[.!?]+$/, '');
+  if (!champ || !v) return null;
+  return { action: 'arbre_champ', champs: { personne: m[3].trim(), champ, valeur: champ.endsWith('.date') ? dateIso(v) : v, remplacer: RE_CORRECTION.test(m[1]) } };
+}
+
 /** PURE : « ajoute le commentaire "…" à la fiche de X », « ajoute le téléphone … à la fiche de X », « corrige la date de naissance de X : 16/06/1880 » → l'action à PROPOSER, sinon null. */
 export function demandeEcritureArbre(texte: string): EcritureArbre | null {
   const t = String(texte ?? '').trim().slice(0, 900);
-  let m = new RegExp(`^(?:peux-tu\\s+|pourrais-tu\\s+)?(?:ajoute|ajouter|mets|mettre|note|noter)\\s+(?:le|un|ce)\\s+commentaire\\s*[:,-]?\\s*(.+)${FICHE_DE}${NOM}\\s*[.!?]*$`, 'iu').exec(t);
-  if (!m) { const m2 = new RegExp(`^(?:peux-tu\\s+|pourrais-tu\\s+)?(?:ajoute|ajouter|mets|mettre|note|noter)\\s+(?:le|un|ce)\\s+commentaire${FICHE_DE}${NOM}\\s*:\\s*(\\S[\\s\\S]{0,400})$`, 'iu').exec(t); const x2 = m2?.[2] ? nettoyerValeur(m2[2]) : ''; if (m2?.[1] && x2) return { action: 'arbre_commentaire', champs: { personne: m2[1].trim(), texte: x2 } }; }
-  if (m?.[1] && m[2]) { const x = nettoyerValeur(m[1]); return x ? { action: 'arbre_commentaire', champs: { personne: m[2].trim(), texte: x } } : null; }
-  m = new RegExp(`^(?:peux-tu\\s+|pourrais-tu\\s+)?(?:ajoute|ajouter|mets|mettre|note|noter)\\s+(?:le\\s+|la\\s+|l['’]\\s*|un\\s+|une\\s+)?(num[ée]ro de t[ée]l[ée]phone|t[ée]l[ée]phone|e-?mail|mail|adresse|site web|site|profession|loisir)\\s*[:,-]?\\s*(.+)${FICHE_DE}${NOM}\\s*[.!?]*$`, 'iu').exec(t);
-  if (m?.[1] && m[2] && m[3]) { const type = TYPES_INFO[m[1].toLowerCase().replace('é', 'é')] ?? TYPES_INFO[m[1].toLowerCase()]; const v = nettoyerValeur(m[2]); return type && v ? { action: 'arbre_info', champs: { personne: m[3].trim(), type, valeur: v } } : null; }
-  m = new RegExp(`^(?:peux-tu\\s+|pourrais-tu\\s+)?(corrige|corriger|modifie|modifier|change|changer|mets|mettre|renseigne|renseigner)\\s+(?:la\\s+|le\\s+|l['’]\\s*)?(date de naissance|lieu de naissance|date de d[ée]c[èe]s|lieu de d[ée]c[èe]s|m[ée]tier|sexe)\\s+(?:de\\s+|d['’]\\s*|du\\s+)${NOM}\\s*(?::|=|\\s+à\\s+|\\s+a\\s+|\\s+en\\s+|\\s+par\\s+)\\s*(\\S[\\s\\S]{0,120})$`, 'iu').exec(t);
-  if (m?.[1] && m[2] && m[3] && m[4]) {
-    const champ = CHAMPS_FICHE[m[2].toLowerCase()]; const v = nettoyerValeur(m[4]).replace(/[.!?]+$/, '');
-    if (!champ || !v) return null;
-    return { action: 'arbre_champ', champs: { personne: m[3].trim(), champ, valeur: champ.endsWith('.date') ? dateIso(v) : v, remplacer: /^(corrige|corriger|modifie|modifier|change|changer)$/i.test(m[1]) } };
-  }
-  return null;
+  return commentaireArbre(t) ?? infoArbre(t) ?? champArbre(t);
 }
 
 /** PURE : « écris à X dans CMCteams (ou la light) : <message> » → { nom, texte }, sinon null. « CMCteams » (ou la light) dit ET un séparateur (« : », « que », « - ») : jamais une phrase ordinaire. */
@@ -94,16 +122,26 @@ export function demandeMessageDirect(texte: string): { nom: string; texte: strin
   return msg ? { nom: m[1].trim(), texte: msg } : null;
 }
 
+const RE_PREMIER_VERBE = /^(?:peux-tu\s+|pourrais-tu\s+)?(\p{L}+)/iu;
+const VERBES_ECRITURE_ARBRE = new Set(['ajoute', 'ajouter', 'corrige', 'corriger', 'modifie', 'modifier', 'complète', 'complete', 'compléter', 'completer', 'renseigne', 'renseigner', 'relie', 'relier', 'change', 'changer', 'mets', 'mettre', 'note', 'noter', 'supprime', 'supprimer', 'efface', 'effacer', 'renomme', 'renommer', 'fusionne', 'fusionner']);
+const VERBES_ENVOI = new Set(['écris', 'ecris', 'écrire', 'ecrire', 'envoie', 'envoyer', 'dis', 'dire', 'transmets']);
+const VERBES_ENVOI_MESSAGE = new Set(['envoie', 'envoyer', 'écris', 'ecris', 'transmets']);
+const RE_VERS_APPLI = /\b(?:cmc[\s-]?teams?|la\s+light|apex[\s-]?chat)\b/i;
+const RE_A_QUELQU_UN = /^\s+(?:à|a)(?=\s)/;
+const RE_UN_MESSAGE = /^(?:-moi)?\s+(?:un|le|ce)\s+(?:message|mot|sms|mail|e-?mail)\s+(?:à|a)(?=\s)/i;
+const AIDE_ARBRE = '🌳 Pour écrire dans l\'arbre, dis-le ainsi (je te montre une carte, rien n\'est écrit avant ton « ✅ Confirmer ») :\n• « ajoute le commentaire "…" à la fiche de Prénom Nom »\n• « ajoute le téléphone 06… à la fiche de Prénom Nom »\n• « corrige la date de naissance de Prénom Nom : 16/06/1880 »\nJe n\'ai rien modifié.';
+const AIDE_MESSAGE = '✉️ Pour écrire à quelqu\'un, dis où, ainsi : « écris à Prénom Nom dans CMCteams : ton message » ou « écris à Prénom Nom sur Apex Chat : ton message ». Je te montre une carte (CMCteams) ou un bouton (Apex Chat), rien n\'est envoyé avant ton « ✅ Confirmer » ou ton « Envoyer ». Je n\'ai rien envoyé.';
+
 /** PURE : une demande d'ÉCRITURE dans l'arbre ou de message direct qui n'a pas été assez nette pour la carte : on le dit (jamais un « c'est fait » inventé par le modèle). */
 export function aideEcriture(texte: string): string | null {
   const t = String(texte ?? '').trim().slice(0, 400);
-  if (/^(?:peux-tu\s+|pourrais-tu\s+)?(?:ajoute|ajouter|corrige|corriger|modifie|modifier|compl[èe]te|compl[ée]ter|renseigne|renseigner|relie|relier|change|changer|mets|mettre|note|noter|supprime|supprimer|efface|effacer|renomme|renommer|fusionne|fusionner)(?![-\s]*moi\b)\b[\s\S]*\b(?:fiche|arbre)\b/iu.test(t)) {
-    return '🌳 Pour écrire dans l\'arbre, dis-le ainsi (je te montre une carte, rien n\'est écrit avant ton « ✅ Confirmer ») :\n• « ajoute le commentaire "…" à la fiche de Prénom Nom »\n• « ajoute le téléphone 06… à la fiche de Prénom Nom »\n• « corrige la date de naissance de Prénom Nom : 16/06/1880 »\nJe n\'ai rien modifié.';
-  }
-  if (/^(?:peux-tu\s+|pourrais-tu\s+)?(?:écris|ecris|écrire|ecrire|envoie|envoyer|dis|dire|transmets)\s+(?:à|a)(?=\s)[\s\S]*\b(?:cmc[\s-]?teams?|la\s+light|apex[\s-]?chat)\b/iu.test(t)
-    || /^(?:peux-tu\s+|pourrais-tu\s+)?(?:envoie|envoyer|écris|ecris|transmets)(?:-moi)?\s+(?:un|le|ce)\s+(?:message|mot|sms|mail|e-?mail)\s+(?:à|a)(?=\s)/iu.test(t)) {
-    return '✉️ Pour écrire à quelqu\'un, dis où, ainsi : « écris à Prénom Nom dans CMCteams : ton message » ou « écris à Prénom Nom sur Apex Chat : ton message ». Je te montre une carte (CMCteams) ou un bouton (Apex Chat), rien n\'est envoyé avant ton « ✅ Confirmer » ou ton « Envoyer ». Je n\'ai rien envoyé.';
-  }
+  const m = RE_PREMIER_VERBE.exec(t);
+  if (!m?.[1]) return null;
+  const verbe = m[1].toLowerCase();
+  const reste = t.slice(m[0].length);
+  if (VERBES_ECRITURE_ARBRE.has(verbe) && !/^[-\s]*moi\b/i.test(reste) && /\b(?:fiche|arbre)\b/i.test(reste)) return AIDE_ARBRE;
+  if (VERBES_ENVOI.has(verbe) && RE_A_QUELQU_UN.test(reste) && RE_VERS_APPLI.test(reste)) return AIDE_MESSAGE;
+  if (VERBES_ENVOI_MESSAGE.has(verbe) && RE_UN_MESSAGE.test(reste)) return AIDE_MESSAGE;
   return null;
 }
 

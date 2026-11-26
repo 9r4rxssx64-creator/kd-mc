@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI 13.4.419 — 26.11.2026 (apex-cloud, points qualité de pont-check 3269)
+- Mêmes réponses, code simplifié dans `features/chat/chat-outils-locaux.ts` : la fonction des écritures d'arbre est coupée en trois (commentaire, information, champ), les motifs sont courts et en `String.raw`, les listes de verbes sortent des expressions régulières (contrôle de la complexité cognitive 21 → petites fonctions, et des deux expressions trop complexes de l'aide d'écriture). Les 83 tests du chat et de la parité passent sans changement.
+
 ## Robot « Apex AI : cartes ✅ » — 26.11.2026 (apex-cloud, règle de Kevin 26.11 « ne laisse rien non vérifié »)
 - Nouveau robot public `verif-live-apex-cartes` (registre `apex-cartes`) : connecté en admin comme Kevin, il appelle pour de vrai la porte `/__admin/proposer` (proposition signée ou refus clair, jamais un 5xx ; fiche inconnue → « introuvable » ; action hors liste → 400 ; porte fermée sans session) et prouve qu'il n'appelle jamais `/__javis/agir`. Lecture seule, personne inventée, nombres seulement. Essai local (routeur du dépôt dans le processus) : vert ; sur l'ancien routeur (`ctx is not defined`) : rouge ; `SABOTAGE=500` : rouge (garde `test:verif-live-apex-cartes-sabotage`, dans `test:ci`).
 

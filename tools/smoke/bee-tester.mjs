@@ -86,6 +86,17 @@ if (liens.length) {
     console.log(`ouvrir : ${h} · vue=${vue} · tri=${tri}`);
   }
 }
+/* Recherche web : le domaine rend le résultat à l'IA sous forme de TEXTE (jamais une carte) ; la seule trace côté réponse est le NOM de l'outil
+ * (`outils: ['rechercher', …]`). Signal « web » = l'outil de recherche a servi ET la réponse n'est pas vide. Il ne distingue pas web / encyclopédie :
+ * la preuve se fait avec une question qui ne se trouve que sur le web. Journal public : un NOMBRE, jamais la question ni la réponse. */
+const outilsUtilises = Array.isArray(q.j.outils) ? q.j.outils.filter((o) => /^[a-z_]{1,32}$/.test(String(o))) : [];
+if (outilsUtilises.includes('rechercher') && texte.length > 0) {
+  parType.web = 1;
+  resume = Object.keys(parType).sort((a, b) => a.localeCompare(b)).map((t) => `${t}×${parType[t]}`).join(' ');
+  console.log(`recherche web : outil « rechercher » utilisé, réponse de ${texte.length} caractères`);
+}
+const chat = cartes.find((c) => c && c.t === 'apex_chat');
+if (chat) console.log(`apex_chat : ${Array.isArray(chat.messages) ? chat.messages.length : 0} message(s) prêt(s) · rien n'est envoyé (Kevin touche pour valider)`);
 const liste = cartes.find((c) => c && c.t === 'liste_comptes');
 if (liste) console.log(`liste_comptes : ${Array.isArray(liste.lignes) ? liste.lignes.length : 0} lignes · total ${Number(liste.total) || 0} · avec identifiant SBM ${Number(liste.avec_matricule) || 0}`);
 let attendOk = true;

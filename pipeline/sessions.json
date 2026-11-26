@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-11-19",
+  "maj": "2026-11-26",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -461,8 +461,8 @@
       "branche": "claude/persona-personnage-javis-hqd55e",
       "sujet": "Bee (mascotte Lingua) comme assistant de Kevin : widget, app installable javis.kd-mc.com, voix + lip-sync",
       "surfaces": [],
-      "etat": "actif",
-      "maj": "2026-11-19",
+      "etat": "v1.42 prête : bras marionnette, garde arbre, bee-tester web/apex_chat ; reste publier + preuves réelles",
+      "maj": "2026-11-26",
       "attend_kevin": "Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",
       "note": "19.11 (javis-bee) : Bee v1.41 parité lignes 1·3·6 (lien_externe, comptes_cmcteams, appeler) codées + gardes ; reste 2 (moteurs web), 4 (arbre-cloud), 5 (apex-cloud, cloud-installer)"

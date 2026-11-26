@@ -49,7 +49,7 @@
      ligne est passee. C'est exactement le defaut que j'ai mesure sur Lingua le meme
      jour (message m085 aux autres sessions) : je me l'applique a moi-meme.
      Une ligne, aucun effet visible. L'audit LIVE du domaine la lit tout seul. */
-  var JAVIS_VER = 'v1.41';
+  var JAVIS_VER = 'v1.42';
   try { window.JAVIS_VER = JAVIS_VER; } catch (e) {}
   /* d'où ce fichier vient : la mise à jour relit CETTE adresse pour savoir quelle Bee est servie (document.currentScript
      n'existe qu'au chargement du fichier, pas plus tard) */
@@ -3267,7 +3267,7 @@
            Les bras font des GESTES (un bras puis l'autre se lève, retombe, comme quelqu'un qui explique), les jambes se
            dandinent d'un pied sur l'autre, les antennes rebondissent sur chaque syllabe, plus fort quand la voix monte. */
         var ge = Math.max(0, S1(t * 2.4 + (o.cote < 0 ? 0 : Math.PI)));           /* ~0,4 geste/s, un bras après l'autre */
-        if (ty === 'bras') return 6 + (10 + 14 * NIV) * ge * ge + 4 * S1(t * 7.5 + alt) * (0.4 + NIV);
+        if (ty === 'bras') return 1 + (10 + 14 * NIV) * ge * ge + 4 * S1(t * 7.5 + alt) * (0.4 + NIV);
         if (ty === 'jambe') return 6 * S1(t * 2.6 + alt) + 2 * NIV * S1(t * 9 + alt);   /* dandinement : un pied puis l'autre */
         if (ty === 'oreille' || ty === 'antenne') return r + (6 + 9 * NIV) * S1(t * 7.5 + ph) + 5 * NIV * S1(t * 13 + ph);
         if (ty === 'queue') return r + 10 * NIV * S1(t * 5.5);

@@ -109,6 +109,12 @@
 - Deux requêtes lisaient toute la table des comptes à chaque appel (494 lignes × 936 appels et 522 lignes × 856 appels en 7 jours) : profil public (identifiant d'abord, puis pseudo) et nettoyage des comptes de test (trois recherches par index, migration 0029 `idx_users_source`).
 - Test sur le vrai schéma : `messaging-app/tests/unit/requetes-sans-balayage.test.js` (3 rouges sur les anciennes requêtes).
 
+## Bee v1.42 — bras de la marionnette qui parle + garde de l'arbre réparé (2026-11-26)
+- Quand Bee parle, le bras bouge maintenant d'au moins 10° (avant 5,1°, sous le seuil de 6° du garde `test:bee-corps` G) : la base du geste « parle » passe de 6 à 1, les bornes des bras ne changent pas (les élargir retournait des triangles dans la pose danse). Même correction dans `lingua/marionnette.js` (copie identique).
+- Garde `test:bee-arbre-navigateur` (5 / 5b) : le test cliquait l'onglet caché « À confirmer » au lieu du bouton de la carte ; il clique maintenant `.javis-carte-ok` / `.javis-carte-non` (33 OK / 0 KO ; sabotage avec l'ancien widget : 31 OK / 2 KO).
+- Cache du service worker `javis-v1.42` (suit `JAVIS_VER`), pastille v1.42 sur les pages Javis et l'arbre.
+- Tests : `test:marionnette` 105 / 0, `test:bee-corps` 27 / 0 (rouge sans le correctif : 26 / 1).
+
 ## Bee v1.41 — parité : ouvrir une page, liste des comptes CMCteams, appeler (2026-11-19)
 - **19.11 (javis-bee, correctif de budget)** : le lot parité ne part plus que sur ses mots (`RE_PARITE` resserré) et les textes d'outils sont plus courts : la demande « TOUT » repasse sous 8000 jetons (8470 avant, déploiement public rouge). Garde : `bee-allege.test.mjs` (4a, 4a2, plafond « TOUT »).
 - **19.11 (javis-bee, Kevin 18.11 « parité sur tout »)** : trois outils, tous derrière le toucher de Kevin et sans donnée de personne envoyée à l'IA : `lien_externe` (bouton « Ouvrir », https seulement), `comptes_cmcteams` (noms + identifiant SBM, carte fabriquée par le domaine, bouton Copier), `appeler` (bouton 📞 `tel:`). Interrupteur `BEE_PARITE=0`. Gardes `test:bee-parite-outils` 29/0, `test:bee-parite` 76/0. Cache `javis-v1.41`.

@@ -1,4 +1,4 @@
-name: Vérif RÉELLE — Apex AI : la porte des cartes ✅ (connecté en admin, lecture seule)
+name: Vérif RÉELLE — Apex AI, la porte des cartes ✅ (connecté en admin, lecture seule)
 
 # Kevin 26.11.2026 : « Vérifie toujours tout, ne laisse rien non vérifié, jamais. » Cause réelle du 26.11 (pc-config 3183) : la porte /__admin/proposer répondait 500 à tout admin ;
 # ses contrôles étaient verts mais sans session. Le code admin vient du SECRET (empreinte, jamais écrite ni journalisée) et part au DOMAINE (/__admin/login), comme quand Kevin le tape.

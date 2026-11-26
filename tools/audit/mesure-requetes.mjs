@@ -25,6 +25,29 @@ export const PLAFOND_CPU_US = 10000;      /* plan gratuit Workers : 10 ms de cal
 export const PLAFOND_REQUETES = 100000;   /* plan gratuit Workers : 100 000 requêtes / jour / compte */
 
 /* ── pur : mise en forme d'une réponse (testable sans réseau) ─────────────────────────────────────── */
+const num = (v) => Number(v) || 0;
+const ajoute = (o, k, v) => { o[k] = (o[k] || 0) + v; };
+const jourDe = (d) => String(d.datetimeHour || d.date || '').slice(0, 10);
+
+/** Plancher de la part de requêtes qui dépasseraient 10 ms : p90 > 10 ms ⇒ ≥ 10 %, sinon p99 ⇒ ≥ 1 %, sinon p999 ⇒ ≥ 0,1 %. */
+function partCoupee(q) {
+  if (num(q.cpuTimeP90) > PLAFOND_CPU_US) return 0.10;
+  if (num(q.cpuTimeP99) > PLAFOND_CPU_US) return 0.01;
+  return num(q.cpuTimeP999) > PLAFOND_CPU_US ? 0.001 : 0;
+}
+
+/** Temps de calcul par requête (microsecondes, API) cumulé par Worker. */
+function ajouterCpu(cpuParWorker, d, s, q) {
+  if (!d.scriptName || q.cpuTimeP99 == null) return;
+  const c = cpuParWorker[d.scriptName] || (cpuParWorker[d.scriptName] = { p99max: 0, p50max: 0, requetes: 0, au_dessus: 0, minCoupees: 0 });
+  const n = num(s.requests);
+  c.p99max = Math.max(c.p99max, num(q.cpuTimeP99));
+  c.p50max = Math.max(c.p50max, num(q.cpuTimeP50));
+  c.requetes += n;
+  if (num(q.cpuTimeP99) > PLAFOND_CPU_US) c.au_dessus += n;
+  c.minCoupees += n * partCoupee(q);
+}
+
 export function resumer(json) {
   if (!json || !json.data || !json.data.viewer) {
     const err = (json && json.errors && json.errors[0] && json.errors[0].message) || 'réponse vide';
@@ -35,28 +58,18 @@ export function resumer(json) {
   const lignes = comptes.flatMap((a) => a.workersInvocationsAdaptive || []);
   const parJour = {}, parJourWorker = {}, parHeure = {}, erreursParJour = {}, sousReqParJour = {}, cpuParWorker = {}, cpuMsParJour = {};
   for (const l of lignes) {
-    const d = l.dimensions || {}, s = l.sum || {}, q = l.quantiles || {};
-    if (d.scriptName && q.cpuTimeP99 != null) {   /* temps de calcul par requête, en microsecondes (API) */
-      const c = cpuParWorker[d.scriptName] || (cpuParWorker[d.scriptName] = { p99max: 0, p50max: 0, requetes: 0, au_dessus: 0, minCoupees: 0 });
-      c.p99max = Math.max(c.p99max, Number(q.cpuTimeP99) || 0);
-      c.p50max = Math.max(c.p50max, Number(q.cpuTimeP50) || 0);
-      c.requetes += s.requests || 0;
-      if ((Number(q.cpuTimeP99) || 0) > PLAFOND_CPU_US) c.au_dessus += s.requests || 0;
-      /* plancher du nombre de requêtes qui dépasseraient 10 ms : p90 > 10 ms ⇒ ≥ 10 %, sinon p99 ⇒ ≥ 1 %, sinon p999 ⇒ ≥ 0,1 % */
-      const part = (Number(q.cpuTimeP90) || 0) > PLAFOND_CPU_US ? 0.10 : (Number(q.cpuTimeP99) || 0) > PLAFOND_CPU_US ? 0.01 : (Number(q.cpuTimeP999) || 0) > PLAFOND_CPU_US ? 0.001 : 0;
-      c.minCoupees += (s.requests || 0) * part;
-    }
-    const n = s.requests || 0;
-    { const j0 = String(d.datetimeHour || d.date || '').slice(0, 10); if (j0) cpuMsParJour[j0] = (cpuMsParJour[j0] || 0) + (Number(s.cpuTimeUs) || 0) / 1000; }
-    const jour = String(d.datetimeHour || d.date || '').slice(0, 10);
+    const d = l.dimensions || {}, s = l.sum || {};
+    ajouterCpu(cpuParWorker, d, s, l.quantiles || {});
+    const jour = jourDe(d);
     if (!jour) continue;
-    parJour[jour] = (parJour[jour] || 0) + n;
-    erreursParJour[jour] = (erreursParJour[jour] || 0) + (s.errors || 0);
-    sousReqParJour[jour] = (sousReqParJour[jour] || 0) + (s.subrequests || 0);
-    const k = `${jour}|${d.scriptName || '?'}`;
-    parJourWorker[k] = (parJourWorker[k] || 0) + n;
+    const n = num(s.requests);
+    ajoute(cpuMsParJour, jour, num(s.cpuTimeUs) / 1000);
+    ajoute(parJour, jour, n);
+    ajoute(erreursParJour, jour, num(s.errors));
+    ajoute(sousReqParJour, jour, num(s.subrequests));
+    ajoute(parJourWorker, `${jour}|${d.scriptName || '?'}`, n);
     const h = String(d.datetimeHour || '').slice(0, 13);
-    if (h) parHeure[h] = (parHeure[h] || 0) + n;
+    if (h) ajoute(parHeure, h, n);
   }
   const tableau = Object.entries(parJourWorker).map(([k, n]) => { const [jour, worker] = k.split('|'); return { jour, worker, n }; })
     .sort((a, b) => a.jour.localeCompare(b.jour) || b.n - a.n);
@@ -77,6 +90,42 @@ export function requete(compte, depuis, jusqua) {
   };
 }
 
+/** Icône d'un niveau : rouge au plafond, orange dès 70 %, vert sinon. */
+function icone(valeur, plafond) {
+  if (valeur >= plafond) return '🔴';
+  return valeur >= plafond * 0.7 ? '🟠' : '✅';
+}
+const parCle = (a, b) => a[0].localeCompare(b[0]);
+
+function sectionJours(r) {
+  const out = [];
+  for (const [jour, n] of Object.entries(r.parJour).sort(parCle)) {
+    const pct = Math.round((n / PLAFOND_REQUETES) * 100);
+    const atteint = n >= PLAFOND_REQUETES ? ' — PLAFOND ATTEINT : 429 pour tout le monde jusqu\'à minuit UTC' : '';
+    out.push(`${icone(n, PLAFOND_REQUETES)} ${jour} : ${n} requêtes (${pct} % du plafond) · ${r.sousReqParJour[jour] || 0} sous-requêtes · ${r.erreursParJour[jour] || 0} erreurs${atteint}`);
+  }
+  return out;
+}
+
+function sectionCalcul(r) {
+  const jc = Object.entries(r.cpuMsParJour || {}).filter(([, v]) => v > 0).sort(parCle);
+  if (!jc.length) return [];
+  const out = ['\nCalcul total par jour (plan payant : 30 M ms/mois inclus ≈ 1 M ms/jour) :'];
+  for (const [j, v] of jc) out.push(`  ${j} : ${Math.round(v)} ms (${(100 * v / 1000000).toFixed(0)} % de la part quotidienne)`);
+  return out;
+}
+
+function sectionCpu(r, jours) {
+  const cpu = Object.entries(r.cpuParWorker || {}).sort((a, b) => b[1].p99max - a[1].p99max);
+  if (!cpu.length) return [];
+  const out = [`\nTemps de calcul par requête (gratuit : ${PLAFOND_CPU_US / 1000} ms ; pire heure du p99, sur ${jours} jour(s)) :`];
+  for (const [w, c] of cpu) {
+    const part = (100 * c.minCoupees / Math.max(1, c.requetes)).toFixed(2);
+    out.push(`  ${icone(c.p99max, PLAFOND_CPU_US)} ${w.padEnd(26)} p50 ${(c.p50max / 1000).toFixed(1)} ms · p99 ${(c.p99max / 1000).toFixed(1)} ms · ${c.requetes} requêtes · au moins ${Math.round(c.minCoupees)} (${part} %) coupées au gratuit`);
+  }
+  return out;
+}
+
 export function texte(r, jours) {
   if (!r.ok) {
     return r.droit
@@ -89,21 +138,7 @@ export function texte(r, jours) {
   out.push('───────────────────────────────────────────────────────');
   for (const t of r.tableau) out.push(`${t.jour}  ${t.worker.padEnd(30)}  ${String(t.n).padStart(8)}`);
   out.push('');
-  for (const [jour, n] of Object.entries(r.parJour).sort()) {
-    const pct = Math.round((n / PLAFOND_REQUETES) * 100);
-    const ico = n >= PLAFOND_REQUETES ? '🔴' : n >= PLAFOND_REQUETES * 0.7 ? '🟠' : '✅';
-    out.push(`${ico} ${jour} : ${n} requêtes (${pct} % du plafond) · ${r.sousReqParJour[jour] || 0} sous-requêtes · ${r.erreursParJour[jour] || 0} erreurs${n >= PLAFOND_REQUETES ? ' — PLAFOND ATTEINT : 429 pour tout le monde jusqu\'à minuit UTC' : ''}`);
-  }
-  const jc = Object.entries(r.cpuMsParJour || {}).filter(([, v]) => v > 0).sort();
-  if (jc.length) {
-    out.push('\nCalcul total par jour (plan payant : 30 M ms/mois inclus ≈ 1 M ms/jour) :');
-    for (const [j, v] of jc) out.push(`  ${j} : ${Math.round(v)} ms (${(100 * v / 1000000).toFixed(0)} % de la part quotidienne)`);
-  }
-  const cpu = Object.entries(r.cpuParWorker || {}).sort((a, b) => b[1].p99max - a[1].p99max);
-  if (cpu.length) {
-    out.push(`\nTemps de calcul par requête (gratuit : ${PLAFOND_CPU_US / 1000} ms ; pire heure du p99, sur ${jours} jour(s)) :`);
-    for (const [w, c] of cpu) out.push(`  ${c.p99max > PLAFOND_CPU_US ? '🔴' : c.p99max > PLAFOND_CPU_US * 0.7 ? '🟠' : '✅'} ${w.padEnd(26)} p50 ${(c.p50max / 1000).toFixed(1)} ms · p99 ${(c.p99max / 1000).toFixed(1)} ms · ${c.requetes} requêtes · au moins ${Math.round(c.minCoupees)} (${(100 * c.minCoupees / Math.max(1, c.requetes)).toFixed(2)} %) coupées au gratuit`);
-  }
+  out.push(...sectionJours(r), ...sectionCalcul(r), ...sectionCpu(r, jours));
   if (r.heuresChargees.length) { out.push('\nheures les plus chargées (requêtes) :'); for (const [h, n] of r.heuresChargees) out.push(`  ${h}h UTC : ${n}`); }
   return out.join('\n');
 }
@@ -150,7 +185,7 @@ export function texteZone(rz) {
       : `⚠️ Qui frappe : lecture impossible (${rz.erreur}).`;
   }
   const out = ['\nqui frappe le domaine (zone entière, par réseau d\'origine) :'];
-  for (const [jour, j] of Object.entries(rz.parJour).sort()) {
+  for (const [jour, j] of Object.entries(rz.parJour).sort(parCle)) {
     const pr = j.total ? Math.round((j.robots / j.total) * 100) : 0;
     const top = Object.entries(j.asn).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([a, n]) => `AS${a}${ASN_NUAGES.includes(Number(a)) ? ' (nuage)' : ''} ×${n}`).join(', ');
     out.push(`  ${jour} : ${j.total} réponses — 🤖 robots ${j.robots} (${pr} %) · 👤 personnes ${j.personnes} (${100 - pr} %) · réseaux : ${top}`);

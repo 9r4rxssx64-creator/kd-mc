@@ -98,7 +98,24 @@ if (outilsUtilises.includes('rechercher') && texte.length > 0) {
 /* Diagnostic (journal public : seulement le NOM de l'IA et une catégorie fermée, jamais le texte de l'erreur, la question ni la réponse).
  * Sert à savoir POURQUOI aucune IA « à outils » n'a servi quand la recherche web n'est pas utilisée. */
 if (Array.isArray(q.j.outils_pourquoi)) {
-  const categorie = (m) => (/en pause/.test(m) ? 'en pause' : /429|quota|limit/i.test(m) ? 'quota' : /timeout|délai|abort/i.test(m) ? 'délai' : /\b(401|403)\b/.test(m) ? 'refus clé' : /\b5\d\d\b/.test(m) ? 'panne serveur' : /outil|tool/i.test(m) ? 'outils non gérés' : 'autre');
+  /* Catégories FERMÉES + code HTTP (un nombre) : 400 schéma/outils, 402 crédit, 404 modèle, 422, signature… Jamais le texte de l'erreur. */
+  const categorie = (m) => {
+    const http = (m.match(/\bHTTP (\d{3})\b/) || [])[1];
+    const c = /en pause/.test(m) ? 'en pause'
+      : /thought.?signature/i.test(m) ? 'signature'
+      : /429|quota|rate.?limit|too many/i.test(m) ? 'quota'
+      : /timeout|délai|abort/i.test(m) ? 'délai'
+      : http === '402' ? 'crédit'
+      : http === '400' && /properties|schema|parameters|non-empty|OBJECT/i.test(m) ? 'schéma des outils'
+      : http === '400' ? 'requête refusée'
+      : http === '404' ? 'modèle absent'
+      : http === '422' ? 'données refusées'
+      : /\b(401|403)\b/.test(m) ? 'refus clé'
+      : /\b5\d\d\b/.test(m) ? 'panne serveur'
+      : /vide|empty|no choices/i.test(m) ? 'vide'
+      : /outil|tool/i.test(m) ? 'outils non gérés' : 'autre';
+    return http ? `${c} (HTTP ${http})` : c;
+  };
   const lignes = q.j.outils_pourquoi.slice(0, 6).map((t) => {
     const m = String(t); const nom = (m.match(/^([a-z0-9_-]{1,24}) :/) || [])[1] || '?';
     return `${nom} = ${categorie(m)}`;

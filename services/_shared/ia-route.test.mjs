@@ -644,6 +644,29 @@ test('outils : Gemini (gratuit) parle OpenAI avec appels de fonctions ; si son m
     assert.equal(vus[2].model, 'gemini-3.5-flash-lite', 'le modèle retiré est RETENU : plus d\'essai inutile'); assert.equal(r2.model, 'gemini-3.5-flash-lite');
   } finally { m.restore(); }
 });
+test('outils : un outil SANS argument n\'envoie aucun « parameters » vide (Gemini refuse HTTP 400 « properties: should be non-empty for OBJECT type » et fait échouer toute la phase d\'outils) ; un outil avec arguments part intact', async () => {
+  const vus = [];
+  const m = mockFetch((url, init) => {
+    vus.push(JSON.parse(init.body));
+    return new Response(JSON.stringify({ choices: [{ message: { content: 'ok', tool_calls: [] } }] }), { status: 200 });
+  });
+  try {
+    const avec = { name: 'calcul', description: 'x', parameters: { type: 'object', properties: { expression: { type: 'string' } }, required: ['expression'] } };
+    const sans = { name: 'date_heure', description: 'x', parameters: { type: 'object', properties: {} } };
+    const sansProps = { name: 'planning', description: 'x', parameters: { type: 'object' } };
+    for (const prov of ['gemini', 'groq']) {
+      await chatAvecOutils({ GEMINI_API_KEY: 'g', GROQ_API_KEY: 'q' }, prov, { messages: [{ role: 'user', content: 'a' }], tools: [avec, sans, sansProps] });
+    }
+    assert.equal(vus.length, 2);
+    for (const corps of vus) {
+      const parNom = Object.fromEntries(corps.tools.map((t) => [t.function.name, t.function]));
+      for (const n of ['date_heure', 'planning']) assert.equal('parameters' in parNom[n], false, n + ' : aucun « parameters » vide envoyé');
+      assert.deepEqual(parNom.calcul.parameters, avec.parameters, 'un outil avec arguments part intact');
+      for (const t of corps.tools) { const p = t.function.parameters; assert.ok(!p || (p.properties && Object.keys(p.properties).length > 0), 'jamais un objet sans propriétés'); }
+    }
+    assert.equal(sans.parameters.type, 'object', "l'entrée de l'appelant n'est pas modifiée");
+  } finally { m.restore(); }
+});
 test('outils : une autre erreur (429) remonte avec son statut — la pause se règle sur sa nature', async () => {
   const m = mockFetch(() => new Response('{"error":{"message":"Rate limit exceeded"}}', { status: 429 }));
   try {

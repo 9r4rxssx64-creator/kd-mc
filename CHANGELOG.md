@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Bee outils : plus de schéma vide envoyé à Gemini — 26.11.2026 (javis-bee)
+- `services/_shared/ia-route.js` : `outilPourFournisseur` retire `parameters` d'un outil sans propriété (Gemini refusait toute la phase d'outils, HTTP 400). Robot `bee-tester` : code HTTP + catégories fermées dans le diagnostic. Garde `test:ia-route` (49 ✓, rouge sans le correctif).
+
 ## Bee recherche web : 2ᵉ moteur de secours — 26.11.2026 (javis-bee, preuve réelle rouge du 26.11)
 - `services/_shared/outils-lecture.js` : `rechercheWeb` essaie DuckDuckGo LITE puis Bing RSS (gratuit, sans clé) ; les deux refusés = erreur claire. Partagé par Bee et Apex AI (`/ai`). Garde `test:bee-outils` 130 ✓ (rouge sans le correctif), fixture `bing-rss-ok.xml`. Aucune version d'app ne change.
 

@@ -562,6 +562,16 @@ async function callAnthropic(key, messages, o) {
  *  Les appels directs aux IA vivent ICI, dans le routeur commun (garde test:conference-partout) : outils-lecture.js ne parle à personne.
  *  Rend le message du modèle ({ content, tool_calls }) ; lève une erreur portant .status / .retryAfter en cas de refus.
  *  opts : { messages, tools (liste de { name, description, parameters }) — absent = réponse finale —, maxTokens, temperature, timeoutMs } */
+/** Un outil SANS argument (parameters = objet aux « properties » vides) est refusé par Gemini (HTTP 400 « properties: should be non-empty for OBJECT type ») : il fait échouer TOUTE la phase d'outils
+ *  dès le 1er tour, même pour les outils qui n'ont rien à voir (date_heure, planning, taches_code, mes_pouvoirs sont envoyés à chaque appel). Pour ces outils on n'envoie pas « parameters » du tout
+ *  (accepté partout : Gemini, Groq, Mistral, Cerebras). Les autres outils partent tels quels. */
+export function outilPourFournisseur(f) {
+  const p = f && f.parameters;
+  if (p && typeof p === 'object' && p.type === 'object' && (!p.properties || Object.keys(p.properties).length === 0)) {
+    const { parameters, ...sans } = f; return sans;
+  }
+  return f;
+}
 export async function chatAvecOutils(env, provider, opts) {
   const o = Object.assign({ maxTokens: 700, temperature: 0.4, timeoutMs: 9000 }, opts || {});
   const url = OPENAI_COMPAT[provider] || COMPAT_OUTILS_SEULEMENT[provider], key = env && env[SECRET_NAMES[provider]];
@@ -571,7 +581,7 @@ export async function chatAvecOutils(env, provider, opts) {
   for (let i = 0; i < candidats.length; i++) {
     const model = candidats[i];
     const body = { model, messages: o.messages, max_tokens: o.maxTokens, temperature: o.temperature };
-    if (Array.isArray(o.tools) && o.tools.length) { body.tools = o.tools.map((f) => ({ type: 'function', function: f })); body.tool_choice = 'auto'; }
+    if (Array.isArray(o.tools) && o.tools.length) { body.tools = o.tools.map((f) => ({ type: 'function', function: outilPourFournisseur(f) })); body.tool_choice = 'auto'; }
     const t = withTimeout(Math.max(1500, o.timeoutMs - (Date.now() - depart)));
     try {
       const r = await fetch(url, { method: 'POST', signal: t.signal, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key }, body: JSON.stringify(body) });

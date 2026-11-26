@@ -465,7 +465,7 @@
       "maj": "2026-11-26",
       "attend_kevin": "Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",
-      "note": "19.11 (javis-bee) : Bee v1.41 parité lignes 1·3·6 (lien_externe, comptes_cmcteams, appeler) codées + gardes ; reste 2 (moteurs web), 4 (arbre-cloud), 5 (apex-cloud, cloud-installer)"
+      "note": "Bee outils : schéma vide retiré (Gemini 400), PR en cours, preuve web à refaire"
     },
     "ld-config-printify": {
       "titre": "La Détente — config worker Printify (branche écrite par un workflow)",

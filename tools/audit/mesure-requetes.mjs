@@ -33,7 +33,7 @@ export function resumer(json) {
   }
   const comptes = json.data.viewer.accounts || [];
   const lignes = comptes.flatMap((a) => a.workersInvocationsAdaptive || []);
-  const parJour = {}, parJourWorker = {}, parHeure = {}, erreursParJour = {}, sousReqParJour = {}, cpuParWorker = {};
+  const parJour = {}, parJourWorker = {}, parHeure = {}, erreursParJour = {}, sousReqParJour = {}, cpuParWorker = {}, cpuMsParJour = {};
   for (const l of lignes) {
     const d = l.dimensions || {}, s = l.sum || {}, q = l.quantiles || {};
     if (d.scriptName && q.cpuTimeP99 != null) {   /* temps de calcul par requête, en microsecondes (API) */
@@ -47,6 +47,7 @@ export function resumer(json) {
       c.minCoupees += (s.requests || 0) * part;
     }
     const n = s.requests || 0;
+    { const j0 = String(d.datetimeHour || d.date || '').slice(0, 10); if (j0) cpuMsParJour[j0] = (cpuMsParJour[j0] || 0) + (Number(s.cpuTimeUs) || 0) / 1000; }
     const jour = String(d.datetimeHour || d.date || '').slice(0, 10);
     if (!jour) continue;
     parJour[jour] = (parJour[jour] || 0) + n;
@@ -60,7 +61,7 @@ export function resumer(json) {
   const tableau = Object.entries(parJourWorker).map(([k, n]) => { const [jour, worker] = k.split('|'); return { jour, worker, n }; })
     .sort((a, b) => a.jour.localeCompare(b.jour) || b.n - a.n);
   const heuresChargees = Object.entries(parHeure).sort((a, b) => b[1] - a[1]).slice(0, 6);
-  return { ok: true, cpuParWorker, tableau, parJour, erreursParJour, sousReqParJour, heuresChargees, lignes: lignes.length };
+  return { ok: true, cpuMsParJour, cpuParWorker, tableau, parJour, erreursParJour, sousReqParJour, heuresChargees, lignes: lignes.length };
 }
 
 export function requete(compte, depuis, jusqua) {
@@ -68,7 +69,7 @@ export function requete(compte, depuis, jusqua) {
     query: `query ($compte: String!, $depuis: Time!, $jusqua: Time!) {
       viewer { accounts(filter: { accountTag: $compte }) {
         workersInvocationsAdaptive(limit: 5000, filter: { datetime_geq: $depuis, datetime_leq: $jusqua }) {
-          sum { requests subrequests errors }
+          sum { requests subrequests errors cpuTimeUs }
           quantiles { cpuTimeP50 cpuTimeP90 cpuTimeP99 cpuTimeP999 }
           dimensions { scriptName datetimeHour }
         } } } }`,
@@ -92,6 +93,11 @@ export function texte(r, jours) {
     const pct = Math.round((n / PLAFOND_REQUETES) * 100);
     const ico = n >= PLAFOND_REQUETES ? '🔴' : n >= PLAFOND_REQUETES * 0.7 ? '🟠' : '✅';
     out.push(`${ico} ${jour} : ${n} requêtes (${pct} % du plafond) · ${r.sousReqParJour[jour] || 0} sous-requêtes · ${r.erreursParJour[jour] || 0} erreurs${n >= PLAFOND_REQUETES ? ' — PLAFOND ATTEINT : 429 pour tout le monde jusqu\'à minuit UTC' : ''}`);
+  }
+  const jc = Object.entries(r.cpuMsParJour || {}).filter(([, v]) => v > 0).sort();
+  if (jc.length) {
+    out.push('\nCalcul total par jour (plan payant : 30 M ms/mois inclus ≈ 1 M ms/jour) :');
+    for (const [j, v] of jc) out.push(`  ${j} : ${Math.round(v)} ms (${(100 * v / 1000000).toFixed(0)} % de la part quotidienne)`);
   }
   const cpu = Object.entries(r.cpuParWorker || {}).sort((a, b) => b[1].p99max - a[1].p99max);
   if (cpu.length) {

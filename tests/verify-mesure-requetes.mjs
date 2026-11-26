@@ -64,5 +64,11 @@ const cj2 = { data: { viewer: { accounts: [{ workersInvocationsAdaptive: [
 ] }] } } };
 ok(Math.round(resumer(cj2).cpuParWorker.b.minCoupees) === 20 && /au moins 20 \(1\.82 %\) coupées/.test(texte(resumer(cj2), 1)), '8. plancher de requêtes coupées au gratuit : 1 % de 1000 + 10 % de 100 = 20');
 
+const cj3 = { data: { viewer: { accounts: [{ workersInvocationsAdaptive: [
+  { sum: { requests: 10, cpuTimeUs: 2000000 }, dimensions: { scriptName: 'a', datetimeHour: '2026-11-22T10:00:00Z' } },
+  { sum: { requests: 10, cpuTimeUs: 1000000 }, dimensions: { scriptName: 'b', datetimeHour: '2026-11-22T11:00:00Z' } },
+] }] } } };
+ok(resumer(cj3).cpuMsParJour['2026-11-22'] === 3000 && /2026-11-22 : 3000 ms/.test(texte(resumer(cj3), 1)) && /cpuTimeUs/.test(requete('c', 'd', 'e').query), '9. calcul total par jour (ms) lu chez Cloudflare');
+
 console.log(`\n${pass} OK / ${fail} échec(s)`);
 process.exit(fail ? 1 : 0);

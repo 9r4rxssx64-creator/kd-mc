@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "maj": "2026-11-26",
+  "maj": "2026-11-27",
   "note": "Registre COMMUN des sessions Claude Code de Kevin + boîte aux lettres entre elles. Écrit/lu via tools/pipeline/pipeline.mjs — ne pas éditer à la main. Vit sur GitHub main (le coffre privé) : c'est la surface que TOUTES les sessions voient. Avant tout : lire ETAT-DU-MOMENT.md (servi depuis main au démarrage).",
   "sessions": {
     "studio-crea": {
@@ -462,10 +462,10 @@
       "sujet": "Bee (mascotte Lingua) comme assistant de Kevin : widget, app installable javis.kd-mc.com, voix + lip-sync",
       "surfaces": [],
       "etat": "v1.42 en ligne ; branche claude/bee-recherche-web-secours : Bing RSS en secours de la recherche web, à fusionner puis re-prouver en réel",
-      "maj": "2026-11-26",
+      "maj": "2026-11-27",
       "attend_kevin": "Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",
-      "note": "Bee outils : schéma vide retiré (Gemini 400), PR en cours, preuve web à refaire"
+      "note": "Gemini tour 2 : historique aplati, PR en cours, preuve web à relancer"
     },
     "ld-config-printify": {
       "titre": "La Détente — config worker Printify (branche écrite par un workflow)",

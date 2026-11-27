@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Bee outils : historique aplati pour Gemini — 26.11.2026 (javis-bee)
+- `services/_shared/outils-lecture.js` : pour Gemini (`SANS_APPELS_DANS_HISTORIQUE`), l'historique du tour 2 ne rejoue plus d'appels d'outils structurés (HTTP 400 mesuré, run 45913484259) : une phrase + les données en texte (`aplatirPourGemini`). Groq et les autres inchangés. `javis/sw.js` v1.42. Garde `test:bee-outils` 135 ✓ (3 rouges sans le correctif). Workflow `coffre-bee-tester` : `attend` accepte `web` et `apex_chat`.
+
 ## Bee outils : plus de schéma vide envoyé à Gemini — 26.11.2026 (javis-bee)
 - `services/_shared/ia-route.js` : `outilPourFournisseur` retire `parameters` d'un outil sans propriété (Gemini refusait toute la phase d'outils, HTTP 400). Robot `bee-tester` : code HTTP + catégories fermées dans le diagnostic. Garde `test:ia-route` (49 ✓, rouge sans le correctif).
 

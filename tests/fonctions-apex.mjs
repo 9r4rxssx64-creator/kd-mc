@@ -371,7 +371,10 @@ try {
       noter(`Mesure connectée${sfx} : boutons sous 44 px chez ${x.etiquette}`, m && m.nbPetits === 0, m ? `${m.nbPetits} · ${m.petits.join(' ; ')}` : 'illisible');
       noter(`Mesure connectée${sfx} : identifiants en double chez ${x.etiquette}`, m && m.doubles.length === 0, m ? `${m.doubles.length} · ${m.doubles.join(', ')}` : 'illisible');
       noter(`Mesure connectée${sfx} : liens vides chez ${x.etiquette}`, m && m.vides.length === 0, m ? m.vides.length + ' · ' + m.vides.join(' ; ') : 'illisible');
-      noter(`Mesure connectée${sfx} : pastille de version chez ${x.etiquette}`, null, m ? 'badge ' + JSON.stringify(m.badge) + ' (relevé, pas un verdict : voir index.html lignes 152–154)' : 'illisible');
+      /* 27.11 (pc-config 3369, cause lue dans index.html ligne 154) : `#topbar:not(.h) ~ #kdmc-version-badge{display:none!important}` — la pastille est cachée EXPRÈS tant que la barre du haut est affichée, la version se lit alors dans la barre.
+         Verdict : OK si la barre affiche une version (ou si la pastille est visible) ; ROUGE si ni l'une ni l'autre ; jamais « non testé ». SABOTAGE=pastille simule une barre sans version et une pastille cachée. */
+      const verOk = !!(m && ((m.verBarre && /^v\d+\.\d+\.\d+/.test(m.verBarre)) || (m.badge && m.badge.visible))) && process.env.SABOTAGE !== 'pastille';
+      noter(`Mesure connectée${sfx} : la version est lisible (barre du haut ou pastille) chez ${x.etiquette}`, m ? verOk : false, m ? 'barre ' + JSON.stringify(m.verBarre) + ' · pastille ' + JSON.stringify(m.badge) + ' (cachée exprès sous la barre : index.html ligne 154)' : 'illisible');
       if (vue === 'chats') noter(`Mesure connectée${sfx} : la version se lit dans la barre du haut chez ${x.etiquette}`, !!(m && m.verBarre && /^v\d+\.\d+\.\d+/.test(m.verBarre)), m ? 'barre : ' + JSON.stringify(m.verBarre) + ' · écran : ' + m.vue : 'illisible');
       if (m && m.vue !== (vue === 'conversation' ? 'chat' : vue)) noter(`Mesure connectée${sfx} : l'écran demandé est bien affiché chez ${x.etiquette}`, false, 'demandé ' + vue + ', affiché ' + m.vue);
     }

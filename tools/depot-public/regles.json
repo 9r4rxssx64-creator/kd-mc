@@ -61,6 +61,14 @@
     "SESSIONS-ET-BRANCHES.md",
     "KEVIN_ACTIONS_TODO.md"
   ],
+  "public_malgre_dossier_prive": [
+    "tools/arbre/confidentialite.mjs",
+    "tools/arbre/lecteur-ia.mjs",
+    "tools/arbre/essaim.mjs",
+    "tools/arbre/deblocage.mjs",
+    "tools/arbre/lots-ia.mjs"
+  ],
+  "_public_malgre_dossier_prive_pourquoi": "26.11 (arbre-cloud 3350 : le Lenovo clone le dépôt PUBLIC et doit lire l'essaim d'IA gratuites) : cinq fichiers de CODE générique de tools/arbre/ (aucun nom, aucune donnée : ils lisent l'export sur l'entrée standard) sortent du dossier privé ; le reste de tools/arbre/ reste privé",
   "_prive_toujours_pourquoi": {
     "index.html / sw.js / app 2.js / manifest.json / version.txt": "l'application CMCteams elle-même (la liste des 260 employés est écrite dedans)",
     "tools/departs/": "la version légère (Light)",

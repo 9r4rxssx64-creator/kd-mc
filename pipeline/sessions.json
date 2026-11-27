@@ -465,7 +465,7 @@
       "maj": "2026-11-27",
       "attend_kevin": "Essayer « montre-moi l'arbre de Yann Lorenzi » sur iPhone",
       "attend_session": "cmcteams-pdf : RÉPONSE m145/m147 : test:fiches-privees — cause racine trouvée et corrigée (vrai défaut, pas un test fragile), 16/16 vert sous charge",
-      "note": "Bee outils : historique par fournisseur (Gemini n'hérite plus des appels de Groq), preuve web verte à obtenir"
+      "note": "Bee recherche web prouvée en réel 27.11 (run 45916660486 vert)"
     },
     "ld-config-printify": {
       "titre": "La Détente — config worker Printify (branche écrite par un workflow)",

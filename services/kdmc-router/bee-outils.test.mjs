@@ -178,6 +178,19 @@ const Q1 = [{ role: 'user', content: 'Quel temps demain ?' }];
   await repondreAvecOutils(ENV, { messages: Q1, system: 'x' });
   const m2 = IA_VUES[1].corps.messages;
   ok(m2.some((m) => m.role === 'assistant' && m.tool_calls) && m2.some((m) => m.role === 'tool'), 'Groq : le format structuré reste inchangé'); }
+/* HISTORIQUE PAR FOURNISSEUR (27.11.2026, run réel 45914806758) : Groq rend un appel d'outil puis tombe (429) ; Gemini prend le relais.
+   Il ne doit JAMAIS hériter des appels structurés de Groq (HTTP 400 thought_signature) : il reçoit les données en texte. */
+{ reset();
+  const ENV2 = { GROQ_API_KEY: 'k1', GEMINI_API_KEY: 'kg' };
+  IA_SCRIPT.groq = [{ content: '', tool_calls: [appelOutil('c1', 'meteo', { dans_jours: 1 })] }, 500];   /* 500 et non 429 : un 429 met Groq en pause pour les tests suivants */
+  IA_SCRIPT.gemini = [{ content: 'Demain : pluie faible, 15 à 22 °C.' }];
+  const trace = [];
+  const r = await repondreAvecOutils(ENV2, { messages: Q1, system: 'x', trace });
+  ok(r && r.provider === 'gemini' && /pluie faible/.test(r.text), 'Groq tombe après son outil : Gemini répond (sans HTTP 400) — ' + JSON.stringify(trace));
+  const vg = IA_VUES.filter((v) => v.four === 'gemini');
+  const mg = vg.length && vg[vg.length - 1].corps.messages;
+  ok(mg && !mg.some((m) => m.role === 'tool' || m.tool_calls), 'Gemini ne reçoit aucun appel structuré hérité de Groq');
+  ok(mg && /lundi 5 octobre/.test(mg[mg.length - 1].content), 'les données de l\'outil déjà obtenu arrivent à Gemini en texte'); }
 /* LA TRACE (18.10, mesuré en réel : trois questions sans outil et aucune raison lisible) : chaque IA à outils qui n'a pas répondu dit POURQUOI */
 { reset(); IA_SCRIPT.groq = [500]; IA_SCRIPT.sambanova = [500];
   const trace = [];

@@ -289,7 +289,7 @@ jobs:
             echo "::warning::EMAILJS_PRIVATE_KEY absent → pas de mail de confirmation (fail-open : validation par l'admin inchangée)."
           fi
 
-      - name: Crypto-bot — jeton Railway pour le tableau de bord bot.kd-mc.com (fail-open si absent)
+      - name: Jeton Railway pour le tableau de bord bot.kd-mc.com (fail-open si absent)
         working-directory: services/kdmc-router
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

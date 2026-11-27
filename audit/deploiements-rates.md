@@ -7,6 +7,46 @@
 >
 > Rien ici quand tout va bien — c'est normal, et c'est bon signe.
 
+## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 27/11/2026 14:48 UTC
+
+- **Branche** : `main` · **Commit** : `cc2ec2b9` · **Run** : `46018954312`
+- **Ce qui a lâché** : deploy › Tests du worker (voix Lingua + voix clonée d'Antonin + code famille de l'arbre + SSO)
+- **Journal complet** : https://github.com/9r4rxssx64-creator/kd-mc/actions/runs/46018954312
+- **Ce que la machine a dit** :
+
+```
+# fail 0
+  ✅ 2. aucune proposition ni signature dans le refus
+  ✅ 6. la porte appelle `proposer` de Bee et refuse toute action hors liste
+  ✅ 9. la fiche est trouvée par le domaine : aucune → refus, plusieurs → refus (jamais de devinette)
+  ✅ 12. AVEC une session admin : une fiche inconnue → « introuvable » clair (404 avec texte), jamais un 500
+  ✅ 13. AVEC une session admin : une action hors liste reste refusée (400)
+13 OK · 0 échec(s)
+  ✅ domaine étranger refusé (anti redirection ouverte) → https://kit.kd-mc.com/
+✅ redirection-amont : 5 OK / 0 FAIL
+13 OK / 0 échec(s)
+  ✅ 8. après un code refusé, la connexion réussie efface bien le compteur d'essais (la suppression n'a lieu que s'il existe)
+9 OK / 0 échec(s)
+Self-service test: 29 passed, 0 failed
+30 OK · 0 échec(s)
+  ✅ 4. page absente → 404 + page « introuvable » en français avec un lien vers l'espace
+sso-accents : 6 passed, 0 failed
+=== Laissez-passer admin 24 h : 5 contrôles OK, 0 échec(s) ===
+sso-permanent : 9 passed, 0 failed
+SSO router test: 13 passed, 0 failed
+8 OK / 0 échec(s)
+== 4. Ce qui doit être refusé ==
+  ✅ 4. preuve fabriquée (contenu changé, ancienne signature) → refusée
+  ✅ 4b. signature inventée → refusée
+  ✅ 4c. preuve de plus de 30 minutes → refusée
+  ✅ 4i. 10 demandes par heure et par connexion, la 11e refusée
+  ✅ 7c. demande sans en-tête Origin → refusée
+tel: envoi WhatsApp refusé 401
+  ✅ 7f. WhatsApp refuse l'envoi → rien n'est écrit, la demande reste « en attente »
+OTP POUR TOUTES LES INSCRIPTIONS — 39 OK / 1 échec(s)
+##[error]Process completed with exit code 1.
+```
+
 ## ❌ Auto-merge Claude branches into main — 26/09/2026 17:12 UTC
 
 - **Branche** : `claude/persona-personnage-javis-hqd55e` · **Commit** : `efe3fc82` · **Run** : `36258082757`
@@ -528,17 +568,4 @@ pull request create failed: GraphQL: Head sha can't be blank, Base sha can't be 
 ^[[36;1m    echo "::warning::main rattrapé localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ^[[36;1m      || echo "::warning::rattrapage fait localement mais push refusé (la session a poussé entre-temps ?) — la PR tentera quand même."^[[0m
 ##[error]Process completed with exit code 128.
-```
-
-## ❌ KDMC — Déploie le routeur de domaine kd-mc.com (autonome) — 19/09/2026 01:57 UTC
-
-- **Branche** : `claude/verify-cmcteams-light-data-rzlvau` · **Commit** : `2c79008a` · **Run** : `35414149149`
-- **Ce qui a lâché** : deploy › D'où viennent vraiment les pages ? (bloquant)
-- **Journal complet** : https://github.com/9r4rxssx64-creator/CMCteams/actions/runs/35414149149
-- **Ce que la machine a dit** :
-
-```
-^[[36;1m  echo "::error::le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de $ATTENDU. Bascule NON effective."^[[0m
-##[error]le domaine sert encore package.json → les pages viennent TOUJOURS du dépôt brut, pas de https://kdmc-site-bj5.pages.dev. Bascule NON effective.
-##[error]Process completed with exit code 1.
 ```

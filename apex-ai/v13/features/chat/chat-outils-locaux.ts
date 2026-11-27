@@ -76,11 +76,24 @@ const dateIso = (v: string): string => { const m = /^(\d{1,2})[/.-](\d{1,2})[/.-
 export type EcritureArbre =
   | { action: 'arbre_commentaire'; champs: { personne: string; texte: string } }
   | { action: 'arbre_info'; champs: { personne: string; type: string; valeur: string } }
-  | { action: 'arbre_champ'; champs: { personne: string; champ: string; valeur: string; remplacer: boolean } };
+  | { action: 'arbre_champ'; champs: { personne: string; champ: string; valeur: string; remplacer: boolean } }
+  | { action: 'arbre_lien'; champs: { personne: string; personne2: string; lien: string } };
 
 const TYPES_INFO: Record<string, string> = { 'téléphone': 'Téléphone', 'telephone': 'Téléphone', 'numéro de téléphone': 'Téléphone', 'e-mail': 'E-mail', 'email': 'E-mail', 'mail': 'E-mail', 'adresse': 'Adresse postale', 'site web': 'Site web', 'site': 'Site web', 'profession': 'Profession détaillée', 'loisir': 'Loisir' };
 const CHAMPS_FICHE: Record<string, string> = { 'date de naissance': 'naissance.date', 'lieu de naissance': 'naissance.lieu', 'date de décès': 'deces.date', 'date de deces': 'deces.date', 'lieu de décès': 'deces.lieu', 'lieu de deces': 'deces.lieu', 'métier': 'metier', 'metier': 'metier', 'sexe': 'sexe' };
 
+
+/* « relie X comme père de Y » : relier deux fiches EXISTANTES (arbre_lien, id2 = X, lien = ce que X est pour Y). Créer une personne n'a pas de phrase : l'aide le dit. */
+const VERBES_LIEN = new Set(['relie', 'relier', 'rattache', 'rattacher']);
+const LIENS_CHAT: Record<string, string> = { 'père': 'pere', 'pere': 'pere', 'mère': 'mere', 'mere': 'mere', 'conjoint': 'conjoint', 'conjointe': 'conjoint', 'époux': 'conjoint', 'epoux': 'conjoint', 'épouse': 'conjoint', 'epouse': 'conjoint', 'enfant': 'enfant', 'fils': 'enfant', 'fille': 'enfant' };
+const RE_LIEN = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+${NOM}\s+comme\s+(?:le\s+|la\s+|l['’]\s*)?(\p{L}+)\s+(?:de\s+|d['’]\s*)${NOM}\s*[.!?]*$`, 'iu');
+
+function lienArbre(t: string): EcritureArbre | null {
+  const m = RE_LIEN.exec(t);
+  if (!m?.[1] || !m[2] || !m[3] || !m[4] || !VERBES_LIEN.has(m[1].toLowerCase())) return null;
+  const lien = LIENS_CHAT[m[3].toLowerCase()];
+  return lien ? { action: 'arbre_lien', champs: { personne: m[4].trim(), personne2: m[2].trim(), lien } } : null;
+}
 
 function commentaireArbre(t: string): EcritureArbre | null {
   const a = RE_COMMENTAIRE_AVANT.exec(t);
@@ -111,7 +124,7 @@ function champArbre(t: string): EcritureArbre | null {
 /** PURE : « ajoute le commentaire "…" à la fiche de X », « ajoute le téléphone … à la fiche de X », « corrige la date de naissance de X : 16/06/1880 » → l'action à PROPOSER, sinon null. */
 export function demandeEcritureArbre(texte: string): EcritureArbre | null {
   const t = String(texte ?? '').trim().slice(0, 900);
-  return commentaireArbre(t) ?? infoArbre(t) ?? champArbre(t);
+  return commentaireArbre(t) ?? infoArbre(t) ?? champArbre(t) ?? lienArbre(t);
 }
 
 /** PURE : « écris à X dans CMCteams (ou la light) : <message> » → { nom, texte }, sinon null. « CMCteams » (ou la light) dit ET un séparateur (« : », « que », « - ») : jamais une phrase ordinaire. */
@@ -129,7 +142,7 @@ const VERBES_ENVOI_MESSAGE = new Set(['envoie', 'envoyer', 'écris', 'ecris', 't
 const RE_VERS_APPLI = /\b(?:cmc[\s-]?teams?|la\s+light|apex[\s-]?chat)\b/i;
 const RE_A_QUELQU_UN = /^\s+(?:à|a)(?=\s)/;
 const RE_UN_MESSAGE = /^(?:-moi)?\s+(?:un|le|ce)\s+(?:message|mot|sms|mail|e-?mail)\s+(?:à|a)(?=\s)/i;
-const AIDE_ARBRE = '🌳 Pour écrire dans l\'arbre, dis-le ainsi (je te montre une carte, rien n\'est écrit avant ton « ✅ Confirmer ») :\n• « ajoute le commentaire "…" à la fiche de Prénom Nom »\n• « ajoute le téléphone 06… à la fiche de Prénom Nom »\n• « corrige la date de naissance de Prénom Nom : 16/06/1880 »\nJe n\'ai rien modifié.';
+const AIDE_ARBRE = '🌳 Pour écrire dans l\'arbre, dis-le ainsi (je te montre une carte, rien n\'est écrit avant ton « ✅ Confirmer ») :\n• « ajoute le commentaire "…" à la fiche de Prénom Nom »\n• « ajoute le téléphone 06… à la fiche de Prénom Nom »\n• « relie Prénom Nom comme père (ou mère, conjoint, enfant) de Prénom Nom »\n• « corrige la date de naissance de Prénom Nom : 16/06/1880 »\nJe n\'ai rien modifié.';
 const AIDE_MESSAGE = '✉️ Pour écrire à quelqu\'un, dis où, ainsi : « écris à Prénom Nom dans CMCteams : ton message » ou « écris à Prénom Nom sur Apex Chat : ton message ». Je te montre une carte (CMCteams) ou un bouton (Apex Chat), rien n\'est envoyé avant ton « ✅ Confirmer » ou ton « Envoyer ». Je n\'ai rien envoyé.';
 
 /** PURE : une demande d'ÉCRITURE dans l'arbre ou de message direct qui n'a pas été assez nette pour la carte : on le dit (jamais un « c'est fait » inventé par le modèle). */

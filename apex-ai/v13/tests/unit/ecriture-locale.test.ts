@@ -89,3 +89,24 @@ describe('chat : la carte passe AVANT le modèle', () => {
     expect(r).toMatch(/Je n'ai rien modifié/); expect(appels).toBe(0);
   });
 });
+
+describe('arbre_lien : « relie X comme père de Y »', () => {
+  it('relier deux fiches existantes → carte arbre_lien (X = id2, Y = fiche de départ)', () => {
+    expect(demandeEcritureArbre('relie Jean Roux comme père de Marie Dupont')).toEqual({ action: 'arbre_lien', champs: { personne: 'Marie Dupont', personne2: 'Jean Roux', lien: 'pere' } });
+    expect(demandeEcritureArbre('Rattache Anne Roux comme la conjointe de Paul Martin.')).toEqual({ action: 'arbre_lien', champs: { personne: 'Paul Martin', personne2: 'Anne Roux', lien: 'conjoint' } });
+    expect(demandeEcritureArbre("relie Léa Roux comme l'enfant de Jean Roux")).toMatchObject({ action: 'arbre_lien', champs: { lien: 'enfant' } });
+  });
+  it('un lien inconnu ou une phrase ordinaire ne déclenche rien', () => {
+    expect(demandeEcritureArbre('relie Jean Roux comme voisin de Marie Dupont')).toBeNull();
+    expect(demandeEcritureArbre('relie mon téléphone comme source de musique')).toBeNull();
+    expect(demandeEcritureArbre('parle-moi comme le père de Marie')).toBeNull();
+  });
+  it('la phrase passe par la porte avec personne et personne2, jamais un faux succès', async () => {
+    const appels: Array<{ url: string; corps: Record<string, unknown> }> = [];
+    const f = (async (url: string, init?: { body?: string }) => { appels.push({ url: String(url), corps: JSON.parse(String(init?.body ?? '{}')) }); return new Response(JSON.stringify({ ok: false, reason: 'introuvable', texte: 'Je ne trouve personne à ce nom dans l\'arbre.' }), { status: 404 }); }) as unknown as typeof fetch;
+    const r = await repondreLocalement('relie Jean Roux comme père de Marie Dupont', f);
+    expect(appels[0]?.url).toContain('/__admin/proposer');
+    expect(appels[0]?.corps).toMatchObject({ action: 'arbre_lien', personne: 'Marie Dupont', personne2: 'Jean Roux', lien: 'pere' });
+    expect(r).toContain('🌳');
+  });
+});

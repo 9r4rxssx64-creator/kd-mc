@@ -1,6 +1,6 @@
 # CHANGELOG — CMCteams + Apex AI
 
-## Apex AI 13.4.424 : « relie A (1979) comme père de B (2007) » donne une carte, plus un faux « Mise à jour effectuée » — 28.11.2026 (apex-cloud)
+## Apex AI 13.4.424 (+ sw.js copié, 28.11 16:00) : « relie A (1979) comme père de B (2007) » donne une carte, plus un faux « Mise à jour effectuée » — 28.11.2026 (apex-cloud)
 - Mesure de pc-connecteurs 3444 : la phrase avec une année entre parenthèses derrière CHAQUE nom n'était pas reconnue ; le modèle gratuit répondait « Mise à jour effectuée : téléphone ajouté… lien de parenté déclaré… aucun autre champ modifié » (faux, rien n'était écrit). Maintenant la parenthèse suit chaque nom (`PREC`) et la carte arbre_lien est proposée (ok/annuler), les années partent avec le nom pour départager les homonymes.
 - Le garde « faux succès » reconnaît aussi ces tournures (« Mise à jour effectuée », « aucun autre champ modifié », « déclaré/ajouté comme… »).
 

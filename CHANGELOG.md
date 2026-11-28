@@ -1,5 +1,8 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI 13.4.421 : la sauvegarde automatique ne bloque plus quand le stockage est plein — 28.11.2026 (apex-cloud)
+- `apex-ai/v13/services/storage/auto-backup.ts` : quand `localStorage` refuse l'écriture d'un snapshot, `libererPlace` retire les sauvegardes les PLUS ANCIENNES une à une jusqu'à ce que la nouvelle tienne (avant : le nettoyage ne supprimait rien sous 30 sauvegardes, donc « snapshot persist failed even after cleanup » à chaque fois, vu par pc-connecteurs 3419 dans le Chrome de Kevin). Si rien ne peut être libéré, l'erreur claire « Backup quota saturé » reste. 2 tests (`services-auto-backup.test.ts`), le premier rouge sans le code.
+
 ## Apex AI 13.4.420 : « relie X comme père de Y » → carte arbre_lien ✅ — 27.11.2026 (apex-cloud)
 - `apex-ai/v13/features/chat/chat-outils-locaux.ts` : `lienArbre` (verbes relie / rattache ; père, mère, conjoint(e), époux, épouse, enfant, fils, fille) → `arbre_lien` par la porte `/__admin/proposer` (`personne` = fiche de départ, `personne2` = la fiche à relier) ; l'aide de l'arbre cite la phrase ; 3 tests (rouges sans le code). Rien n'est écrit sans le ✅ de Kevin ; créer une personne n'a toujours pas de phrase.
 

@@ -542,3 +542,35 @@ describe('services/auto-backup', () => {
     });
   });
 });
+
+describe('services/auto-backup — stockage plein (27.11.2026)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    auditLog.reload();
+    autoBackup._resetForTests();
+  });
+  it('quand le stockage est plein SOUS 30 sauvegardes, les plus anciennes sont retirées une à une : le snapshot réussit', async () => {
+    const vrai = localStorage.setItem.bind(localStorage);
+    /* stockage simulé « plein » dès qu'il y a déjà 3 sauvegardes */
+    const espion = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string, v: string) => {
+      if (k.startsWith('apex_v13_backup_ax_backup') && Object.keys(localStorage).filter((c) => c.startsWith('apex_v13_backup_ax_backup')).length >= 3) {
+        throw new DOMException('quota', 'QuotaExceededError');
+      }
+      return vrai(k, v);
+    });
+    try {
+      const ids: string[] = [];
+      for (let i = 0; i < 6; i++) { ids.push((await autoBackup.snapshot('manual')).id); await new Promise((r) => setTimeout(r, 5)); }
+      const restantes = Object.keys(localStorage).filter((c) => c.startsWith('apex_v13_backup_ax_backup'));
+      expect(restantes.length).toBeLessThanOrEqual(3);
+      expect(restantes).toContain('apex_v13_backup_' + ids[5]);   /* la plus récente est bien là */
+      expect(restantes).not.toContain('apex_v13_backup_' + ids[0]);   /* la plus ancienne est partie */
+    } finally { espion.mockRestore(); }
+  });
+  it('si rien ne peut être libéré (stockage plein de TOUT autre chose), l\'erreur claire reste', async () => {
+    const espion = vi.spyOn(localStorage, 'setItem').mockImplementation((k: string) => {
+      if (k.startsWith('apex_v13_backup_ax_backup')) throw new DOMException('quota', 'QuotaExceededError');
+    });
+    try { await expect(autoBackup.snapshot('manual')).rejects.toThrow(/quota saturé/); } finally { espion.mockRestore(); }
+  });
+});

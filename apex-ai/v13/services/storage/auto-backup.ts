@@ -250,12 +250,22 @@ class AutoBackup {
       localStorage.setItem(STORAGE_PREFIX + id, JSON.stringify(backup));
     } catch (err: unknown) {
       logger.warn('auto-backup', 'snapshot persist failed (quota?), tente cleanup', { err });
-      /* Quota : fait cleanup agressif puis retry */
+      /* Quota : cleanup FIFO d'abord (au-delà de MAX_BACKUPS), puis — 27.11.2026, Kevin : « mémoire pleine » — on libère la place EN SUPPRIMANT LES PLUS ANCIENNES une à une
+         jusqu'à ce que la nouvelle tienne : avant, sous 30 sauvegardes le cleanup ne supprimait RIEN et chaque snapshot échouait (« persist failed even after cleanup », vu dans le Chrome de Kevin). */
       await this.cleanup();
-      try {
-        localStorage.setItem(STORAGE_PREFIX + id, JSON.stringify(backup));
-      } catch (err2: unknown) {
-        logger.error('auto-backup', 'snapshot persist failed even after cleanup', { err: err2 });
+      const brut = JSON.stringify(backup);
+      let ecrit = false, derniere: unknown = err;
+      for (let i = 0; i <= MAX_BACKUPS && !ecrit; i++) {
+        try {
+          localStorage.setItem(STORAGE_PREFIX + id, brut);
+          ecrit = true;
+        } catch (err2: unknown) {
+          derniere = err2;
+          if (!this.libererPlace(id)) break;
+        }
+      }
+      if (!ecrit) {
+        logger.error('auto-backup', 'snapshot persist failed even after cleanup', { err: derniere });
         throw new Error('Backup quota saturé — impossible de sauvegarder');
       }
     }
@@ -497,6 +507,33 @@ class AutoBackup {
    * Cleanup backups > 30 jours (rolling FIFO).
    * Trigger : sentinelle auto-backup-watch + chaque snapshot.
    */
+  /** Supprime la sauvegarde la PLUS ANCIENNE (hors `sauf`) pour faire de la place ; false s'il n'en reste aucune à retirer. */
+  private libererPlace(sauf: string): boolean {
+    this.loadIndex();
+    const ids = (this.indexCache ?? []).filter((x) => x !== sauf);
+    let plusAncien: { id: string; ts: number } | null = null;
+    for (const x of ids) {
+      try {
+        const raw = localStorage.getItem(STORAGE_PREFIX + x);
+        const ts = raw ? (JSON.parse(raw) as { ts: number }).ts : 0;
+        if (!plusAncien || ts < plusAncien.ts) plusAncien = { id: x, ts };
+      } catch {
+        plusAncien = { id: x, ts: 0 }; /* entrée corrompue : la première à partir */
+        break;
+      }
+    }
+    if (!plusAncien) return false;
+    try {
+      localStorage.removeItem(STORAGE_PREFIX + plusAncien.id);
+    } catch {
+      return false;
+    }
+    this.indexCache = (this.indexCache ?? []).filter((x) => x !== plusAncien!.id);
+    this.persistIndex();
+    logger.info('auto-backup', `Place libérée : ancienne sauvegarde ${plusAncien.id} retirée (stockage plein)`);
+    return true;
+  }
+
   async cleanup(): Promise<{ deleted: number }> {
     this.loadIndex();
     const ids = this.indexCache ?? [];

@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex Chat 1.1.374 : le jeton du domaine se renouvelle tout seul ; Carte : zoom et lien à 44 px — 28.11.2026 (apex-cloud)
+- Mesure de pc-config 3430 (Chrome de Kevin) : le jeton de la session « domaine » avait expiré le 21.11 (30 jours) et rien ne le renouvelait (la reconnexion automatique ne sait refaire que la connexion par numéro) → « Non authentifié » à chaque chargement (publication de l'appareil), l'écran restant connecté en local. `K._api` : sur un 401, un compte lié à kd-mc.com redemande UN jeton frais au domaine (`K._reauthKdmcSso`, un seul à la fois, au plus un toutes les 30 s, jamais pour un autre compte) et rejoue la requête UNE fois. Test `jeton-domaine-renouvele.test.js` (3 rouges sur l'ancienne page).
+- Écran « Carte » (pc-config 3423) : boutons de zoom + / − à 44 px (30 avant) et lien Leaflet à 44 px de haut (13 avant), sans changer la mise en page.
+
 ## Apex AI 13.4.422 + routeur : plus de faux « enregistré », et une date départage enfin les homonymes — 28.11.2026 (apex-cloud)
 - Capture de Kevin : « corrige la date de naissance de X (née le …) : 16/06/1880 » → le modèle gratuit a répondu « ✅ Modification enregistrée dans le vault » (FAUX : rien n'est écrit sans la carte ✅). `chat-outils-locaux.ts` : la précision entre parenthèses part avec le nom (`personne = « X née le … »`) et une demande qui parle d'un champ de fiche (date / lieu de naissance ou de décès, métier de…) mais reste floue reçoit l'aide, jamais le modèle.
 - `services/kdmc-router/bee-arbre.js` (`trouver`) : le message « précise prénom ET nom, ou une date » était FAUX, la date était ignorée ; une année ou une date complète départage maintenant les homonymes par l'année de naissance ou de décès (si l'année ne correspond à personne, on garde tous les homonymes). Garde `bee-parite.test.mjs` 2f2-2f6 (3 rouges sans le code), `ecriture-locale.test.ts` 2 rouges sans le code.

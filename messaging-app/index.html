@@ -59,7 +59,7 @@
   "applicationCategory": "CommunicationApplication",
   "operatingSystem": "Web, iOS, Android (PWA)",
   "browserRequirements": "Requires JavaScript, modern browser with WebCrypto API",
-  "softwareVersion": "v1.1.373",
+  "softwareVersion": "v1.1.374",
   "inLanguage": "fr-FR",
   "offers": {
     "@type": "Offer",
@@ -508,6 +508,9 @@ html.kb-open #geo-banner{display:none}
 }
 /* v1.1.147 selection texte couleurs de marque (skill apex-taste) */
 ::selection{background:color-mix(in srgb,var(--ax-gold) 25%,transparent)}
+/* v1.1.374 (pc-config 3423, mesure réelle de l'écran « Carte » : zoom + / − à 30 px, lien Leaflet à 13 px) : cibles tactiles ≥ 44 px, sans changer l'allure (la marge négative garde la mise en page). */
+.leaflet-bar a, .leaflet-control-zoom a { width:44px !important; height:44px !important; line-height:44px !important; font-size:22px !important; }
+.leaflet-control-attribution a { display:inline-block; padding:16px 6px; margin:-16px -6px; }
 </style>
 </head>
 <body>
@@ -517,7 +520,7 @@ html.kb-open #geo-banner{display:none}
 <!-- Service Worker registration -->
 <script>
 'use strict';
-const __APEX_CHAT_VERSION__ = 'v1.1.373';
+const __APEX_CHAT_VERSION__ = 'v1.1.374';
 // Convention du domaine (audit-live.yml lit toute globale <APP>_VERSION) : « version servie » lisible en ligne.
 try{ window.APEX_CHAT_VERSION = __APEX_CHAT_VERSION__; }catch(_){}
 // Lot E1 (audit A5 F2, 15.10.2026) — ORDONNANCEUR UNIQUE des sondages réseau périodiques. Le compte gratuit
@@ -864,7 +867,7 @@ if('serviceWorker' in navigator){
   <div class="splash-logo">💬</div>
   <h1 class="splash-title">APEX CHAT</h1>
   <p class="splash-sub">Messagerie privée sécurisée<br><span style="color:var(--ax-gold-2)">🛡 Chiffrement de bout en bout</span></p>
-  <div id="splash-version" data-ver="v1.1.373" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.373</div>
+  <div id="splash-version" data-ver="v1.1.374" style="color:var(--ax-text-3);font-size:.78em;margin-bottom:20px;font-family:ui-monospace,monospace">v1.1.345</div>
   <div id="auth-step" class="splash-form">
     <!-- rempli dynamiquement -->
   </div>
@@ -878,7 +881,7 @@ if('serviceWorker' in navigator){
 
 <header class="topbar h" id="topbar">
   <button class="topbar-btn" onclick="K.toggleMenu()" aria-label="Menu">☰</button>
-  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.373</button></div>
+  <div class="topbar-title">APEX CHAT <button type="button" class="topbar-ver" id="topbar-version" onclick="K._askForceUpdate()" aria-label="Version de l'app — toucher pour forcer la mise à jour">v1.1.360</button></div>
   <span class="connected" id="conn-status">●</span>
   <button class="topbar-btn" onclick="K.openInvite()" aria-label="Inviter">📤</button>
 </header>
@@ -10515,6 +10518,24 @@ K._flushOutboxFor = function(convId){
 // Maintenant : verify-otp 000000 fonctionne pour tout phone connu en D1
 // (cf. handleVerifyOtp branche direct-signup → retrouve user existant
 // par phone) → token frais transparent, pas de toast spam.
+/* v1.1.374 : renouvellement silencieux du jeton d'une session du domaine (kd-mc.com). Un seul essai à la fois, au plus un toutes les 30 s, jamais pour un autre compte que celui qui est ouvert. */
+K._reauthKdmcSso = async function(){
+  if(K._reauthKdmcEnCours) return false;
+  const maintenant = Date.now();
+  if(K._reauthKdmcLe && maintenant - K._reauthKdmcLe < 30000) return false;
+  K._reauthKdmcLe = maintenant; K._reauthKdmcEnCours = true;
+  try{
+    const sso = await _authSsoFromKdmc();
+    if(sso && sso.token && sso.user && K.user && sso.user.id === K.user.id){
+      K.token = sso.token; ls('token', sso.token);
+      try{ if(K._ensureMediaTicket) K._ensureMediaTicket(); }catch(_e){ _safeCatch('silent', _e); }
+      K._wsRetry = 0;
+      return true;
+    }
+  }catch(e){ _safeCatch('reauth-kdmc-sso', e); }
+  finally{ K._reauthKdmcEnCours = false; }
+  return false;
+};
 K._reauthAny = async function(reopenConvId, cause){
   if(K._reauthInProgress) return;
   // Throttle : pas plus d'une tentative toutes les 30s, sinon spam toasts
@@ -17463,6 +17484,17 @@ K._api = async function(method, path, body, timeoutMs, _retry401){
         if(K.token && K.token !== before){
           clearTimeout(tid);
           return await K._api(method, path, body, timeoutMs, true); // rejoue 1× avec le jeton frais
+        }
+      }
+      /* v1.1.374 (pc-config 3430, mesuré dans le Chrome de Kevin) : la session « domaine » (compte lié à kd-mc.com : celui de Kevin comme les invités) gardait un jeton de 30 jours PÉRIMÉ depuis le 21.11 ; K._reauthAny ne sait refaire que
+         la connexion par numéro, donc rien ne le renouvelait : « Non authentifié » à chaque chargement, l'écran restant connecté en local. Sur un 401, on redemande UN jeton frais au domaine (le même appel
+         que l'ouverture de l'app) et on rejoue la requête une fois. */
+      if(r.status === 401 && !_retry401 && K.token && !String(K.token).startsWith('local-') && K.user && (K.user.kdmc_uid || K.user.source === 'kdmc-sso') && typeof K._reauthKdmcSso === 'function'){
+        const avant = K.token;
+        try { await K._reauthKdmcSso(); } catch(_){}
+        if(K.token && K.token !== avant){
+          clearTimeout(tid);
+          return await K._api(method, path, body, timeoutMs, true);
         }
       }
       // v1.1.170 : règle CLAUDE.md — tracer la cause EXACTE (detail/step/where), pas juste le code

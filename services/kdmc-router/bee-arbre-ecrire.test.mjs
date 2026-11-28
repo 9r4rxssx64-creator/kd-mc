@@ -148,6 +148,21 @@ ok(await refuse(() => nuage({ fetchFn: faussaire2, codehash: async () => 'pas-un
   const sauv = cloud ? BD.arbre[sha(CH + ':sauvegardes')] : null;
   ok(sauv && sauv[sortie.copie] && sauv[sortie.copie].avant.infos.length === 1 && sauv[sortie.copie].id === 'p1', '2j. la copie de sauvegarde contient l\'état d\'AVANT');
   ok(!JSON.stringify(Object.keys(BD.arbre[CH])).includes('sauvegardes'), '2k. le tiroir de sauvegarde est HORS de la zone synchronisée des appareils'); }
+{ /* L'HISTORIQUE DE LA FICHE (Kevin 28.11) : une écriture après ✅ laisse sa ligne « qui, quand, avant → après », jamais une valeur privée */
+  const avantH = await cl.lire('p1');
+  const hAvant = (cloud('p1').historique || []).length;
+  const rInfo = preparerInfo(avantH, { type: 'Téléphone', libelle: 'mobile', valeur: '06 99 88 77 66' });
+  const sortieH = await cl.patcher('p1', avantH, rInfo.patch, 'bee');
+  const hApres = cloud('p1').historique || [];
+  const ligne = hApres[hApres.length - 1];
+  ok(hApres.length === hAvant + 1 && sortieH.historique === 'ajouté', '2l. l\'écriture ajoute UNE ligne à l\'historique de la fiche (et le bilan le dit)', JSON.stringify(sortieH));
+  ok(ligne && ligne.ts > 100 && /Kevin \(via Bee ou Apex AI/.test(ligne.par) && ligne.type === 'modif' && ligne.champs[0].c === 'informations' && /Téléphone/.test(ligne.champs[0].apres) && /Écrit après le ✅/.test(ligne.pourquoi), '2m. la ligne porte qui, quand, le champ, avant → après, pourquoi', JSON.stringify(ligne));
+  ok(!JSON.stringify(hApres).includes('06 99 88 77 66') && !JSON.stringify(hApres).includes('06 11 22 33 44'), '2n. JAMAIS le numéro dans l\'historique (il voyage avec la fiche sur tous les appareils)');
+  const avantH2 = await cl.lire('p1');
+  await cl.patcher('p1', avantH2, preparerChamp(avantH2, { champ: 'metier', valeur: 'coiffeuse', remplacer: true }).patch, 'bee');
+  const h2 = cloud('p1').historique;
+  ok(h2.length === hAvant + 2 && h2[hAvant].champs[0].c === 'informations' && h2[hAvant + 1].champs[0].c === 'métier' && h2[hAvant + 1].champs[0].avant === 'vendeuse' && h2[hAvant + 1].champs[0].apres === 'coiffeuse', '2o. les lignes s\'ADDITIONNENT (rien n\'est effacé) et un champ simple montre avant → après', JSON.stringify(h2.slice(hAvant)));
+  ok(cloud('p1').metier === 'coiffeuse' && cloud('p1').updatedBy === 'Kevin (via Bee)', '2p. l\'écriture elle-même est intacte'); }
 { /* PANNE : la copie n'est pas relue → RIEN n'est écrit */
   const avant = await cl.lire('p2'); VU = []; PANNE = { copieNonEcrite: true };
   const e = await refuse(() => cl.patcher('p2', avant, preparerChamp(avant, { champ: 'metier', valeur: 'cuisinier' }).patch, 'bee'), /n'a pas été relue : RIEN n'a été écrit/);

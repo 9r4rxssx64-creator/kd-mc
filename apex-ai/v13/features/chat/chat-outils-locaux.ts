@@ -60,15 +60,16 @@ export function ressembleAOuvrir(texte: string): boolean {
 const POLI = String.raw`^(?:peux-tu\s+|pourrais-tu\s+)?`;
 const NOM = String.raw`([\p{L}][\p{L}'’ -]{1,60}?)`;
 const FICHE_DE = String.raw`\s+(?:à|a|sur|dans)\s+la\s+fiche\s+(?:de\s+|d['’]\s*|du\s+|des\s+)`;
+const PREC = String.raw`(?:\s*\(([^)]{1,60})\))?`;   // 28.11 : « Laurence Saint-Polit (née le 05/06/1950) » — la précision entre parenthèses part avec le nom, le domaine s'en sert pour départager les homonymes
 const VERBE_AJOUT = String.raw`(\p{L}+)`;   // le verbe est lu ici puis contrôlé dans VERBES_AJOUT / VERBES_CHAMP (une liste de mots, pas une alternation dans le motif)
 const VERBES_AJOUT = new Set(['ajoute', 'ajouter', 'mets', 'mettre', 'note', 'noter']);
 const VERBES_CHAMP = new Set(['corrige', 'corriger', 'modifie', 'modifier', 'change', 'changer', 'mets', 'mettre', 'renseigne', 'renseigner']);
-const RE_COMMENTAIRE_AVANT = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le|un|ce)\s+commentaire\s*[:,-]?\s*(.+)${FICHE_DE}${NOM}\s*[.!?]*$`, 'iu');
-const RE_COMMENTAIRE_APRES = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le|un|ce)\s+commentaire${FICHE_DE}${NOM}\s*:\s*(\S[\s\S]{0,400})$`, 'iu');
+const RE_COMMENTAIRE_AVANT = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le|un|ce)\s+commentaire\s*[:,-]?\s*(.+)${FICHE_DE}${NOM}${PREC}\s*[.!?]*$`, 'iu');
+const RE_COMMENTAIRE_APRES = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le|un|ce)\s+commentaire${FICHE_DE}${NOM}${PREC}\s*:\s*(\S[\s\S]{0,400})$`, 'iu');
 const TYPES_INFO_RE = String.raw`(num[ée]ro de t[ée]l[ée]phone|t[ée]l[ée]phone|e-?mail|mail|adresse|site web|site|profession|loisir)`;
-const RE_INFO = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le\s+|la\s+|l['’]\s*|un\s+|une\s+)?${TYPES_INFO_RE}\s*[:,-]?\s*(.+)${FICHE_DE}${NOM}\s*[.!?]*$`, 'iu');
+const RE_INFO = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+(?:le\s+|la\s+|l['’]\s*|un\s+|une\s+)?${TYPES_INFO_RE}\s*[:,-]?\s*(.+)${FICHE_DE}${NOM}${PREC}\s*[.!?]*$`, 'iu');
 const CHAMPS_RE = String.raw`(date de naissance|lieu de naissance|date de d[ée]c[èe]s|lieu de d[ée]c[èe]s|m[ée]tier|sexe)`;
-const RE_CHAMP = new RegExp(String.raw`${POLI}(\p{L}+)\s+(?:la\s+|le\s+|l['’]\s*)?${CHAMPS_RE}\s+(?:de\s+|d['’]\s*|du\s+)${NOM}\s*(?::|=|\s+à\s+|\s+a\s+|\s+en\s+|\s+par\s+)\s*(\S[\s\S]{0,120})$`, 'iu');
+const RE_CHAMP = new RegExp(String.raw`${POLI}(\p{L}+)\s+(?:la\s+|le\s+|l['’]\s*)?${CHAMPS_RE}\s+(?:de\s+|d['’]\s*|du\s+)${NOM}${PREC}\s*(?::|=|\s+à\s+|\s+a\s+|\s+en\s+|\s+par\s+)\s*(\S[\s\S]{0,120})$`, 'iu');
 const RE_CORRECTION = /^(corrige|corriger|modifie|modifier|change|changer)$/i;
 const nettoyerValeur = (v: string): string => v.trim().replace(/^[«"“'‘]\s*/, '').replace(/\s*[»"”'’]$/, '').trim();
 const dateIso = (v: string): string => { const m = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(v.trim()); return m ? `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}` : v.trim(); };
@@ -95,13 +96,16 @@ function lienArbre(t: string): EcritureArbre | null {
   return lien ? { action: 'arbre_lien', champs: { personne: m[4].trim(), personne2: m[2].trim(), lien } } : null;
 }
 
+const avecPrecision = (nom: string, prec?: string): string => (nom.trim() + (prec && prec.trim() ? ' ' + prec.trim() : '')).trim();
+
 function commentaireArbre(t: string): EcritureArbre | null {
   const a = RE_COMMENTAIRE_AVANT.exec(t);
   const m = a ?? RE_COMMENTAIRE_APRES.exec(t);
-  if (!m?.[1] || !m[2] || !m[3] || !VERBES_AJOUT.has(m[1].toLowerCase())) return null;
-  const [texteBrut, personne] = a ? [m[2], m[3]] : [m[3], m[2]];   // forme « …commentaire "texte" à la fiche de X » ou « …commentaire à la fiche de X : texte »
+  if (!m?.[1] || !VERBES_AJOUT.has(m[1].toLowerCase())) return null;
+  const [texteBrut, personne, prec] = a ? [m[2], m[3], m[4]] : [m[4], m[2], m[3]];   // forme « …commentaire "texte" à la fiche de X » ou « …commentaire à la fiche de X : texte »
+  if (!texteBrut || !personne) return null;
   const x = nettoyerValeur(texteBrut);
-  return x ? { action: 'arbre_commentaire', champs: { personne: personne.trim(), texte: x } } : null;
+  return x ? { action: 'arbre_commentaire', champs: { personne: avecPrecision(personne, prec), texte: x } } : null;
 }
 
 function infoArbre(t: string): EcritureArbre | null {
@@ -109,16 +113,16 @@ function infoArbre(t: string): EcritureArbre | null {
   if (!m?.[1] || !m[2] || !m[3] || !m[4] || !VERBES_AJOUT.has(m[1].toLowerCase())) return null;
   const type = TYPES_INFO[m[2].toLowerCase()];
   const v = nettoyerValeur(m[3]);
-  return type && v ? { action: 'arbre_info', champs: { personne: m[4].trim(), type, valeur: v } } : null;
+  return type && v ? { action: 'arbre_info', champs: { personne: avecPrecision(m[4], m[5]), type, valeur: v } } : null;
 }
 
 function champArbre(t: string): EcritureArbre | null {
   const m = RE_CHAMP.exec(t);
-  if (!m?.[1] || !m[2] || !m[3] || !m[4] || !VERBES_CHAMP.has(m[1].toLowerCase())) return null;
+  if (!m?.[1] || !m[2] || !m[3] || !m[5] || !VERBES_CHAMP.has(m[1].toLowerCase())) return null;
   const champ = CHAMPS_FICHE[m[2].toLowerCase()];
-  const v = nettoyerValeur(m[4]).replace(/[.!?]+$/, '');
+  const v = nettoyerValeur(m[5]).replace(/[.!?]+$/, '');
   if (!champ || !v) return null;
-  return { action: 'arbre_champ', champs: { personne: m[3].trim(), champ, valeur: champ.endsWith('.date') ? dateIso(v) : v, remplacer: RE_CORRECTION.test(m[1]) } };
+  return { action: 'arbre_champ', champs: { personne: avecPrecision(m[3], m[4]), champ, valeur: champ.endsWith('.date') ? dateIso(v) : v, remplacer: RE_CORRECTION.test(m[1]) } };
 }
 
 /** PURE : « ajoute le commentaire "…" à la fiche de X », « ajoute le téléphone … à la fiche de X », « corrige la date de naissance de X : 16/06/1880 » → l'action à PROPOSER, sinon null. */
@@ -142,6 +146,8 @@ const VERBES_ENVOI_MESSAGE = new Set(['envoie', 'envoyer', 'écris', 'ecris', 't
 const RE_VERS_APPLI = /\b(?:cmc[\s-]?teams?|la\s+light|apex[\s-]?chat)\b/i;
 const RE_A_QUELQU_UN = /^\s+(?:à|a)(?=\s)/;
 const RE_UN_MESSAGE = /^(?:-moi)?\s+(?:un|le|ce)\s+(?:message|mot|sms|mail|e-?mail)\s+(?:à|a)(?=\s)/i;
+/* 28.11 (capture de Kevin : « corrige la date de naissance de X (née le …) : 16/06/1880 » → le modèle gratuit a répondu « ✅ Modification enregistrée dans le vault » : FAUX) : une demande d'écriture qui parle d'une fiche, de l'arbre OU d'un champ de fiche reçoit l'aide, jamais le modèle. */
+const RE_PARLE_ARBRE = /\b(?:fiche|arbre|(?:date|lieu)\s+de\s+(?:naissance|d[ée]c[èe]s)|m[ée]tier\s+de)\b/i;
 const AIDE_ARBRE = '🌳 Pour écrire dans l\'arbre, dis-le ainsi (je te montre une carte, rien n\'est écrit avant ton « ✅ Confirmer ») :\n• « ajoute le commentaire "…" à la fiche de Prénom Nom »\n• « ajoute le téléphone 06… à la fiche de Prénom Nom »\n• « relie Prénom Nom comme père (ou mère, conjoint, enfant) de Prénom Nom »\n• « corrige la date de naissance de Prénom Nom : 16/06/1880 »\nJe n\'ai rien modifié.';
 const AIDE_MESSAGE = '✉️ Pour écrire à quelqu\'un, dis où, ainsi : « écris à Prénom Nom dans CMCteams : ton message » ou « écris à Prénom Nom sur Apex Chat : ton message ». Je te montre une carte (CMCteams) ou un bouton (Apex Chat), rien n\'est envoyé avant ton « ✅ Confirmer » ou ton « Envoyer ». Je n\'ai rien envoyé.';
 
@@ -152,7 +158,7 @@ export function aideEcriture(texte: string): string | null {
   if (!m?.[1]) return null;
   const verbe = m[1].toLowerCase();
   const reste = t.slice(m[0].length);
-  if (VERBES_ECRITURE_ARBRE.has(verbe) && !/^[-\s]*moi\b/i.test(reste) && /\b(?:fiche|arbre)\b/i.test(reste)) return AIDE_ARBRE;
+  if (VERBES_ECRITURE_ARBRE.has(verbe) && !/^[-\s]*moi\b/i.test(reste) && RE_PARLE_ARBRE.test(reste)) return AIDE_ARBRE;
   if (VERBES_ENVOI.has(verbe) && RE_A_QUELQU_UN.test(reste) && RE_VERS_APPLI.test(reste)) return AIDE_MESSAGE;
   if (VERBES_ENVOI_MESSAGE.has(verbe) && RE_UN_MESSAGE.test(reste)) return AIDE_MESSAGE;
   return null;

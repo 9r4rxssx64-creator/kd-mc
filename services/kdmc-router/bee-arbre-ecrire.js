@@ -57,6 +57,21 @@ export function listeInfos(l) {
 
 /* ───────────────────────── le nuage (Firebase REST) ───────────────────────── */
 /** `o` : { fetchFn, codehash: async () → 64 hex, now: () → ms }. Rend les opérations de lecture / écriture, toutes bornées dans le temps. */
+/* ───────── l'historique d'une fiche : libellés et résumés (jamais une valeur privée) ───────── */
+const LIBELLES_HISTO = { naissance: 'naissance', deces: 'décès', metier: 'métier', sexe: 'sexe', vivant: 'vivant', infos: 'informations', comments: 'commentaire', pere: 'père', mere: 'mère', conjoints: 'conjoint(s)', notes: 'notes' };
+const libelleChamp = (k) => LIBELLES_HISTO[k] || String(k).slice(0, 30);
+const parLisible = (par) => (par === 'bee' || !par ? 'Kevin (via Bee ou Apex AI, ✅)' : String(par).slice(0, 60));
+function resumeChamp(k, v, avant, ancien) {
+  if (v === undefined || v === null || v === '') return '';
+  if (Array.isArray(v)) {
+    if (k === 'infos') { const d = v[v.length - 1] || {}; return avant ? v.length + ' info(s)' : 'ajouté : ' + String(d.type || 'info').slice(0, 30) + (d.libelle ? ' « ' + String(d.libelle).slice(0, 30) + ' »' : '') + ' (valeur non recopiée ici)'; }
+    if (k === 'comments') { const d = v[v.length - 1] || {}; return avant ? v.length + ' commentaire(s)' : 'ajouté : ' + String(d.text || '').replace(/\s+/g, ' ').slice(0, 120); }
+    return avant ? v.length + ' élément(s)' : (ancien && Array.isArray(ancien) ? ancien.length + ' → ' + v.length : String(v.length)) + ' élément(s)';
+  }
+  if (typeof v === 'object') return [v.date, v.lieu ? 'à ' + v.lieu : ''].filter(Boolean).join(' ').slice(0, 120);
+  return String(v).slice(0, 120);
+}
+
 export function nuage(o) {
   const F = o.fetchFn || fetch, now = o.now || Date.now;
   let _jeton = { v: '', exp: 0 }, _ch = '';
@@ -117,12 +132,26 @@ export function nuage(o) {
           throw new Error('la relecture ne correspond pas à ce qui devait être écrit : l\'ancienne valeur a été remise');
         }
       }
+      /* 3b. L'HISTORIQUE DE LA FICHE (Kevin 28.11 : « vérifiez que l'historique des modifications de chaque fiche soit à jour, avec les bonnes informations ») : avant, une écriture faite par Bee ou Apex AI après le ✅
+         laissait une copie de sauvegarde mais AUCUNE ligne dans « 🕓 Historique des modifications » de la fiche (l'application n'en écrivait que pour les saisies faites dans l'arbre). Ligne ajoutée, au même format
+         que l'application (ts, par, type, champs [c, avant, apres], pourquoi) ; les listes s'additionnent (jamais d'effacement) ; jamais un téléphone, un e-mail ni une adresse recopiés dans l'historique
+         (il voyage avec la fiche sur tous les appareils : seul ce qui est déjà public y figure) ; un échec ici ne défait JAMAIS l'écriture, il est dit au bilan. */
+      let historique = 'ajouté';
+      try {
+        const h0 = await json(b + '/persons/' + encodeURIComponent(id) + '/historique.json');
+        const liste = Array.isArray(h0) ? h0.filter(Boolean) : (h0 && typeof h0 === 'object' ? Object.values(h0).filter(Boolean) : []);
+        const entree = { ts: now(), par: parLisible(par), type: 'modif', champs: cles.map((k) => ({ c: libelleChamp(k), avant: resumeChamp(k, avant[k], true), apres: resumeChamp(k, patch[k], false, avant[k]) })), pourquoi: 'Écrit après le ✅ de Kevin' };
+        await json(b + '/persons/' + encodeURIComponent(id) + '.json', { method: 'PATCH', body: JSON.stringify({ historique: liste.concat([entree]) }) });
+        const relu = await json(b + '/persons/' + encodeURIComponent(id) + '/historique.json');
+        const n = Array.isArray(relu) ? relu.length : (relu && typeof relu === 'object' ? Object.keys(relu).length : 0);
+        if (n !== liste.length + 1) historique = 'NON relu (' + n + ' lignes au lieu de ' + (liste.length + 1) + ')';
+      } catch (e) { historique = 'NON écrit (' + String(e && e.message || e).slice(0, 80) + ')'; }
       /* 4. on ne garde que GARDES_MAX copies */
       try {
         const toutes = Object.keys((await json(t + '.json?shallow=true')) || {}).filter((k) => k.indexOf('b-') === 0).sort();
         for (const k of toutes.slice(0, Math.max(0, toutes.length - GARDES_MAX))) await json(t + '/' + k + '.json', { method: 'DELETE' });
       } catch (_) { /* le ménage des vieilles copies ne bloque jamais */ }
-      return { copie: cle };
+      return { copie: cle, historique };
     },
     /** Crée UNE fiche neuve (jamais par-dessus une fiche existante). */
     async creer(id, fiche) {

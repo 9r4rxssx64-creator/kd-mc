@@ -34,7 +34,10 @@ export function nomComplet(p) { return ((p && p.prenom ? String(p.prenom) : '') 
 /** Les personnes qui correspondent à la demande, les meilleures d'abord. */
 export function trouver(seed, requete, max) {
   const persons = seed && seed.persons && typeof seed.persons === 'object' ? seed.persons : {};
-  const mots = norm(requete).split(' ').filter((m) => m && !MOTS_VIDES.has(m));
+  /* 28.11.2026 (capture de Kevin : « 4 personnes correspondent : précise prénom ET nom, ou une date » — mais la date était IGNORÉE, donc ses précisions ne départageaient personne et le modèle a inventé un succès) :
+     une ANNÉE (ou une date complète) dans la demande départage les homonymes selon l'année de naissance ou de décès de la fiche ; les chiffres ne comptent plus comme des mots de nom. */
+  const annees = (String(requete == null ? '' : requete).match(/\b(?:1[0-9]{3}|20[0-9]{2})\b/g) || []);
+  const mots = norm(requete).split(' ').filter((m) => m && !MOTS_VIDES.has(m) && !/\d/.test(m));
   if (!mots.length) return [];
   const res = [];
   for (const id of Object.keys(persons)) {
@@ -53,7 +56,12 @@ export function trouver(seed, requete, max) {
   res.sort((a, b) => b.score - a.score || nomComplet(a.p).localeCompare(nomComplet(b.p)));
   const top = res.length ? res[0].score : 0;
   /* quand une personne correspond en entier, on ne noie pas la réponse sous des homonymes partiels */
-  return res.filter((r) => top < 1 || r.score >= 1).slice(0, max || MAX_FICHES);
+  let sortie = res.filter((r) => top < 1 || r.score >= 1);
+  if (annees.length) {
+    const avecAnnee = sortie.filter((r) => annees.some((a) => String((r.p.naissance && r.p.naissance.date) || '').includes(a) || String((r.p.deces && r.p.deces.date) || '').includes(a)));
+    if (avecAnnee.length) sortie = avecAnnee;
+  }
+  return sortie.slice(0, max || MAX_FICHES);
 }
 
 const propre = (t, n) => String(t == null ? '' : t).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);

@@ -110,3 +110,23 @@ describe('arbre_lien : « relie X comme père de Y »', () => {
     expect(r).toContain('🌳');
   });
 });
+
+describe('capture de Kevin 28.11 : la précision entre parenthèses et le faux « enregistré »', () => {
+  it('« corrige la date de naissance de X (née le …) : 16/06/1880 » → carte arbre_champ, la précision part avec le nom', () => {
+    expect(demandeEcritureArbre('corrige la date de naissance de Laurence Saint-Polit (née le 05/06/1950) : 16/06/1880')).toEqual({ action: 'arbre_champ', champs: { personne: 'Laurence Saint-Polit née le 05/06/1950', champ: 'naissance.date', valeur: '1880-06-16', remplacer: true } });
+    expect(demandeEcritureArbre('ajoute le commentaire "vu à Nice" à la fiche de Jean Roux (1920)')).toEqual({ action: 'arbre_commentaire', champs: { personne: 'Jean Roux 1920', texte: 'vu à Nice' } });
+    expect(demandeEcritureArbre('ajoute le téléphone 06 00 00 00 00 à la fiche de Jean Roux (né en 1950)')).toMatchObject({ action: 'arbre_info', champs: { personne: 'Jean Roux né en 1950' } });
+  });
+  it('sans parenthèses rien ne change', () => {
+    expect(demandeEcritureArbre('corrige la date de naissance de Louis Maiffret : 16/06/1880')).toMatchObject({ champs: { personne: 'Louis Maiffret' } });
+  });
+  it('une demande qui parle d\'un champ de fiche mais reste floue reçoit l\'AIDE, jamais le modèle (plus de faux « enregistré »)', () => {
+    expect(aideEcriture('corrige la date de naissance de Laurence Saint-Polit, c\'est 1880')).toContain('carte');
+    expect(aideEcriture('change le métier de Paul Martin en menuisier svp')).toContain('carte');
+    expect(aideEcriture('change la date de décès de Paul Martin')).toContain('carte');
+  });
+  it('les phrases ordinaires restent au modèle', () => {
+    expect(aideEcriture('change la date de mon rendez-vous')).toBeNull();
+    expect(aideEcriture('raconte-moi le métier de boulanger')).toBeNull();
+  });
+});

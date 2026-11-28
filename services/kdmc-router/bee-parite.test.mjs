@@ -82,6 +82,12 @@ ok(trouver(SEED, 'Testard').length === 3 && trouver(SEED, 'LEFICTIF').length ===
 ok(trouver(SEED, 'qui sont les enfants de nobody').length === 0 && trouver(SEED, '   ').length === 0 && trouver(SEED, 'la le de').length === 0, '2e. personne d\'inconnu / demande vide / mots vides : aucune fiche');
 { const gros = { persons: {} }; for (let i = 0; i < 30; i++) gros.persons['g' + i] = { prenom: 'Jean', nom: 'DUMMY' + i };
   ok(trouver(gros, 'Jean').length === MAX_FICHES, '2f. au plus ' + MAX_FICHES + ' fiches : jamais l\'arbre entier'); }
+{ const homo = { persons: { h1: { prenom: 'Laurence', nom: 'DUPONTEL', naissance: { date: '1950-06-05' } }, h2: { prenom: 'Laurence', nom: 'DUPONTEL', naissance: { date: '1920-02-11' } }, h3: { prenom: 'Laurence', nom: 'DUPONTEL', naissance: { date: '1980-01-01' }, deces: { date: '2020-03-03' } } } };
+  ok(trouver(homo, 'Laurence Dupontel').length === 3, '2f2. trois homonymes sans précision : trois fiches (le domaine demande de préciser)');
+  ok(trouver(homo, 'Laurence Dupontel 1920').map((r) => r.id).join() === 'h2', '2f3. une ANNÉE de naissance départage les homonymes (le message « précise une date » est enfin vrai)');
+  ok(trouver(homo, 'Laurence Dupontel née le 05/06/1950').map((r) => r.id).join() === 'h1', '2f4. une date complète JJ/MM/AAAA aussi');
+  ok(trouver(homo, 'Laurence Dupontel 2020').map((r) => r.id).join() === 'h3', '2f5. l\'année de DÉCÈS aussi');
+  ok(trouver(homo, 'Laurence Dupontel 1999').length === 3, '2f6. une année qui ne correspond à personne ne cache rien : on garde les homonymes'); }
 { const f = fiche(SEED, 'p1');
   ok(/Zélie TESTARD \[id : p1\] \(femme\) — vivant\(e\)/.test(f) && /né\(e\) : 1981-10-02 à Valmont-sur-Mer/.test(f) && /métier : vendeuse/.test(f), '2g. fiche : identité, naissance, métier');
   ok(/père : Octave TESTARD/.test(f) && /mère : Capucine VALMONT/.test(f) && /conjoint\(s\) : Barnabé LEFICTIF/.test(f), '2h. fiche : parents et conjoint (noms, jamais des identifiants)');

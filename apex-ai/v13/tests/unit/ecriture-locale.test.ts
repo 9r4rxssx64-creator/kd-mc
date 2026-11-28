@@ -130,3 +130,10 @@ describe('capture de Kevin 28.11 : la précision entre parenthèses et le faux �
     expect(aideEcriture('raconte-moi le métier de boulanger')).toBeNull();
   });
 });
+
+describe('pc-connecteurs 3444 (v13.4.422) : « relie A (1979) comme père de B (2007) » donnait « Mise à jour effectuée » sans carte', () => {
+  it('l\'année entre parenthèses de CHAQUE nom part avec lui, la carte arbre_lien est proposée', () => {
+    expect(demandeEcritureArbre('relie Jean Roux (1979) comme père de Marie Dupont (2007)')).toEqual({ action: 'arbre_lien', champs: { personne: 'Marie Dupont 2007', personne2: 'Jean Roux 1979', lien: 'pere' } });
+    expect(demandeEcritureArbre('relie Jean Roux comme père de Marie Dupont (2007).')).toMatchObject({ action: 'arbre_lien', champs: { personne: 'Marie Dupont 2007', personne2: 'Jean Roux' } });
+  });
+});

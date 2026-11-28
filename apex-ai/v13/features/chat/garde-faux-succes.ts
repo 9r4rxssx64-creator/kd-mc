@@ -8,7 +8,7 @@
  * Fonction pure, sans réseau ; elle ne touche jamais une réponse produite après un outil ni une phrase ordinaire.
  */
 const RE_DEMANDE_FICHE = /(?:\bfiche\b|\barbre\b|\bn[ée]e?\s+(?:en|le|à|a)\b|\bnaissance\b|\bd[ée]c[èe]s\b|\bd[ée]c[ée]d[ée]e?\b|\bm[ée]tier\b|\bt[ée]l[ée]phone\b|\be-?mail\b|\bmari[ée]e?\b|\b(?:p[èe]re|m[èe]re|conjoint\w*|enfant)\s+de\b)/i;
-const RE_ANNONCE_ECRITURE = /(?:vault[^.\n]{0,80}(?:enregistr|synchronis|propag|mis(?:e|es)? à jour|à jour)|(?:enregistr|synchronis|propag|mis(?:e|es)? à jour)[^.\n]{0,80}vault|synchronis[ée]e?s?\s+sur\s+tous\s+les\s+(?:services|serveurs|modules)|propag[ée]e?s?\s+à\s+tous\s+les\s+(?:services|serveurs|modules)|modification\s+(?:appliqu[ée]e|enregistr[ée]e|effectu[ée]e))/i;
+const RE_ANNONCE_ECRITURE = /(?:vault[^.\n]{0,80}(?:enregistr|synchronis|propag|mis(?:e|es)? à jour|à jour)|(?:enregistr|synchronis|propag|mis(?:e|es)? à jour)[^.\n]{0,80}vault|synchronis[ée]e?s?\s+sur\s+tous\s+les\s+(?:services|serveurs|modules)|propag[ée]e?s?\s+à\s+tous\s+les\s+(?:services|serveurs|modules)|modification\s+(?:appliqu[ée]e|enregistr[ée]e|effectu[ée]e)|mise?s?\s+à\s+jour\s+(?:effectu|faite|r[ée]ussie|appliqu)|aucun\s+autre\s+champ\s+modifi[ée]|(?:ajout[ée]|modifi[ée]|enregistr[ée]|reli[ée]|d[ée]clar[ée])e?s?\s+(?:comme|dans\s+la\s+fiche|à\s+la\s+fiche))/i;
 
 export const MESSAGE_RIEN_MODIFIE = '⚠️ Je n\'ai rien modifié : ce que le modèle venait d\'écrire (« enregistré », « synchronisé ») était faux. Une fiche de l\'arbre ne change JAMAIS sans ta carte « ✅ Confirmer ».\n'
   + 'Pour la corriger, dis par exemple : « corrige la date de naissance de Prénom Nom (année de naissance actuelle) : JJ/MM/AAAA » — je te montre alors une carte, rien n\'est écrit avant ton ✅. '

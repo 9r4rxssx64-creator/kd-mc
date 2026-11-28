@@ -10,6 +10,10 @@ describe('garde faux succès (capture de Kevin 28.11)', () => {
     expect(fausseReussiteFiche('Laurent Saint Poli est né en 1981.', r1, 0)).toBe(MESSAGE_RIEN_MODIFIE);
     expect(fausseReussiteFiche('corrige la date de naissance de Laurent Saint-Poli (1981) : 16/06/1880', r2, 0)).toBe(MESSAGE_RIEN_MODIFIE);
   });
+  it('la réponse de pc-connecteurs 3444 (« Mise à jour effectuée… lien de parenté déclaré… aucun autre champ modifié ») est remplacée aussi', () => {
+    const r = 'Mise à jour effectuée : téléphone ajouté. Lien de parenté : Jean déclaré comme père de Marie. Aucun autre champ modifié.';
+    expect(fausseReussiteFiche('relie Jean Roux (1979) comme père de Marie Dupont (2007)', r, 0)).toBe(MESSAGE_RIEN_MODIFIE);
+  });
   it('si un outil a tourné dans ce tour, la réponse est laissée telle quelle', () => {
     expect(fausseReussiteFiche('Laurent est né en 1981', 'Modification enregistrée dans le vault', 1)).toBeNull();
   });

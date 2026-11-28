@@ -87,13 +87,13 @@ const CHAMPS_FICHE: Record<string, string> = { 'date de naissance': 'naissance.d
 /* « relie X comme père de Y » : relier deux fiches EXISTANTES (arbre_lien, id2 = X, lien = ce que X est pour Y). Créer une personne n'a pas de phrase : l'aide le dit. */
 const VERBES_LIEN = new Set(['relie', 'relier', 'rattache', 'rattacher']);
 const LIENS_CHAT: Record<string, string> = { 'père': 'pere', 'pere': 'pere', 'mère': 'mere', 'mere': 'mere', 'conjoint': 'conjoint', 'conjointe': 'conjoint', 'époux': 'conjoint', 'epoux': 'conjoint', 'épouse': 'conjoint', 'epouse': 'conjoint', 'enfant': 'enfant', 'fils': 'enfant', 'fille': 'enfant' };
-const RE_LIEN = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+${NOM}\s+comme\s+(?:le\s+|la\s+|l['’]\s*)?(\p{L}+)\s+(?:de\s+|d['’]\s*)${NOM}\s*[.!?]*$`, 'iu');
+const RE_LIEN = new RegExp(String.raw`${POLI}${VERBE_AJOUT}\s+${NOM}${PREC}\s+comme\s+(?:le\s+|la\s+|l['’]\s*)?(\p{L}+)\s+(?:de\s+|d['’]\s*)${NOM}${PREC}\s*[.!?]*$`, 'iu');   // 28.11 : « relie A (1979) comme père de B (2007) » — l'année entre parenthèses part avec chaque nom
 
 function lienArbre(t: string): EcritureArbre | null {
   const m = RE_LIEN.exec(t);
-  if (!m?.[1] || !m[2] || !m[3] || !m[4] || !VERBES_LIEN.has(m[1].toLowerCase())) return null;
-  const lien = LIENS_CHAT[m[3].toLowerCase()];
-  return lien ? { action: 'arbre_lien', champs: { personne: m[4].trim(), personne2: m[2].trim(), lien } } : null;
+  if (!m?.[1] || !m[2] || !m[4] || !m[5] || !VERBES_LIEN.has(m[1].toLowerCase())) return null;
+  const lien = LIENS_CHAT[m[4].toLowerCase()];
+  return lien ? { action: 'arbre_lien', champs: { personne: avecPrecision(m[5], m[6]), personne2: avecPrecision(m[2], m[3]), lien } } : null;
 }
 
 const avecPrecision = (nom: string, prec?: string): string => (nom.trim() + (prec && prec.trim() ? ' ' + prec.trim() : '')).trim();

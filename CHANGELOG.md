@@ -1,5 +1,9 @@
 # CHANGELOG — CMCteams + Apex AI
 
+## Apex AI 13.4.424 : « relie A (1979) comme père de B (2007) » donne une carte, plus un faux « Mise à jour effectuée » — 28.11.2026 (apex-cloud)
+- Mesure de pc-connecteurs 3444 : la phrase avec une année entre parenthèses derrière CHAQUE nom n'était pas reconnue ; le modèle gratuit répondait « Mise à jour effectuée : téléphone ajouté… lien de parenté déclaré… aucun autre champ modifié » (faux, rien n'était écrit). Maintenant la parenthèse suit chaque nom (`PREC`) et la carte arbre_lien est proposée (ok/annuler), les années partent avec le nom pour départager les homonymes.
+- Le garde « faux succès » reconnaît aussi ces tournures (« Mise à jour effectuée », « aucun autre champ modifié », « déclaré/ajouté comme… »).
+
 ## Apex AI 13.4.423 : garde « faux succès » sur les fiches — 28.11.2026 (apex-cloud)
 - Deuxième capture de Kevin : sur « Laurent Saint Poli est né en 1981. » (une affirmation, pas un ordre) le modèle gratuit a répondu « ✅ Modification enregistrée dans le vault ; fiche synchronisée sur tous les services Apex » et inventé des liens d'export, sans aucun outil. `features/chat/garde-faux-succes.ts` (nouveau, branché dans `chat-engine.ts`) : si la demande parle d'une fiche, d'une naissance, d'un décès, d'un métier, d'un téléphone…, si aucun outil n'a tourné dans le tour et si la réponse annonce une écriture réussie, elle est REMPLACÉE par la vérité (« je n'ai rien modifié, une fiche ne change jamais sans ta carte ✅ ; dis plutôt… »). Une clé enregistrée dans le vault, une réponse après un outil, une phrase ordinaire : jamais touchées. Test `garde-faux-succes.test.ts` (le test de branchement rouge sur l'ancien moteur).
 

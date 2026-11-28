@@ -8,6 +8,7 @@
  * conversation/queue/isProcessing sont l'état du moteur, lié une fois via
  * setEngineState() (réfs STABLES mutées in-place). Appelé par render()/input.
  */
+import { fausseReussiteFiche } from './garde-faux-succes.js';
 import { errors } from '../../core/errors.js';
 import { events } from '../../core/events.js';
 import { logger } from '../../core/logger.js';
@@ -472,6 +473,12 @@ export async function processQueue(rootEl: HTMLElement): Promise<void> {
       }
       if (chunk.done) {
         delete assistantMsg.streaming;
+        /* v13.4.423 (capture de Kevin 28.11) : une réponse du modèle qui ANNONCE une écriture réussie sur une fiche (« enregistrée dans le vault », « synchronisée sur tous les services ») alors qu'aucun
+         * outil n'a tourné est remplacée par la vérité. Jamais le modèle ne « dit » avoir modifié l'arbre. */
+        try {
+          const vrai = fausseReussiteFiche(text, assistantMsg.text, assistantMsg.toolBatchCount ?? 0);
+          if (vrai) assistantMsg.text = vrai;
+        } catch { /* le garde ne bloque jamais la réponse */ }
         /* v13.4.361 : réponse aboutie → reset le compteur de retry auto. */
         if (assistantMsg.text.trim().length > 0) autoRetries = 0;
         /* v13.4.273 : capture provider + latence pour badge sous la réponse */
